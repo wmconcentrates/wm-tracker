@@ -1,2 +1,0 @@
-# wm-tracker
-Production tracking
