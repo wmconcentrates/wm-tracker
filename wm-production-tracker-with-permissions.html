@@ -1,0 +1,3983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>White Mousse Production Tracker - Cloud Sync</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@300;400;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #151b2e;
+            --bg-tertiary: #1f2937;
+            --accent-purple: #9333ea;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border: #374151;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .connection-status.connected {
+            background: rgba(16, 185, 129, 0.2);
+            border: 2px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+        
+        .connection-status.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+        
+        .connection-status.connecting {
+            background: rgba(245, 158, 11, 0.2);
+            border: 2px solid var(--accent-orange);
+            color: var(--accent-orange);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(147, 51, 234, 0.3);
+        }
+        
+        .header h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .setup-section {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid var(--border);
+        }
+        
+        .setup-section h2 {
+            color: var(--accent-orange);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .setup-section.hidden {
+            display: none;
+        }
+        
+        .credentials-form {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: 'Work Sans', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group select option {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            background: rgba(147, 51, 234, 0.05);
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .user-login {
+            background: var(--bg-secondary);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid var(--border);
+        }
+        
+        .user-login h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--accent-green);
+        }
+        
+        .user-select {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .user-btn {
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .user-btn:hover {
+            border-color: var(--accent-purple);
+            background: rgba(147, 51, 234, 0.1);
+        }
+        
+        .user-btn.active {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+        
+        .current-user {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid var(--accent-green);
+            font-weight: 600;
+        }
+        
+        .station-tabs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .station-tab {
+            padding: 20px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .station-tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        
+        .station-tab.active {
+            border-color: var(--accent-purple);
+            background: rgba(147, 51, 234, 0.1);
+        }
+        
+        .station-tab h3 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        
+        .station-tab .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .station-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .station-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-section {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px solid var(--border);
+        }
+        
+        .form-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--accent-purple);
+            font-family: 'Space Mono', monospace;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .checkbox-item:hover {
+            background: rgba(147, 51, 234, 0.1);
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            background: var(--accent-purple);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn:hover {
+            background: #7c3aed;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(147, 51, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .batch-list {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid var(--border);
+        }
+        
+        .batch-list h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--accent-green);
+            font-family: 'Space Mono', monospace;
+        }
+        
+        .batch-item {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--accent-purple);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .batch-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        
+        .batch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .batch-id {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+        }
+        
+        .batch-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-intake { background: var(--accent-blue); }
+        .status-extraction { background: var(--accent-orange); }
+        .status-finishing { background: var(--accent-green); }
+        .status-packaging { background: var(--accent-red); }
+        .status-complete { background: #6b7280; }
+        
+        .batch-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .batch-detail {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .batch-detail-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .batch-detail-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .batch-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            background: var(--accent-purple);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-small:hover {
+            background: #7c3aed;
+        }
+        
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 10px 20px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn:hover {
+            border-color: var(--accent-purple);
+        }
+        
+        .filter-btn.active {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+            margin-top: 15px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            border: 2px solid var(--bg-primary);
+        }
+        
+        .timeline-content {
+            background: rgba(147, 51, 234, 0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-purple);
+        }
+        
+        .timeline-user {
+            font-weight: 600;
+            color: var(--accent-purple);
+        }
+        
+        .timeline-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid var(--border);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+            font-family: 'Space Mono', monospace;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 5px;
+        }
+        
+        .success-message {
+            background: rgba(16, 185, 129, 0.2);
+            border: 2px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .leaflink-section {
+            background: rgba(59, 130, 246, 0.1);
+            border: 2px solid var(--accent-blue);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .leaflink-section h3 {
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+        }
+
+        .app-container {
+            display: none;
+        }
+
+        .app-container.active {
+            display: block;
+        }
+
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .analytics-table th {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .analytics-table td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .analytics-table tr:hover {
+            background: rgba(147, 51, 234, 0.05);
+        }
+
+        .profit-positive {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .profit-negative {
+            color: var(--accent-red);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status connecting" id="connectionStatus">
+        <div class="status-dot"></div>
+        <span id="statusText">Connecting...</span>
+    </div>
+
+    <!-- Setup Section -->
+    <div class="setup-section" id="setupSection">
+        <h2>⚙️ Supabase Configuration</h2>
+        <p style="margin-bottom: 20px; color: var(--text-secondary);">
+            Enter your Supabase credentials once. They'll be saved securely in your browser.
+        </p>
+        <form class="credentials-form" id="credentialsForm">
+            <div class="form-group">
+                <label>Supabase Project URL</label>
+                <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co" required>
+                <div class="help-text">Found in Project Settings → API → Project URL</div>
+            </div>
+            <div class="form-group">
+                <label>Supabase Anon/Public Key</label>
+                <input type="text" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+                <div class="help-text">Found in Project Settings → API → Project API keys → anon public</div>
+            </div>
+            <button type="submit" class="btn">Connect to Supabase</button>
+        </form>
+        <div style="margin-top: 20px; padding: 15px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; border-left: 4px solid var(--accent-orange);">
+            <strong>First Time Setup:</strong> After connecting, I'll automatically create the required database table for you.
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
+        <div class="header">
+            <h1>🔬 White Mousse Production Tracker</h1>
+            <p>Complete trim-to-product workflow tracking • Cloud synced across all stations</p>
+        </div>
+
+        <div class="user-login" id="userLogin">
+            <h2>🔐 Enter Your PIN</h2>
+            <div style="max-width: 300px; margin: 0 auto;">
+                <input type="password" 
+                       id="pinInput" 
+                       maxlength="4" 
+                       pattern="[0-9]{4}" 
+                       placeholder="Enter 4-digit PIN"
+                       inputmode="numeric"
+                       style="width: 100%; padding: 15px; font-size: 1.5rem; text-align: center; letter-spacing: 10px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 10px; color: var(--text-primary); font-family: 'Space Mono', monospace; margin-bottom: 15px;">
+                <button id="loginBtn" style="width: 100%; padding: 15px; background: var(--accent-purple); border: none; border-radius: 10px; color: white; font-size: 1.1rem; font-weight: 700; cursor: pointer;">Login</button>
+                <div id="loginError" style="color: var(--accent-red); text-align: center; margin-top: 10px; display: none;">Invalid PIN</div>
+            </div>
+            <div class="current-user" id="currentUser" style="display: none; margin-top: 15px;">
+                Logged in as: <span id="userName"></span>
+                <button onclick="logout()" style="margin-left: 15px; padding: 8px 15px; background: var(--accent-red); border: none; border-radius: 5px; color: white; cursor: pointer;">Logout</button>
+            </div>
+        </div>
+
+        <div id="appContent" style="display: none;">
+        <div class="station-tabs">
+            <div class="station-tab active" data-station="intake">
+                <div class="icon">📦</div>
+                <h3>Intake</h3>
+                <p>Log trim batches</p>
+            </div>
+            <div class="station-tab" data-station="extraction">
+                <div class="icon">⚗️</div>
+                <h3>Extraction</h3>
+                <p>Process batches</p>
+            </div>
+            <div class="station-tab" data-station="finishing">
+                <div class="icon">✨</div>
+                <h3>Post Extraction</h3>
+                <p>Bulk weight & splitting</p>
+            </div>
+            <div class="station-tab" data-station="packaging">
+                <div class="icon">📊</div>
+                <h3>Packaging</h3>
+                <p>Final count & listing</p>
+            </div>
+            <div class="station-tab" data-station="testing">
+                <div class="icon">🧪</div>
+                <h3>Testing</h3>
+                <p>Test results entry</p>
+            </div>
+            <div class="station-tab" data-station="labeling">
+                <div class="icon">🏷️</div>
+                <h3>Labeling</h3>
+                <p>Print & apply labels</p>
+            </div>
+            <div class="station-tab" data-station="analytics">
+                <div class="icon">💰</div>
+                <h3>Analytics</h3>
+                <p>Yield & Cost</p>
+            </div>
+            <div class="station-tab" data-station="performance">
+                <div class="icon">👥</div>
+                <h3>Performance</h3>
+                <p>Employee Stats</p>
+            </div>
+            <div class="station-tab" data-station="dashboard">
+                <div class="icon">📈</div>
+                <h3>Dashboard</h3>
+                <p>View all batches</p>
+            </div>
+        </div>
+
+        <!-- Intake Station -->
+        <div class="station-content active" id="intake">
+            <div class="form-section">
+                <h2>📦 New Trim Intake</h2>
+                <form id="intakeForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Batch ID (Auto-Generated)</label>
+                            <input type="text" id="batchId" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Strain Name</label>
+                            <input type="text" id="strainName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Trim Weight (grams)</label>
+                            <input type="number" id="trimWeight" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cost of Material ($)</label>
+                            <input type="number" id="materialCost" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Material Agreement Type</label>
+                            <select id="materialAgreement" required>
+                                <option value="">Select Type</option>
+                                <option value="Wholesale">Wholesale Purchase (100% owned)</option>
+                                <option value="50-50 Split">50/50 Split (customer gets 50% yield)</option>
+                                <option value="Custom Buyback">Custom Buyback</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Pre-Sift Before BHO?</label>
+                            <select id="preSift" required>
+                                <option value="no">No - Direct to BHO</option>
+                                <option value="yes">Yes - Sift first</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Cultivation License # (Grower)</label>
+                            <input type="text" id="cultivationLicense" placeholder="403R-01007" required>
+                            <div class="help-text">Grower's 403R license number</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Grower Name (Optional)</label>
+                            <input type="text" id="growerName" placeholder="Farm/supplier name">
+                        </div>
+                        <div class="form-group">
+                            <label>METRC Tag Numbers (last 4-5 digits)</label>
+                            <input type="text" id="metrcTags" placeholder="e.g., 12345, 67890, 11223">
+                            <div class="help-text">Multiple tags separated by commas. Use last 4-5 digits only.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Intake Date</label>
+                            <input type="date" id="intakeDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Strain Type</label>
+                            <select id="strainType" required>
+                                <option value="">Select Type</option>
+                                <option value="Indica">Indica (Blue Lid)</option>
+                                <option value="Sativa">Sativa (Red Lid)</option>
+                                <option value="Hybrid">Hybrid (Green Lid)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Planned Products</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="products" value="Live Resin Carts">
+                                <span>Live Resin Carts</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="products" value="Wax">
+                                <span>Wax</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="products" value="Sugar Wax">
+                                <span>Sugar Wax</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="products" value="Shatter">
+                                <span>Shatter</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="products" value="Brick Hash" id="brickHash">
+                                <span>Brick Hash</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="products" value="Hash Hits" id="hashHits">
+                                <span>Hash Hits</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="products" value="RSO Syringes">
+                                <span>RSO Syringes</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="intakeNotes" placeholder="Any special notes about this batch..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn">Submit Intake</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Extraction Station -->
+        <div class="station-content" id="extraction">
+            <div class="form-section">
+                <h2>⚗️ Extraction Processing</h2>
+                <div class="form-group">
+                    <label>Select Batch to Process</label>
+                    <select id="extractionBatchSelect" required>
+                        <option value="">Select a batch...</option>
+                    </select>
+                </div>
+                
+                <div id="extractionForm" style="display: none;">
+                    <!-- Step 1: Pre-Sift Only (shows first for pre-sift batches) -->
+                    <div id="preSiftOnlySection" style="display: none; background: rgba(245, 158, 11, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-orange);">
+                        <h3 style="color: var(--accent-orange); margin-bottom: 15px;">⚠️ Pre-Sift Required First</h3>
+                        <p style="margin-bottom: 20px; color: var(--text-secondary);">This batch is marked for pre-sifting. Enter the sift weight collected to create the sift sub-batch. After that, you can process the remaining material.</p>
+                        
+                        <div class="form-group">
+                            <label>Sift Weight Collected (grams)</label>
+                            <input type="number" id="siftWeightOnly" step="0.1" placeholder="Enter collected sift weight" required>
+                            <div class="help-text">This will create a sub-batch for the sift and subtract from the main batch.</div>
+                        </div>
+                        <div id="siftCalcDisplay" style="margin-top: 15px; padding: 15px; background: var(--bg-primary); border-radius: 8px; font-weight: 600;"></div>
+                        
+                        <button type="button" class="btn" style="background: var(--accent-orange);" onclick="submitSiftOnly()">Submit Sift Weight & Create Sub-Batch</button>
+                    </div>
+
+                    <!-- Step 2: Main Extraction Form (shows after sift is done, or immediately for non-sift batches) -->
+                    <div id="mainExtractionSection">
+                        <div id="preSiftInfo" style="display: none; background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid var(--accent-green);">
+                            <p style="color: var(--accent-green); font-weight: 600;">✓ Sift sub-batch created</p>
+                            <div id="preSiftSummary"></div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Extraction Date</label>
+                                <input type="date" id="extractionDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Extraction Method</label>
+                                <select id="extractionMethod" required>
+                                    <option value="">Select Method</option>
+                                    <option value="BHO">BHO (Butane Hash Oil)</option>
+                                    <option value="RSO">RSO</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- BHO Product Selection (shown when BHO selected) -->
+                        <div id="bhoProductSection" style="display: none;">
+                            <div class="form-group">
+                                <label>BHO Products Made</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" name="bho_products" value="Sugar Wax" id="sugarWaxCheck">
+                                        <span>Sugar Wax/Wax</span>
+                                        <div class="help-text" style="margin-left: 28px; font-size: 0.85rem;">Can be split in Post Extraction</div>
+                                    </label>
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" name="bho_products" value="Shatter" id="shatterCheck">
+                                        <span>Shatter</span>
+                                        <div class="help-text" style="margin-left: 28px; font-size: 0.85rem;">Can convert to Sugar/Wax in Post Extraction</div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Total Crude Weight (grams)</label>
+                                <input type="number" id="crudeWeight" step="0.1" placeholder="Total BHO crude extracted" required>
+                                <div class="help-text">Total weight of all products combined</div>
+                            </div>
+                        </div>
+
+                        <!-- RSO Section (shown when RSO selected) -->
+                        <div id="rsoSection" style="display: none;">
+                            <div class="form-group">
+                                <label>RSO Weight (grams)</label>
+                                <input type="number" id="rsoWeight" step="0.1" placeholder="Total RSO produced" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Extraction Notes</label>
+                            <textarea id="extractionNotes" placeholder="Extraction conditions, observations, issues..."></textarea>
+                        </div>
+                        
+                        <button type="button" class="btn" onclick="submitExtraction()">Complete Extraction</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Post Extraction Station -->
+        <div class="station-content" id="finishing">
+            <div class="form-section">
+                <h2>✨ Post Extraction & Batch Splitting</h2>
+                <div class="form-group">
+                    <label>Select Batch to Finish</label>
+                    <select id="finishingBatchSelect" required>
+                        <option value="">Select a batch...</option>
+                    </select>
+                </div>
+                
+                <div id="finishingForm" style="display: none;">
+                    <div id="batchInfo" style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-purple); margin-bottom: 10px;">Batch Details</h3>
+                        <div id="batchInfoContent"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Split this batch into multiple products?</label>
+                        <select id="splitBatch" required>
+                            <option value="no">No - Single product batch</option>
+                            <option value="yes">Yes - Split into sub-batches</option>
+                        </select>
+                    </div>
+
+                    <!-- Single Product Finishing -->
+                    <div id="singleFinishing">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Finishing Date</label>
+                                <input type="date" id="finishingDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Final Bulk Weight (grams)</label>
+                                <input type="number" id="finalWeight" step="0.1" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Sample Weight Pulled (grams)</label>
+                                <input type="number" id="sampleWeight" step="0.1" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>QC Notes</label>
+                            <textarea id="finishingNotes" placeholder="Quality observations, color, consistency, issues..."></textarea>
+                        </div>
+                        
+                        <button type="button" class="btn" onclick="submitFinishing()">Complete Finishing</button>
+                    </div>
+
+                    <!-- Split Batch Finishing -->
+                    <div id="splitFinishing" style="display: none;">
+                        <h3 style="color: var(--accent-green); margin: 20px 0 15px 0; font-size: 1.2rem;">Divide Batch Into Products</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 20px;">Specify how much material goes to each product. System will create sub-batches.</p>
+                        
+                        <div id="splitProducts">
+                            <div class="split-product-item" style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: var(--accent-purple); margin-bottom: 15px;">Product 1</h4>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Product Type</label>
+                                        <select class="splitProductType" required>
+                                            <option value="">Select Product</option>
+                                            <option value="Wax">Wax</option>
+                                            <option value="Sugar Wax">Sugar Wax</option>
+                                            <option value="Shatter">Shatter</option>
+                                            <option value="Live Resin Oil">Live Resin Oil (Carts)</option>
+                                            <option value="Brick Hash">Brick Hash</option>
+                                            <option value="Hash Hits">Hash Hits</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Weight Allocated (grams)</label>
+                                        <input type="number" class="splitWeight" step="0.1" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="split-product-item" style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 15px;">
+                                <h4 style="color: var(--accent-purple); margin-bottom: 15px;">Product 2</h4>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Product Type</label>
+                                        <select class="splitProductType" required>
+                                            <option value="">Select Product</option>
+                                            <option value="Wax">Wax</option>
+                                            <option value="Sugar Wax">Sugar Wax</option>
+                                            <option value="Shatter">Shatter</option>
+                                            <option value="Live Resin Oil">Live Resin Oil (Carts)</option>
+                                            <option value="Brick Hash">Brick Hash</option>
+                                            <option value="Hash Hits">Hash Hits</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Weight Allocated (grams)</label>
+                                        <input type="number" class="splitWeight" step="0.1" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn" style="background: var(--accent-blue); margin-right: 10px;" onclick="addSplitProduct()">+ Add Another Product</button>
+                        <button type="button" class="btn" onclick="submitSplitBatch()">Create Sub-Batches</button>
+                        
+                        <div id="splitValidation" style="margin-top: 15px; padding: 15px; border-radius: 10px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Packaging Station -->
+        <div class="station-content" id="packaging">
+            <div class="form-section">
+                <h2>📊 Packaging & Listing</h2>
+                <div class="form-group">
+                    <label>Select Batch to Package</label>
+                    <select id="packagingBatchSelect" required>
+                        <option value="">Select a batch...</option>
+                    </select>
+                </div>
+                
+                <div id="packagingForm" style="display: none;">
+                    <!-- Strain Type Indicator for Lid Color -->
+                    <div id="strainTypeAlert" style="display: none; padding: 20px; border-radius: 12px; margin-bottom: 25px; text-align: center; border: 4px solid;">
+                        <div style="font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">LID COLOR</div>
+                        <div id="strainTypeName" style="font-size: 2.5rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;"></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Packaging Date</label>
+                            <input type="date" id="packagingDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Primary Product Type</label>
+                            <select id="packagedProductType" required>
+                                <option value="">Select Type</option>
+                                <option value="Live Resin Carts">Live Resin Carts (.5g)</option>
+                                <option value="Live AIO">Live All-In-One (AIO)</option>
+                                <option value="Wax/Sugar">Wax/Sugar Wax (1g & 4g)</option>
+                                <option value="Shatter">Shatter (1g)</option>
+                                <option value="Brick Hash">Brick Hash (1g & 4g)</option>
+                                <option value="Hash Hits">Hash Hits (2-pack & 5-pack)</option>
+                                <option value="RSO Syringe">RSO Syringes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Multi-size packaging section -->
+                    <div id="multiSizeSection" style="display: none;">
+                        <h3 style="color: var(--accent-green); margin: 20px 0 15px 0; font-size: 1.2rem;">Package Sizes</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>1g Units</label>
+                                <input type="number" id="units1g" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>4g Units</label>
+                                <input type="number" id="units4g" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Total Grams Calculated</label>
+                                <input type="number" id="totalGramsCalc" readonly style="background: var(--bg-primary); color: var(--accent-green); font-weight: 700;">
+                            </div>
+                            <div class="form-group">
+                                <label>Total Units (Combined)</label>
+                                <input type="number" id="totalUnitsCalc" readonly style="background: var(--bg-primary); color: var(--accent-green); font-weight: 700;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Single size packaging section -->
+                    <div id="singleSizeSection">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Total Units/Eaches</label>
+                                <input type="number" id="unitsPackaged" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="display: none;">
+                        <input type="number" id="wholesalePrice" step="0.01" min="0" value="0" style="display: none;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Packaging Notes</label>
+                        <textarea id="packagingNotes" placeholder="Any issues, special packaging notes..."></textarea>
+                    </div>
+                    
+                    <button type="button" class="btn" onclick="submitPackaging()">Complete Packaging</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testing Station -->
+        <div class="station-content" id="testing">
+            <div class="form-section">
+                <h2>🧪 Test Results Entry</h2>
+                <div class="form-group">
+                    <label>Select Batch for Test Results</label>
+                    <select id="testingBatchSelect" required>
+                        <option value="">Select a batch...</option>
+                    </select>
+                </div>
+                
+                <div id="testingForm" style="display: none;">
+                    <div id="currentTestInfo" style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-purple); margin-bottom: 10px;">Current Batch Info</h3>
+                        <div id="testBatchDetails"></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Date Submitted to Lab</label>
+                            <input type="date" id="testSubmittedDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Expiration Date (Auto: 9 months)</label>
+                            <input type="date" id="testExpirationDate" readonly style="background: var(--bg-primary); color: var(--accent-green); font-weight: 700;">
+                        </div>
+                        <div class="form-group">
+                            <label>Test Results Received Date</label>
+                            <input type="date" id="testResultsReceivedDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>RTA (Full Panel)?</label>
+                            <select id="isRTA" required>
+                                <option value="no">No - Standard Potency Only</option>
+                                <option value="yes">Yes - Full Panel RTA</option>
+                            </select>
+                            <div class="help-text">Full panel RTA required once per month</div>
+                        </div>
+                        <div class="form-group">
+                            <label>THC %</label>
+                            <input type="number" id="testThcPercent" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>CBD %</label>
+                            <input type="number" id="testCbdPercent" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Test Results Notes</label>
+                        <textarea id="testResultsNotes" placeholder="Any issues, terpene highlights, pass/fail status..."></textarea>
+                    </div>
+                    
+                    <button type="button" class="btn" onclick="submitTestResults()">Save Test Results</button>
+                </div>
+
+                <!-- RTA Reminder -->
+                <div id="rtaReminder" style="margin-top: 30px;"></div>
+            </div>
+        </div>
+
+        <!-- Labeling Station -->
+        <div class="station-content" id="labeling">
+            <div class="form-section">
+                <h2>🏷️ Label Printing & Application</h2>
+                
+                <div class="form-group">
+                    <label>Select Batch to Label</label>
+                    <select id="labelingBatchSelect" required>
+                        <option value="">Select a batch...</option>
+                    </select>
+                </div>
+                
+                <div id="labelingForm" style="display: none;">
+                    <!-- Batch Info Display -->
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid var(--accent-purple);">
+                        <h3 style="color: var(--accent-purple); margin-bottom: 15px;">Label Information</h3>
+                        <div id="labelPreview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <!-- Auto-populated from batch data -->
+                        </div>
+                    </div>
+
+                    <!-- Zebra Printer Configuration -->
+                    <div style="background: rgba(59, 130, 246, 0.1); border: 2px solid var(--accent-blue); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-blue); margin-bottom: 15px;">🖨️ Zebra Printer Setup</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Print Server URL (for mobile printing)</label>
+                                <input type="text" id="printServerURL" placeholder="http://192.168.1.50:3000/print" value="">
+                                <div class="help-text">Leave blank to use localhost. See setup docs for mobile access.</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Label Size (Circle)</label>
+                                <select id="labelSize">
+                                    <option value="1.0">1.0" Diameter</option>
+                                    <option value="1.5" selected>1.5" Diameter</option>
+                                    <option value="2.0">2.0" Diameter</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Labels Per Unit</label>
+                                <input type="number" id="labelsPerUnit" value="1" min="1">
+                                <div class="help-text">How many labels per jar/cart/pack?</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn" style="background: var(--accent-blue);" onclick="savePrintSettings()">Save Print Settings</button>
+                    </div>
+
+                    <!-- Label Preview & Print -->
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-green); margin-bottom: 15px;">📋 Label Preview</h3>
+                        <div id="zplPreview" style="background: white; color: black; padding: 20px; border-radius: 5px; font-family: monospace; font-size: 0.85rem; margin-bottom: 15px; max-height: 300px; overflow-y: auto;">
+                            <!-- ZPL code preview will show here -->
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="labelQuantity" min="1" style="width: 100px; padding: 10px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary);" placeholder="Qty">
+                            <button type="button" class="btn" onclick="printLabels()">🖨️ Print Labels to Zebra</button>
+                            <button type="button" class="btn" style="background: var(--accent-orange);" onclick="downloadZPL()">⬇️ Download ZPL File</button>
+                        </div>
+                    </div>
+
+                    <!-- Weight Verification -->
+                    <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-green);">
+                        <h3 style="color: var(--accent-green); margin-bottom: 15px;">📊 Total Grams Labeled</h3>
+                        
+                        <div class="form-group">
+                            <label>Total Grams Labeled (weighed after labeling)</label>
+                            <input type="number" id="gramsLabeled" step="0.1" placeholder="Total weight with labels" required>
+                            <div class="help-text">Actual weight after all labels applied</div>
+                        </div>
+
+                        <!-- Expected Weight Display -->
+                        <div id="expectedWeightDisplay" style="padding: 15px; background: var(--bg-primary); border-radius: 8px; margin-top: 15px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div>
+                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Expected Weight (from packaging)</div>
+                                    <div id="expectedWeight" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-blue); font-family: 'Space Mono', monospace;">-</div>
+                                </div>
+                                <div>
+                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Actual Weight Labeled</div>
+                                    <div id="actualWeight" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green); font-family: 'Space Mono', monospace;">-</div>
+                                </div>
+                            </div>
+                            <div id="discrepancyAlert" style="display: none; margin-top: 15px; padding: 15px; background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); border-radius: 8px;">
+                                <div style="color: var(--accent-red); font-weight: 700; margin-bottom: 10px;">⚠️ Weight Discrepancy Detected</div>
+                                <div id="discrepancyDetails" style="color: var(--text-primary); margin-bottom: 15px;"></div>
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="acceptDiscrepancy" style="width: 20px; height: 20px;">
+                                    <span style="font-weight: 600;">I verify this weight is correct and accept the discrepancy</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mark as Labeled -->
+                    <div class="form-group">
+                        <label>Labeling Notes</label>
+                        <textarea id="labelingNotes" placeholder="Any issues with labeling, printer problems, etc..."></textarea>
+                    </div>
+                    
+                    <button type="button" class="btn" style="background: var(--accent-green);" onclick="markAsLabeled()">✓ Mark Batch as Labeled</button>
+                </div>
+            </div>
+
+            <!-- Printer Status -->
+            <div id="printerStatus" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- Analytics -->
+        <div class="station-content" id="analytics">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="avgYield">0%</div>
+                    <div class="stat-label">Average Yield</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgCostPerGram">$0</div>
+                    <div class="stat-label">Avg Cost Per Gram</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgCostPerUnit">$0</div>
+                    <div class="stat-label">Avg Cost Per Unit</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalProfit">$0</div>
+                    <div class="stat-label">Potential Profit</div>
+                </div>
+            </div>
+
+            <div class="batch-list">
+                <h2>💰 Batch Economics</h2>
+                <div class="filter-bar">
+                    <button class="filter-btn active" data-filter-analytics="all">All Completed</button>
+                    <button class="filter-btn" data-filter-analytics="thisMonth">This Month</button>
+                    <button class="filter-btn" data-filter-analytics="lastMonth">Last Month</button>
+                </div>
+                <div id="analyticsTable"></div>
+            </div>
+        </div>
+
+        <!-- Performance Station -->
+        <div class="station-content" id="performance">
+            <div class="form-section">
+                <h2>👥 Employee Performance Analytics</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Last 30 days • Updated in real-time</p>
+                
+                <!-- Employee PIN Reference -->
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 4px solid var(--accent-green);">
+                    <h3 style="color: var(--accent-green); margin-bottom: 15px; font-size: 1.1rem;">🔐 Employee PINs</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">Ryan (Admin)</div>
+                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">1827</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">Alex</div>
+                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">1980</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">Paige</div>
+                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">1992</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">Donald</div>
+                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">1425</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">Andrew</div>
+                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">2817</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">Tobias</div>
+                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">4200</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">Jeremy</div>
+                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">0710</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group" style="max-width: 400px;">
+                    <label>Filter by Employee:</label>
+                    <select id="performanceFilter">
+                        <option value="all">All Employees</option>
+                        <option value="Ryan (Admin)">Ryan (Admin)</option>
+                        <option value="Alex">Alex</option>
+                        <option value="Paige">Paige</option>
+                        <option value="Donald">Donald</option>
+                        <option value="Andrew">Andrew</option>
+                        <option value="Tobias">Tobias</option>
+                        <option value="Jeremy">Jeremy</option>
+                    </select>
+                </div>
+
+                <div id="performanceStats" style="margin-top: 30px;"></div>
+            </div>
+
+            <div class="form-section">
+                <h2>📊 Detailed Activity Log</h2>
+                <div id="activityLog"></div>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="station-content" id="dashboard">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalBatches">0</div>
+                    <div class="stat-label">Total Batches</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeBatches">0</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="completedBatches">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalGramsIn">0g</div>
+                    <div class="stat-label">Total Trim In</div>
+                </div>
+            </div>
+
+            <div class="batch-list">
+                <h2>📋 All Production Batches</h2>
+                <div class="filter-bar">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="intake">Intake</button>
+                    <button class="filter-btn" data-filter="extraction">Extraction</button>
+                    <button class="filter-btn" data-filter="finishing">Finishing</button>
+                    <button class="filter-btn" data-filter="packaging">Packaging</button>
+                    <button class="filter-btn" data-filter="complete">Complete</button>
+                    <div class="search-box">
+                        <input type="text" id="searchBatches" placeholder="Search batches...">
+                    </div>
+                </div>
+                <div id="batchesList"></div>
+            </div>
+        </div>
+        </div><!-- end appContent -->
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Role configuration with PINs and permissions
+        const ROLES = {
+            ryan: {
+                name: 'Ryan (Admin)',
+                pin: '1827',
+                tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance'],
+                readOnly: false
+            },
+            paige: {
+                name: 'Paige',
+                pin: '1992',
+                tabs: ['dashboard', 'intake', 'extraction', 'packaging', 'labeling'],
+                readOnly: false
+            },
+            alex: {
+                name: 'Alex',
+                pin: '1980',
+                tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics'],
+                readOnly: false
+            },
+            donald: {
+                name: 'Donald',
+                pin: '1425',
+                tabs: ['dashboard', 'finishing', 'packaging', 'labeling'],
+                readOnly: false
+            },
+            andrew: {
+                name: 'Andrew',
+                pin: '2817',
+                tabs: ['dashboard', 'packaging', 'labeling'],
+                readOnly: false
+            },
+            tobias: {
+                name: 'Tobias',
+                pin: '4200',
+                tabs: ['dashboard', 'intake', 'extraction', 'finishing'],
+                readOnly: false
+            },
+            jeremy: {
+                name: 'Jeremy',
+                pin: '0710',
+                tabs: ['dashboard', 'extraction', 'finishing'],
+                readOnly: false
+            }
+        };
+
+        let supabase = null;
+        let batches = [];
+        let currentRole = null;
+        let batchCounter = 1000;
+        let realtimeChannel = null;
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup PIN login
+            const pinInput = document.getElementById('pinInput');
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if (pinInput) {
+                pinInput.addEventListener('input', function() {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+
+                pinInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && this.value.length === 4) {
+                        login();
+                    }
+                });
+            }
+
+            if (loginBtn) {
+                loginBtn.addEventListener('click', login);
+            }
+            
+            // Check for existing session
+            const savedRole = localStorage.getItem('wmRole');
+            const sessionTime = localStorage.getItem('wmSession');
+            
+            // Session expires after 12 hours
+            if (savedRole && sessionTime && (Date.now() - parseInt(sessionTime)) < 12 * 60 * 60 * 1000) {
+                currentRole = ROLES[savedRole];
+                if (currentRole) {
+                    document.getElementById('userName').textContent = currentRole.name;
+                    document.getElementById('currentUser').style.display = 'block';
+                    document.getElementById('pinInput').style.display = 'none';
+                    document.getElementById('loginBtn').style.display = 'none';
+                    document.getElementById('appContent').style.display = 'block';
+                    applyRolePermissions();
+                }
+            }
+            
+            const savedUrl = localStorage.getItem('supabaseUrl');
+            const savedKey = localStorage.getItem('supabaseKey');
+            
+            if (savedUrl && savedKey) {
+                connectSupabase(savedUrl, savedKey);
+            } else {
+                document.getElementById('setupSection').classList.remove('hidden');
+            }
+        });
+
+        // Credentials form
+        document.getElementById('credentialsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+            
+            localStorage.setItem('supabaseUrl', url);
+            localStorage.setItem('supabaseKey', key);
+            
+            await connectSupabase(url, key);
+        });
+
+        async function connectSupabase(url, key) {
+            try {
+                updateConnectionStatus('connecting', 'Connecting...');
+                
+                supabase = window.supabase.createClient(url, key);
+                
+                // Test connection and setup table
+                await setupDatabase();
+                
+                // Load batches
+                await loadBatches();
+                
+                // Setup realtime subscription
+                setupRealtime();
+                
+                // Show app
+                document.getElementById('setupSection').classList.add('hidden');
+                document.getElementById('appContainer').classList.add('active');
+                
+                updateConnectionStatus('connected', 'Connected');
+                
+                // Initialize app
+                initializeApp();
+                
+            } catch (error) {
+                console.error('Connection error:', error);
+                updateConnectionStatus('disconnected', 'Connection Failed');
+                alert('Failed to connect to Supabase. Please check your credentials.');
+            }
+        }
+
+        async function setupDatabase() {
+            // Check if table exists by trying to query it
+            const { data, error } = await supabase
+                .from('wm_batches')
+                .select('id')
+                .limit(1);
+            
+            if (error && error.code === '42P01') {
+                // Table doesn't exist, create it
+                console.log('Creating wm_batches table...');
+                
+                // We can't create tables via JS client, so show instructions
+                const createTableSQL = `
+CREATE TABLE wm_batches (
+    id TEXT PRIMARY KEY,
+    strain TEXT NOT NULL,
+    strain_type TEXT NOT NULL,
+    trim_weight DECIMAL(10,2) NOT NULL,
+    material_cost DECIMAL(10,2) NOT NULL,
+    material_agreement TEXT,
+    cultivation_license TEXT NOT NULL,
+    grower_name TEXT,
+    metrc_tags TEXT,
+    intake_date DATE NOT NULL,
+    planned_products JSONB NOT NULL,
+    intake_notes TEXT,
+    status TEXT NOT NULL DEFAULT 'intake',
+    intake_user TEXT NOT NULL,
+    timeline JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Extraction fields
+    extraction_date DATE,
+    extraction_method TEXT,
+    product_made TEXT,
+    crude_weight DECIMAL(10,2),
+    extraction_notes TEXT,
+    extraction_user TEXT,
+    extraction_yield DECIMAL(5,2),
+    sift_weight DECIMAL(10,2),
+    adjusted_trim_weight DECIMAL(10,2),
+    sift_sub_batch_created BOOLEAN DEFAULT FALSE,
+    sift_sub_batch_id TEXT,
+    parent_batch_id TEXT,
+    is_sub_batch BOOLEAN DEFAULT FALSE,
+    pre_sift TEXT,
+    
+    -- Finishing fields
+    finishing_date DATE,
+    final_weight DECIMAL(10,2),
+    sample_weight DECIMAL(10,2),
+    test_results_expected_date DATE,
+    finishing_notes TEXT,
+    finishing_user TEXT,
+    net_weight DECIMAL(10,2),
+    
+    -- Test results fields
+    test_results_received_date DATE,
+    test_thc_percent DECIMAL(5,2),
+    test_cbd_percent DECIMAL(5,2),
+    test_lab_name TEXT,
+    test_sample_id TEXT,
+    test_results_notes TEXT,
+    
+    -- Packaging fields
+    packaging_date DATE,
+    packaged_product_type TEXT,
+    units_packaged INTEGER,
+    units_1g INTEGER,
+    units_4g INTEGER,
+    total_grams_packaged DECIMAL(10,2),
+    packaging_breakdown TEXT,
+    thc_percent DECIMAL(5,2),
+    cbd_percent DECIMAL(5,2),
+    ready_to_list TEXT,
+    wholesale_price DECIMAL(10,2),
+    leaflink_description TEXT,
+    packaging_notes TEXT,
+    packaging_user TEXT,
+    completed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Enable realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
+                `;
+                
+                alert(`Please run this SQL in your Supabase SQL Editor:\n\n${createTableSQL}\n\nThen refresh this page.`);
+                throw new Error('Table setup required');
+            }
+            
+            // Get the highest batch number
+            const { data: maxBatch } = await supabase
+                .from('wm_batches')
+                .select('id')
+                .order('id', { ascending: false })
+                .limit(1);
+            
+            if (maxBatch && maxBatch.length > 0) {
+                const lastId = maxBatch[0].id;
+                const num = parseInt(lastId.split('-')[1]);
+                batchCounter = num + 1;
+            }
+        }
+
+        async function loadBatches() {
+            const { data, error } = await supabase
+                .from('wm_batches')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error('Error loading batches:', error);
+                return;
+            }
+            
+            batches = data || [];
+            updateDashboard();
+            renderBatches();
+        }
+
+        function setupRealtime() {
+            if (realtimeChannel) {
+                realtimeChannel.unsubscribe();
+            }
+            
+            realtimeChannel = supabase
+                .channel('wm_batches_changes')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'wm_batches' },
+                    (payload) => {
+                        console.log('Realtime update:', payload);
+                        loadBatches(); // Reload on any change
+                    }
+                )
+                .subscribe();
+        }
+
+        function updateConnectionStatus(status, text) {
+            const statusEl = document.getElementById('connectionStatus');
+            const textEl = document.getElementById('statusText');
+            
+            statusEl.className = `connection-status ${status}`;
+            textEl.textContent = text;
+        }
+
+        // PIN Login
+        function login() {
+            const pin = document.getElementById('pinInput').value;
+            const errorMsg = document.getElementById('loginError');
+            
+            if (pin.length !== 4) {
+                errorMsg.textContent = 'Please enter a 4-digit PIN';
+                errorMsg.style.display = 'block';
+                setTimeout(() => errorMsg.style.display = 'none', 3000);
+                return;
+            }
+            
+            // Find role by PIN
+            const roleKey = Object.keys(ROLES).find(key => ROLES[key].pin === pin);
+            
+            if (roleKey) {
+                // Successful login
+                currentRole = ROLES[roleKey];
+                localStorage.setItem('wmRole', roleKey);
+                localStorage.setItem('wmSession', Date.now());
+                
+                document.getElementById('userName').textContent = currentRole.name;
+                document.getElementById('currentUser').style.display = 'block';
+                document.getElementById('pinInput').style.display = 'none';
+                document.getElementById('loginBtn').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+                errorMsg.style.display = 'none';
+                
+                applyRolePermissions();
+            } else {
+                // Failed login
+                errorMsg.textContent = 'Invalid PIN. Please try again.';
+                errorMsg.style.display = 'block';
+                document.getElementById('pinInput').value = '';
+                setTimeout(() => errorMsg.style.display = 'none', 3000);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('wmRole');
+            localStorage.removeItem('wmSession');
+            location.reload();
+        }
+
+        function applyRolePermissions() {
+            if (!currentRole) return;
+            
+            // Show/hide tabs based on role
+            document.querySelectorAll('.station-tab').forEach(tab => {
+                const station = tab.dataset.station;
+                if (currentRole.tabs.includes(station)) {
+                    tab.style.display = '';
+                } else {
+                    tab.style.display = 'none';
+                }
+            });
+            
+            // Show first available tab
+            const firstTab = document.querySelector('.station-tab[style=""]') || document.querySelector('.station-tab:not([style*="display: none"])');
+            if (firstTab) {
+                firstTab.click();
+            }
+        }
+
+        // Station tabs
+        document.querySelectorAll('.station-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const station = this.dataset.station;
+                
+                document.querySelectorAll('.station-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                document.querySelectorAll('.station-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(station).classList.add('active');
+                
+                if (station === 'dashboard') {
+                    updateDashboard();
+                    renderBatches();
+                } else if (station === 'analytics') {
+                    updateAnalytics();
+                } else if (station === 'performance') {
+                    renderPerformanceAnalytics();
+                } else if (station === 'extraction') {
+                    populateExtractionSelect();
+                } else if (station === 'finishing') {
+                    populateFinishingSelect();
+                } else if (station === 'packaging') {
+                    populatePackagingSelect();
+                } else if (station === 'testing') {
+                    populateTestingSelect();
+                    checkRTAStatus();
+                } else if (station === 'labeling') {
+                    populateLabelingSelect();
+                }
+            });
+        });
+
+        // Intake form submission
+        document.getElementById('intakeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentUser) {
+                alert('Please select a user first!');
+                return;
+            }
+            
+            const products = Array.from(document.querySelectorAll('input[name="products"]:checked'))
+                .map(cb => cb.value);
+            
+            if (products.length === 0) {
+                alert('Please select at least one planned product!');
+                return;
+            }
+            
+            // Validate pre-sift requires hash products
+            const preSift = document.getElementById('preSift').value;
+            if (preSift === 'yes') {
+                const hasHashProducts = products.some(p => p === 'Brick Hash' || p === 'Hash Hits');
+                if (!hasHashProducts) {
+                    alert('Pre-sift requires at least one hash product!\n\nPlease select:\n• Brick Hash, or\n• Hash Hits, or\n• Both');
+                    return;
+                }
+            }
+            
+            const batch = {
+                id: `WM-${batchCounter}`,
+                strain: document.getElementById('strainName').value,
+                strain_type: document.getElementById('strainType').value,
+                trim_weight: parseFloat(document.getElementById('trimWeight').value),
+                material_cost: parseFloat(document.getElementById('materialCost').value),
+                material_agreement: document.getElementById('materialAgreement').value,
+                pre_sift: document.getElementById('preSift').value,
+                cultivation_license: document.getElementById('cultivationLicense').value,
+                grower_name: document.getElementById('growerName').value || document.getElementById('cultivationLicense').value,
+                metrc_tags: document.getElementById('metrcTags').value || null,
+                intake_date: document.getElementById('intakeDate').value,
+                planned_products: products,
+                intake_notes: document.getElementById('intakeNotes').value,
+                status: 'intake',
+                intake_user: currentRole ? currentRole.name : "Unknown",
+                parent_batch_id: null,
+                is_sub_batch: false,
+                timeline: [{
+                    stage: 'intake',
+                    user: currentRole ? currentRole.name : "Unknown",
+                    date: new Date().toISOString(),
+                    action: `Batch created - ${document.getElementById('materialAgreement').value} - Cultivated by ${document.getElementById('cultivationLicense').value}`
+                }],
+                created_at: new Date().toISOString()
+            };
+            
+            const { error } = await supabase
+                .from('wm_batches')
+                .insert([batch]);
+            
+            if (error) {
+                console.error('Error creating batch:', error);
+                alert('Error creating batch. Please try again.');
+                return;
+            }
+            
+            batchCounter++;
+            
+            alert(`Batch ${batch.id} created successfully!`);
+            this.reset();
+            document.getElementById('batchId').value = `WM-${batchCounter}`;
+            document.getElementById('intakeDate').value = new Date().toISOString().split('T')[0];
+            
+            await loadBatches();
+        });
+
+        // Extraction functions
+        function populateExtractionSelect() {
+            const select = document.getElementById('extractionBatchSelect');
+            const intakeBatches = batches.filter(b => b.status === 'intake');
+            
+            select.innerHTML = '<option value="">Select a batch...</option>';
+            intakeBatches.forEach(batch => {
+                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} (${batch.trim_weight}g)</option>`;
+            });
+        }
+
+        document.getElementById('extractionBatchSelect').addEventListener('change', function() {
+            const form = document.getElementById('extractionForm');
+            const preSiftOnlySection = document.getElementById('preSiftOnlySection');
+            const mainExtractionSection = document.getElementById('mainExtractionSection');
+            const preSiftInfo = document.getElementById('preSiftInfo');
+            
+            form.style.display = this.value ? 'block' : 'none';
+            
+            if (this.value) {
+                const batch = batches.find(b => b.id === this.value);
+                document.getElementById('extractionDate').value = new Date().toISOString().split('T')[0];
+                
+                // Check if this batch needs pre-sift AND hasn't had it done yet
+                if (batch.pre_sift === 'yes' && !batch.sift_sub_batch_created) {
+                    // Step 1: Show ONLY the sift weight entry
+                    preSiftOnlySection.style.display = 'block';
+                    mainExtractionSection.style.display = 'none';
+                    
+                    // Show calculation as user types
+                    document.getElementById('siftWeightOnly').addEventListener('input', function() {
+                        const siftWeight = parseFloat(this.value) || 0;
+                        const remaining = batch.trim_weight - siftWeight;
+                        document.getElementById('siftCalcDisplay').innerHTML = `
+                            <div>Original Trim: ${batch.trim_weight}g</div>
+                            <div style="color: var(--accent-orange);">Sift Collected: ${siftWeight}g</div>
+                            <div style="color: var(--accent-green);">Remaining for BHO: ${remaining}g</div>
+                        `;
+                    });
+                } else {
+                    // Step 2: Show main extraction form (either no sift needed, or sift already done)
+                    preSiftOnlySection.style.display = 'none';
+                    mainExtractionSection.style.display = 'block';
+                    
+                    // If sift was already done, show summary
+                    if (batch.pre_sift === 'yes' && batch.sift_sub_batch_created) {
+                        preSiftInfo.style.display = 'block';
+                        document.getElementById('preSiftSummary').innerHTML = `
+                            <div style="margin-top: 10px;">
+                                <div>Sift Collected: ${batch.sift_weight}g (sub-batch: ${batch.sift_sub_batch_id})</div>
+                                <div>Processing Material: ${batch.adjusted_trim_weight}g</div>
+                            </div>
+                        `;
+                    } else {
+                        preSiftInfo.style.display = 'none';
+                    }
+                }
+            }
+        });
+
+        // Extraction method change handler - show appropriate product section
+        document.getElementById('extractionMethod').addEventListener('change', function() {
+            const bhoSection = document.getElementById('bhoProductSection');
+            const rsoSection = document.getElementById('rsoSection');
+            const crudeWeight = document.getElementById('crudeWeight');
+            const rsoWeight = document.getElementById('rsoWeight');
+            
+            if (this.value === 'BHO') {
+                bhoSection.style.display = 'block';
+                rsoSection.style.display = 'none';
+                crudeWeight.required = true;
+                rsoWeight.required = false;
+            } else if (this.value === 'RSO') {
+                bhoSection.style.display = 'none';
+                rsoSection.style.display = 'block';
+                crudeWeight.required = false;
+                rsoWeight.required = true;
+            } else {
+                bhoSection.style.display = 'none';
+                rsoSection.style.display = 'none';
+                crudeWeight.required = false;
+                rsoWeight.required = false;
+            }
+        });
+
+        // Submit sift weight only and create sub-batch
+        async function submitSiftOnly() {
+            if (!currentRole) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('extractionBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) {
+                alert('Batch not found');
+                return;
+            }
+            
+            const siftWeight = parseFloat(document.getElementById('siftWeightOnly').value);
+            
+            if (!siftWeight || siftWeight <= 0) {
+                alert('Please enter a valid sift weight');
+                return;
+            }
+            
+            if (siftWeight >= batch.trim_weight) {
+                alert('Sift weight cannot be greater than or equal to total trim weight');
+                return;
+            }
+            
+            const adjustedTrimWeight = batch.trim_weight - siftWeight;
+            const siftSubBatchId = `${batchId}-SIFT`;
+            
+            // Create the sift sub-batch - must include all NOT NULL fields
+            const siftBatch = {
+                id: siftSubBatchId,
+                strain: batch.strain,
+                strain_type: batch.strain_type,
+                trim_weight: siftWeight,
+                material_cost: 0,
+                material_agreement: batch.material_agreement || 'Wholesale',
+                pre_sift: 'no',
+                cultivation_license: batch.cultivation_license || '403R-00000',
+                intake_date: batch.intake_date,
+                planned_products: ['Dry Sift Hash'],
+                intake_notes: `Sift sub-batch from ${batchId}`,
+                status: 'extraction',
+                intake_user: batch.intake_user,
+                timeline: [{
+                    stage: 'intake',
+                    timestamp: new Date(batch.intake_date).toISOString(),
+                    user: batch.intake_user
+                }, {
+                    stage: 'extraction',
+                    timestamp: new Date().toISOString(),
+                    user: currentRole.name
+                }]
+            };
+            
+            console.log('Creating sift sub-batch:', siftBatch);
+            
+            // Insert sift sub-batch
+            const { error: siftError } = await supabase
+                .from('wm_batches')
+                .insert([siftBatch]);
+            
+            if (siftError) {
+                console.error('Error creating sift sub-batch:', siftError);
+                alert(`Error creating sift sub-batch: ${siftError.message}`);
+                return;
+            }
+            
+            // Update main batch to mark sift as done
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'extraction',
+                timestamp: new Date().toISOString(),
+                user: currentRole.name
+            });
+            
+            const { error: updateError } = await supabase
+                .from('wm_batches')
+                .update({
+                    sift_weight: siftWeight,
+                    adjusted_trim_weight: adjustedTrimWeight,
+                    sift_sub_batch_created: true,
+                    sift_sub_batch_id: siftSubBatchId,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (updateError) {
+                console.error('Error updating main batch:', updateError);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+            
+            alert(`Sift sub-batch created!\n\nSift: ${siftWeight}g (${siftSubBatchId})\nRemaining: ${adjustedTrimWeight}g\n\nYou can now process the remaining material.`);
+            
+            await loadBatches();
+            // Re-trigger the select to update the display
+            document.getElementById('extractionBatchSelect').value = batchId;
+            document.getElementById('extractionBatchSelect').dispatchEvent(new Event('change'));
+        }
+
+        async function submitExtraction() {
+            if (!currentRole) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('extractionBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) return;
+            
+            const extractionMethod = document.getElementById('extractionMethod').value;
+            let productMade = '';
+            let crudeWeight = 0;
+            
+            // Handle BHO products (checkboxes)
+            if (extractionMethod === 'BHO') {
+                const selectedProducts = Array.from(document.querySelectorAll('input[name="bho_products"]:checked'))
+                    .map(cb => cb.value);
+                
+                if (selectedProducts.length === 0) {
+                    alert('Please select at least one BHO product type');
+                    return;
+                }
+                
+                productMade = selectedProducts.join(' + ');
+                crudeWeight = parseFloat(document.getElementById('crudeWeight').value);
+                
+                if (!crudeWeight || crudeWeight <= 0) {
+                    alert('Please enter crude weight');
+                    return;
+                }
+            } else if (extractionMethod === 'RSO') {
+                productMade = 'RSO';
+                crudeWeight = parseFloat(document.getElementById('rsoWeight').value);
+                
+                if (!crudeWeight || crudeWeight <= 0) {
+                    alert('Please enter RSO weight');
+                    return;
+                }
+            }
+            
+            const timeline = batch.timeline || [];
+            
+            timeline.push({
+                stage: 'extraction',
+                timestamp: new Date().toISOString(),
+                user: currentRole ? currentRole.name : "Unknown"
+            });
+            
+            const { error } = await supabase
+                .from('wm_batches')
+                .update({
+                    status: 'extraction',
+                    extraction_date: document.getElementById('extractionDate').value,
+                    extraction_method: extractionMethod,
+                    product_made: productMade,
+                    crude_weight: crudeWeight,
+                    extraction_notes: document.getElementById('extractionNotes').value,
+                    extraction_user: currentRole ? currentRole.name : "Unknown",
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error updating batch:', error);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+            
+            alert(`Extraction completed for ${batchId}!`);
+            
+            document.getElementById('extractionForm').style.display = 'none';
+            document.getElementById('extractionBatchSelect').value = '';
+            document.getElementById('extractionNotes').value = '';
+            document.getElementById('crudeWeight').value = '';
+            document.getElementById('rsoWeight').value = '';
+            
+            // Uncheck BHO product checkboxes
+            document.querySelectorAll('input[name="bho_products"]').forEach(cb => cb.checked = false);
+            
+            await loadBatches();
+            populateExtractionSelect();
+        }
+
+        // Finishing functions
+        function populateFinishingSelect() {
+            const select = document.getElementById('finishingBatchSelect');
+            const extractionBatches = batches.filter(b => b.status === 'extraction' && !b.is_sub_batch);
+            
+            select.innerHTML = '<option value="">Select a batch...</option>';
+            extractionBatches.forEach(batch => {
+                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.product_made} (${batch.crude_weight || 0}g crude)</option>`;
+            });
+        }
+
+        document.getElementById('finishingBatchSelect').addEventListener('change', function() {
+            const form = document.getElementById('finishingForm');
+            form.style.display = this.value ? 'block' : 'none';
+            
+            if (this.value) {
+                const batch = batches.find(b => b.id === this.value);
+                document.getElementById('finishingDate').value = new Date().toISOString().split('T')[0];
+                
+                // Show batch info
+                let info = `
+                    <p><strong>Strain:</strong> ${batch.strain} (${batch.strain_type})</p>
+                    <p><strong>Product Type:</strong> ${batch.product_made}</p>
+                    <p><strong>Material Agreement:</strong> ${batch.material_agreement}</p>
+                `;
+                if (batch.sift_weight) {
+                    info += `<p><strong>Pre-Sift Collected:</strong> ${batch.sift_weight}g</p>`;
+                }
+                info += `<p style="color: var(--accent-orange);"><strong>Note:</strong> Actual weight will be entered below or when splitting</p>`;
+                document.getElementById('batchInfoContent').innerHTML = info;
+            }
+        });
+
+        document.getElementById('splitBatch').addEventListener('change', function() {
+            const singleSection = document.getElementById('singleFinishing');
+            const splitSection = document.getElementById('splitFinishing');
+            
+            if (this.value === 'yes') {
+                singleSection.style.display = 'none';
+                splitSection.style.display = 'block';
+                // Make single fields not required
+                document.getElementById('finalWeight').required = false;
+                document.getElementById('sampleWeight').required = false;
+                
+                // Update split weight listeners
+                updateSplitValidation();
+            } else {
+                singleSection.style.display = 'block';
+                splitSection.style.display = 'none';
+                document.getElementById('finalWeight').required = true;
+                document.getElementById('sampleWeight').required = true;
+            }
+        });
+
+        function addSplitProduct() {
+            const container = document.getElementById('splitProducts');
+            const count = container.children.length + 1;
+            
+            const newProduct = document.createElement('div');
+            newProduct.className = 'split-product-item';
+            newProduct.style.cssText = 'background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 15px;';
+            newProduct.innerHTML = `
+                <h4 style="color: var(--accent-purple); margin-bottom: 15px;">Product ${count}</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Product Type</label>
+                        <select class="splitProductType" required>
+                            <option value="">Select Product</option>
+                            <option value="Wax">Wax</option>
+                            <option value="Sugar Wax">Sugar Wax</option>
+                            <option value="Shatter">Shatter</option>
+                            <option value="Live Resin Oil">Live Resin Oil (Carts)</option>
+                            <option value="Brick Hash">Brick Hash</option>
+                            <option value="Hash Hits">Hash Hits</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Weight Allocated (grams)</label>
+                        <input type="number" class="splitWeight" step="0.1" required>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newProduct);
+            
+            // Add listeners to new inputs
+            newProduct.querySelector('.splitWeight').addEventListener('input', updateSplitValidation);
+        }
+
+        function updateSplitValidation() {
+            const weights = Array.from(document.querySelectorAll('.splitWeight'))
+                .map(input => parseFloat(input.value) || 0);
+            
+            const totalAllocated = weights.reduce((sum, w) => sum + w, 0);
+            
+            const validationDiv = document.getElementById('splitValidation');
+            
+            if (totalAllocated > 0) {
+                validationDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+                validationDiv.style.border = '2px solid var(--accent-green)';
+                validationDiv.innerHTML = `
+                    <strong style="color: var(--accent-green);">✓ Total weight to allocate:</strong><br>
+                    ${totalAllocated.toFixed(1)}g across ${weights.filter(w => w > 0).length} products
+                `;
+            } else {
+                validationDiv.style.background = 'rgba(245, 158, 11, 0.2)';
+                validationDiv.style.border = '2px solid var(--accent-orange)';
+                validationDiv.innerHTML = `
+                    <strong style="color: var(--accent-orange);">Enter weights for each product</strong>
+                `;
+            }
+        }
+
+        // Add listeners to initial split weight inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.splitWeight').forEach(input => {
+                input.addEventListener('input', updateSplitValidation);
+            });
+        });
+
+        async function submitSplitBatch() {
+            if (!currentUser) {
+                alert('Please select a user first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('finishingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) return;
+            
+            // Collect split data
+            const splitItems = document.querySelectorAll('.split-product-item');
+            const splits = [];
+            
+            splitItems.forEach(item => {
+                const productType = item.querySelector('.splitProductType').value;
+                const weight = parseFloat(item.querySelector('.splitWeight').value) || 0;
+                
+                if (productType && weight > 0) {
+                    splits.push({ productType, weight });
+                }
+            });
+            
+            if (splits.length < 2) {
+                alert('Please specify at least 2 products to split the batch');
+                return;
+            }
+            
+            const totalAllocated = splits.reduce((sum, s) => sum + s.weight, 0);
+            
+            if (!confirm(`Create ${splits.length} sub-batches from ${batchId}?\n\nTotal: ${totalAllocated}g\n\n${splits.map((s, i) => `${String.fromCharCode(65 + i)}: ${s.weight}g → ${s.productType}`).join('\n')}`)) {
+                return;
+            }
+            
+            // Create sub-batches
+            const subBatches = [];
+            const parentTimeline = batch.timeline || [];
+            
+            parentTimeline.push({
+                stage: 'finishing',
+                user: currentRole ? currentRole.name : "Unknown",
+                date: new Date().toISOString(),
+                action: `Split into ${splits.length} sub-batches: ${splits.map(s => s.productType).join(', ')}`
+            });
+            
+            for (let i = 0; i < splits.length; i++) {
+                const split = splits[i];
+                const subBatchId = `${batchId}-${String.fromCharCode(65 + i)}`;
+                
+                const subBatch = {
+                    id: subBatchId,
+                    parent_batch_id: batchId,
+                    is_sub_batch: true,
+                    strain: batch.strain,
+                    strain_type: batch.strain_type,
+                    trim_weight: batch.trim_weight, // Inherit from parent for reference
+                    material_cost: batch.material_cost * (split.weight / totalAllocated), // Proportional cost
+                    material_agreement: batch.material_agreement,
+                    pre_sift: batch.pre_sift,
+                    cultivation_license: batch.cultivation_license,
+                    grower_name: batch.grower_name,
+                    intake_date: batch.intake_date,
+                    planned_products: [split.productType],
+                    intake_notes: `Sub-batch from ${batchId}`,
+                    status: 'finishing',
+                    intake_user: batch.intake_user,
+                    extraction_date: batch.extraction_date,
+                    extraction_method: batch.extraction_method,
+                    product_made: split.productType,
+                    extraction_user: batch.extraction_user,
+                    finishing_date: new Date().toISOString().split('T')[0],
+                    finishing_user: currentRole ? currentRole.name : "Unknown",
+                    final_weight: split.weight, // The weight allocated IS the final weight
+                    timeline: [
+                        {
+                            stage: 'split',
+                            user: currentRole ? currentRole.name : "Unknown",
+                            date: new Date().toISOString(),
+                            action: `Created from ${batchId} - ${split.weight}g for ${split.productType}`
+                        }
+                    ],
+                    created_at: new Date().toISOString()
+                };
+                
+                subBatches.push(subBatch);
+            }
+            
+            // Insert all sub-batches
+            const { error: insertError } = await supabase
+                .from('wm_batches')
+                .insert(subBatches);
+            
+            if (insertError) {
+                console.error('Error creating sub-batches:', insertError);
+                alert('Error creating sub-batches. Please try again.');
+                return;
+            }
+            
+            // Update parent batch to mark as split
+            const { error: updateError } = await supabase
+                .from('wm_batches')
+                .update({
+                    status: 'split',
+                    timeline: parentTimeline
+                })
+                .eq('id', batchId);
+            
+            if (updateError) {
+                console.error('Error updating parent batch:', updateError);
+            }
+            
+            alert(`Successfully created ${splits.length} sub-batches!\n\n${subBatches.map(b => b.id).join('\n')}\n\nEach sub-batch can now be finished independently.`);
+            
+            document.getElementById('finishingForm').style.display = 'none';
+            document.getElementById('finishingBatchSelect').value = '';
+            
+            await loadBatches();
+            populateFinishingSelect();
+        }
+
+        async function submitFinishing() {
+            if (!currentUser) {
+                alert('Please select a user first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('finishingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) return;
+            
+            const finalWeight = parseFloat(document.getElementById('finalWeight').value);
+            const sampleWeight = parseFloat(document.getElementById('sampleWeight').value);
+            const netWeight = finalWeight - sampleWeight;
+            
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'finishing',
+                user: currentRole ? currentRole.name : "Unknown",
+                date: new Date().toISOString(),
+                action: `QC complete: ${finalWeight}g bulk, ${sampleWeight}g sample pulled for testing`
+            });
+            
+            const { error } = await supabase
+                .from('wm_batches')
+                .update({
+                    status: 'finishing',
+                    finishing_date: document.getElementById('finishingDate').value,
+                    final_weight: finalWeight,
+                    sample_weight: sampleWeight,
+                    finishing_notes: document.getElementById('finishingNotes').value,
+                    finishing_user: currentRole ? currentRole.name : "Unknown",
+                    net_weight: netWeight,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error updating batch:', error);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+            
+            alert(`Finishing completed for ${batchId}!`);
+            
+            document.getElementById('finishingForm').style.display = 'none';
+            document.getElementById('finishingBatchSelect').value = '';
+            document.getElementById('finishingNotes').value = '';
+            
+            await loadBatches();
+            populateFinishingSelect();
+        }
+
+        // Packaging functions
+        function populatePackagingSelect() {
+            const select = document.getElementById('packagingBatchSelect');
+            const finishingBatches = batches.filter(b => b.status === 'finishing');
+            
+            select.innerHTML = '<option value="">Select a batch...</option>';
+            finishingBatches.forEach(batch => {
+                const weight = batch.final_weight || batch.net_weight || 0;
+                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.product_made} (${weight}g)</option>`;
+            });
+        }
+
+        document.getElementById('packagingBatchSelect').addEventListener('change', function() {
+            const form = document.getElementById('packagingForm');
+            form.style.display = this.value ? 'block' : 'none';
+            
+            if (this.value) {
+                const batch = batches.find(b => b.id === this.value);
+                document.getElementById('packagingDate').value = new Date().toISOString().split('T')[0];
+                
+                // Show strain type with color coding
+                const strainTypeAlert = document.getElementById('strainTypeAlert');
+                const strainTypeName = document.getElementById('strainTypeName');
+                
+                if (batch.strain_type) {
+                    strainTypeAlert.style.display = 'block';
+                    strainTypeName.textContent = batch.strain_type;
+                    
+                    // Color code based on strain type
+                    if (batch.strain_type === 'Indica') {
+                        // BLUE for Indica
+                        strainTypeAlert.style.background = 'rgba(59, 130, 246, 0.2)';
+                        strainTypeAlert.style.borderColor = 'var(--accent-blue)';
+                        strainTypeName.style.color = 'var(--accent-blue)';
+                    } else if (batch.strain_type === 'Sativa') {
+                        // RED for Sativa
+                        strainTypeAlert.style.background = 'rgba(239, 68, 68, 0.2)';
+                        strainTypeAlert.style.borderColor = 'var(--accent-red)';
+                        strainTypeName.style.color = 'var(--accent-red)';
+                    } else if (batch.strain_type === 'Hybrid') {
+                        // GREEN for Hybrid
+                        strainTypeAlert.style.background = 'rgba(16, 185, 129, 0.2)';
+                        strainTypeAlert.style.borderColor = 'var(--accent-green)';
+                        strainTypeName.style.color = 'var(--accent-green)';
+                    }
+                } else {
+                    strainTypeAlert.style.display = 'none';
+                }
+            }
+        });
+
+        // Handle product type selection for multi-size vs single-size
+        document.getElementById('packagedProductType').addEventListener('change', function() {
+            const multiSize = document.getElementById('multiSizeSection');
+            const singleSize = document.getElementById('singleSizeSection');
+            const units1gLabel = multiSize.querySelector('label[for="units1g"]') || multiSize.querySelectorAll('label')[0];
+            const units4gLabel = multiSize.querySelector('label[for="units4g"]') || multiSize.querySelectorAll('label')[1];
+            
+            if (this.value === 'Wax/Sugar' || this.value === 'Brick Hash') {
+                multiSize.style.display = 'block';
+                singleSize.style.display = 'none';
+                document.getElementById('unitsPackaged').required = false;
+                
+                // Set labels for 1g/4g
+                if (units1gLabel) units1gLabel.textContent = '1g Units';
+                if (units4gLabel) units4gLabel.textContent = '4g Units';
+                
+            } else if (this.value === 'Hash Hits') {
+                multiSize.style.display = 'block';
+                singleSize.style.display = 'none';
+                document.getElementById('unitsPackaged').required = false;
+                
+                // Set labels for 2-pack/5-pack
+                if (units1gLabel) units1gLabel.textContent = '2-Packs';
+                if (units4gLabel) units4gLabel.textContent = '5-Packs';
+                
+            } else {
+                multiSize.style.display = 'none';
+                singleSize.style.display = 'block';
+                document.getElementById('unitsPackaged').required = true;
+                // Reset multi-size fields
+                document.getElementById('units1g').value = 0;
+                document.getElementById('units4g').value = 0;
+            }
+        });
+
+        // Auto-calculate totals for multi-size packaging
+        function updateMultiSizeCalcs() {
+            const productType = document.getElementById('packagedProductType').value;
+            const units1g = parseInt(document.getElementById('units1g').value) || 0;
+            const units4g = parseInt(document.getElementById('units4g').value) || 0;
+            
+            let totalGrams, totalUnits;
+            
+            if (productType === 'Hash Hits') {
+                // Hash Hits: 0.2g per hit, 2-packs and 5-packs
+                const totalHits = (units1g * 2) + (units4g * 5);
+                totalGrams = totalHits * 0.2;
+                totalUnits = units1g + units4g; // Total packs
+                
+                document.getElementById('totalGramsCalc').value = `${totalGrams.toFixed(1)}g (${totalHits} hits)`;
+                document.getElementById('totalUnitsCalc').value = `${totalUnits} packs`;
+            } else {
+                // Regular 1g/4g products
+                totalGrams = (units1g * 1) + (units4g * 4);
+                totalUnits = units1g + units4g;
+                
+                document.getElementById('totalGramsCalc').value = totalGrams;
+                document.getElementById('totalUnitsCalc').value = totalUnits;
+            }
+            
+            // Update pricing when quantities change
+            updatePricing();
+        }
+
+        // Calculate wholesale price based on SKU pricing (internal use only, not displayed to packagers)
+        document.getElementById('units1g').addEventListener('input', updateMultiSizeCalcs);
+        document.getElementById('units4g').addEventListener('input', updateMultiSizeCalcs);
+
+        async function submitPackaging() {
+            console.log('=== submitPackaging START ===');
+            
+            if (!currentUser) {
+                console.log('ERROR: No current user');
+                alert('Please select a user first!');
+                return;
+            }
+            
+            console.log('Current user:', currentUser);
+            
+            const batchId = document.getElementById('packagingBatchSelect').value;
+            console.log('Batch ID from select:', batchId);
+            
+            const batch = batches.find(b => b.id === batchId);
+            console.log('Found batch:', batch);
+            
+            if (!batch) {
+                console.log('ERROR: Batch not found');
+                alert('Batch not found. Please select a batch.');
+                return;
+            }
+            
+            const packagedProductType = document.getElementById('packagedProductType').value;
+            console.log('Product type:', packagedProductType);
+            
+            if (!packagedProductType) {
+                console.log('ERROR: No product type selected');
+                alert('Please select a product type');
+                return;
+            }
+            
+            let unitsPackaged, totalGrams, packagingDetails;
+            
+            // Wholesale price set to 0 (staff doesn't know this info)
+            const wholesalePrice = 0;
+            console.log('Wholesale price per unit:', wholesalePrice);
+            
+            // Handle multi-size packaging
+            if (packagedProductType === 'Wax/Sugar' || packagedProductType === 'Brick Hash' || packagedProductType === 'Hash Hits') {
+                const units1g = parseInt(document.getElementById('units1g').value) || 0;
+                const units4g = parseInt(document.getElementById('units4g').value) || 0;
+                
+                if (units1g === 0 && units4g === 0) {
+                    alert('Please enter at least one package size');
+                    return;
+                }
+                
+                if (packagedProductType === 'Hash Hits') {
+                    // Hash Hits: 0.2g per hit
+                    const totalHits = (units1g * 2) + (units4g * 5);
+                    totalGrams = totalHits * 0.2;
+                    unitsPackaged = units1g + units4g; // Total packs
+                    
+                    packagingDetails = {
+                        units_1g: units1g,
+                        units_4g: units4g,
+                        total_grams: totalGrams,
+                        packaging_breakdown: `${units1g}x 2-pack, ${units4g}x 5-pack`
+                    };
+                } else {
+                    // Wax/Sugar or Brick Hash
+                    totalGrams = (units1g * 1) + (units4g * 4);
+                    unitsPackaged = units1g + units4g;
+                    
+                    packagingDetails = {
+                        units_1g: units1g,
+                        units_4g: units4g,
+                        total_grams: totalGrams,
+                        packaging_breakdown: `${units1g}x 1g, ${units4g}x 4g`
+                    };
+                }
+            } else {
+                // Single size packaging
+                unitsPackaged = parseInt(document.getElementById('unitsPackaged').value);
+                
+                if (!unitsPackaged || unitsPackaged === 0) {
+                    alert('Please enter units packaged');
+                    return;
+                }
+                
+                packagingDetails = {
+                    units_1g: null,
+                    units_4g: null,
+                    total_grams: null,
+                    packaging_breakdown: null
+                };
+            }
+            
+            const timeline = batch.timeline || [];
+            
+            if (packagedProductType === 'Wax/Sugar' || packagedProductType === 'Brick Hash') {
+                timeline.push({
+                    stage: 'packaging',
+                    user: currentRole ? currentRole.name : "Unknown",
+                    date: new Date().toISOString(),
+                    action: `Packaged ${unitsPackaged} total units (${packagingDetails.packaging_breakdown} = ${totalGrams}g) - ${packagedProductType}`
+                });
+            } else {
+                timeline.push({
+                    stage: 'packaging',
+                    user: currentRole ? currentRole.name : "Unknown",
+                    date: new Date().toISOString(),
+                    action: `Packaged ${unitsPackaged} units - ${packagedProductType}`
+                });
+            }
+            
+            const { error } = await supabase
+                .from('wm_batches')
+                .update({
+                    status: 'complete',
+                    packaging_date: document.getElementById('packagingDate').value,
+                    packaged_product_type: packagedProductType,
+                    units_packaged: unitsPackaged,
+                    units_1g: packagingDetails.units_1g,
+                    units_4g: packagingDetails.units_4g,
+                    total_grams_packaged: packagingDetails.total_grams,
+                    packaging_breakdown: packagingDetails.packaging_breakdown,
+                    wholesale_price: wholesalePrice,
+                    packaging_notes: document.getElementById('packagingNotes').value,
+                    packaging_user: currentRole ? currentRole.name : "Unknown",
+                    completed_at: new Date().toISOString(),
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error updating batch:', error);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+            
+            alert(`Packaging completed for ${batchId}!`);
+            
+            document.getElementById('packagingForm').style.display = 'none';
+            document.getElementById('packagingBatchSelect').value = '';
+            document.getElementById('packagingNotes').value = '';
+            document.getElementById('units1g').value = 0;
+            document.getElementById('units4g').value = 0;
+            document.getElementById('unitsPackaged').value = '';
+            
+            await loadBatches();
+            populatePackagingSelect();
+        }
+
+        // Dashboard functions
+        function updateDashboard() {
+            document.getElementById('totalBatches').textContent = batches.length;
+            document.getElementById('activeBatches').textContent = batches.filter(b => b.status !== 'complete').length;
+            document.getElementById('completedBatches').textContent = batches.filter(b => b.status === 'complete').length;
+            
+            const totalGrams = batches.reduce((sum, b) => sum + (parseFloat(b.trim_weight) || 0), 0);
+            document.getElementById('totalGramsIn').textContent = totalGrams.toFixed(0) + 'g';
+        }
+
+        function renderBatches(filter = 'all', searchTerm = '') {
+            const container = document.getElementById('batchesList');
+            let filteredBatches = batches;
+            
+            if (filter !== 'all') {
+                filteredBatches = batches.filter(b => b.status === filter);
+            }
+            
+            if (searchTerm) {
+                filteredBatches = filteredBatches.filter(b => 
+                    b.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    b.strain.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+            
+            container.innerHTML = filteredBatches.map(batch => `
+                <div class="batch-item">
+                    <div class="batch-header">
+                        <div class="batch-id">${batch.id}</div>
+                        <div class="batch-status status-${batch.status}">${batch.status.toUpperCase()}</div>
+                    </div>
+                    
+                    <div class="batch-details">
+                        <div class="batch-detail">
+                            <div class="batch-detail-label">Strain</div>
+                            <div class="batch-detail-value">${batch.strain} (${batch.strain_type})</div>
+                        </div>
+                        <div class="batch-detail">
+                            <div class="batch-detail-label">Trim Weight</div>
+                            <div class="batch-detail-value">${batch.trim_weight}g</div>
+                        </div>
+                        ${batch.final_weight ? `
+                            <div class="batch-detail">
+                                <div class="batch-detail-label">Final Weight</div>
+                                <div class="batch-detail-value">${batch.final_weight}g (${batch.net_weight}g net)</div>
+                            </div>
+                        ` : ''}
+                        ${batch.units_packaged ? `
+                            <div class="batch-detail">
+                                <div class="batch-detail-label">Units Packaged</div>
+                                <div class="batch-detail-value">${batch.units_packaged} units${batch.packaging_breakdown ? ` (${batch.packaging_breakdown})` : ''}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="timeline">
+                        ${(batch.timeline || []).map(t => `
+                            <div class="timeline-item">
+                                <div class="timeline-content">
+                                    <div><span class="timeline-user">${t.user}</span> - ${t.action}</div>
+                                    <div class="timeline-date">${new Date(t.date).toLocaleString()}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                const filter = this.dataset.filter;
+                const searchTerm = document.getElementById('searchBatches').value;
+                renderBatches(filter, searchTerm);
+            });
+        });
+
+        // Search
+        document.getElementById('searchBatches').addEventListener('input', function() {
+            const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+            renderBatches(activeFilter, this.value);
+        });
+
+        function initializeApp() {
+            document.querySelectorAll('input[type="date"]').forEach(input => {
+                if (!input.value) {
+                    input.value = new Date().toISOString().split('T')[0];
+                }
+            });
+            
+            document.getElementById('batchId').value = `WM-${batchCounter}`;
+            
+            // Add pre-sift change handler to highlight hash products
+            const preSiftSelect = document.getElementById('preSift');
+            if (preSiftSelect) {
+                preSiftSelect.addEventListener('change', function() {
+                    const brickHashLabel = document.getElementById('brickHash')?.parentElement;
+                    const hashHitsLabel = document.getElementById('hashHits')?.parentElement;
+                    
+                    if (this.value === 'yes') {
+                        // Highlight hash products as required
+                        if (brickHashLabel) {
+                            brickHashLabel.style.background = 'rgba(245, 158, 11, 0.2)';
+                            brickHashLabel.style.border = '2px solid var(--accent-orange)';
+                            brickHashLabel.style.borderRadius = '8px';
+                            brickHashLabel.style.padding = '8px';
+                        }
+                        if (hashHitsLabel) {
+                            hashHitsLabel.style.background = 'rgba(245, 158, 11, 0.2)';
+                            hashHitsLabel.style.border = '2px solid var(--accent-orange)';
+                            hashHitsLabel.style.borderRadius = '8px';
+                            hashHitsLabel.style.padding = '8px';
+                        }
+                    } else {
+                        // Remove highlighting
+                        if (brickHashLabel) {
+                            brickHashLabel.style.background = '';
+                            brickHashLabel.style.border = '';
+                            brickHashLabel.style.padding = '';
+                        }
+                        if (hashHitsLabel) {
+                            hashHitsLabel.style.background = '';
+                            hashHitsLabel.style.border = '';
+                            hashHitsLabel.style.padding = '';
+                        }
+                    }
+                });
+            }
+        }
+
+        // Testing functions
+        function populateTestingSelect() {
+            const select = document.getElementById('testingBatchSelect');
+            // Show batches that are finishing or complete (can add test results at any point after finishing)
+            const testableBatches = batches.filter(b => b.status === 'finishing' || b.status === 'complete');
+            
+            select.innerHTML = '<option value="">Select a batch...</option>';
+            testableBatches.forEach(batch => {
+                const hasResults = batch.test_results_received_date ? '✓ ' : '';
+                select.innerHTML += `<option value="${batch.id}">${hasResults}${batch.id} - ${batch.strain} - ${batch.product_made}</option>`;
+            });
+        }
+
+        document.getElementById('testingBatchSelect').addEventListener('change', function() {
+            const form = document.getElementById('testingForm');
+            form.style.display = this.value ? 'block' : 'none';
+            
+            if (this.value) {
+                const batch = batches.find(b => b.id === this.value);
+                
+                // Calculate trim used for this batch
+                let trimUsedInfo = '';
+                if (batch.is_sub_batch && batch.parent_batch_id) {
+                    // Sub-batch: calculate proportional trim used
+                    const parentBatch = batches.find(b => b.id === batch.parent_batch_id);
+                    if (parentBatch) {
+                        const parentTrimWeight = parseFloat(parentBatch.adjusted_trim_weight || parentBatch.trim_weight || 0);
+                        const parentTotalOutput = parseFloat(parentBatch.final_weight || parentBatch.net_weight || 0);
+                        const thisBatchWeight = parseFloat(batch.final_weight || batch.net_weight || 0);
+                        
+                        if (parentTotalOutput > 0) {
+                            const trimUsed = (thisBatchWeight / parentTotalOutput) * parentTrimWeight;
+                            const yieldPercent = parentTotalOutput > 0 ? (thisBatchWeight / trimUsed) * 100 : 0;
+                            trimUsedInfo = `
+                                <p><strong>Trim Used (calculated):</strong> ${trimUsed.toFixed(1)}g</p>
+                                <p><strong>Yield %:</strong> ${yieldPercent.toFixed(2)}%</p>
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">Sub-batch from ${parentBatch.id} (${parentTrimWeight.toFixed(1)}g total trim)</p>
+                            `;
+                        }
+                    }
+                } else if (batch.extraction_method === 'Dry Sift') {
+                    // Sift batch: the sift weight IS the trim used
+                    trimUsedInfo = `
+                        <p><strong>Trim Used:</strong> ${batch.trim_weight}g (dry sift)</p>
+                    `;
+                } else {
+                    // Regular batch or post-sift BHO
+                    const trimWeight = parseFloat(batch.adjusted_trim_weight || batch.trim_weight || 0);
+                    const finalWeight = parseFloat(batch.final_weight || batch.net_weight || 0);
+                    const yieldPercent = trimWeight > 0 ? (finalWeight / trimWeight) * 100 : 0;
+                    
+                    trimUsedInfo = `
+                        <p><strong>Trim Used:</strong> ${trimWeight.toFixed(1)}g${batch.adjusted_trim_weight ? ' (after sift)' : ''}</p>
+                        <p><strong>Yield %:</strong> ${yieldPercent.toFixed(2)}%</p>
+                    `;
+                }
+                
+                // Show current batch info
+                const details = `
+                    <p><strong>Strain:</strong> ${batch.strain} (${batch.strain_type})</p>
+                    <p><strong>Product:</strong> ${batch.product_made}</p>
+                    <p><strong>Net Weight:</strong> ${batch.net_weight || batch.final_weight || 'N/A'}g</p>
+                    ${trimUsedInfo}
+                    <div style="background: rgba(245, 158, 11, 0.2); padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid var(--accent-orange);">
+                        <p style="margin: 0;"><strong style="color: var(--accent-orange);">📋 METRC Tags:</strong> <span style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">${batch.metrc_tags || 'Not entered'}</span></p>
+                    </div>
+                    <p><strong>Cultivation License:</strong> ${batch.cultivation_license}</p>
+                    <p><strong>Grower:</strong> ${batch.grower_name || 'N/A'}</p>
+                    <p><strong>Status:</strong> ${batch.status}</p>
+                    ${batch.test_submitted_date ? `<p><strong>Previously Submitted:</strong> ${batch.test_submitted_date}</p>` : ''}
+                    ${batch.is_rta === 'yes' ? `<p style="color: var(--accent-green);"><strong>✓ RTA Full Panel</strong></p>` : ''}
+                `;
+                document.getElementById('testBatchDetails').innerHTML = details;
+                
+                // Pre-fill if test results already exist
+                if (batch.test_results_received_date) {
+                    document.getElementById('testSubmittedDate').value = batch.test_submitted_date || '';
+                    document.getElementById('testExpirationDate').value = batch.test_expiration_date || '';
+                    document.getElementById('testResultsReceivedDate').value = batch.test_results_received_date;
+                    document.getElementById('testThcPercent').value = batch.test_thc_percent || '';
+                    document.getElementById('testCbdPercent').value = batch.test_cbd_percent || '';
+                    document.getElementById('isRTA').value = batch.is_rta || 'no';
+                    document.getElementById('testResultsNotes').value = batch.test_results_notes || '';
+                } else {
+                    // Clear form
+                    document.getElementById('testSubmittedDate').value = '';
+                    document.getElementById('testExpirationDate').value = '';
+                    document.getElementById('testResultsReceivedDate').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('testThcPercent').value = '';
+                    document.getElementById('testCbdPercent').value = '';
+                    document.getElementById('isRTA').value = 'no';
+                    document.getElementById('testResultsNotes').value = '';
+                }
+            }
+            
+            // Check RTA status after loading
+            checkRTAStatus();
+        });
+
+        // Auto-calculate expiration date (9 months from submission)
+        document.getElementById('testSubmittedDate').addEventListener('change', function() {
+            if (this.value) {
+                const submitDate = new Date(this.value);
+                const expirationDate = new Date(submitDate);
+                expirationDate.setMonth(expirationDate.getMonth() + 9);
+                
+                document.getElementById('testExpirationDate').value = expirationDate.toISOString().split('T')[0];
+            }
+        });
+
+        // Check RTA status and show reminder if needed - BY EXTRACTION METHOD
+        function checkRTAStatus() {
+            const rtaBatches = batches.filter(b => b.is_rta === 'yes' && b.test_submitted_date);
+            
+            const today = new Date();
+            
+            // Track BHO and Brick Hash/Dry Sift separately
+            const bhoRTAs = rtaBatches.filter(b => b.extraction_method === 'BHO');
+            const hashRTAs = rtaBatches.filter(b => b.extraction_method === 'Dry Sift' || b.extraction_method === 'Brick Hash');
+            
+            let reminderHTML = '<div style="display: grid; gap: 15px;">';
+            
+            // Check BHO RTA Status
+            reminderHTML += checkMethodRTA(bhoRTAs, 'BHO', today);
+            
+            // Check Hash RTA Status
+            reminderHTML += checkMethodRTA(hashRTAs, 'Brick Hash / Dry Sift', today);
+            
+            reminderHTML += '</div>';
+            
+            document.getElementById('rtaReminder').innerHTML = reminderHTML;
+        }
+        
+        function checkMethodRTA(rtaBatches, methodName, today) {
+            if (rtaBatches.length === 0) {
+                return `
+                    <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); padding: 20px; border-radius: 10px;">
+                        <h3 style="color: var(--accent-red); margin-bottom: 10px;">⚠️ ${methodName} - No RTA Submitted</h3>
+                        <p style="color: var(--text-primary);">You must submit at least one RTA full panel per month for ${methodName}.</p>
+                    </div>
+                `;
+            }
+            
+            // Get most recent RTA for this method
+            rtaBatches.sort((a, b) => new Date(b.test_submitted_date) - new Date(a.test_submitted_date));
+            const lastRTA = rtaBatches[0];
+            const lastRTADate = new Date(lastRTA.test_submitted_date);
+            
+            // Check if next RTA is due (30 days)
+            const nextRTADue = new Date(lastRTADate);
+            nextRTADue.setDate(nextRTADue.getDate() + 30);
+            
+            const daysUntilDue = Math.floor((nextRTADue - today) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilDue < 0) {
+                // Overdue
+                return `
+                    <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); padding: 20px; border-radius: 10px;">
+                        <h3 style="color: var(--accent-red); margin-bottom: 10px;">🚨 ${methodName} RTA OVERDUE!</h3>
+                        <p style="color: var(--text-primary); margin-bottom: 10px;">Last RTA: ${lastRTA.id} (${lastRTADate.toLocaleDateString()}) - ${Math.abs(daysUntilDue)} days overdue</p>
+                        <p style="color: var(--text-primary); font-weight: 700;">Submit new ${methodName} RTA immediately!</p>
+                    </div>
+                `;
+            } else if (daysUntilDue <= 7) {
+                // Due soon
+                return `
+                    <div style="background: rgba(245, 158, 11, 0.2); border: 2px solid var(--accent-orange); padding: 20px; border-radius: 10px;">
+                        <h3 style="color: var(--accent-orange); margin-bottom: 10px;">⚠️ ${methodName} RTA Due Soon</h3>
+                        <p style="color: var(--text-primary); margin-bottom: 10px;">Last RTA: ${lastRTA.id} (${lastRTADate.toLocaleDateString()})</p>
+                        <p style="color: var(--text-primary); font-weight: 700;">Next ${methodName} RTA due in ${daysUntilDue} days (${nextRTADue.toLocaleDateString()})</p>
+                    </div>
+                `;
+            } else {
+                // All good
+                return `
+                    <div style="background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); padding: 20px; border-radius: 10px;">
+                        <h3 style="color: var(--accent-green); margin-bottom: 10px;">✓ ${methodName} RTA: Current</h3>
+                        <p style="color: var(--text-primary); margin-bottom: 10px;">Last RTA: ${lastRTA.id} (${lastRTADate.toLocaleDateString()})</p>
+                        <p style="color: var(--text-primary);">Next due: ${nextRTADue.toLocaleDateString()} (${daysUntilDue} days)</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function submitTestResults() {
+            if (!currentUser) {
+                alert('Please select a user first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('testingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) return;
+            
+            const thcPercent = parseFloat(document.getElementById('testThcPercent').value);
+            const cbdPercent = parseFloat(document.getElementById('testCbdPercent').value) || 0;
+            const isRTA = document.getElementById('isRTA').value;
+            const submittedDate = document.getElementById('testSubmittedDate').value;
+            const expirationDate = document.getElementById('testExpirationDate').value;
+            
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'testing',
+                user: currentRole ? currentRole.name : "Unknown",
+                date: new Date().toISOString(),
+                action: `Test results: THC ${thcPercent}%, CBD ${cbdPercent}%${isRTA === 'yes' ? ' - RTA FULL PANEL' : ''}`
+            });
+            
+            const { error } = await supabase
+                .from('wm_batches')
+                .update({
+                    test_submitted_date: submittedDate,
+                    test_expiration_date: expirationDate,
+                    test_results_received_date: document.getElementById('testResultsReceivedDate').value,
+                    test_thc_percent: thcPercent,
+                    test_cbd_percent: cbdPercent,
+                    is_rta: isRTA,
+                    test_results_notes: document.getElementById('testResultsNotes').value || null,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error updating test results:', error);
+                alert('Error saving test results. Please try again.');
+                return;
+            }
+            
+            alert(`Test results saved for ${batchId}!\nTHC: ${thcPercent}% | CBD: ${cbdPercent}%\n${isRTA === 'yes' ? '✓ RTA Full Panel' : 'Standard Potency'}\nExpires: ${expirationDate}`);
+            
+            document.getElementById('testingForm').style.display = 'none';
+            document.getElementById('testingBatchSelect').value = '';
+            
+            await loadBatches();
+            populateTestingSelect();
+            checkRTAStatus();
+        }
+
+        // Toggle connection type UI
+        function toggleConnectionType() {
+            const type = document.getElementById('connectionType').value;
+            document.getElementById('networkIPGroup').style.display = type === 'network' ? 'block' : 'none';
+            document.getElementById('networkPortGroup').style.display = type === 'network' ? 'block' : 'none';
+        }
+
+        function savePrintSettings() {
+            const printServerURL = document.getElementById('printServerURL').value;
+            if (printServerURL) {
+                localStorage.setItem('printServerURL', printServerURL);
+                alert('Print server settings saved!\n\nMake sure the print server is running on that computer.');
+            } else {
+                localStorage.setItem('printServerURL', 'http://localhost:3000/print');
+                alert('Using default localhost print server.');
+            }
+        }
+
+        function populateLabelingSelect() {
+            const select = document.getElementById('labelingBatchSelect');
+            // Show batches that are complete and have test results, but haven't been labeled yet
+            const labelableBatches = batches.filter(b => 
+                b.status === 'complete' && 
+                b.test_thc_percent && 
+                !b.labels_applied
+            );
+            
+            select.innerHTML = '<option value="">Select a batch...</option>';
+            labelableBatches.forEach(batch => {
+                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.packaged_product_type} (${batch.units_packaged} units)</option>`;
+            });
+            
+            // Load saved settings
+            const savedURL = localStorage.getItem('printServerURL');
+            if (savedURL) {
+                document.getElementById('printServerURL').value = savedURL;
+            }
+        }
+
+        document.getElementById('labelingBatchSelect').addEventListener('change', function() {
+            const form = document.getElementById('labelingForm');
+            form.style.display = this.value ? 'block' : 'none';
+            
+            if (this.value) {
+                const batch = batches.find(b => b.id === this.value);
+                displayLabelPreview(batch);
+                generateZPL(batch);
+                
+                // Set default quantity to units packaged
+                document.getElementById('labelQuantity').value = batch.units_packaged || 1;
+                
+                // Initialize weight verification if elements exist
+                const gramsLabeledInput = document.getElementById('gramsLabeled');
+                const expectedWeightEl = document.getElementById('expectedWeight');
+                const actualWeightEl = document.getElementById('actualWeight');
+                
+                if (gramsLabeledInput && expectedWeightEl && actualWeightEl) {
+                    gramsLabeledInput.value = '';
+                    document.getElementById('acceptDiscrepancy').checked = false;
+                    document.getElementById('discrepancyAlert').style.display = 'none';
+                    
+                    const expectedGrams = parseFloat(batch.total_grams_packaged) || 0;
+                    expectedWeightEl.textContent = expectedGrams.toFixed(1) + 'g';
+                    actualWeightEl.textContent = '-';
+                }
+            }
+        });
+
+        // Real-time weight comparison for labeling
+        const gramsLabeledInput = document.getElementById('gramsLabeled');
+        if (gramsLabeledInput) {
+            gramsLabeledInput.addEventListener('input', function() {
+                const batchId = document.getElementById('labelingBatchSelect').value;
+                const batch = batches.find(b => b.id === batchId);
+                if (!batch) return;
+                
+                const gramsLabeled = parseFloat(this.value) || 0;
+                const expectedGrams = parseFloat(batch.total_grams_packaged) || 0;
+                
+                const actualWeightEl = document.getElementById('actualWeight');
+                if (actualWeightEl) {
+                    actualWeightEl.textContent = gramsLabeled.toFixed(1) + 'g';
+                }
+                
+                // Check for discrepancy (more than 2% difference)
+                const discrepancy = Math.abs(gramsLabeled - expectedGrams);
+                const percentDiff = expectedGrams > 0 ? (discrepancy / expectedGrams) * 100 : 0;
+                
+                const discrepancyAlert = document.getElementById('discrepancyAlert');
+                if (discrepancyAlert) {
+                    if (percentDiff > 2 && gramsLabeled > 0) {
+                        discrepancyAlert.style.display = 'block';
+                        document.getElementById('discrepancyDetails').innerHTML = `
+                            <div>Expected: <strong>${expectedGrams.toFixed(1)}g</strong></div>
+                            <div>Actual: <strong>${gramsLabeled.toFixed(1)}g</strong></div>
+                            <div style="color: var(--accent-orange); font-weight: 700;">Difference: ${discrepancy.toFixed(1)}g (${percentDiff.toFixed(1)}%)</div>
+                        `;
+                    } else {
+                        discrepancyAlert.style.display = 'none';
+                        const acceptCheckbox = document.getElementById('acceptDiscrepancy');
+                        if (acceptCheckbox) acceptCheckbox.checked = false;
+                    }
+                }
+            });
+        }
+
+
+        function displayLabelPreview(batch) {
+            const preview = document.getElementById('labelPreview');
+            preview.innerHTML = `
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">PRODUCT</div>
+                    <div style="font-weight: 700;">${batch.packaged_product_type}</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">STRAIN</div>
+                    <div style="font-weight: 700;">${batch.strain}</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">BATCH ID</div>
+                    <div style="font-weight: 700; color: var(--accent-purple);">${batch.id}</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">THC</div>
+                    <div style="font-weight: 700; color: var(--accent-green);">${batch.test_thc_percent}%</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">CBD</div>
+                    <div style="font-weight: 700;">${batch.test_cbd_percent || 0}%</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">EXPIRES</div>
+                    <div style="font-weight: 700;">${batch.test_expiration_date ? new Date(batch.test_expiration_date).toLocaleDateString() : 'N/A'}</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">UNITS</div>
+                    <div style="font-weight: 700;">${batch.units_packaged}</div>
+                </div>
+                ${batch.packaging_breakdown ? `
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">SIZES</div>
+                    <div style="font-weight: 700;">${batch.packaging_breakdown}</div>
+                </div>
+                ` : ''}
+            `;
+        }
+
+        function generateZPL(batch) {
+            // Generate ZPL (Zebra Programming Language) code for CIRCULAR label
+            const labelSize = document.getElementById('labelSize').value;
+            
+            // Circular label dimensions (in dots at 203dpi)
+            const sizes = {
+                '1.0': { diameter: 203 },   // 1.0" circle
+                '1.5': { diameter: 305 },   // 1.5" circle
+                '2.0': { diameter: 406 }    // 2.0" circle
+            };
+            
+            const size = sizes[labelSize] || sizes['1.5'];
+            const centerX = Math.floor(size.diameter / 2);
+            
+            // Format product type for label
+            const productType = batch.packaged_product_type.toUpperCase().replace('WAX/SUGAR', 'WAX');
+            
+            // Format expiration date (use by)
+            const expDate = batch.test_expiration_date ? 
+                new Date(batch.test_expiration_date).toLocaleDateString('en-US', {month: 'numeric', day: 'numeric', year: '2-digit'}) : 
+                'N/A';
+            
+            // Get THC and CBD percentages
+            const thc = parseFloat(batch.test_thc_percent) || 0;
+            const cbd = parseFloat(batch.test_cbd_percent) || 0;
+            
+            // Determine net weight based on product type
+            let netWeight = '1 GRAM';
+            if (batch.packaged_product_type.includes('4g')) {
+                netWeight = '4 GRAM';
+            } else if (batch.packaged_product_type.includes('0.5')) {
+                netWeight = '0.5 GRAM';
+            }
+            
+            // Get cultivation license from batch (403R)
+            const cultivationLicense = batch.cultivation_license || '403R-01007';
+            
+            // White Mousse extraction license (404R)
+            const extractionLicense = '404R-00016';
+            
+            // ZPL template for CIRCULAR bottom label with all compliance info
+            // Scaled appropriately for small circular label
+            const zpl = `^XA
+^MMT
+^PW${size.diameter}
+^LL${size.diameter}
+^LS0
+
+~SD20
+
+^CF0,22
+^FO${centerX},10^FD${productType}^FS
+
+^CF0,35
+^FO${centerX},35^FD${batch.strain.toUpperCase()}^FS
+
+^FO${Math.floor(centerX - 90)},75^GB180,35,2^FS
+^CF0,16
+^FO${centerX},82^FDTHC: ${thc}% CBD: ${cbd}%^FS
+
+^CF0,13
+^FO${centerX},118^FDCULTIVATED BY ${cultivationLicense}^FS
+^FO${centerX},133^FDEXTRACTED BY ${extractionLicense}^FS
+
+^CF0,12
+^FO${centerX},150^FDINHALED PRODUCT.^FS
+^FO${centerX},163^FDNOT APPROVED BY FDA.^FS
+
+^CF0,14
+^FO${centerX},180^FDNET WEIGHT: ${netWeight}^FS
+
+^CF0,14
+^FO${centerX},198^FDSERVING SIZE: ^FS
+^FO${Math.floor(centerX + 48)},198^GC8,8,B^FS
+
+^CF0,18
+^FO${centerX},218^FDBATCH ${batch.id}^FS
+
+^CF0,14
+^FO${centerX},240^FDUSE BY ${expDate}^FS
+
+^XZ`;
+            
+            document.getElementById('zplPreview').textContent = zpl;
+            return zpl;
+        }
+
+        async function testPrinterConnection() {
+            const connectionType = document.getElementById('connectionType').value;
+            const statusDiv = document.getElementById('printerStatus');
+            
+            if (connectionType === 'network') {
+                const ip = document.getElementById('printerIP').value;
+                const port = document.getElementById('printerPort').value;
+                
+                if (!ip) {
+                    alert('Please enter printer IP address');
+                    return;
+                }
+                
+                // Save settings
+                localStorage.setItem('zebraPrinterIP', ip);
+                localStorage.setItem('zebraPrinterPort', port);
+                
+                statusDiv.innerHTML = `
+                    <div style="background: rgba(59, 130, 246, 0.2); border: 2px solid var(--accent-blue); padding: 20px; border-radius: 10px;">
+                        <h3 style="color: var(--accent-blue); margin-bottom: 10px;">📡 Network Printer Setup</h3>
+                        <p style="color: var(--text-primary); margin-bottom: 10px;">To print directly to network printer at ${ip}:${port}, you need:</p>
+                        <ol style="color: var(--text-primary); margin-left: 20px;">
+                            <li><strong>Zebra Browser Print</strong> - Free software from Zebra
+                                <br><a href="https://www.zebra.com/us/en/support-downloads/software/printer-software/browser-print.html" target="_blank" style="color: var(--accent-blue);">Download here</a>
+                            </li>
+                            <li><strong>Or download ZPL</strong> and send file to printer manually</li>
+                        </ol>
+                        <p style="color: var(--text-primary); margin-top: 15px;">IP saved: <strong>${ip}:${port}</strong></p>
+                    </div>
+                `;
+            } else {
+                // USB mode
+                localStorage.setItem('zebraConnectionType', 'usb');
+                
+                statusDiv.innerHTML = `
+                    <div style="background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); padding: 20px; border-radius: 10px;">
+                        <h3 style="color: var(--accent-green); margin-bottom: 10px;">🔌 USB Connection Mode</h3>
+                        <p style="color: var(--text-primary); margin-bottom: 10px;"><strong>Setup Steps:</strong></p>
+                        <ol style="color: var(--text-primary); margin-left: 20px;">
+                            <li>Connect ZT230 to computer via USB</li>
+                            <li>Install <strong>Zebra Browser Print</strong> - <a href="https://www.zebra.com/us/en/support-downloads/software/printer-software/browser-print.html" target="_blank" style="color: var(--accent-blue);">Download here</a></li>
+                            <li>Browser Print will auto-detect your USB printer</li>
+                            <li>Click "Print Labels" and they'll go straight to your ZT230!</li>
+                        </ol>
+                        <p style="color: var(--text-primary); margin-top: 15px;"><strong>Mode saved:</strong> USB Direct Connection</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function printLabels() {
+            console.log('=== printLabels called ===');
+            
+            const batchId = document.getElementById('labelingBatchSelect').value;
+            console.log('Selected batch ID:', batchId);
+            
+            const batch = batches.find(b => b.id === batchId);
+            console.log('Found batch:', batch);
+            
+            if (!batch) {
+                console.log('ERROR: No batch found');
+                alert('Please select a batch first');
+                return;
+            }
+            
+            const quantity = parseInt(document.getElementById('labelQuantity').value) || 1;
+            const labelsPerUnit = parseInt(document.getElementById('labelsPerUnit').value) || 1;
+            const totalLabels = quantity * labelsPerUnit;
+            
+            console.log('Quantity:', quantity);
+            console.log('Labels per unit:', labelsPerUnit);
+            console.log('Total labels to print:', totalLabels);
+            
+            const zpl = generateZPL(batch);
+            console.log('Generated ZPL length:', zpl.length);
+            
+            // Generate ZPL with multiple copies
+            let fullZPL = '';
+            for (let i = 0; i < totalLabels; i++) {
+                fullZPL += zpl + '\n';
+            }
+            
+            // Try print server first (works from mobile!)
+            const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
+            console.log('Attempting print server:', printServerURL);
+            
+            try {
+                const response = await fetch(printServerURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ zpl: fullZPL })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Print server response:', result);
+                    alert(`✓ Sent ${totalLabels} labels to printer!`);
+                    return;
+                }
+                
+                console.log('Print server failed, trying Browser Print...');
+            } catch (error) {
+                console.log('Print server not available:', error.message);
+            }
+            
+            // Fallback to Browser Print
+            if (window.BrowserPrint) {
+                console.log('Attempting to use Browser Print...');
+                try {
+                    console.log('Getting default device...');
+                    const printer = await window.BrowserPrint.getDefaultDevice('printer');
+                    console.log('Printer found:', printer);
+                    
+                    printer.send(fullZPL, undefined, (error) => {
+                        if (error) {
+                            console.error('Print error:', error);
+                            alert('Print failed. Use "Download ZPL" button instead.');
+                        } else {
+                            console.log('Labels sent successfully');
+                            alert(`✓ Sent ${totalLabels} labels to printer!`);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Browser Print error:', error);
+                    alert('Printing not available.\n\nOptions:\n1. Start print server (see setup docs)\n2. Use "Download ZPL" button');
+                }
+            } else {
+                console.log('Browser Print not detected');
+                alert('Print server not running and Browser Print not installed.\n\nUse "Download ZPL" button to print manually.');
+            }
+        }
+
+        function downloadZPL() {
+            console.log('=== downloadZPL called ===');
+            
+            const batchId = document.getElementById('labelingBatchSelect').value;
+            console.log('Batch ID:', batchId);
+            
+            const batch = batches.find(b => b.id === batchId);
+            console.log('Found batch:', batch);
+            
+            if (!batch) {
+                console.log('ERROR: No batch selected');
+                alert('Please select a batch first');
+                return;
+            }
+            
+            const quantity = parseInt(document.getElementById('labelQuantity').value) || 1;
+            const labelsPerUnit = parseInt(document.getElementById('labelsPerUnit').value) || 1;
+            const totalLabels = quantity * labelsPerUnit;
+            
+            console.log('Total labels:', totalLabels);
+            
+            const zpl = generateZPL(batch);
+            console.log('Generated ZPL, length:', zpl.length);
+            
+            // Generate ZPL file with multiple copies
+            let fullZPL = '';
+            for (let i = 0; i < totalLabels; i++) {
+                fullZPL += zpl + '\n';
+            }
+            
+            console.log('Full ZPL length:', fullZPL.length);
+            
+            try {
+                // Create download
+                const blob = new Blob([fullZPL], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${batch.id}_labels_${totalLabels}x.zpl`;
+                console.log('Triggering download:', link.download);
+                link.click();
+                
+                alert(`Downloaded ZPL file for ${totalLabels} labels!\n\nSend this file to your Zebra printer using:\n- Zebra Setup Utilities → Send File\n- Or drag file to printer in Setup Utilities`);
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('Error creating download. Check console.');
+            }
+        }
+
+        async function markAsLabeled() {
+            if (!currentRole) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('labelingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) return;
+            
+            const quantity = parseInt(document.getElementById('labelQuantity').value) || batch.units_packaged;
+            
+            // Check if weight verification fields exist
+            const gramsLabeledInput = document.getElementById('gramsLabeled');
+            let gramsLabeled = null;
+            let discrepancyData = null;
+            
+            if (gramsLabeledInput) {
+                gramsLabeled = parseFloat(gramsLabeledInput.value);
+                
+                if (!gramsLabeled || gramsLabeled <= 0) {
+                    alert('Please enter the total grams labeled');
+                    return;
+                }
+                
+                // Check for discrepancy
+                const expectedGrams = parseFloat(batch.total_grams_packaged) || 0;
+                const discrepancy = Math.abs(gramsLabeled - expectedGrams);
+                const percentDiff = expectedGrams > 0 ? (discrepancy / expectedGrams) * 100 : 0;
+                
+                // If discrepancy > 2%, require acceptance
+                if (percentDiff > 2) {
+                    const acceptCheckbox = document.getElementById('acceptDiscrepancy');
+                    if (!acceptCheckbox || !acceptCheckbox.checked) {
+                        alert('⚠️ Weight discrepancy detected!\n\nYou must check the box to verify and accept the discrepancy before proceeding.');
+                        return;
+                    }
+                    discrepancyData = { discrepancy, percentDiff };
+                }
+            }
+            
+            const confirmMsg = gramsLabeled 
+                ? `Mark ${batchId} as labeled?\n\nGrams Labeled: ${gramsLabeled.toFixed(1)}g\nUnits: ${quantity}`
+                : `Mark ${batchId} as labeled?\n\n${quantity} labels applied`;
+                
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'labeling',
+                timestamp: new Date().toISOString(),
+                user: currentRole ? currentRole.name : "Unknown"
+            });
+            
+            const updateData = {
+                labels_applied: true,
+                labeling_date: new Date().toISOString().split('T')[0],
+                labeling_user: currentRole ? currentRole.name : "Unknown",
+                labels_applied_quantity: quantity,
+                labeling_notes: document.getElementById('labelingNotes').value || null,
+                timeline: timeline
+            };
+            
+            // Add weight data if verified
+            if (gramsLabeled) {
+                updateData.grams_labeled = gramsLabeled;
+                if (discrepancyData) {
+                    updateData.weight_discrepancy = discrepancyData.discrepancy;
+                    updateData.discrepancy_accepted = true;
+                }
+            }
+            
+            const { error } = await supabase
+                .from('wm_batches')
+                .update(updateData)
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error marking as labeled:', error);
+                alert('Error saving labeling status. Please try again.');
+                return;
+            }
+            
+            const successMsg = gramsLabeled
+                ? `${batchId} marked as labeled!\n${gramsLabeled.toFixed(1)}g labeled by ${currentRole.name}`
+                : `${batchId} marked as labeled!\n${quantity} labels applied by ${currentRole.name}`;
+            alert(successMsg);
+            
+            document.getElementById('labelingForm').style.display = 'none';
+            document.getElementById('labelingBatchSelect').value = '';
+            document.getElementById('labelingNotes').value = '';
+            
+            await loadBatches();
+            populateLabelingSelect();
+        }
+
+        // Analytics functions
+        function updateAnalytics() {
+            const completedBatches = batches.filter(b => b.status === 'complete' && b.units_packaged);
+            
+            if (completedBatches.length === 0) {
+                document.getElementById('avgYield').textContent = '0%';
+                document.getElementById('avgCostPerGram').textContent = '$0';
+                document.getElementById('avgCostPerUnit').textContent = '$0';
+                document.getElementById('totalProfit').textContent = '$0';
+                document.getElementById('analyticsTable').innerHTML = '<p style="padding: 20px; text-align: center; color: var(--text-secondary);">No completed batches yet</p>';
+                return;
+            }
+            
+            // Calculate averages - yield based on net weight vs trim weight
+            let totalYield = 0;
+            let yieldCount = 0;
+            completedBatches.forEach(b => {
+                if (b.trim_weight && b.net_weight) {
+                    totalYield += (parseFloat(b.net_weight) / parseFloat(b.trim_weight)) * 100;
+                    yieldCount++;
+                }
+            });
+            const avgYield = yieldCount > 0 ? (totalYield / yieldCount).toFixed(2) : 0;
+            
+            let totalCostPerGram = 0;
+            let totalCostPerUnit = 0;
+            let totalRevenue = 0;
+            let totalCost = 0;
+            
+            completedBatches.forEach(batch => {
+                const materialCost = parseFloat(batch.material_cost || 0);
+                const netWeight = parseFloat(batch.net_weight || 0);
+                const unitsPackaged = parseInt(batch.units_packaged || 0);
+                const wholesalePrice = parseFloat(batch.wholesale_price || 0);
+                
+                if (netWeight > 0) {
+                    totalCostPerGram += materialCost / netWeight;
+                }
+                if (unitsPackaged > 0) {
+                    totalCostPerUnit += materialCost / unitsPackaged;
+                    totalRevenue += wholesalePrice * unitsPackaged;
+                }
+                totalCost += materialCost;
+            });
+            
+            const avgCostPerGram = (totalCostPerGram / completedBatches.length).toFixed(2);
+            const avgCostPerUnit = (totalCostPerUnit / completedBatches.length).toFixed(2);
+            const potentialProfit = totalRevenue - totalCost;
+            
+            document.getElementById('avgYield').textContent = avgYield + '%';
+            document.getElementById('avgCostPerGram').textContent = '$' + avgCostPerGram;
+            document.getElementById('avgCostPerUnit').textContent = '$' + avgCostPerUnit;
+            document.getElementById('totalProfit').textContent = '$' + potentialProfit.toFixed(2);
+            
+            renderAnalyticsTable(completedBatches);
+        }
+        
+        function renderAnalyticsTable(completedBatches) {
+            const container = document.getElementById('analyticsTable');
+            
+            const tableHTML = `
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Batch ID</th>
+                            <th>Strain</th>
+                            <th>Product</th>
+                            <th>Trim (g)</th>
+                            <th>Material Cost</th>
+                            <th>Yield %</th>
+                            <th>Units</th>
+                            <th>Cost/Unit</th>
+                            <th>Price/Unit</th>
+                            <th>Revenue</th>
+                            <th>Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${completedBatches.map(batch => {
+                            const materialCost = parseFloat(batch.material_cost || 0);
+                            const units = parseInt(batch.units_packaged || 0);
+                            const pricePerUnit = parseFloat(batch.wholesale_price || 0);
+                            const costPerUnit = units > 0 ? (materialCost / units) : 0;
+                            const revenue = pricePerUnit * units;
+                            const profit = revenue - materialCost;
+                            const profitClass = profit >= 0 ? 'profit-positive' : 'profit-negative';
+                            const yieldPercent = batch.trim_weight && batch.net_weight ? 
+                                ((parseFloat(batch.net_weight) / parseFloat(batch.trim_weight)) * 100).toFixed(2) : '0';
+                            
+                            return `
+                                <tr>
+                                    <td><strong>${batch.id}</strong></td>
+                                    <td>${batch.strain}</td>
+                                    <td>${batch.packaged_product_type || batch.product_made || 'N/A'}</td>
+                                    <td>${batch.trim_weight}g</td>
+                                    <td>$${materialCost.toFixed(2)}</td>
+                                    <td>${yieldPercent}%</td>
+                                    <td>${units}</td>
+                                    <td>$${costPerUnit.toFixed(2)}</td>
+                                    <td>$${pricePerUnit.toFixed(2)}</td>
+                                    <td>$${revenue.toFixed(2)}</td>
+                                    <td class="${profitClass}">$${profit.toFixed(2)}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
+
+        // Performance Analytics
+        document.getElementById('performanceFilter')?.addEventListener('change', function() {
+            renderPerformanceAnalytics();
+        });
+
+        function renderPerformanceAnalytics() {
+            const filter = document.getElementById('performanceFilter')?.value || 'all';
+            const statsContainer = document.getElementById('performanceStats');
+            const logContainer = document.getElementById('activityLog');
+            
+            if (!statsContainer || !logContainer) return;
+
+            // Calculate date range (last 30 days)
+            const now = new Date();
+            const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+            
+            // Get all timeline events from batches
+            const activities = [];
+            batches.forEach(batch => {
+                if (batch.timeline && Array.isArray(batch.timeline)) {
+                    batch.timeline.forEach(event => {
+                        const eventDate = new Date(event.timestamp || event.date);
+                        if (eventDate >= thirtyDaysAgo) {
+                            activities.push({
+                                ...event,
+                                batchId: batch.id,
+                                strain: batch.strain,
+                                date: eventDate
+                            });
+                        }
+                    });
+                }
+            });
+
+            // Filter by employee if needed
+            const filteredActivities = filter === 'all' 
+                ? activities 
+                : activities.filter(a => a.user === filter);
+
+            // Group by employee and task
+            const employeeStats = {};
+            
+            filteredActivities.forEach(activity => {
+                if (!employeeStats[activity.user]) {
+                    employeeStats[activity.user] = {
+                        name: activity.user,
+                        tasks: {},
+                        totalActions: 0,
+                        firstAction: activity.date,
+                        lastAction: activity.date
+                    };
+                }
+                
+                const emp = employeeStats[activity.user];
+                emp.totalActions++;
+                
+                const taskName = activity.stage || 'unknown';
+                if (!emp.tasks[taskName]) {
+                    emp.tasks[taskName] = {
+                        count: 0,
+                        dates: []
+                    };
+                }
+                
+                emp.tasks[taskName].count++;
+                emp.tasks[taskName].dates.push(activity.date);
+                
+                if (activity.date < emp.firstAction) emp.firstAction = activity.date;
+                if (activity.date > emp.lastAction) emp.lastAction = activity.date;
+            });
+
+            // Calculate averages
+            Object.values(employeeStats).forEach(emp => {
+                const daysDiff = Math.max(1, Math.ceil((emp.lastAction - emp.firstAction) / (1000 * 60 * 60 * 24)) + 1);
+                const weeksDiff = Math.max(1, daysDiff / 7);
+                
+                emp.daysActive = daysDiff;
+                emp.avgPerDay = (emp.totalActions / daysDiff).toFixed(1);
+                emp.avgPerWeek = (emp.totalActions / weeksDiff).toFixed(1);
+                
+                // Calculate per-task averages
+                Object.keys(emp.tasks).forEach(taskName => {
+                    const task = emp.tasks[taskName];
+                    task.avgPerDay = (task.count / daysDiff).toFixed(1);
+                    task.avgPerWeek = (task.count / weeksDiff).toFixed(1);
+                });
+            });
+
+            // Render stats cards
+            const sortedEmployees = Object.values(employeeStats).sort((a, b) => b.totalActions - a.totalActions);
+            
+            if (sortedEmployees.length === 0) {
+                statsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No activity found in the last 30 days</p>';
+            } else {
+                statsContainer.innerHTML = sortedEmployees.map(emp => {
+                    const taskBreakdown = Object.entries(emp.tasks)
+                        .sort((a, b) => b[1].count - a[1].count)
+                        .map(([taskName, task]) => `
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-top: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-weight: 600; color: var(--accent-blue); text-transform: capitalize;">${taskName}</span>
+                                    <span style="font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700;">${task.count}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; color: var(--text-secondary);">
+                                    <div>📊 ${task.avgPerDay}/day</div>
+                                    <div>📈 ${task.avgPerWeek}/week</div>
+                                </div>
+                            </div>
+                        `).join('');
+
+                    return `
+                        <div style="background: var(--bg-tertiary); padding: 25px; border-radius: 15px; border: 2px solid var(--border); margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+                                <div>
+                                    <h3 style="font-size: 1.5rem; margin-bottom: 5px; color: var(--accent-purple);">${emp.name}</h3>
+                                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Active for ${emp.daysActive} days in last 30 days</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-family: 'Space Mono', monospace; font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${emp.totalActions}</div>
+                                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Actions</div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Average Per Day</div>
+                                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${emp.avgPerDay}</div>
+                                </div>
+                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Average Per Week</div>
+                                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">${emp.avgPerWeek}</div>
+                                </div>
+                            </div>
+
+                            <div style="border-top: 2px solid var(--border); padding-top: 15px;">
+                                <h4 style="margin-bottom: 10px; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Task Breakdown</h4>
+                                ${taskBreakdown}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Render activity log
+            const sortedActivities = filteredActivities.sort((a, b) => b.date - a.date);
+            
+            if (sortedActivities.length === 0) {
+                logContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No activities to display</p>';
+            } else {
+                logContainer.innerHTML = `
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border);">
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Date</th>
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Employee</th>
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Task</th>
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Batch</th>
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Strain</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sortedActivities.slice(0, 100).map(activity => `
+                                    <tr style="border-bottom: 1px solid var(--border);">
+                                        <td style="padding: 12px; color: var(--text-secondary);">${activity.date.toLocaleDateString()} ${activity.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                        <td style="padding: 12px; font-weight: 600;">${activity.user}</td>
+                                        <td style="padding: 12px;">
+                                            <span style="background: rgba(147, 51, 234, 0.2); color: var(--accent-purple); padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; text-transform: capitalize;">
+                                                ${activity.stage || 'unknown'}
+                                            </span>
+                                        </td>
+                                        <td style="padding: 12px; font-family: 'Space Mono', monospace;">${activity.batchId}</td>
+                                        <td style="padding: 12px; color: var(--text-secondary);">${activity.strain}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    ${sortedActivities.length > 100 ? '<p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">Showing most recent 100 activities</p>' : ''}
+                `;
+            }
+        }
+
+        
+        // Analytics filter buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('filter-btn') && e.target.dataset.filterAnalytics) {
+                document.querySelectorAll('[data-filter-analytics]').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                const filter = e.target.dataset.filterAnalytics;
+                let filteredBatches = batches.filter(b => b.status === 'complete' && b.units_packaged);
+                
+                if (filter === 'thisMonth') {
+                    const now = new Date();
+                    const thisMonth = now.getMonth();
+                    const thisYear = now.getFullYear();
+                    filteredBatches = filteredBatches.filter(b => {
+                        const date = new Date(b.completed_at);
+                        return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
+                    });
+                } else if (filter === 'lastMonth') {
+                    const now = new Date();
+                    const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+                    const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+                    filteredBatches = filteredBatches.filter(b => {
+                        const date = new Date(b.completed_at);
+                        return date.getMonth() === lastMonth && date.getFullYear() === year;
+                    });
+                }
+                
+                renderAnalyticsTable(filteredBatches);
+            }
+        });
+    </script>
+</body>
+</html>
