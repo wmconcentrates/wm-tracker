@@ -1591,7 +1591,7 @@
 
         async function connectSupabase(url, key) {
             try {
-                updateConnectionStatus('connecting', 'Connecting...');\
+                updateConnectionStatus('connecting', 'Connecting...');
                 
                 supabaseClient = window.supabase.createClient(url, key);
                 
