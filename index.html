@@ -713,17 +713,18 @@
 
         <div class="user-login" id="userLogin">
             <h2>🔐 Enter Your PIN</h2>
-            <div style="max-width: 300px; margin: 0 auto;">
+            <form id="pinForm" style="max-width: 300px; margin: 0 auto;" onsubmit="event.preventDefault(); login();">
                 <input type="password" 
                        id="pinInput" 
                        maxlength="4" 
                        pattern="[0-9]{4}" 
                        placeholder="Enter 4-digit PIN"
                        inputmode="numeric"
+                       autocomplete="off"
                        style="width: 100%; padding: 15px; font-size: 1.5rem; text-align: center; letter-spacing: 10px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 10px; color: var(--text-primary); font-family: 'Space Mono', monospace; margin-bottom: 15px;">
-                <button id="loginBtn" style="width: 100%; padding: 15px; background: var(--accent-purple); border: none; border-radius: 10px; color: white; font-size: 1.1rem; font-weight: 700; cursor: pointer;">Login</button>
+                <button type="submit" id="loginBtn" style="width: 100%; padding: 15px; background: var(--accent-purple); border: none; border-radius: 10px; color: white; font-size: 1.1rem; font-weight: 700; cursor: pointer;">Login</button>
                 <div id="loginError" style="color: var(--accent-red); text-align: center; margin-top: 10px; display: none;">Invalid PIN</div>
-            </div>
+            </form>
             <div class="current-user" id="currentUser" style="display: none; margin-top: 15px;">
                 Logged in as: <span id="userName"></span>
                 <button onclick="logout()" style="margin-left: 15px; padding: 8px 15px; background: var(--accent-red); border: none; border-radius: 5px; color: white; cursor: pointer;">Logout</button>
@@ -824,8 +825,8 @@
                         </div>
                         <div class="form-group">
                             <label>Cultivation License # (Grower)</label>
-                            <input type="text" id="cultivationLicense" placeholder="403R-01007" required>
-                            <div class="help-text">Grower's 403R license number</div>
+                            <input type="text" id="cultivationLicense" placeholder="403R-01007 or 404R-00000" required>
+                            <div class="help-text">Grower's license number (cultivation or manufacturing)</div>
                         </div>
                         <div class="form-group">
                             <label>Grower Name (Optional)</label>
@@ -1572,16 +1573,25 @@
                     <span>🔑</span> METRC API Credentials
                     <span id="metrcConfigStatus" style="margin-left: auto; font-size: 0.85rem; padding: 5px 12px; border-radius: 15px;"></span>
                 </h3>
+                <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--accent-orange); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>Important:</strong> 
+                    <ul style="margin: 10px 0 0 20px; line-height: 1.6;">
+                        <li>Use your <strong>Manufacturing License (404R-00016)</strong></li>
+                        <li>API Key format: If you have a vendor key, enter <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">vendorKey:userKey</code></li>
+                        <li>If no vendor key, just enter your user API key</li>
+                        <li>Browser-based API calls may be blocked by CORS - see manual entry option below</li>
+                    </ul>
+                </div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>User API Key</label>
-                        <input type="text" id="metrcUserKey" placeholder="your-metrc-user-key">
-                        <div class="help-text">Your METRC API user key</div>
+                        <label>User API Key (or VendorKey:UserKey)</label>
+                        <input type="text" id="metrcUserKey" placeholder="your-api-key or vendor:user">
+                        <div class="help-text">Get this from METRC Account Settings → API Keys</div>
                     </div>
                     <div class="form-group">
-                        <label>Colorado License Number</label>
-                        <input type="text" id="metrcLicenseNumber" placeholder="403R-00000" value="403R-00000">
-                        <div class="help-text">Your manufacturing facility license</div>
+                        <label>Manufacturing License Number (404R)</label>
+                        <input type="text" id="metrcLicenseNumber" placeholder="404R-00016" value="404R-00016">
+                        <div class="help-text">Your processor/manufacturer license</div>
                     </div>
                 </div>
                 <button class="btn" style="background: var(--accent-blue); margin-top: 15px;" onclick="saveMetrcConfig()">
@@ -1589,7 +1599,19 @@
                 </button>
             </div>
 
-            <!-- Load Manifests Section -->
+            <!-- Tab switcher for API vs Manual -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border);">
+                <button class="metrc-tab-btn active" data-tab="api" onclick="switchMetrcTab('api')" 
+                        style="flex: 1; padding: 15px; background: none; border: none; border-bottom: 3px solid var(--accent-purple); color: var(--accent-purple); font-weight: 700; cursor: pointer; transition: all 0.3s;">
+                    🔌 API Import
+                </button>
+                <button class="metrc-tab-btn" data-tab="manual" onclick="switchMetrcTab('manual')"
+                        style="flex: 1; padding: 15px; background: none; border: none; border-bottom: 3px solid transparent; color: var(--text-secondary); font-weight: 700; cursor: pointer; transition: all 0.3s;">
+                    ✍️ Manual Entry
+                </button>
+            </div>
+
+            <!-- API Load Section -->
             <div id="metrcLoadSection">
                 <div style="display: flex; gap: 15px; margin-bottom: 25px; align-items: end;">
                     <div class="form-group" style="flex: 1; margin: 0;">
@@ -1642,6 +1664,74 @@
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Manual Entry Section -->
+            <div id="metrcManualSection" style="display: none;">
+                <div style="background: rgba(147, 51, 234, 0.1); border: 2px solid var(--accent-purple); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <h3 style="color: var(--accent-purple); margin-bottom: 10px;">📝 Manual Manifest Entry</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                        Can't connect to METRC API? No problem - manually enter the manifest details from METRC's web interface.
+                    </p>
+                </div>
+
+                <div class="form-grid" style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>Manifest Number</label>
+                        <input type="text" id="manualManifestNumber" placeholder="e.g., 0000123456">
+                    </div>
+                    <div class="form-group">
+                        <label>Received Date</label>
+                        <input type="date" id="manualReceivedDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Shipper Facility Name</label>
+                        <input type="text" id="manualShipperName" placeholder="e.g., ABC Cultivation">
+                    </div>
+                    <div class="form-group">
+                        <label>Shipper License (403R/404R)</label>
+                        <input type="text" id="manualShipperLicense" placeholder="403R-00000 or 404R-00000">
+                    </div>
+                </div>
+
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <h4 style="color: var(--accent-green); margin-bottom: 15px;">Add Package Tags</h4>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px;">
+                        Enter each package tag from the manifest. You can add multiple packages.
+                    </p>
+                    
+                    <div id="manualPackagesContainer">
+                        <div class="manual-package-row" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px; align-items: end;">
+                            <div class="form-group" style="margin: 0;">
+                                <label>METRC Tag Number</label>
+                                <input type="text" class="manual-tag-number" placeholder="1A4060300001234567890">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label>Weight (g)</label>
+                                <input type="number" class="manual-tag-weight" step="0.1" placeholder="0">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label>Strain/Product</label>
+                                <input type="text" class="manual-tag-strain" placeholder="OG Kush Trim">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn" style="background: var(--accent-green); margin-top: 10px;" onclick="addManualPackageRow()">
+                        ➕ Add Another Package
+                    </button>
+                </div>
+
+                <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <h4 style="color: var(--accent-orange); margin-bottom: 10px;">Summary</h4>
+                    <div id="manualSummary" style="color: var(--text-secondary); font-style: italic;">
+                        Enter package details above to see summary
+                    </div>
+                </div>
+
+                <button class="btn" style="background: var(--accent-purple); width: 100%;" onclick="importManualManifest()">
+                    ✅ Import Manual Entry to Batch Form
+                </button>
             </div>
         </div>
     </div>
@@ -4366,18 +4456,45 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             try {
                 // METRC API endpoint for incoming transfers
+                // Note: You'll need to use your manufacturing license (403R-xxxxx), not retail
                 const url = `https://api-co.metrc.com/transfers/v1/incoming?licenseNumber=${licenseNumber}&lastModifiedStart=${startDate}&lastModifiedEnd=${endDate}`;
+                
+                // METRC requires API key in specific format
+                // If you have a vendor key, use: vendorKey:userKey
+                // Otherwise just: userKey (with blank password)
+                const authString = userKey.includes(':') ? userKey : `${userKey}:`;
                 
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Basic ${btoa(userKey + ':')}`,
+                        'Authorization': `Basic ${btoa(authString)}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    mode: 'cors'
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`METRC API Error: ${response.status} ${response.statusText}`);
+                    let errorMsg = `METRC API returned ${response.status}`;
+                    
+                    if (response.status === 401) {
+                        errorMsg = `Authentication failed (401).\n\nTroubleshooting:\n• Verify your API key is correct\n• Make sure you're using your MANUFACTURING license (404R-00016)\n• API key format should be either:\n  - Just the user key, OR\n  - vendorKey:userKey if you have a vendor key\n• Check that the license has API access enabled in METRC`;
+                    } else if (response.status === 403) {
+                        errorMsg = `Access forbidden (403).\n\nThis license may not have permission to access the API.`;
+                    } else if (response.status === 404) {
+                        errorMsg = `Endpoint not found (404).\n\nThe license number may be incorrect.`;
+                    }
+                    
+                    // Try to get more details from response
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.Message) {
+                            errorMsg += `\n\nMETRC says: ${errorData.Message}`;
+                        }
+                    } catch (e) {
+                        // Response wasn't JSON
+                    }
+                    
+                    throw new Error(errorMsg);
                 }
                 
                 const data = await response.json();
@@ -4392,7 +4509,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 
             } catch (error) {
                 console.error('METRC API Error:', error);
-                showMetrcError(`Failed to load manifests: ${error.message}`);
+                
+                // Check if it's a CORS error
+                if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+                    showMetrcError(`⚠️ Browser Security Block Detected\n\nDirect API calls from browsers are often blocked by CORS.\n\nOptions:\n1. Use METRC's web interface to export manifests\n2. Set up a server-side proxy (recommended for production)\n3. Use a browser extension to disable CORS (development only)\n\nOriginal error: ${error.message}`);
+                } else {
+                    showMetrcError(error.message);
+                }
             } finally {
                 document.getElementById('metrcLoadingIndicator').style.display = 'none';
             }
@@ -4639,6 +4762,179 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         document.getElementById('metrcImportModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeMetrcImport();
+            }
+        });
+
+        // Tab switching for METRC modal
+        function switchMetrcTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.metrc-tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tab) {
+                    btn.style.borderBottom = '3px solid var(--accent-purple)';
+                    btn.style.color = 'var(--accent-purple)';
+                    btn.classList.add('active');
+                } else {
+                    btn.style.borderBottom = '3px solid transparent';
+                    btn.style.color = 'var(--text-secondary)';
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Show/hide sections
+            if (tab === 'api') {
+                document.getElementById('metrcLoadSection').style.display = 'block';
+                document.getElementById('metrcManualSection').style.display = 'none';
+            } else {
+                document.getElementById('metrcLoadSection').style.display = 'none';
+                document.getElementById('metrcManualSection').style.display = 'block';
+                updateManualSummary();
+            }
+        }
+
+        // Manual package entry
+        function addManualPackageRow() {
+            const container = document.getElementById('manualPackagesContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'manual-package-row';
+            newRow.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px; align-items: end;';
+            newRow.innerHTML = `
+                <div class="form-group" style="margin: 0;">
+                    <input type="text" class="manual-tag-number" placeholder="1A4060300001234567890">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <input type="number" class="manual-tag-weight" step="0.1" placeholder="0">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <input type="text" class="manual-tag-strain" placeholder="Strain name">
+                </div>
+                <button onclick="this.parentElement.remove(); updateManualSummary();" 
+                        style="padding: 10px 15px; background: var(--accent-red); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">
+                    ✕
+                </button>
+            `;
+            container.appendChild(newRow);
+
+            // Add event listeners for auto-summary update
+            newRow.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', updateManualSummary);
+            });
+        }
+
+        function updateManualSummary() {
+            const rows = document.querySelectorAll('.manual-package-row');
+            const packages = [];
+            
+            rows.forEach(row => {
+                const tag = row.querySelector('.manual-tag-number')?.value || '';
+                const weight = parseFloat(row.querySelector('.manual-tag-weight')?.value) || 0;
+                const strain = row.querySelector('.manual-tag-strain')?.value || '';
+                
+                if (tag && weight > 0) {
+                    packages.push({ tag, weight, strain });
+                }
+            });
+
+            const summaryEl = document.getElementById('manualSummary');
+            
+            if (packages.length === 0) {
+                summaryEl.innerHTML = '<div style="color: var(--text-secondary); font-style: italic;">Enter package details above to see summary</div>';
+                return;
+            }
+
+            const totalWeight = packages.reduce((sum, pkg) => sum + pkg.weight, 0);
+            const uniqueStrains = [...new Set(packages.map(p => p.strain).filter(s => s))];
+
+            summaryEl.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">${packages.length}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Packages</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);">${totalWeight.toFixed(1)}g</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Weight</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${uniqueStrains.length}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Unique Strains</div>
+                    </div>
+                </div>
+                <div style="font-size: 0.9rem;">
+                    ${packages.map(pkg => `
+                        <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border);">
+                            <span style="font-family: 'Space Mono', monospace; font-size: 0.85rem;">...${pkg.tag.slice(-5)}</span>
+                            <span style="color: var(--text-secondary);">${pkg.strain || 'Unknown'}</span>
+                            <span style="font-weight: 600; color: var(--accent-green);">${pkg.weight.toFixed(1)}g</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function importManualManifest() {
+            const manifestNumber = document.getElementById('manualManifestNumber').value.trim();
+            const receivedDate = document.getElementById('manualReceivedDate').value;
+            const shipperName = document.getElementById('manualShipperName').value.trim();
+            const shipperLicense = document.getElementById('manualShipperLicense').value.trim();
+
+            if (!manifestNumber || !receivedDate) {
+                alert('Please enter at least the manifest number and received date.');
+                return;
+            }
+
+            const rows = document.querySelectorAll('.manual-package-row');
+            const packages = [];
+            
+            rows.forEach(row => {
+                const tag = row.querySelector('.manual-tag-number')?.value || '';
+                const weight = parseFloat(row.querySelector('.manual-tag-weight')?.value) || 0;
+                const strain = row.querySelector('.manual-tag-strain')?.value || '';
+                
+                if (tag && weight > 0) {
+                    packages.push({ tag, weight, strain });
+                }
+            });
+
+            if (packages.length === 0) {
+                alert('Please add at least one package with tag and weight.');
+                return;
+            }
+
+            const totalWeight = packages.reduce((sum, pkg) => sum + pkg.weight, 0);
+            const uniqueStrains = [...new Set(packages.map(p => p.strain).filter(s => s))];
+            const tagNumbers = packages.map(p => p.tag.slice(-5)).join(', ');
+            const strainName = uniqueStrains.length === 1 ? uniqueStrains[0] : 'Mixed Strains';
+
+            // Pre-fill the intake form
+            document.getElementById('trimWeight').value = totalWeight.toFixed(1);
+            document.getElementById('cultivationLicense').value = shipperLicense;
+            document.getElementById('growerName').value = shipperName;
+            document.getElementById('metrcTags').value = tagNumbers;
+            document.getElementById('strainName').value = strainName;
+            document.getElementById('intakeDate').value = receivedDate;
+            
+            // Add manifest number to notes
+            const notesField = document.getElementById('intakeNotes');
+            notesField.value = `METRC Manifest #${manifestNumber}${notesField.value ? '\n\n' + notesField.value : ''}`;
+
+            // Close modal and switch to intake tab
+            closeMetrcImport();
+            
+            document.querySelectorAll('.station-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.station-content').forEach(content => content.classList.remove('active'));
+            document.querySelector('[data-station="intake"]').classList.add('active');
+            document.getElementById('intake').classList.add('active');
+            
+            alert(`✅ Imported ${packages.length} packages (${totalWeight.toFixed(1)}g total)\n\nPlease review and complete the intake form.`);
+        }
+
+        // Add event listener to first manual package row
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstRow = document.querySelector('.manual-package-row');
+            if (firstRow) {
+                firstRow.querySelectorAll('input').forEach(input => {
+                    input.addEventListener('input', updateManualSummary);
+                });
             }
         });
 
