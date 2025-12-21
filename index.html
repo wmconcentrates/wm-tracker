@@ -948,19 +948,13 @@
                                     </label>
                                 </div>
                             </div>
-                            
-                            <div class="form-group">
-                                <label>Total Crude Weight (grams)</label>
-                                <input type="number" id="crudeWeight" step="0.1" placeholder="Total BHO crude extracted" required>
-                                <div class="help-text">Total weight of all products combined</div>
-                            </div>
                         </div>
 
                         <!-- RSO Section (shown when RSO selected) -->
                         <div id="rsoSection" style="display: none;">
                             <div class="form-group">
-                                <label>RSO Weight (grams)</label>
-                                <input type="number" id="rsoWeight" step="0.1" placeholder="Total RSO produced" required>
+                                <label>RSO Notes</label>
+                                <textarea id="rsoNotes" placeholder="Any notes about the RSO extraction..."></textarea>
                             </div>
                         </div>
                         
@@ -2216,7 +2210,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             const extractionMethod = document.getElementById('extractionMethod').value;
             let productMade = '';
-            let crudeWeight = 0;
             
             // Handle BHO products (checkboxes)
             if (extractionMethod === 'BHO') {
@@ -2229,20 +2222,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 }
                 
                 productMade = selectedProducts.join(' + ');
-                crudeWeight = parseFloat(document.getElementById('crudeWeight').value);
-                
-                if (!crudeWeight || crudeWeight <= 0) {
-                    alert('Please enter crude weight');
-                    return;
-                }
             } else if (extractionMethod === 'RSO') {
                 productMade = 'RSO';
-                crudeWeight = parseFloat(document.getElementById('rsoWeight').value);
-                
-                if (!crudeWeight || crudeWeight <= 0) {
-                    alert('Please enter RSO weight');
-                    return;
-                }
             }
             
             const timeline = batch.timeline || [];
@@ -2260,7 +2241,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     extraction_date: document.getElementById('extractionDate').value,
                     extraction_method: extractionMethod,
                     product_made: productMade,
-                    crude_weight: crudeWeight,
                     extraction_notes: document.getElementById('extractionNotes').value,
                     extraction_user: currentRole ? currentRole.name : "Unknown",
                     timeline: timeline
