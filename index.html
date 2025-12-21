@@ -1570,11 +1570,11 @@
             const savedUrl = localStorage.getItem('supabaseUrl');
             const savedKey = localStorage.getItem('supabaseKey');
             
-            // Auto-connect with hardcoded credentials (change these to your actual values)
-            const SUPABASE_URL = 'URL: https://nspmwcpvukehaqswae.supabase.co';  // e.g., 'https://xxxxx.supabase.co'
-            const SUPABASE_KEY = 'sb_publishable_MJblZ7W0fHLW5NfRZ0dOOA_cfnoB9PD';  // Your anon/public key
+            // Auto-connect with hardcoded credentials
+            const SUPABASE_URL = 'https://nspmwcpvukehaqswaewt.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zcG13Y3B2dWtlaGFxc3dhZXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzE2NDQsImV4cCI6MjA3NzA0NzY0NH0.JGYZ4223nhgO_Er619DkB0tOXrIJzfldG9yNkaHCdtI';
             
-            if (SUPABASE_URL !== 'URL: https://nspmwcpvukehaqswae.supabase.co' && SUPABASE_KEY !== 'sb_publishable_MJblZ7W0fHLW5NfRZ0dOOA_cfnoB9PD') {
+            if (SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && SUPABASE_KEY !== 'YOUR_SUPABASE_KEY_HERE') {
                 // Use hardcoded credentials
                 connectSupabase(SUPABASE_URL, SUPABASE_KEY);
             } else if (savedUrl && savedKey) {
