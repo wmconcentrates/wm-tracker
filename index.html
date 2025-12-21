@@ -1570,9 +1570,18 @@
             const savedUrl = localStorage.getItem('supabaseUrl');
             const savedKey = localStorage.getItem('supabaseKey');
             
-            if (savedUrl && savedKey) {
+            // Auto-connect with hardcoded credentials (change these to your actual values)
+            const SUPABASE_URL = 'URL: https://nspmwcpvukehaqswae.supabase.co';  // e.g., 'https://xxxxx.supabase.co'
+            const SUPABASE_KEY = 'sb_publishable_MJblZ7W0fHLW5NfRZ0dOOA_cfnoB9PD';  // Your anon/public key
+            
+            if (SUPABASE_URL !== 'URL: https://nspmwcpvukehaqswae.supabase.co' && SUPABASE_KEY !== 'sb_publishable_MJblZ7W0fHLW5NfRZ0dOOA_cfnoB9PD') {
+                // Use hardcoded credentials
+                connectSupabase(SUPABASE_URL, SUPABASE_KEY);
+            } else if (savedUrl && savedKey) {
+                // Fallback to saved credentials
                 connectSupabase(savedUrl, savedKey);
             } else {
+                // Show setup form
                 document.getElementById('setupSection').classList.remove('hidden');
             }
         });
