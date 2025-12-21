@@ -1573,46 +1573,65 @@
                     <span>🔑</span> METRC API Credentials
                     <span id="metrcConfigStatus" style="margin-left: auto; font-size: 0.85rem; padding: 5px 12px; border-radius: 15px;"></span>
                 </h3>
-                <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--accent-orange); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <strong>Important:</strong> 
+                <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--accent-red); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>⚠️ Direct API Connection Issues:</strong>
                     <ul style="margin: 10px 0 0 20px; line-height: 1.6;">
-                        <li>Use your <strong>Manufacturing License (404R-00016)</strong></li>
-                        <li>API Key format: If you have a vendor key, enter <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">vendorKey:userKey</code></li>
-                        <li>If no vendor key, just enter your user API key</li>
-                        <li>Browser-based API calls may be blocked by CORS - see manual entry option below</li>
+                        <li>METRC API calls from browsers are typically blocked by CORS security</li>
+                        <li>Authentication may fail even with correct credentials due to browser restrictions</li>
+                        <li><strong>Recommended:</strong> Use the Manual Entry tab below instead</li>
+                        <li>For production: Set up a server-side proxy to handle METRC API calls</li>
+                    </ul>
+                </div>
+                <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--accent-orange); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>If you want to try API connection:</strong> 
+                    <ul style="margin: 10px 0 0 20px; line-height: 1.6;">
+                        <li>License: <strong>404R-00016</strong> (your manufacturing license)</li>
+                        <li>API Key from METRC: Settings → Integrations → API Keys</li>
+                        <li>Format options:
+                            <ul style="margin: 5px 0 0 20px;">
+                                <li>Software Vendor Key (if you have one): <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">vendorKey:userKey</code></li>
+                                <li>User API Key only: <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">your-user-api-key</code></li>
+                            </ul>
+                        </li>
                     </ul>
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label>User API Key (or VendorKey:UserKey)</label>
-                        <input type="text" id="metrcUserKey" placeholder="your-api-key or vendor:user">
-                        <div class="help-text">Get this from METRC Account Settings → API Keys</div>
+                        <input type="password" id="metrcUserKey" placeholder="Enter your METRC API key">
+                        <div class="help-text">Keep this secure - it provides access to your METRC data</div>
                     </div>
                     <div class="form-group">
-                        <label>Manufacturing License Number (404R)</label>
-                        <input type="text" id="metrcLicenseNumber" placeholder="404R-00016" value="404R-00016">
-                        <div class="help-text">Your processor/manufacturer license</div>
+                        <label>Manufacturing License Number</label>
+                        <input type="text" id="metrcLicenseNumber" value="404R-00016" readonly style="opacity: 0.7; background: var(--bg-tertiary);">
+                        <div class="help-text">Your White Mousse manufacturing license (locked)</div>
                     </div>
                 </div>
-                <button class="btn" style="background: var(--accent-blue); margin-top: 15px;" onclick="saveMetrcConfig()">
-                    💾 Save METRC Credentials
-                </button>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn" style="background: var(--accent-blue); flex: 1;" onclick="saveMetrcConfig()">
+                        💾 Save Credentials
+                    </button>
+                    <button class="btn" style="background: var(--accent-green); flex: 1;" onclick="testMetrcConnection()">
+                        🔬 Test Connection
+                    </button>
+                </div>
+                <div id="metrcTestResult" style="margin-top: 15px; display: none;"></div>
             </div>
 
             <!-- Tab switcher for API vs Manual -->
             <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border);">
-                <button class="metrc-tab-btn active" data-tab="api" onclick="switchMetrcTab('api')" 
-                        style="flex: 1; padding: 15px; background: none; border: none; border-bottom: 3px solid var(--accent-purple); color: var(--accent-purple); font-weight: 700; cursor: pointer; transition: all 0.3s;">
-                    🔌 API Import
-                </button>
-                <button class="metrc-tab-btn" data-tab="manual" onclick="switchMetrcTab('manual')"
+                <button class="metrc-tab-btn" data-tab="api" onclick="switchMetrcTab('api')" 
                         style="flex: 1; padding: 15px; background: none; border: none; border-bottom: 3px solid transparent; color: var(--text-secondary); font-weight: 700; cursor: pointer; transition: all 0.3s;">
-                    ✍️ Manual Entry
+                    🔌 API Import (Advanced)
+                </button>
+                <button class="metrc-tab-btn active" data-tab="manual" onclick="switchMetrcTab('manual')"
+                        style="flex: 1; padding: 15px; background: none; border: none; border-bottom: 3px solid var(--accent-purple); color: var(--accent-purple); font-weight: 700; cursor: pointer; transition: all 0.3s;">
+                    ✍️ Manual Entry (Recommended)
                 </button>
             </div>
 
             <!-- API Load Section -->
-            <div id="metrcLoadSection">
+            <div id="metrcLoadSection" style="display: none;">
                 <div style="display: flex; gap: 15px; margin-bottom: 25px; align-items: end;">
                     <div class="form-group" style="flex: 1; margin: 0;">
                         <label>Start Date</label>
@@ -1667,11 +1686,12 @@
             </div>
 
             <!-- Manual Entry Section -->
-            <div id="metrcManualSection" style="display: none;">
-                <div style="background: rgba(147, 51, 234, 0.1); border: 2px solid var(--accent-purple); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                    <h3 style="color: var(--accent-purple); margin-bottom: 10px;">📝 Manual Manifest Entry</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.95rem;">
-                        Can't connect to METRC API? No problem - manually enter the manifest details from METRC's web interface.
+            <div id="metrcManualSection">
+                <div style="background: rgba(16, 185, 129, 0.1); border: 2px solid var(--accent-green); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <h3 style="color: var(--accent-green); margin-bottom: 10px;">✅ Recommended Method</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
+                        This is the most reliable way to import manifest data. Simply open METRC in another tab, 
+                        view your incoming transfer, and copy the information here. Fast, simple, and always works!
                     </p>
                 </div>
 
@@ -4411,7 +4431,81 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             localStorage.setItem('metrcLicenseNumber', licenseNumber);
             
             updateMetrcConfigStatus(true);
-            alert('METRC credentials saved successfully!');
+            alert('METRC credentials saved successfully!\n\nClick "Test Connection" to verify they work.');
+        }
+
+        async function testMetrcConnection() {
+            const userKey = localStorage.getItem('metrcUserKey');
+            const licenseNumber = localStorage.getItem('metrcLicenseNumber');
+            
+            if (!userKey || !licenseNumber) {
+                showTestResult('error', 'Please save your credentials first.');
+                return;
+            }
+
+            showTestResult('testing', 'Testing connection to METRC API...');
+
+            try {
+                // Try to get facilities as a simple test
+                const url = `https://api-co.metrc.com/facilities/v1/`;
+                
+                const authString = userKey.includes(':') ? userKey : `${userKey}:`;
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Basic ${btoa(authString)}`,
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showTestResult('success', `✅ Connection successful!\n\nFound ${data.length} facilities in your account.\n\nYou can now try loading manifests, but CORS may still block it.`);
+                } else {
+                    let errorDetails = '';
+                    try {
+                        const errorData = await response.json();
+                        errorDetails = errorData.Message || JSON.stringify(errorData);
+                    } catch (e) {
+                        errorDetails = await response.text();
+                    }
+
+                    showTestResult('error', `❌ METRC returned ${response.status}\n\n${errorDetails}\n\nTroubleshooting:\n• Verify API key is correct in METRC Settings → Integrations\n• Check if API access is enabled for license 404R-00016\n• Try the Manual Entry option instead`);
+                }
+            } catch (error) {
+                if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+                    showTestResult('error', `🚫 Browser blocked the request (CORS)\n\nThis is expected - browsers block METRC API calls for security.\n\nSolutions:\n1. ✅ Use Manual Entry tab (recommended)\n2. Set up a server proxy for API calls\n3. Use METRC web interface and copy data`);
+                } else {
+                    showTestResult('error', `❌ Connection failed:\n\n${error.message}`);
+                }
+            }
+        }
+
+        function showTestResult(type, message) {
+            const resultEl = document.getElementById('metrcTestResult');
+            resultEl.style.display = 'block';
+            resultEl.style.padding = '15px';
+            resultEl.style.borderRadius = '10px';
+            resultEl.style.marginTop = '15px';
+            resultEl.style.whiteSpace = 'pre-line';
+
+            if (type === 'success') {
+                resultEl.style.background = 'rgba(16, 185, 129, 0.2)';
+                resultEl.style.border = '2px solid var(--accent-green)';
+                resultEl.style.color = 'var(--accent-green)';
+            } else if (type === 'error') {
+                resultEl.style.background = 'rgba(239, 68, 68, 0.2)';
+                resultEl.style.border = '2px solid var(--accent-red)';
+                resultEl.style.color = 'var(--accent-red)';
+            } else if (type === 'testing') {
+                resultEl.style.background = 'rgba(245, 158, 11, 0.2)';
+                resultEl.style.border = '2px solid var(--accent-orange)';
+                resultEl.style.color = 'var(--accent-orange)';
+            }
+
+            resultEl.textContent = message;
         }
 
         function openMetrcImport() {
@@ -4425,6 +4519,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             document.getElementById('metrcStartDate').value = startDate.toISOString().split('T')[0];
             document.getElementById('metrcEndDate').value = endDate.toISOString().split('T')[0];
+            
+            // Default to manual entry tab (more reliable)
+            switchMetrcTab('manual');
         }
 
         function closeMetrcImport() {
