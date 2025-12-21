@@ -1474,6 +1474,67 @@
         </div><!-- end appContent -->
     </div>
 
+    <!-- Edit Batch Modal -->
+    <div id="editBatchModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; overflow-y: auto;">
+        <div style="max-width: 800px; margin: 50px auto; background: var(--bg-secondary); border-radius: 16px; padding: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--accent-orange);">✏️ Edit Batch</h2>
+                <button onclick="closeEditBatch()" style="background: none; border: none; color: var(--text-primary); font-size: 2rem; cursor: pointer; padding: 0; width: 40px; height: 40px;">&times;</button>
+            </div>
+            
+            <div id="editBatchForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Batch ID</label>
+                        <input type="text" id="editBatchId" readonly style="background: var(--bg-tertiary); opacity: 0.7;">
+                    </div>
+                    <div class="form-group">
+                        <label>Strain Name</label>
+                        <input type="text" id="editStrainName">
+                    </div>
+                    <div class="form-group">
+                        <label>Strain Type</label>
+                        <select id="editStrainType">
+                            <option value="Indica">Indica (Blue Lid)</option>
+                            <option value="Sativa">Sativa (Red Lid)</option>
+                            <option value="Hybrid">Hybrid (Green Lid)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Trim Weight (g)</label>
+                        <input type="number" id="editTrimWeight" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Material Cost ($)</label>
+                        <input type="number" id="editMaterialCost" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Cultivation License</label>
+                        <input type="text" id="editCultivationLicense">
+                    </div>
+                    <div class="form-group">
+                        <label>Grower Name</label>
+                        <input type="text" id="editGrowerName">
+                    </div>
+                    <div class="form-group">
+                        <label>METRC Tags</label>
+                        <input type="text" id="editMetrcTags" placeholder="12345, 67890">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Edit Notes (Why are you making this change?)</label>
+                    <textarea id="editNotes" placeholder="Explain what you're changing and why..." required></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn" style="background: var(--accent-green); flex: 1;" onclick="saveEditedBatch()">💾 Save Changes</button>
+                    <button class="btn" style="background: var(--bg-tertiary); flex: 1;" onclick="closeEditBatch()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // Role configuration with PINs and permissions
@@ -2849,6 +2910,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                             </div>
                         `).join('')}
                     </div>
+                    
+                    ${currentRole && (currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex') ? `
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                            <button class="btn" style="background: var(--accent-orange); width: 100%;" onclick="openEditBatch('${batch.id}')">✏️ Edit Batch</button>
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
         }
@@ -3995,6 +4062,86 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 }
                 
                 renderAnalyticsTable(filteredBatches);
+            }
+        });
+
+        // Edit Batch Functions
+        function openEditBatch(batchId) {
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) return;
+            
+            // Populate form
+            document.getElementById('editBatchId').value = batch.id;
+            document.getElementById('editStrainName').value = batch.strain;
+            document.getElementById('editStrainType').value = batch.strain_type;
+            document.getElementById('editTrimWeight').value = batch.trim_weight;
+            document.getElementById('editMaterialCost').value = batch.material_cost;
+            document.getElementById('editCultivationLicense').value = batch.cultivation_license || '';
+            document.getElementById('editGrowerName').value = batch.grower_name || '';
+            document.getElementById('editMetrcTags').value = batch.metrc_tags || '';
+            document.getElementById('editNotes').value = '';
+            
+            // Show modal
+            document.getElementById('editBatchModal').style.display = 'block';
+        }
+
+        function closeEditBatch() {
+            document.getElementById('editBatchModal').style.display = 'none';
+        }
+
+        async function saveEditedBatch() {
+            const batchId = document.getElementById('editBatchId').value;
+            const batch = batches.find(b => b.id === batchId);
+            const editNotes = document.getElementById('editNotes').value;
+            
+            if (!editNotes || editNotes.trim() === '') {
+                alert('Please enter a note explaining why you\'re making this change.');
+                return;
+            }
+            
+            // Collect updated values
+            const updates = {
+                strain: document.getElementById('editStrainName').value,
+                strain_type: document.getElementById('editStrainType').value,
+                trim_weight: parseFloat(document.getElementById('editTrimWeight').value),
+                material_cost: parseFloat(document.getElementById('editMaterialCost').value),
+                cultivation_license: document.getElementById('editCultivationLicense').value,
+                grower_name: document.getElementById('editGrowerName').value,
+                metrc_tags: document.getElementById('editMetrcTags').value || null
+            };
+            
+            // Add edit to timeline
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'edit',
+                timestamp: new Date().toISOString(),
+                user: currentRole.name,
+                action: `Edited batch - ${editNotes}`
+            });
+            updates.timeline = timeline;
+            
+            // Save to database
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .update(updates)
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error updating batch:', error);
+                alert('Error saving changes. Please try again.');
+                return;
+            }
+            
+            alert(`Batch ${batchId} updated successfully!`);
+            closeEditBatch();
+            await loadBatches();
+            renderBatches();
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('editBatchModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditBatch();
             }
         });
     </script>
