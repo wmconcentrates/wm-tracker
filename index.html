@@ -894,6 +894,19 @@
                 </div>
                 
                 <div id="extractionForm" style="display: none;">
+                    <!-- Batch Destination Display -->
+                    <div id="batchDestinationSection" style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(59, 130, 246, 0.15)); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-purple);">
+                        <h3 style="color: var(--accent-purple); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                            <span>🎯</span> Planned Products for This Batch
+                        </h3>
+                        <div id="plannedProductsDisplay" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <!-- Products will be displayed here dynamically -->
+                        </div>
+                        <div id="batchTypeDisplay" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                            <!-- Batch type info will be displayed here -->
+                        </div>
+                    </div>
+
                     <!-- Step 1: Pre-Sift Only (shows first for pre-sift batches) -->
                     <div id="preSiftOnlySection" style="display: none; background: rgba(245, 158, 11, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-orange);">
                         <h3 style="color: var(--accent-orange); margin-bottom: 15px;">⚠️ Pre-Sift Required First</h3>
@@ -2032,6 +2045,35 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             if (this.value) {
                 const batch = batches.find(b => b.id === this.value);
                 document.getElementById('extractionDate').value = new Date().toISOString().split('T')[0];
+                
+                // Display planned products and batch info
+                const plannedProductsDisplay = document.getElementById('plannedProductsDisplay');
+                const batchTypeDisplay = document.getElementById('batchTypeDisplay');
+                
+                // Show planned products if available
+                if (batch.planned_products && batch.planned_products.length > 0) {
+                    plannedProductsDisplay.innerHTML = batch.planned_products.map(product => `
+                        <div style="background: rgba(147, 51, 234, 0.2); color: var(--accent-purple); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 2px solid var(--accent-purple);">
+                            ${product}
+                        </div>
+                    `).join('');
+                } else {
+                    plannedProductsDisplay.innerHTML = '<div style="color: var(--text-secondary); font-style: italic;">No specific products planned at intake</div>';
+                }
+                
+                // Show batch type and material agreement
+                batchTypeDisplay.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9rem;">
+                        <div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Material Agreement</div>
+                            <div style="font-weight: 600; color: var(--accent-blue);">${batch.material_agreement || 'Not specified'}</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Pre-Sift</div>
+                            <div style="font-weight: 600; color: ${batch.pre_sift === 'yes' ? 'var(--accent-orange)' : 'var(--accent-green)'};">${batch.pre_sift === 'yes' ? 'Yes - Sift first' : 'No - Direct to extraction'}</div>
+                        </div>
+                    </div>
+                `;
                 
                 // Check if this batch needs pre-sift AND hasn't had it done yet
                 if (batch.pre_sift === 'yes' && !batch.sift_sub_batch_created) {
