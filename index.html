@@ -4581,58 +4581,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 closeBatchDetails();
             }
         });
-            
-            const tableHTML = `
-                <table class="analytics-table">
-                    <thead>
-                        <tr>
-                            <th>Batch ID</th>
-                            <th>Strain</th>
-                            <th>Product</th>
-                            <th>Trim (g)</th>
-                            <th>Material Cost</th>
-                            <th>Yield %</th>
-                            <th>Units</th>
-                            <th>Cost/Unit</th>
-                            <th>Price/Unit</th>
-                            <th>Revenue</th>
-                            <th>Profit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${completedBatches.map(batch => {
-                            const materialCost = parseFloat(batch.material_cost || 0);
-                            const units = parseInt(batch.units_packaged || 0);
-                            const pricePerUnit = parseFloat(batch.wholesale_price || 0);
-                            const costPerUnit = units > 0 ? (materialCost / units) : 0;
-                            const revenue = pricePerUnit * units;
-                            const profit = revenue - materialCost;
-                            const profitClass = profit >= 0 ? 'profit-positive' : 'profit-negative';
-                            const yieldPercent = batch.trim_weight && batch.net_weight ? 
-                                ((parseFloat(batch.net_weight) / parseFloat(batch.trim_weight)) * 100).toFixed(2) : '0';
-                            
-                            return `
-                                <tr>
-                                    <td><strong>${batch.id}</strong></td>
-                                    <td>${batch.strain}</td>
-                                    <td>${batch.packaged_product_type || batch.product_made || 'N/A'}</td>
-                                    <td>${batch.trim_weight}g</td>
-                                    <td>$${materialCost.toFixed(2)}</td>
-                                    <td>${yieldPercent}%</td>
-                                    <td>${units}</td>
-                                    <td>$${costPerUnit.toFixed(2)}</td>
-                                    <td>$${pricePerUnit.toFixed(2)}</td>
-                                    <td>$${revenue.toFixed(2)}</td>
-                                    <td class="${profitClass}">$${profit.toFixed(2)}</td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
-            `;
-            
-            container.innerHTML = tableHTML;
-        }
 
         // Performance Analytics
         document.getElementById('performanceFilter')?.addEventListener('change', function() {
