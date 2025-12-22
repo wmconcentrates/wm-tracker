@@ -3257,9 +3257,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     </div>
                     
                     ${currentRole && (currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex') ? `
-                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
-                            <button class="btn" style="background: var(--accent-orange); flex: 1;" onclick="openEditBatch('${batch.id}')">✏️ Edit Batch</button>
-                            ${!batch.is_sub_batch ? `<button class="btn" style="background: var(--accent-green); flex: 1;" onclick="openCreateSubBatch('${batch.id}')">➕ Create Sub-Batch</button>` : ''}
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                            ${batch.is_sub_batch ? `
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="btn" style="background: var(--accent-orange); flex: 1;" onclick="openEditBatch('${batch.id}')">✏️ Edit Batch</button>
+                                    <button class="btn" style="background: var(--accent-red); flex: 1;" onclick="deleteSubBatch('${batch.id}')">🗑️ Delete Sub-Batch</button>
+                                </div>
+                            ` : `
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="btn" style="background: var(--accent-orange); flex: 1;" onclick="openEditBatch('${batch.id}')">✏️ Edit Batch</button>
+                                    <button class="btn" style="background: var(--accent-green); flex: 1;" onclick="openCreateSubBatch('${batch.id}')">➕ Create Sub-Batch</button>
+                                </div>
+                            `}
                         </div>
                     ` : ''}
                 </div>
@@ -4736,6 +4745,117 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 closeCreateSubBatch();
             }
         });
+
+        async function deleteSubBatch(subBatchId) {
+            if (!currentRole || (currentRole.name !== 'Ryan (Admin)' && currentRole.name !== 'Alex')) {
+                alert('Only Ryan and Alex can delete sub-batches');
+                return;
+            }
+            
+            const subBatch = batches.find(b => b.id === subBatchId);
+            if (!subBatch) {
+                alert('Sub-batch not found');
+                return;
+            }
+            
+            if (!subBatch.is_sub_batch) {
+                alert('This is not a sub-batch. Only sub-batches can be deleted this way.');
+                return;
+            }
+            
+            const parentBatchId = subBatch.parent_batch_id;
+            const parentBatch = batches.find(b => b.id === parentBatchId);
+            
+            const confirmation = confirm(
+                `⚠️ DELETE SUB-BATCH?\n\n` +
+                `Sub-Batch: ${subBatchId}\n` +
+                `Product: ${subBatch.product_made || 'N/A'}\n` +
+                `Weight: ${subBatch.final_weight || subBatch.net_weight || 'N/A'}g\n\n` +
+                `This will:\n` +
+                `• Delete this sub-batch permanently\n` +
+                `• Recalculate yields for remaining sub-batches\n` +
+                `• Update parent batch timeline\n\n` +
+                `This action CANNOT be undone!\n\n` +
+                `Type YES to confirm deletion.`
+            );
+            
+            if (!confirmation) return;
+            
+            const userConfirmation = prompt('Type YES in capital letters to confirm deletion:');
+            if (userConfirmation !== 'YES') {
+                alert('Deletion cancelled.');
+                return;
+            }
+            
+            // Delete the sub-batch
+            const { error: deleteError } = await supabaseClient
+                .from('wm_batches')
+                .delete()
+                .eq('id', subBatchId);
+            
+            if (deleteError) {
+                console.error('Error deleting sub-batch:', deleteError);
+                alert(`Error deleting sub-batch: ${deleteError.message}`);
+                return;
+            }
+            
+            // Recalculate remaining sub-batches if parent exists and has other sub-batches
+            if (parentBatch) {
+                const remainingSubBatches = batches.filter(b => 
+                    b.parent_batch_id === parentBatchId && 
+                    b.id !== subBatchId &&
+                    b.final_weight // Only completed sub-batches
+                );
+                
+                if (remainingSubBatches.length > 0) {
+                    const parentTrimWeight = parseFloat(parentBatch.adjusted_trim_weight || parentBatch.trim_weight || 0);
+                    const totalRemainingWeight = remainingSubBatches.reduce((sum, b) => 
+                        sum + parseFloat(b.final_weight || b.net_weight || 0), 0
+                    );
+                    
+                    // Recalculate trim for each remaining sub-batch
+                    for (const sub of remainingSubBatches) {
+                        const subWeight = parseFloat(sub.final_weight || sub.net_weight || 0);
+                        const recalculatedTrim = (subWeight / totalRemainingWeight) * parentTrimWeight;
+                        
+                        await supabaseClient
+                            .from('wm_batches')
+                            .update({ trim_weight: recalculatedTrim })
+                            .eq('id', sub.id);
+                    }
+                }
+                
+                // Update parent timeline
+                const parentTimeline = parentBatch.timeline || [];
+                parentTimeline.push({
+                    stage: 'admin',
+                    timestamp: new Date().toISOString(),
+                    user: currentRole.name,
+                    action: `Sub-batch ${subBatchId} deleted. Yields recalculated for remaining sub-batches.`
+                });
+                
+                await supabaseClient
+                    .from('wm_batches')
+                    .update({ timeline: parentTimeline })
+                    .eq('id', parentBatchId);
+                
+                const resultMessage = remainingSubBatches.length > 0 
+                    ? '✓ Remaining sub-batch yields recalculated' 
+                    : '✓ This was the last sub-batch';
+                alert(`✅ Sub-batch ${subBatchId} deleted successfully!\n\n${resultMessage}`);
+            } else {
+                alert(`✅ Sub-batch ${subBatchId} deleted successfully!`);
+            }
+            
+            await loadBatches();
+            renderBatches();
+            
+            // Refresh all selects
+            populateExtractionSelect();
+            populateFinishingSelect();
+            populatePackagingSelect();
+            populateTestingSelect();
+        }
 
         // ==============================================
         // METRC INTEGRATION FUNCTIONS
