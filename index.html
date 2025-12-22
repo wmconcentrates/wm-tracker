@@ -1552,8 +1552,10 @@
                     <button class="filter-btn active" data-filter="all">All</button>
                     <button class="filter-btn" data-filter="intake">Intake</button>
                     <button class="filter-btn" data-filter="extraction">Extraction</button>
-                    <button class="filter-btn" data-filter="finishing">Finishing</button>
+                    <button class="filter-btn" data-filter="finishing">Post Extraction</button>
                     <button class="filter-btn" data-filter="packaging">Packaging</button>
+                    <button class="filter-btn" data-filter="testing">Testing</button>
+                    <button class="filter-btn" data-filter="labeling">Labeling</button>
                     <button class="filter-btn" data-filter="complete">Complete</button>
                     <div class="search-box">
                         <input type="text" id="searchBatches" placeholder="Search batches...">
@@ -3387,7 +3389,41 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             let filteredBatches = batches;
             
             if (filter !== 'all') {
-                filteredBatches = batches.filter(b => b.status === filter);
+                if (filter === 'extraction') {
+                    // Show batches waiting for extraction (at intake status)
+                    filteredBatches = batches.filter(b => b.status === 'intake');
+                } else if (filter === 'finishing') {
+                    // Show batches waiting for post-extraction (at extraction status)
+                    filteredBatches = batches.filter(b => b.status === 'extraction');
+                } else if (filter === 'packaging') {
+                    // Show batches waiting for packaging (at finishing status)
+                    filteredBatches = batches.filter(b => b.status === 'finishing');
+                } else if (filter === 'testing') {
+                    // Show batches waiting for testing (at packaging status or complete without test results)
+                    filteredBatches = batches.filter(b => 
+                        b.status === 'packaging' || 
+                        (b.status === 'complete' && !b.test_thc_percent)
+                    );
+                } else if (filter === 'labeling') {
+                    // Show batches waiting for labeling (complete with test results but not labeled)
+                    filteredBatches = batches.filter(b => 
+                        b.status === 'complete' && 
+                        b.test_thc_percent && 
+                        !b.labels_applied
+                    );
+                } else if (filter === 'complete') {
+                    // Show fully completed batches
+                    filteredBatches = batches.filter(b => 
+                        b.status === 'complete' && 
+                        b.labels_applied
+                    );
+                } else if (filter === 'intake') {
+                    // Show just intake (newly created batches)
+                    filteredBatches = batches.filter(b => b.status === 'intake');
+                } else {
+                    // Fallback to status filter
+                    filteredBatches = batches.filter(b => b.status === filter);
+                }
             }
             
             if (searchTerm) {
