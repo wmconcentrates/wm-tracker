@@ -3216,14 +3216,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             alert(`✅ Batch ${batchId} marked as packaging in progress!\n\n` +
                   `Product Type: ${productType}\n` +
                   `Started by: ${currentRole.name}\n\n` +
-                  `Return here and click "Complete Packaging" when done.`);
+                  `This batch will remain in the dropdown until you click "Complete Packaging".`);
             
-            // Clear form and refresh
-            document.getElementById('packagingForm').style.display = 'none';
-            document.getElementById('packagingBatchSelect').value = '';
-            
+            // Refresh batch data but keep form open and batch selected
             await loadBatches();
             populatePackagingSelect();
+            
+            // Re-select the batch
+            document.getElementById('packagingBatchSelect').value = batchId;
+            document.getElementById('packagingForm').style.display = 'block';
         }
 
         async function submitPackaging() {
@@ -4269,14 +4270,29 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             alert(`✅ Batch ${batchId} marked as labeling in progress!\n\n` +
                   `Started by: ${currentRole.name}\n\n` +
-                  `Return here and click "Complete Labeling" when done.`);
+                  `This batch will remain in the dropdown until you click "Complete Labeling".`);
             
-            // Clear form and refresh
-            document.getElementById('labelingForm').style.display = 'none';
-            document.getElementById('labelingBatchSelect').value = '';
-            
+            // Refresh batch data but keep form open and batch selected
             await loadBatches();
             populateLabelingSelect();
+            
+            // Re-select the batch
+            document.getElementById('labelingBatchSelect').value = batchId;
+            document.getElementById('labelingForm').style.display = 'block';
+            
+            // Re-populate the label preview since batch was reselected
+            const updatedBatch = batches.find(b => b.id === batchId);
+            if (updatedBatch) {
+                displayLabelPreview(updatedBatch);
+                
+                // Reinitialize weight verification
+                const gramsLabeledInput = document.getElementById('gramsLabeled');
+                const expectedWeightEl = document.getElementById('expectedWeight');
+                if (gramsLabeledInput && expectedWeightEl) {
+                    const expectedGrams = parseFloat(updatedBatch.total_grams_packaged) || 0;
+                    expectedWeightEl.textContent = expectedGrams.toFixed(1) + 'g';
+                }
+            }
         }
 
         async function markAsLabeled() {
