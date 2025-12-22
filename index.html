@@ -4556,14 +4556,24 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         // ==============================================
 
         function openCreateSubBatch(batchId) {
+            console.log('openCreateSubBatch called with batchId:', batchId);
+            console.log('Current batches:', batches);
+            
             const batch = batches.find(b => b.id === batchId);
-            if (!batch) return;
+            console.log('Found batch:', batch);
+            
+            if (!batch) {
+                alert('Batch not found: ' + batchId);
+                return;
+            }
             
             // Store parent batch ID
             document.getElementById('subBatchParentId').value = batchId;
             
             // Generate next available sub-batch ID
             const existingSubBatches = batches.filter(b => b.parent_batch_id === batchId || b.id.startsWith(batchId + '-'));
+            console.log('Existing sub-batches:', existingSubBatches);
+            
             const subBatchLetters = existingSubBatches.map(b => {
                 const match = b.id.match(/-([A-Z]|SIFT)$/);
                 return match ? match[1] : null;
@@ -4576,6 +4586,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
             
             const newSubBatchId = `${batchId}-${nextLetter}`;
+            console.log('New sub-batch ID:', newSubBatchId);
             document.getElementById('newSubBatchId').value = newSubBatchId;
             
             // Show parent batch info
@@ -4594,7 +4605,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             document.getElementById('subBatchNotes').value = '';
             
             // Show modal
-            document.getElementById('createSubBatchModal').style.display = 'block';
+            console.log('Attempting to show modal...');
+            const modal = document.getElementById('createSubBatchModal');
+            console.log('Modal element:', modal);
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('Modal display set to block');
+            } else {
+                console.error('Modal element not found!');
+            }
         }
 
         function closeCreateSubBatch() {
