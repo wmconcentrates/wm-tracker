@@ -4619,10 +4619,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const modal = document.getElementById('createSubBatchModal');
             console.log('Modal element:', modal);
             if (modal) {
+                // Force hide first to ensure clean state
+                modal.style.display = 'none';
+                // Force browser repaint
+                modal.offsetHeight;
+                // Now show it
                 modal.style.display = 'block';
+                modal.style.visibility = 'visible';
+                modal.style.opacity = '1';
                 console.log('Modal display set to block');
+                console.log('Modal computed style:', window.getComputedStyle(modal).display);
+                console.log('Modal computed z-index:', window.getComputedStyle(modal).zIndex);
+                
+                // Scroll to top in case modal is below fold
+                window.scrollTo(0, 0);
             } else {
                 console.error('Modal element not found!');
+                alert('Error: Modal not found in DOM');
             }
         }
 
