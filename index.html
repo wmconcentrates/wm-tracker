@@ -995,7 +995,18 @@
                             <textarea id="extractionNotes" placeholder="Extraction conditions, observations, issues..."></textarea>
                         </div>
                         
-                        <button type="button" class="btn" onclick="submitExtraction()">Complete Extraction</button>
+                        <div style="background: rgba(59, 130, 246, 0.15); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <strong>💡 Workflow Options:</strong>
+                            <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
+                                <li><strong>Start Processing:</strong> Mark batch as in-progress (tracking only, can finish later)</li>
+                                <li><strong>Complete Extraction:</strong> Finish processing (skips "start" if single run)</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn" style="background: var(--accent-blue); flex: 1;" onclick="startProcessing()">▶️ Start Processing</button>
+                            <button type="button" class="btn" style="background: var(--accent-green); flex: 1;" onclick="submitExtraction()">✅ Complete Extraction</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2560,6 +2571,74 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Re-trigger the select to update the display
             document.getElementById('extractionBatchSelect').value = batchId;
             document.getElementById('extractionBatchSelect').dispatchEvent(new Event('change'));
+        }
+
+        // Start processing (marks batch as in-progress)
+        async function startProcessing() {
+            if (!currentUser) {
+                alert('Please select a user first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('extractionBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) return;
+            
+            const extractionDate = document.getElementById('extractionDate').value;
+            const extractionMethod = document.getElementById('extractionMethod').value;
+            
+            if (!extractionDate || !extractionMethod) {
+                alert('Please select extraction date and method');
+                return;
+            }
+            
+            const confirmation = confirm(
+                `Mark batch ${batchId} as STARTED?\n\n` +
+                `This will:\n` +
+                `• Add "Processing Started" to timeline\n` +
+                `• Keep status as "intake" (not yet complete)\n` +
+                `• Allow you to finish later\n\n` +
+                `You can skip this and go straight to "Complete Extraction" for single runs.`
+            );
+            
+            if (!confirmation) return;
+            
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'extraction',
+                user: currentRole ? currentRole.name : "Unknown",
+                date: new Date().toISOString(),
+                action: `Processing started - ${extractionMethod} method`
+            });
+            
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .update({
+                    extraction_date: extractionDate,
+                    extraction_method: extractionMethod,
+                    extraction_notes: document.getElementById('extractionNotes').value || null,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error marking batch as started:', error);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+            
+            alert(`✅ Batch ${batchId} marked as processing!\n\n` +
+                  `Method: ${extractionMethod}\n` +
+                  `Started by: ${currentRole.name}\n\n` +
+                  `Return here and click "Complete Extraction" when done.`);
+            
+            // Clear form and refresh
+            document.getElementById('extractionForm').style.display = 'none';
+            document.getElementById('extractionBatchSelect').value = '';
+            
+            await loadBatches();
+            populateExtractionSelect();
         }
 
         async function submitExtraction() {
