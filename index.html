@@ -1202,7 +1202,18 @@
                         <textarea id="packagingNotes" placeholder="Any issues, special packaging notes..."></textarea>
                     </div>
                     
-                    <button type="button" class="btn" onclick="submitPackaging()">Complete Packaging</button>
+                    <div style="background: rgba(59, 130, 246, 0.15); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <strong>💡 Workflow Options:</strong>
+                        <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
+                            <li><strong>Start Packaging:</strong> Mark batch as in-progress (tracking only, can finish later)</li>
+                            <li><strong>Complete Packaging:</strong> Finish packaging (skips "start" if single session)</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn" style="background: var(--accent-blue); flex: 1;" onclick="startPackaging()">▶️ Start Packaging</button>
+                        <button type="button" class="btn" style="background: var(--accent-green); flex: 1;" onclick="submitPackaging()">✅ Complete Packaging</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1358,12 +1369,20 @@
                         <textarea id="labelingNotes" placeholder="Any issues with labeling, printer problems, etc..."></textarea>
                     </div>
                     
-                    <button type="button" class="btn" style="background: var(--accent-green);" onclick="markAsLabeled()">✓ Mark Batch as Labeled</button>
+                    <div style="background: rgba(59, 130, 246, 0.15); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <strong>💡 Workflow Options:</strong>
+                        <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
+                            <li><strong>Start Labeling:</strong> Mark batch as in-progress (tracking only, can finish later)</li>
+                            <li><strong>Complete Labeling:</strong> Finish labeling with weight verification</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn" style="background: var(--accent-blue); flex: 1;" onclick="startLabeling()">▶️ Start Labeling</button>
+                        <button type="button" class="btn" style="background: var(--accent-green); flex: 1;" onclick="markAsLabeled()">✅ Complete Labeling</button>
+                    </div>
                 </div>
             </div>
-
-            <!-- Printer Status -->
-            <div id="printerStatus" style="margin-top: 20px;"></div>
         </div>
 
         <!-- Analytics -->
@@ -3139,6 +3158,74 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         document.getElementById('units1g').addEventListener('input', updateMultiSizeCalcs);
         document.getElementById('units4g').addEventListener('input', updateMultiSizeCalcs);
 
+        // Start packaging (marks batch as in-progress)
+        async function startPackaging() {
+            if (!currentUser) {
+                alert('Please select a user first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('packagingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) return;
+            
+            const packagingDate = document.getElementById('packagingDate').value;
+            const productType = document.getElementById('packagedProductType').value;
+            
+            if (!packagingDate || !productType) {
+                alert('Please select packaging date and product type');
+                return;
+            }
+            
+            const confirmation = confirm(
+                `Mark batch ${batchId} as STARTED packaging?\n\n` +
+                `This will:\n` +
+                `• Add "Packaging Started" to timeline\n` +
+                `• Keep status as "finishing" (not yet complete)\n` +
+                `• Allow you to finish later\n\n` +
+                `You can skip this and go straight to "Complete Packaging" for single sessions.`
+            );
+            
+            if (!confirmation) return;
+            
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'packaging',
+                user: currentRole ? currentRole.name : "Unknown",
+                date: new Date().toISOString(),
+                action: `Packaging started - ${productType}`
+            });
+            
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .update({
+                    packaging_date: packagingDate,
+                    packaged_product_type: productType,
+                    packaging_notes: document.getElementById('packagingNotes').value || null,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error marking batch as started:', error);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+            
+            alert(`✅ Batch ${batchId} marked as packaging in progress!\n\n` +
+                  `Product Type: ${productType}\n` +
+                  `Started by: ${currentRole.name}\n\n` +
+                  `Return here and click "Complete Packaging" when done.`);
+            
+            // Clear form and refresh
+            document.getElementById('packagingForm').style.display = 'none';
+            document.getElementById('packagingBatchSelect').value = '';
+            
+            await loadBatches();
+            populatePackagingSelect();
+        }
+
         async function submitPackaging() {
             console.log('=== submitPackaging START ===');
             
@@ -4133,6 +4220,63 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 console.error('Download error:', error);
                 alert('Error creating download. Check console.');
             }
+        }
+
+        // Start labeling (marks batch as in-progress)
+        async function startLabeling() {
+            if (!currentRole) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('labelingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) return;
+            
+            const confirmation = confirm(
+                `Mark batch ${batchId} as STARTED labeling?\n\n` +
+                `This will:\n` +
+                `• Add "Labeling Started" to timeline\n` +
+                `• Keep status as "complete" (not yet labeled)\n` +
+                `• Allow you to finish later\n\n` +
+                `You can skip this and go straight to "Complete Labeling" for single sessions.`
+            );
+            
+            if (!confirmation) return;
+            
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'labeling',
+                user: currentRole ? currentRole.name : "Unknown",
+                date: new Date().toISOString(),
+                action: 'Labeling started'
+            });
+            
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .update({
+                    labeling_notes: document.getElementById('labelingNotes').value || null,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error marking batch as started:', error);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+            
+            alert(`✅ Batch ${batchId} marked as labeling in progress!\n\n` +
+                  `Started by: ${currentRole.name}\n\n` +
+                  `Return here and click "Complete Labeling" when done.`);
+            
+            // Clear form and refresh
+            document.getElementById('labelingForm').style.display = 'none';
+            document.getElementById('labelingBatchSelect').value = '';
+            
+            await loadBatches();
+            populateLabelingSelect();
         }
 
         async function markAsLabeled() {
