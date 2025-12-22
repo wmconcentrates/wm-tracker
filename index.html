@@ -1210,14 +1210,17 @@
 
                     <!-- Product Name Section -->
                     <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(59, 130, 246, 0.15)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-purple);">
-                        <h3 style="color: var(--accent-purple); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                            <span>🏷️</span> Final Product Name & Classification (For Wholesale Shelf)
+                        <h3 style="color: var(--accent-purple); margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                            <span>🏷️</span> Final Product Name & Classification
                         </h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px; line-height: 1.5;">
+                            This will become the batch's display name and lid color. The original strain info is preserved in notes for compliance.
+                        </p>
                         <div class="form-grid">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label>Product Name</label>
                                 <input type="text" id="finalProductName" placeholder="e.g., Blue Dream Live Resin, Gelato Sugar Wax" required>
-                                <div class="help-text">This name will be used on labels and in METRC</div>
+                                <div class="help-text">Becomes the batch name in all views</div>
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label>Strain Type (Lid Color)</label>
@@ -3146,26 +3149,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     
                     <div class="batch-details">
                         <div class="batch-detail">
-                            <div class="batch-detail-label">Strain</div>
+                            <div class="batch-detail-label">Product</div>
                             <div class="batch-detail-value">${batch.strain} (${batch.strain_type})</div>
                         </div>
-                        ${batch.final_product_name ? `
-                            <div class="batch-detail">
-                                <div class="batch-detail-label">Final Product Name</div>
-                                <div class="batch-detail-value" style="color: var(--accent-purple); font-weight: 700;">
-                                    ${batch.final_product_name}
-                                    ${batch.final_strain_type && batch.final_strain_type !== batch.strain_type ? 
-                                        `<span style="display: block; font-size: 0.85rem; color: var(--accent-orange); margin-top: 3px;">
-                                            ${batch.final_strain_type} Lid (redesignated from ${batch.strain_type})
-                                        </span>` 
-                                    : batch.final_strain_type ? 
-                                        `<span style="display: block; font-size: 0.85rem; color: var(--accent-green); margin-top: 3px;">
-                                            ${batch.final_strain_type} Lid
-                                        </span>`
-                                    : ''}
-                                </div>
-                            </div>
-                        ` : ''}
                         <div class="batch-detail">
                             <div class="batch-detail-label">Trim Weight</div>
                             <div class="batch-detail-value">${batch.trim_weight}g</div>
@@ -3517,8 +3503,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 timeline: timeline
             };
             
-            // Store product name and strain type in notes for now until we add columns
-            const productInfo = `\n\n[PRODUCT INFO]\nName: ${finalProductName}\nType: ${finalStrainType}`;
+            // Update the batch strain name and strain_type to reflect the final product
+            // This makes batch IDs display the actual wholesale product name
+            updates.strain = finalProductName;
+            updates.strain_type = finalStrainType;
+            
+            // Store product info in notes for now until we add columns
+            const productInfo = `\n\n[PRODUCT INFO]\nOriginal Strain: ${batch.strain}\nOriginal Type: ${batch.strain_type}\nFinal Name: ${finalProductName}\nFinal Type: ${finalStrainType}`;
             updates.test_results_notes = (updates.test_results_notes || '') + productInfo;
             
             const { error } = await supabaseClient
