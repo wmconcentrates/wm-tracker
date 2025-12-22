@@ -1319,45 +1319,6 @@
                         </div>
                     </div>
 
-                    <!-- Zebra Printer Configuration -->
-                    <div style="background: rgba(59, 130, 246, 0.1); border: 2px solid var(--accent-blue); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                        <h3 style="color: var(--accent-blue); margin-bottom: 15px;">🖨️ Zebra Printer Setup</h3>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Print Server URL (for mobile printing)</label>
-                                <input type="text" id="printServerURL" placeholder="http://192.168.1.50:3000/print" value="">
-                                <div class="help-text">Leave blank to use localhost. See setup docs for mobile access.</div>
-                            </div>
-                            <div class="form-group">
-                                <label>Label Size (Circle)</label>
-                                <select id="labelSize">
-                                    <option value="1.0">1.0" Diameter</option>
-                                    <option value="1.5" selected>1.5" Diameter</option>
-                                    <option value="2.0">2.0" Diameter</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Labels Per Unit</label>
-                                <input type="number" id="labelsPerUnit" value="1" min="1">
-                                <div class="help-text">How many labels per jar/cart/pack?</div>
-                            </div>
-                        </div>
-                        <button type="button" class="btn" style="background: var(--accent-blue);" onclick="savePrintSettings()">Save Print Settings</button>
-                    </div>
-
-                    <!-- Label Preview & Print -->
-                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                        <h3 style="color: var(--accent-green); margin-bottom: 15px;">📋 Label Preview</h3>
-                        <div id="zplPreview" style="background: white; color: black; padding: 20px; border-radius: 5px; font-family: monospace; font-size: 0.85rem; margin-bottom: 15px; max-height: 300px; overflow-y: auto;">
-                            <!-- ZPL code preview will show here -->
-                        </div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <input type="number" id="labelQuantity" min="1" style="width: 100px; padding: 10px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary);" placeholder="Qty">
-                            <button type="button" class="btn" onclick="printLabels()">🖨️ Print Labels to Zebra</button>
-                            <button type="button" class="btn" style="background: var(--accent-orange);" onclick="downloadZPL()">⬇️ Download ZPL File</button>
-                        </div>
-                    </div>
-
                     <!-- Weight Verification -->
                     <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-green);">
                         <h3 style="color: var(--accent-green); margin-bottom: 15px;">📊 Total Grams Labeled</h3>
@@ -3809,10 +3770,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             if (this.value) {
                 const batch = batches.find(b => b.id === this.value);
                 displayLabelPreview(batch);
-                generateZPL(batch);
-                
-                // Set default quantity to units packaged
-                document.getElementById('labelQuantity').value = batch.units_packaged || 1;
                 
                 // Initialize weight verification if elements exist
                 const gramsLabeledInput = document.getElementById('gramsLabeled');
