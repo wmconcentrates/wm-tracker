@@ -848,6 +848,7 @@
                                 <option value="Indica">Indica (Blue Lid)</option>
                                 <option value="Sativa">Sativa (Red Lid)</option>
                                 <option value="Hybrid">Hybrid (Green Lid)</option>
+                                <option value="Dealer's Choice">Dealer's Choice (Decide at Testing)</option>
                             </select>
                         </div>
                     </div>
@@ -1220,6 +1221,10 @@
                         <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px; line-height: 1.5;">
                             This will become the batch's display name and lid color. The original strain info is preserved in notes for compliance.
                         </p>
+                        <div id="dealersChoiceAlert" style="display: none; background: rgba(245, 158, 11, 0.2); border: 2px solid var(--accent-orange); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                            <strong style="color: var(--accent-orange);">🎲 Dealer's Choice Batch</strong>
+                            <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">This batch was marked for dealer's choice at intake. Select the final strain type below.</p>
+                        </div>
                         <div class="form-grid">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label>Product Name</label>
@@ -3340,7 +3345,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 
                 // Auto-populate strain type from batch, but allow redesignation
                 const strainType = batch.final_strain_type || batch.strain_type;
-                document.getElementById('finalStrainType').value = strainType;
+                
+                // Show Dealer's Choice alert if this batch was marked as such
+                const dealersChoiceAlert = document.getElementById('dealersChoiceAlert');
+                if (batch.strain_type === "Dealer's Choice") {
+                    dealersChoiceAlert.style.display = 'block';
+                    // Default to Hybrid for Dealer's Choice, but user can select anything
+                    document.getElementById('finalStrainType').value = 'Hybrid';
+                } else {
+                    dealersChoiceAlert.style.display = 'none';
+                    document.getElementById('finalStrainType').value = strainType;
+                }
                 
                 // Pre-fill if test results already exist
                 if (batch.test_results_received_date) {
