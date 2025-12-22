@@ -1265,8 +1265,8 @@
                             <input type="date" id="testSubmittedDate" required>
                         </div>
                         <div class="form-group">
-                            <label>Expiration Date (Auto: 9 months)</label>
-                            <input type="date" id="testExpirationDate" readonly style="background: var(--bg-primary); color: var(--accent-green); font-weight: 700;">
+                            <label>Expiration Date</label>
+                            <input type="date" id="testExpirationDate" required>
                         </div>
                         <div class="form-group">
                             <label>Test Results Received Date</label>
@@ -3671,17 +3671,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             // Check RTA status after loading
             checkRTAStatus();
-        });
-
-        // Auto-calculate expiration date (9 months from submission)
-        document.getElementById('testSubmittedDate').addEventListener('change', function() {
-            if (this.value) {
-                const submitDate = new Date(this.value);
-                const expirationDate = new Date(submitDate);
-                expirationDate.setMonth(expirationDate.getMonth() + 9);
-                
-                document.getElementById('testExpirationDate').value = expirationDate.toISOString().split('T')[0];
-            }
         });
 
         // Check RTA status and show reminder if needed - BY EXTRACTION METHOD
