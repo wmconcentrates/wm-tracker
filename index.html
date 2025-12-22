@@ -1591,6 +1591,73 @@
         </div>
     </div>
 
+    <!-- Create Sub-Batch Modal -->
+    <div id="createSubBatchModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; overflow-y: auto;">
+        <div style="max-width: 800px; margin: 50px auto; background: var(--bg-secondary); border-radius: 16px; padding: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--accent-green);">➕ Create Retroactive Sub-Batch</h2>
+                <button onclick="closeCreateSubBatch()" style="background: none; border: none; color: var(--text-primary); font-size: 2rem; cursor: pointer; padding: 0; width: 40px; height: 40px;">&times;</button>
+            </div>
+            
+            <div style="background: rgba(59, 130, 246, 0.15); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <strong>ℹ️ About Retroactive Sub-Batches:</strong>
+                <p style="margin: 8px 0 0 0; line-height: 1.6;">
+                    Use this when a batch was split into multiple products, but wasn't recorded as sub-batches during production. 
+                    This creates a new sub-batch with its own ID, product type, and weight from the parent batch's final weight.
+                </p>
+            </div>
+
+            <div id="subBatchParentInfo" style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <h3 style="color: var(--accent-purple); margin-bottom: 10px;">Parent Batch Info</h3>
+                <div id="subBatchParentDetails"></div>
+            </div>
+            
+            <div id="createSubBatchForm">
+                <input type="hidden" id="subBatchParentId">
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Sub-Batch ID</label>
+                        <input type="text" id="newSubBatchId" readonly style="background: var(--bg-primary); font-family: 'Space Mono', monospace; font-weight: 700; color: var(--accent-green);">
+                        <div class="help-text">Auto-generated from parent batch</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Product Type</label>
+                        <select id="subBatchProductType" required>
+                            <option value="">Select Product Type</option>
+                            <option value="Wax">Wax</option>
+                            <option value="Sugar Wax">Sugar Wax</option>
+                            <option value="Shatter">Shatter</option>
+                            <option value="Live Resin Oil">Live Resin Oil (Carts)</option>
+                            <option value="Brick Hash">Brick Hash</option>
+                            <option value="Hash Hits">Hash Hits</option>
+                            <option value="RSO">RSO</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Final Weight (grams)</label>
+                        <input type="number" id="subBatchWeight" step="0.1" required>
+                        <div class="help-text">Net weight of this sub-batch</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Sample Weight Pulled (grams)</label>
+                        <input type="number" id="subBatchSampleWeight" step="0.1" value="0">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Notes / Reason for Retroactive Creation</label>
+                    <textarea id="subBatchNotes" placeholder="Why is this sub-batch being created retroactively? What happened?" required></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn" style="background: var(--accent-green); flex: 1;" onclick="saveSubBatch()">✅ Create Sub-Batch</button>
+                    <button class="btn" style="background: var(--bg-tertiary); flex: 1;" onclick="closeCreateSubBatch()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- METRC Manifest Import Modal -->
     <div id="metrcImportModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10000; overflow-y: auto;">
         <div style="max-width: 1200px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 40px; border: 3px solid var(--accent-blue);">
@@ -3191,8 +3258,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     </div>
                     
                     ${currentRole && (currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex') ? `
-                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
-                            <button class="btn" style="background: var(--accent-orange); width: 100%;" onclick="openEditBatch('${batch.id}')">✏️ Edit Batch</button>
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
+                            <button class="btn" style="background: var(--accent-orange); flex: 1;" onclick="openEditBatch('${batch.id}')">✏️ Edit Batch</button>
+                            ${!batch.is_sub_batch ? `<button class="btn" style="background: var(--accent-green); flex: 1;" onclick="openCreateSubBatch('${batch.id}')">➕ Create Sub-Batch</button>` : ''}
                         </div>
                     ` : ''}
                 </div>
@@ -4472,6 +4540,181 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         document.getElementById('editBatchModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeEditBatch();
+            }
+        });
+
+        // ==============================================
+        // CREATE SUB-BATCH FUNCTIONS
+        // ==============================================
+
+        function openCreateSubBatch(batchId) {
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) return;
+            
+            // Store parent batch ID
+            document.getElementById('subBatchParentId').value = batchId;
+            
+            // Generate next available sub-batch ID
+            const existingSubBatches = batches.filter(b => b.parent_batch_id === batchId || b.id.startsWith(batchId + '-'));
+            const subBatchLetters = existingSubBatches.map(b => {
+                const match = b.id.match(/-([A-Z]|SIFT)$/);
+                return match ? match[1] : null;
+            }).filter(l => l && l !== 'SIFT');
+            
+            let nextLetter = 'A';
+            if (subBatchLetters.length > 0) {
+                const lastLetter = subBatchLetters.sort().pop();
+                nextLetter = String.fromCharCode(lastLetter.charCodeAt(0) + 1);
+            }
+            
+            const newSubBatchId = `${batchId}-${nextLetter}`;
+            document.getElementById('newSubBatchId').value = newSubBatchId;
+            
+            // Show parent batch info
+            const parentInfo = `
+                <p><strong>Batch ID:</strong> ${batch.id}</p>
+                <p><strong>Product:</strong> ${batch.strain} (${batch.strain_type})</p>
+                <p><strong>Product Made:</strong> ${batch.product_made || 'N/A'}</p>
+                <p><strong>Final Weight:</strong> ${batch.final_weight || batch.net_weight || 'N/A'}g</p>
+                <p><strong>Status:</strong> ${batch.status}</p>
+                ${existingSubBatches.length > 0 ? `<p style="color: var(--accent-orange);"><strong>Existing Sub-Batches:</strong> ${existingSubBatches.map(b => b.id).join(', ')}</p>` : ''}
+            `;
+            document.getElementById('subBatchParentDetails').innerHTML = parentInfo;
+            
+            // Clear form
+            document.getElementById('subBatchProductType').value = '';
+            document.getElementById('subBatchWeight').value = '';
+            document.getElementById('subBatchSampleWeight').value = '0';
+            document.getElementById('subBatchNotes').value = '';
+            
+            // Show modal
+            document.getElementById('createSubBatchModal').style.display = 'block';
+        }
+
+        function closeCreateSubBatch() {
+            document.getElementById('createSubBatchModal').style.display = 'none';
+        }
+
+        async function saveSubBatch() {
+            if (!currentRole) {
+                alert('Please login first!');
+                return;
+            }
+            
+            const parentBatchId = document.getElementById('subBatchParentId').value;
+            const parentBatch = batches.find(b => b.id === parentBatchId);
+            
+            if (!parentBatch) {
+                alert('Parent batch not found');
+                return;
+            }
+            
+            const newSubBatchId = document.getElementById('newSubBatchId').value;
+            const productType = document.getElementById('subBatchProductType').value;
+            const finalWeight = parseFloat(document.getElementById('subBatchWeight').value);
+            const sampleWeight = parseFloat(document.getElementById('subBatchSampleWeight').value) || 0;
+            const notes = document.getElementById('subBatchNotes').value;
+            
+            if (!productType || !finalWeight || finalWeight <= 0) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            if (!notes.trim()) {
+                alert('Please enter a reason for creating this retroactive sub-batch');
+                return;
+            }
+            
+            const netWeight = finalWeight - sampleWeight;
+            
+            // Calculate proportional trim used
+            const parentTrimWeight = parseFloat(parentBatch.adjusted_trim_weight || parentBatch.trim_weight || 0);
+            const parentTotalOutput = parseFloat(parentBatch.final_weight || parentBatch.net_weight || 0);
+            const trimUsed = parentTotalOutput > 0 ? (finalWeight / parentTotalOutput) * parentTrimWeight : 0;
+            
+            // Create sub-batch
+            const subBatch = {
+                id: newSubBatchId,
+                strain: parentBatch.strain,
+                strain_type: parentBatch.strain_type,
+                trim_weight: trimUsed,
+                material_cost: 0, // Proportional cost could be calculated if needed
+                material_agreement: parentBatch.material_agreement,
+                pre_sift: 'no',
+                cultivation_license: parentBatch.cultivation_license,
+                grower_name: parentBatch.grower_name,
+                metrc_tags: parentBatch.metrc_tags,
+                intake_date: parentBatch.intake_date,
+                planned_products: [productType],
+                intake_notes: `Retroactive sub-batch created from ${parentBatchId}. ${notes}`,
+                status: parentBatch.status, // Inherit parent status
+                intake_user: parentBatch.intake_user,
+                
+                // Mark as sub-batch
+                is_sub_batch: true,
+                parent_batch_id: parentBatchId,
+                
+                // Set extraction/finishing data
+                extraction_date: parentBatch.extraction_date,
+                extraction_method: parentBatch.extraction_method,
+                product_made: productType,
+                extraction_notes: `Sub-batch of ${parentBatchId}`,
+                extraction_user: parentBatch.extraction_user,
+                
+                finishing_date: parentBatch.finishing_date || new Date().toISOString().split('T')[0],
+                final_weight: finalWeight,
+                sample_weight: sampleWeight,
+                net_weight: netWeight,
+                finishing_notes: `Retroactive sub-batch. ${notes}`,
+                finishing_user: currentRole.name,
+                
+                timeline: [
+                    {
+                        stage: 'intake',
+                        timestamp: parentBatch.intake_date,
+                        user: parentBatch.intake_user,
+                        action: 'Batch created (parent)'
+                    },
+                    {
+                        stage: 'extraction',
+                        timestamp: parentBatch.extraction_date || new Date().toISOString(),
+                        user: parentBatch.extraction_user || currentRole.name,
+                        action: `Extracted as ${productType}`
+                    },
+                    {
+                        stage: 'finishing',
+                        timestamp: new Date().toISOString(),
+                        user: currentRole.name,
+                        action: `Retroactive sub-batch created: ${finalWeight}g (${netWeight}g net) - ${notes}`
+                    }
+                ],
+                created_at: new Date().toISOString()
+            };
+            
+            console.log('Creating retroactive sub-batch:', subBatch);
+            
+            // Insert sub-batch
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .insert([subBatch]);
+            
+            if (error) {
+                console.error('Error creating sub-batch:', error);
+                alert(`Error creating sub-batch: ${error.message}`);
+                return;
+            }
+            
+            alert(`✅ Sub-batch ${newSubBatchId} created successfully!\n\nProduct: ${productType}\nWeight: ${finalWeight}g (${netWeight}g net)\n\nThis sub-batch is now visible in the dashboard.`);
+            
+            closeCreateSubBatch();
+            await loadBatches();
+            renderBatches();
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('createSubBatchModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCreateSubBatch();
             }
         });
 
