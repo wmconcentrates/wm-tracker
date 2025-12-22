@@ -4591,8 +4591,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             // Clear form
             document.getElementById('subBatchProductType').value = '';
-            document.getElementById('subBatchWeight').value = '';
-            document.getElementById('subBatchSampleWeight').value = '0';
             document.getElementById('subBatchNotes').value = '';
             
             // Show modal
@@ -4682,7 +4680,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 final_weight: null,
                 sample_weight: null,
                 net_weight: null,
-                finishing_notes: `Retroactive sub-batch - awaiting post-processing. Target weight: ${finalWeight}g`,
+                finishing_notes: `Retroactive sub-batch - awaiting post-processing`,
                 finishing_user: null,
                 
                 timeline: [
