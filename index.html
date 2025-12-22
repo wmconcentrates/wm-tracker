@@ -4627,10 +4627,32 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             const netWeight = finalWeight - sampleWeight;
             
-            // Calculate proportional trim used
+            // Calculate proportional trim used from parent
             const parentTrimWeight = parseFloat(parentBatch.adjusted_trim_weight || parentBatch.trim_weight || 0);
-            const parentTotalOutput = parseFloat(parentBatch.final_weight || parentBatch.net_weight || 0);
-            const trimUsed = parentTotalOutput > 0 ? (finalWeight / parentTotalOutput) * parentTrimWeight : 0;
+            
+            // Get all existing sub-batches BEFORE creating new one
+            const existingSubBatches = batches.filter(b => 
+                (b.parent_batch_id === parentBatchId || b.id.startsWith(parentBatchId + '-')) && 
+                b.id !== parentBatchId
+            );
+            
+            // Calculate new total output (existing sub-batches + new one)
+            const existingSubBatchesWeight = existingSubBatches.reduce((sum, b) => 
+                sum + parseFloat(b.final_weight || b.net_weight || 0), 0
+            );
+            const newTotalOutput = existingSubBatchesWeight + finalWeight;
+            
+            // Calculate trim allocation for new sub-batch
+            const trimUsed = (finalWeight / newTotalOutput) * parentTrimWeight;
+            
+            // Determine status based on parent - set to 'finishing' so it shows up for packaging
+            let newStatus = 'finishing';
+            if (parentBatch.status === 'complete') {
+                // If parent is complete, new sub-batch goes to packaging
+                newStatus = 'packaging';
+            } else if (parentBatch.status === 'testing' || parentBatch.status === 'labeling') {
+                newStatus = 'packaging';
+            }
             
             // Create sub-batch
             const subBatch = {
@@ -4638,7 +4660,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 strain: parentBatch.strain,
                 strain_type: parentBatch.strain_type,
                 trim_weight: trimUsed,
-                material_cost: 0, // Proportional cost could be calculated if needed
+                material_cost: 0,
                 material_agreement: parentBatch.material_agreement,
                 pre_sift: 'no',
                 cultivation_license: parentBatch.cultivation_license,
@@ -4647,7 +4669,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 intake_date: parentBatch.intake_date,
                 planned_products: [productType],
                 intake_notes: `Retroactive sub-batch created from ${parentBatchId}. ${notes}`,
-                status: parentBatch.status, // Inherit parent status
+                status: newStatus,
                 intake_user: parentBatch.intake_user,
                 
                 // Mark as sub-batch
@@ -4694,21 +4716,62 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             console.log('Creating retroactive sub-batch:', subBatch);
             
             // Insert sub-batch
-            const { error } = await supabaseClient
+            const { error: insertError } = await supabaseClient
                 .from('wm_batches')
                 .insert([subBatch]);
             
-            if (error) {
-                console.error('Error creating sub-batch:', error);
-                alert(`Error creating sub-batch: ${error.message}`);
+            if (insertError) {
+                console.error('Error creating sub-batch:', insertError);
+                alert(`Error creating sub-batch: ${insertError.message}`);
                 return;
             }
             
-            alert(`✅ Sub-batch ${newSubBatchId} created successfully!\n\nProduct: ${productType}\nWeight: ${finalWeight}g (${netWeight}g net)\n\nThis sub-batch is now visible in the dashboard.`);
+            // Now recalculate trim allocation for ALL sub-batches (including the new one)
+            const allSubBatches = [...existingSubBatches, subBatch];
+            
+            // Update each sub-batch with recalculated trim
+            for (const sub of allSubBatches) {
+                const subWeight = parseFloat(sub.final_weight || sub.net_weight || 0);
+                const recalculatedTrim = (subWeight / newTotalOutput) * parentTrimWeight;
+                
+                const { error: updateError } = await supabaseClient
+                    .from('wm_batches')
+                    .update({
+                        trim_weight: recalculatedTrim
+                    })
+                    .eq('id', sub.id);
+                
+                if (updateError) {
+                    console.error(`Error updating trim for ${sub.id}:`, updateError);
+                }
+            }
+            
+            // Update parent batch timeline
+            const parentTimeline = parentBatch.timeline || [];
+            parentTimeline.push({
+                stage: 'admin',
+                timestamp: new Date().toISOString(),
+                user: currentRole.name,
+                action: `Retroactive sub-batch created: ${newSubBatchId} (${finalWeight}g). All sub-batch yields recalculated.`
+            });
+            
+            await supabaseClient
+                .from('wm_batches')
+                .update({ timeline: parentTimeline })
+                .eq('id', parentBatchId);
+            
+            const yieldPercent = parentTrimWeight > 0 ? ((finalWeight / trimUsed) * 100).toFixed(2) : 0;
+            alert(`✅ Sub-batch ${newSubBatchId} created successfully!\n\nProduct: ${productType}\nWeight: ${finalWeight}g (${netWeight}g net)\nTrim Used: ${trimUsed.toFixed(1)}g\nYield: ${yieldPercent}%\n\n✓ All sub-batch yields recalculated\n✓ Status: ${newStatus}\n✓ Ready for ${newStatus === 'packaging' ? 'packaging' : 'next stage'}`);
             
             closeCreateSubBatch();
             await loadBatches();
             renderBatches();
+            
+            // Refresh the relevant selects
+            if (newStatus === 'packaging') {
+                populatePackagingSelect();
+            }
+            populateTestingSelect();
         }
 
         // Close modal when clicking outside
