@@ -4598,38 +4598,94 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             // Calculate stage durations from timeline
             let extractionTime = null;
+            let finishingTime = null;
             let packagingTime = null;
+            let testingTime = null;
             let labelingTime = null;
             
             if (batch.timeline && batch.timeline.length > 0) {
+                console.log('Timeline for', batch.id, ':', batch.timeline);
+                
                 // Find extraction start and complete
-                const extractionStart = batch.timeline.find(t => t.action && t.action.includes('Processing started'));
-                const extractionComplete = batch.timeline.find(t => t.stage === 'extraction' && (t.action.includes('completed') || t.action.includes('Extracted')));
+                const extractionStart = batch.timeline.find(t => 
+                    t.action && (t.action.includes('Processing started') || t.action.includes('Extraction started'))
+                );
+                const extractionComplete = batch.timeline.find(t => 
+                    (t.stage === 'extraction' || t.stage === 'finishing') && 
+                    t.action && 
+                    (t.action.includes('completed') || t.action.includes('Extracted') || t.action.includes('Extraction completed'))
+                );
                 
                 if (extractionStart && extractionComplete) {
                     const startTime = new Date(extractionStart.date || extractionStart.timestamp);
                     const endTime = new Date(extractionComplete.date || extractionComplete.timestamp);
                     extractionTime = (endTime - startTime) / (1000 * 60); // minutes
+                    console.log('Extraction time:', extractionTime, 'minutes');
+                }
+                
+                // Find finishing/post-extraction start and complete (if exists)
+                const finishingStart = batch.timeline.find(t => 
+                    t.action && (t.action.includes('Post-processing started') || t.action.includes('Finishing started'))
+                );
+                const finishingComplete = batch.timeline.find(t => 
+                    t.stage === 'finishing' && 
+                    t.action && 
+                    (t.action.includes('Finishing completed') || t.action.includes('Post-extraction completed'))
+                );
+                
+                if (finishingStart && finishingComplete) {
+                    const startTime = new Date(finishingStart.date || finishingStart.timestamp);
+                    const endTime = new Date(finishingComplete.date || finishingComplete.timestamp);
+                    finishingTime = (endTime - startTime) / (1000 * 60); // minutes
+                    console.log('Finishing time:', finishingTime, 'minutes');
                 }
                 
                 // Find packaging start and complete
-                const packagingStart = batch.timeline.find(t => t.action && t.action.includes('Packaging started'));
-                const packagingComplete = batch.timeline.find(t => t.stage === 'packaging' && t.action && (t.action.includes('packaged') || t.action.includes('Packaging completed')));
+                const packagingStart = batch.timeline.find(t => 
+                    t.action && t.action.includes('Packaging started')
+                );
+                const packagingComplete = batch.timeline.find(t => 
+                    t.stage === 'packaging' && 
+                    t.action && 
+                    (t.action.includes('packaged') || t.action.includes('Packaging completed') || t.action.includes('units packaged'))
+                );
                 
                 if (packagingStart && packagingComplete) {
                     const startTime = new Date(packagingStart.date || packagingStart.timestamp);
                     const endTime = new Date(packagingComplete.date || packagingComplete.timestamp);
                     packagingTime = (endTime - startTime) / (1000 * 60); // minutes
+                    console.log('Packaging time:', packagingTime, 'minutes');
+                }
+                
+                // Find testing start and complete (test submitted to results received)
+                const testSubmitted = batch.timeline.find(t => 
+                    t.action && (t.action.includes('Test submitted') || t.action.includes('Submitted for testing'))
+                );
+                const testComplete = batch.timeline.find(t => 
+                    t.action && (t.action.includes('Test results recorded') || t.action.includes('results received'))
+                );
+                
+                if (testSubmitted && testComplete) {
+                    const startTime = new Date(testSubmitted.date || testSubmitted.timestamp);
+                    const endTime = new Date(testComplete.date || testComplete.timestamp);
+                    testingTime = (endTime - startTime) / (1000 * 60); // minutes
+                    console.log('Testing time:', testingTime, 'minutes');
                 }
                 
                 // Find labeling start and complete
-                const labelingStart = batch.timeline.find(t => t.action && t.action.includes('Labeling started'));
-                const labelingComplete = batch.timeline.find(t => t.stage === 'labeling' && t.timestamp);
+                const labelingStart = batch.timeline.find(t => 
+                    t.action && t.action.includes('Labeling started')
+                );
+                const labelingComplete = batch.timeline.find(t => 
+                    t.stage === 'labeling' && 
+                    (t.action && t.action.includes('labeled') || t.timestamp)
+                );
                 
                 if (labelingStart && labelingComplete) {
                     const startTime = new Date(labelingStart.date || labelingStart.timestamp);
                     const endTime = new Date(labelingComplete.date || labelingComplete.timestamp);
                     labelingTime = (endTime - startTime) / (1000 * 60); // minutes
+                    console.log('Labeling time:', labelingTime, 'minutes');
                 }
             }
             
@@ -4652,6 +4708,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         <div style="font-size: 2rem; margin-bottom: 5px;">✨</div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">Finishing</div>
                         <div style="font-weight: 700;">${finishingDate.toLocaleDateString()}</div>
+                        ${finishingTime ? `<div style="font-size: 0.9rem; color: var(--accent-green); font-weight: 700; margin-top: 5px;">⏱️ ${formatDuration(finishingTime)}</div>` : ''}
                     </div>` : ''}
                     ${packagingDate ? `
                     <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
@@ -4665,6 +4722,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         <div style="font-size: 2rem; margin-bottom: 5px;">🧪</div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">Testing</div>
                         <div style="font-weight: 700;">${testingDate.toLocaleDateString()}</div>
+                        ${testingTime ? `<div style="font-size: 0.9rem; color: var(--accent-green); font-weight: 700; margin-top: 5px;">⏱️ ${formatDuration(testingTime)}</div>` : ''}
                     </div>` : ''}
                     ${labelingDate ? `
                     <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
