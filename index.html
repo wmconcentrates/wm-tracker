@@ -2636,11 +2636,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         // Finishing functions
         function populateFinishingSelect() {
             const select = document.getElementById('finishingBatchSelect');
-            const extractionBatches = batches.filter(b => b.status === 'extraction' && !b.is_sub_batch);
+            // Include both regular batches AND sub-batches that are at extraction status
+            // (Sub-batches can be retroactively created and need post-processing)
+            const extractionBatches = batches.filter(b => b.status === 'extraction');
             
             select.innerHTML = '<option value="">Select a batch...</option>';
             extractionBatches.forEach(batch => {
-                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.product_made} (${batch.crude_weight || 0}g crude)</option>`;
+                const label = batch.is_sub_batch ? `${batch.id} - ${batch.strain} - ${batch.product_made} (SUB-BATCH)` : `${batch.id} - ${batch.strain} - ${batch.product_made} (${batch.crude_weight || 0}g crude)`;
+                select.innerHTML += `<option value="${batch.id}">${label}</option>`;
             });
         }
 
@@ -2658,10 +2661,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     <p><strong>Product Type:</strong> ${batch.product_made}</p>
                     <p><strong>Material Agreement:</strong> ${batch.material_agreement}</p>
                 `;
-                if (batch.sift_weight) {
-                    info += `<p><strong>Pre-Sift Collected:</strong> ${batch.sift_weight}g</p>`;
+                
+                if (batch.is_sub_batch) {
+                    info += `<p style="color: var(--accent-purple); font-weight: 700;"><strong>⚡ RETROACTIVE SUB-BATCH</strong> of ${batch.parent_batch_id}</p>`;
+                    info += `<p style="color: var(--accent-orange);"><strong>Note:</strong> Enter the actual weight of this separated material</p>`;
+                } else {
+                    if (batch.sift_weight) {
+                        info += `<p><strong>Pre-Sift Collected:</strong> ${batch.sift_weight}g</p>`;
+                    }
+                    info += `<p style="color: var(--accent-orange);"><strong>Note:</strong> Actual weight will be entered below or when splitting</p>`;
                 }
-                info += `<p style="color: var(--accent-orange);"><strong>Note:</strong> Actual weight will be entered below or when splitting</p>`;
+                
                 document.getElementById('batchInfoContent').innerHTML = info;
             }
         });
