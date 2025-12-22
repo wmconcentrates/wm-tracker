@@ -4304,9 +4304,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const batchId = document.getElementById('labelingBatchSelect').value;
             const batch = batches.find(b => b.id === batchId);
             
-            if (!batch) return;
+            if (!batch) {
+                alert('Please select a batch first');
+                return;
+            }
             
-            const quantity = parseInt(document.getElementById('labelQuantity').value) || batch.units_packaged;
+            // Use units packaged as the quantity (no separate labelQuantity input anymore)
+            const quantity = batch.units_packaged || 0;
             
             // Check if weight verification fields exist
             const gramsLabeledInput = document.getElementById('gramsLabeled');
@@ -4339,7 +4343,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             const confirmMsg = gramsLabeled 
                 ? `Mark ${batchId} as labeled?\n\nGrams Labeled: ${gramsLabeled.toFixed(1)}g\nUnits: ${quantity}`
-                : `Mark ${batchId} as labeled?\n\n${quantity} labels applied`;
+                : `Mark ${batchId} as labeled?\n\n${quantity} units`;
                 
             if (!confirm(confirmMsg)) {
                 return;
@@ -4349,7 +4353,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             timeline.push({
                 stage: 'labeling',
                 timestamp: new Date().toISOString(),
-                user: currentRole ? currentRole.name : "Unknown"
+                user: currentRole ? currentRole.name : "Unknown",
+                action: gramsLabeled ? `Labeled ${quantity} units - ${gramsLabeled.toFixed(1)}g total` : `Labeled ${quantity} units`
             });
             
             const updateData = {
