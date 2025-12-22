@@ -1407,33 +1407,77 @@
 
         <!-- Analytics -->
         <div class="station-content" id="analytics">
-            <div class="stats-grid">
+            <h2 style="margin-bottom: 30px;">📊 Completed Batches Analytics</h2>
+            
+            <!-- Summary Stats -->
+            <div class="stats-grid" style="margin-bottom: 40px;">
                 <div class="stat-card">
                     <div class="stat-value" id="avgYield">0%</div>
                     <div class="stat-label">Average Yield</div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-value" id="avgThc">0%</div>
+                    <div class="stat-label">Average THC</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgProcessingTime">0d</div>
+                    <div class="stat-label">Avg Processing Time</div>
+                </div>
+                <div class="stat-card">
                     <div class="stat-value" id="avgCostPerGram">$0</div>
                     <div class="stat-label">Avg Cost Per Gram</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="avgCostPerUnit">$0</div>
-                    <div class="stat-label">Avg Cost Per Unit</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="totalProfit">$0</div>
-                    <div class="stat-label">Potential Profit</div>
-                </div>
             </div>
 
-            <div class="batch-list">
-                <h2>💰 Batch Economics</h2>
-                <div class="filter-bar">
-                    <button class="filter-btn active" data-filter-analytics="all">All Completed</button>
-                    <button class="filter-btn" data-filter-analytics="thisMonth">This Month</button>
-                    <button class="filter-btn" data-filter-analytics="lastMonth">Last Month</button>
+            <!-- Filter Bar -->
+            <div class="filter-bar" style="margin-bottom: 30px;">
+                <button class="filter-btn active" data-filter-analytics="all" onclick="filterAnalytics('all')">All Completed</button>
+                <button class="filter-btn" data-filter-analytics="thisMonth" onclick="filterAnalytics('thisMonth')">This Month</button>
+                <button class="filter-btn" data-filter-analytics="lastMonth" onclick="filterAnalytics('lastMonth')">Last Month</button>
+            </div>
+
+            <!-- Batch Cards Grid -->
+            <div id="completedBatchesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;"></div>
+        </div>
+
+        <!-- Batch Details Modal -->
+        <div id="batchDetailsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10000; overflow-y: auto;">
+            <div style="max-width: 1000px; margin: 50px auto; background: var(--bg-secondary); border-radius: 16px; padding: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                    <h2 id="modalBatchId" style="color: var(--accent-green); font-family: 'Space Mono', monospace;">WM-1001</h2>
+                    <button onclick="closeBatchDetails()" style="background: none; border: none; color: var(--text-primary); font-size: 2.5rem; cursor: pointer; padding: 0; width: 50px; height: 50px; line-height: 40px;">&times;</button>
                 </div>
-                <div id="analyticsTable"></div>
+                
+                <!-- Batch Overview -->
+                <div id="modalBatchOverview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;"></div>
+                
+                <!-- Processing Timeline Visualization -->
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+                    <h3 style="color: var(--accent-purple); margin-bottom: 20px;">⏱️ Processing Timeline</h3>
+                    <div id="modalTimeline"></div>
+                </div>
+                
+                <!-- Performance Metrics -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
+                        <h4 style="color: var(--accent-green); margin-bottom: 15px;">💰 Economics</h4>
+                        <div id="modalEconomics"></div>
+                    </div>
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
+                        <h4 style="color: var(--accent-blue); margin-bottom: 15px;">🧪 Testing Results</h4>
+                        <div id="modalTesting"></div>
+                    </div>
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
+                        <h4 style="color: var(--accent-orange); margin-bottom: 15px;">📦 Production</h4>
+                        <div id="modalProduction"></div>
+                    </div>
+                </div>
+                
+                <!-- Team Members -->
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
+                    <h3 style="color: var(--accent-purple); margin-bottom: 15px;">👥 Team Members</h3>
+                    <div id="modalTeam"></div>
+                </div>
             </div>
         </div>
 
@@ -4234,64 +4278,309 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         // Analytics functions
+        let currentAnalyticsFilter = 'all';
+
         function updateAnalytics() {
-            const completedBatches = batches.filter(b => b.status === 'complete' && b.units_packaged);
+            const completedBatches = batches.filter(b => b.status === 'complete');
             
             if (completedBatches.length === 0) {
                 document.getElementById('avgYield').textContent = '0%';
+                document.getElementById('avgThc').textContent = '0%';
+                document.getElementById('avgProcessingTime').textContent = '0d';
                 document.getElementById('avgCostPerGram').textContent = '$0';
-                document.getElementById('avgCostPerUnit').textContent = '$0';
-                document.getElementById('totalProfit').textContent = '$0';
-                document.getElementById('analyticsTable').innerHTML = '<p style="padding: 20px; text-align: center; color: var(--text-secondary);">No completed batches yet</p>';
+                document.getElementById('completedBatchesGrid').innerHTML = '<p style="padding: 40px; text-align: center; color: var(--text-secondary); grid-column: 1 / -1;">No completed batches yet</p>';
                 return;
             }
             
-            // Calculate averages - yield based on net weight vs trim weight
-            let totalYield = 0;
-            let yieldCount = 0;
+            // Calculate summary stats
+            let totalYield = 0, yieldCount = 0;
+            let totalThc = 0, thcCount = 0;
+            let totalProcessingDays = 0, timeCount = 0;
+            let totalCostPerGram = 0, costCount = 0;
+            
             completedBatches.forEach(b => {
+                // Yield
                 if (b.trim_weight && b.net_weight) {
                     totalYield += (parseFloat(b.net_weight) / parseFloat(b.trim_weight)) * 100;
                     yieldCount++;
                 }
-            });
-            const avgYield = yieldCount > 0 ? (totalYield / yieldCount).toFixed(2) : 0;
-            
-            let totalCostPerGram = 0;
-            let totalCostPerUnit = 0;
-            let totalRevenue = 0;
-            let totalCost = 0;
-            
-            completedBatches.forEach(batch => {
-                const materialCost = parseFloat(batch.material_cost || 0);
-                const netWeight = parseFloat(batch.net_weight || 0);
-                const unitsPackaged = parseInt(batch.units_packaged || 0);
-                const wholesalePrice = parseFloat(batch.wholesale_price || 0);
-                
-                if (netWeight > 0) {
-                    totalCostPerGram += materialCost / netWeight;
+                // THC
+                if (b.test_thc_percent) {
+                    totalThc += parseFloat(b.test_thc_percent);
+                    thcCount++;
                 }
-                if (unitsPackaged > 0) {
-                    totalCostPerUnit += materialCost / unitsPackaged;
-                    totalRevenue += wholesalePrice * unitsPackaged;
+                // Processing time
+                if (b.intake_date && b.finishing_date) {
+                    const days = (new Date(b.finishing_date) - new Date(b.intake_date)) / (1000 * 60 * 60 * 24);
+                    totalProcessingDays += days;
+                    timeCount++;
                 }
-                totalCost += materialCost;
+                // Cost per gram
+                if (b.material_cost && b.net_weight) {
+                    totalCostPerGram += parseFloat(b.material_cost) / parseFloat(b.net_weight);
+                    costCount++;
+                }
             });
             
-            const avgCostPerGram = (totalCostPerGram / completedBatches.length).toFixed(2);
-            const avgCostPerUnit = (totalCostPerUnit / completedBatches.length).toFixed(2);
-            const potentialProfit = totalRevenue - totalCost;
+            document.getElementById('avgYield').textContent = yieldCount > 0 ? (totalYield / yieldCount).toFixed(2) + '%' : '0%';
+            document.getElementById('avgThc').textContent = thcCount > 0 ? (totalThc / thcCount).toFixed(2) + '%' : '0%';
+            document.getElementById('avgProcessingTime').textContent = timeCount > 0 ? (totalProcessingDays / timeCount).toFixed(1) + 'd' : '0d';
+            document.getElementById('avgCostPerGram').textContent = costCount > 0 ? '$' + (totalCostPerGram / costCount).toFixed(2) : '$0';
             
-            document.getElementById('avgYield').textContent = avgYield + '%';
-            document.getElementById('avgCostPerGram').textContent = '$' + avgCostPerGram;
-            document.getElementById('avgCostPerUnit').textContent = '$' + avgCostPerUnit;
-            document.getElementById('totalProfit').textContent = '$' + potentialProfit.toFixed(2);
-            
-            renderAnalyticsTable(completedBatches);
+            filterAnalytics(currentAnalyticsFilter);
         }
         
-        function renderAnalyticsTable(completedBatches) {
-            const container = document.getElementById('analyticsTable');
+        function filterAnalytics(filter) {
+            currentAnalyticsFilter = filter;
+            
+            // Update active button
+            document.querySelectorAll('[data-filter-analytics]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filterAnalytics === filter);
+            });
+            
+            let filteredBatches = batches.filter(b => b.status === 'complete');
+            
+            const now = new Date();
+            const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+            
+            if (filter === 'thisMonth') {
+                filteredBatches = filteredBatches.filter(b => new Date(b.finishing_date) >= thisMonthStart);
+            } else if (filter === 'lastMonth') {
+                filteredBatches = filteredBatches.filter(b => {
+                    const finishDate = new Date(b.finishing_date);
+                    return finishDate >= lastMonthStart && finishDate <= lastMonthEnd;
+                });
+            }
+            
+            renderBatchCards(filteredBatches);
+        }
+        
+        function renderBatchCards(completedBatches) {
+            const container = document.getElementById('completedBatchesGrid');
+            
+            if (completedBatches.length === 0) {
+                container.innerHTML = '<p style="padding: 40px; text-align: center; color: var(--text-secondary); grid-column: 1 / -1;">No batches for this period</p>';
+                return;
+            }
+            
+            container.innerHTML = completedBatches.map(batch => {
+                const yield_percent = batch.trim_weight && batch.net_weight ? 
+                    ((parseFloat(batch.net_weight) / parseFloat(batch.trim_weight)) * 100).toFixed(2) : 0;
+                const thc = batch.test_thc_percent || 'N/A';
+                const processingDays = batch.intake_date && batch.finishing_date ?
+                    ((new Date(batch.finishing_date) - new Date(batch.intake_date)) / (1000 * 60 * 60 * 24)).toFixed(1) : 'N/A';
+                const costPerGram = batch.material_cost && batch.net_weight ?
+                    (parseFloat(batch.material_cost) / parseFloat(batch.net_weight)).toFixed(2) : '0';
+                
+                return `
+                    <div class="batch-card" onclick="showBatchDetails('${batch.id}')" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                            <div>
+                                <div style="font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent-green);">${batch.id}</div>
+                                <div style="color: var(--text-secondary); font-size: 0.9rem;">${batch.strain}</div>
+                            </div>
+                            <div style="padding: 4px 10px; background: rgba(147, 51, 234, 0.2); border-radius: 12px; font-size: 0.85rem; color: var(--accent-purple);">
+                                ${batch.strain_type}
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                            <div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 3px;">Yield</div>
+                                <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-green);">${yield_percent}%</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 3px;">THC</div>
+                                <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-blue);">${thc}${typeof thc === 'number' ? '%' : ''}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 3px;">Processing Time</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-orange);">${processingDays}${processingDays !== 'N/A' ? ' days' : ''}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 3px;">Cost/Gram</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-purple);">$${costPerGram}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                                ${batch.product_made || 'N/A'} • ${batch.net_weight || 0}g
+                            </div>
+                            <div style="color: var(--accent-blue); font-weight: 600; font-size: 0.9rem;">
+                                View Details →
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Add hover effect via CSS
+            document.querySelectorAll('.batch-card').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-4px)';
+                    this.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
+                });
+            });
+        }
+
+        function showBatchDetails(batchId) {
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) return;
+            
+            // Update modal title
+            document.getElementById('modalBatchId').textContent = batch.id;
+            
+            // Batch Overview Cards
+            const overview = `
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 10px; border-left: 4px solid var(--accent-green);">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Strain</div>
+                    <div style="font-size: 1.1rem; font-weight: 700;">${batch.strain}</div>
+                    <div style="font-size: 0.9rem; color: var(--accent-purple);">${batch.strain_type}</div>
+                </div>
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 10px; border-left: 4px solid var(--accent-blue);">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Product Made</div>
+                    <div style="font-size: 1.1rem; font-weight: 700;">${batch.product_made || 'N/A'}</div>
+                </div>
+                <div style="background: var(--bg-secondary); padding: 15px; border-radius: 10px; border-left: 4px solid var(--accent-orange);">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Grower</div>
+                    <div style="font-size: 1.1rem; font-weight: 700;">${batch.grower_name || 'N/A'}</div>
+                    <div style="font-size: 0.9rem; color: var(--accent-orange);">${batch.cultivation_license}</div>
+                </div>
+            `;
+            document.getElementById('modalBatchOverview').innerHTML = overview;
+            
+            // Processing Timeline
+            const intakeDate = new Date(batch.intake_date);
+            const extractionDate = batch.extraction_date ? new Date(batch.extraction_date) : null;
+            const finishingDate = batch.finishing_date ? new Date(batch.finishing_date) : null;
+            const packagingDate = batch.packaging_date ? new Date(batch.packaging_date) : null;
+            const testingDate = batch.test_results_received_date ? new Date(batch.test_results_received_date) : null;
+            
+            const totalDays = finishingDate ? ((finishingDate - intakeDate) / (1000 * 60 * 60 * 24)).toFixed(1) : 'N/A';
+            const extractionDays = extractionDate && intakeDate ? ((extractionDate - intakeDate) / (1000 * 60 * 60 * 24)).toFixed(1) : 'N/A';
+            const finishingDays = finishingDate && extractionDate ? ((finishingDate - extractionDate) / (1000 * 60 * 60 * 24)).toFixed(1) : 'N/A';
+            
+            const timeline = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
+                        <div style="font-size: 2rem; margin-bottom: 5px;">📥</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Intake</div>
+                        <div style="font-weight: 700;">${intakeDate.toLocaleDateString()}</div>
+                    </div>
+                    ${extractionDate ? `
+                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
+                        <div style="font-size: 2rem; margin-bottom: 5px;">⚗️</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Extraction</div>
+                        <div style="font-weight: 700;">${extractionDate.toLocaleDateString()}</div>
+                        <div style="font-size: 0.85rem; color: var(--accent-green);">${extractionDays} days</div>
+                    </div>` : ''}
+                    ${finishingDate ? `
+                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
+                        <div style="font-size: 2rem; margin-bottom: 5px;">✨</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Finishing</div>
+                        <div style="font-weight: 700;">${finishingDate.toLocaleDateString()}</div>
+                        <div style="font-size: 0.85rem; color: var(--accent-green);">${finishingDays} days</div>
+                    </div>` : ''}
+                    ${packagingDate ? `
+                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
+                        <div style="font-size: 2rem; margin-bottom: 5px;">📦</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Packaged</div>
+                        <div style="font-weight: 700;">${packagingDate.toLocaleDateString()}</div>
+                    </div>` : ''}
+                    ${testingDate ? `
+                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
+                        <div style="font-size: 2rem; margin-bottom: 5px;">🧪</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Testing</div>
+                        <div style="font-weight: 700;">${testingDate.toLocaleDateString()}</div>
+                    </div>` : ''}
+                </div>
+                <div style="text-align: center; margin-top: 20px; padding: 15px; background: rgba(16, 185, 129, 0.2); border-radius: 10px;">
+                    <div style="font-size: 0.9rem; color: var(--text-secondary);">Total Processing Time</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">${totalDays} days</div>
+                </div>
+            `;
+            document.getElementById('modalTimeline').innerHTML = timeline;
+            
+            // Economics
+            const trimWeight = parseFloat(batch.trim_weight || 0);
+            const netWeight = parseFloat(batch.net_weight || 0);
+            const yield_percent = trimWeight > 0 ? ((netWeight / trimWeight) * 100).toFixed(2) : 0;
+            const materialCost = parseFloat(batch.material_cost || 0);
+            const costPerGram = netWeight > 0 ? (materialCost / netWeight).toFixed(2) : 0;
+            const costPerUnit = batch.units_packaged > 0 ? (materialCost / batch.units_packaged).toFixed(2) : 0;
+            
+            const economics = `
+                <p><strong>Trim Used:</strong> ${trimWeight}g</p>
+                <p><strong>Final Net Weight:</strong> ${netWeight}g</p>
+                <p style="color: var(--accent-green); font-size: 1.2rem; font-weight: 700; margin: 10px 0;"><strong>Yield:</strong> ${yield_percent}%</p>
+                <p><strong>Material Cost:</strong> $${materialCost.toFixed(2)}</p>
+                <p><strong>Cost Per Gram:</strong> $${costPerGram}</p>
+                ${batch.units_packaged ? `<p><strong>Cost Per Unit:</strong> $${costPerUnit}</p>` : ''}
+            `;
+            document.getElementById('modalEconomics').innerHTML = economics;
+            
+            // Testing Results
+            const testing = `
+                <p><strong>THC:</strong> <span style="color: var(--accent-green); font-size: 1.3rem; font-weight: 700;">${batch.test_thc_percent || 'N/A'}${batch.test_thc_percent ? '%' : ''}</span></p>
+                <p><strong>CBD:</strong> ${batch.test_cbd_percent || 0}%</p>
+                ${batch.is_rta === 'yes' ? '<p style="color: var(--accent-green);"><strong>✓ RTA Full Panel</strong></p>' : '<p style="color: var(--text-secondary);">Standard Potency Test</p>'}
+                ${batch.test_expiration_date ? `<p><strong>Expires:</strong> ${new Date(batch.test_expiration_date).toLocaleDateString()}</p>` : ''}
+            `;
+            document.getElementById('modalTesting').innerHTML = testing;
+            
+            // Production
+            const production = `
+                <p><strong>Units Packaged:</strong> ${batch.units_packaged || 'N/A'}</p>
+                ${batch.packaging_breakdown ? `<p><strong>Breakdown:</strong> ${batch.packaging_breakdown}</p>` : ''}
+                <p><strong>Extraction Method:</strong> ${batch.extraction_method || 'N/A'}</p>
+                <p><strong>Material Agreement:</strong> ${batch.material_agreement || 'N/A'}</p>
+                ${batch.metrc_tags ? `<p style="margin-top: 10px;"><strong>METRC Tags:</strong><br><span style="font-family: 'Space Mono', monospace; font-size: 0.9rem;">${batch.metrc_tags}</span></p>` : ''}
+            `;
+            document.getElementById('modalProduction').innerHTML = production;
+            
+            // Team Members
+            const teamMembers = {};
+            if (batch.timeline) {
+                batch.timeline.forEach(entry => {
+                    if (entry.user && entry.user !== 'Unknown') {
+                        if (!teamMembers[entry.user]) {
+                            teamMembers[entry.user] = [];
+                        }
+                        teamMembers[entry.user].push(entry.stage);
+                    }
+                });
+            }
+            
+            const team = Object.keys(teamMembers).length > 0 ? Object.keys(teamMembers).map(user => `
+                <div style="display: inline-block; margin: 5px 10px 5px 0; padding: 10px 15px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--accent-blue);">
+                    <div style="font-weight: 700;">${user}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">${[...new Set(teamMembers[user])].join(', ')}</div>
+                </div>
+            `).join('') : '<p style="color: var(--text-secondary);">No team members recorded</p>';
+            
+            document.getElementById('modalTeam').innerHTML = team;
+            
+            // Show modal
+            document.getElementById('batchDetailsModal').style.display = 'block';
+        }
+
+        function closeBatchDetails() {
+            document.getElementById('batchDetailsModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('batchDetailsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeBatchDetails();
+            }
+        });
             
             const tableHTML = `
                 <table class="analytics-table">
