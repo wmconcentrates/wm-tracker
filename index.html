@@ -4579,10 +4579,59 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const finishingDate = batch.finishing_date ? new Date(batch.finishing_date) : null;
             const packagingDate = batch.packaging_date ? new Date(batch.packaging_date) : null;
             const testingDate = batch.test_results_received_date ? new Date(batch.test_results_received_date) : null;
+            const labelingDate = batch.labeling_date ? new Date(batch.labeling_date) : null;
             
             const totalDays = finishingDate ? ((finishingDate - intakeDate) / (1000 * 60 * 60 * 24)).toFixed(1) : 'N/A';
             const extractionDays = extractionDate && intakeDate ? ((extractionDate - intakeDate) / (1000 * 60 * 60 * 24)).toFixed(1) : 'N/A';
             const finishingDays = finishingDate && extractionDate ? ((finishingDate - extractionDate) / (1000 * 60 * 60 * 24)).toFixed(1) : 'N/A';
+            
+            // Helper function to format time in hours/minutes
+            function formatDuration(minutes) {
+                if (!minutes || minutes < 0) return 'N/A';
+                const hours = Math.floor(minutes / 60);
+                const mins = Math.round(minutes % 60);
+                if (hours > 0) {
+                    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+                }
+                return `${mins}m`;
+            }
+            
+            // Calculate stage durations from timeline
+            let extractionTime = null;
+            let packagingTime = null;
+            let labelingTime = null;
+            
+            if (batch.timeline && batch.timeline.length > 0) {
+                // Find extraction start and complete
+                const extractionStart = batch.timeline.find(t => t.action && t.action.includes('Processing started'));
+                const extractionComplete = batch.timeline.find(t => t.stage === 'extraction' && (t.action.includes('completed') || t.action.includes('Extracted')));
+                
+                if (extractionStart && extractionComplete) {
+                    const startTime = new Date(extractionStart.date || extractionStart.timestamp);
+                    const endTime = new Date(extractionComplete.date || extractionComplete.timestamp);
+                    extractionTime = (endTime - startTime) / (1000 * 60); // minutes
+                }
+                
+                // Find packaging start and complete
+                const packagingStart = batch.timeline.find(t => t.action && t.action.includes('Packaging started'));
+                const packagingComplete = batch.timeline.find(t => t.stage === 'packaging' && t.action && (t.action.includes('packaged') || t.action.includes('Packaging completed')));
+                
+                if (packagingStart && packagingComplete) {
+                    const startTime = new Date(packagingStart.date || packagingStart.timestamp);
+                    const endTime = new Date(packagingComplete.date || packagingComplete.timestamp);
+                    packagingTime = (endTime - startTime) / (1000 * 60); // minutes
+                }
+                
+                // Find labeling start and complete
+                const labelingStart = batch.timeline.find(t => t.action && t.action.includes('Labeling started'));
+                const labelingComplete = batch.timeline.find(t => t.stage === 'labeling' && t.timestamp);
+                
+                if (labelingStart && labelingComplete) {
+                    const startTime = new Date(labelingStart.date || labelingStart.timestamp);
+                    const endTime = new Date(labelingComplete.date || labelingComplete.timestamp);
+                    labelingTime = (endTime - startTime) / (1000 * 60); // minutes
+                }
+            }
             
             const timeline = `
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
@@ -4596,26 +4645,33 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         <div style="font-size: 2rem; margin-bottom: 5px;">⚗️</div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">Extraction</div>
                         <div style="font-weight: 700;">${extractionDate.toLocaleDateString()}</div>
-                        <div style="font-size: 0.85rem; color: var(--accent-green);">${extractionDays} days</div>
+                        ${extractionTime ? `<div style="font-size: 0.9rem; color: var(--accent-green); font-weight: 700; margin-top: 5px;">⏱️ ${formatDuration(extractionTime)}</div>` : ''}
                     </div>` : ''}
                     ${finishingDate ? `
                     <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
                         <div style="font-size: 2rem; margin-bottom: 5px;">✨</div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">Finishing</div>
                         <div style="font-weight: 700;">${finishingDate.toLocaleDateString()}</div>
-                        <div style="font-size: 0.85rem; color: var(--accent-green);">${finishingDays} days</div>
                     </div>` : ''}
                     ${packagingDate ? `
                     <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
                         <div style="font-size: 2rem; margin-bottom: 5px;">📦</div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">Packaged</div>
                         <div style="font-weight: 700;">${packagingDate.toLocaleDateString()}</div>
+                        ${packagingTime ? `<div style="font-size: 0.9rem; color: var(--accent-green); font-weight: 700; margin-top: 5px;">⏱️ ${formatDuration(packagingTime)}</div>` : ''}
                     </div>` : ''}
                     ${testingDate ? `
                     <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
                         <div style="font-size: 2rem; margin-bottom: 5px;">🧪</div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">Testing</div>
                         <div style="font-weight: 700;">${testingDate.toLocaleDateString()}</div>
+                    </div>` : ''}
+                    ${labelingDate ? `
+                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 10px;">
+                        <div style="font-size: 2rem; margin-bottom: 5px;">🏷️</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Labeled</div>
+                        <div style="font-weight: 700;">${labelingDate.toLocaleDateString()}</div>
+                        ${labelingTime ? `<div style="font-size: 0.9rem; color: var(--accent-green); font-weight: 700; margin-top: 5px;">⏱️ ${formatDuration(labelingTime)}</div>` : ''}
                     </div>` : ''}
                 </div>
                 <div style="text-align: center; margin-top: 20px; padding: 15px; background: rgba(16, 185, 129, 0.2); border-radius: 10px;">
