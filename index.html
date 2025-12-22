@@ -1633,16 +1633,15 @@
                             <option value="Hash Hits">Hash Hits</option>
                             <option value="RSO">RSO</option>
                         </select>
+                        <div class="help-text">What product was this portion made into?</div>
                     </div>
-                    <div class="form-group">
-                        <label>Final Weight (grams)</label>
-                        <input type="number" id="subBatchWeight" step="0.1" required>
-                        <div class="help-text">Net weight of this sub-batch</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Sample Weight Pulled (grams)</label>
-                        <input type="number" id="subBatchSampleWeight" step="0.1" value="0">
-                    </div>
+                </div>
+                
+                <div style="background: rgba(245, 158, 11, 0.2); border-left: 4px solid var(--accent-orange); padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <strong style="color: var(--accent-orange);">⚙️ Post-Processing Required</strong>
+                    <p style="margin: 8px 0 0 0; color: var(--text-secondary);">
+                        This sub-batch will be created at <strong>extraction</strong> status. The post-processor must complete it on the <strong>Post Extraction</strong> page to enter weights and finish it properly.
+                    </p>
                 </div>
                 
                 <div class="form-group">
@@ -1651,7 +1650,7 @@
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button class="btn" style="background: var(--accent-green); flex: 1;" onclick="saveSubBatch()">✅ Create Sub-Batch</button>
+                    <button class="btn" style="background: var(--accent-green); flex: 1;" onclick="saveSubBatch()">✅ Create Sub-Batch (Needs Post-Processing)</button>
                     <button class="btn" style="background: var(--bg-tertiary); flex: 1;" onclick="closeCreateSubBatch()">Cancel</button>
                 </div>
             </div>
@@ -4611,12 +4610,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             const newSubBatchId = document.getElementById('newSubBatchId').value;
             const productType = document.getElementById('subBatchProductType').value;
-            const finalWeight = parseFloat(document.getElementById('subBatchWeight').value);
-            const sampleWeight = parseFloat(document.getElementById('subBatchSampleWeight').value) || 0;
             const notes = document.getElementById('subBatchNotes').value;
             
-            if (!productType || !finalWeight || finalWeight <= 0) {
-                alert('Please fill in all required fields');
+            if (!productType) {
+                alert('Please select a product type');
                 return;
             }
             
@@ -4624,8 +4621,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 alert('Please enter a reason for creating this retroactive sub-batch');
                 return;
             }
-            
-            const netWeight = finalWeight - sampleWeight;
             
             // Calculate proportional trim used from parent
             const parentTrimWeight = parseFloat(parentBatch.adjusted_trim_weight || parentBatch.trim_weight || 0);
@@ -4636,23 +4631,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 b.id !== parentBatchId
             );
             
-            // Calculate new total output (existing sub-batches + new one)
-            const existingSubBatchesWeight = existingSubBatches.reduce((sum, b) => 
-                sum + parseFloat(b.final_weight || b.net_weight || 0), 0
-            );
-            const newTotalOutput = existingSubBatchesWeight + finalWeight;
+            // For now, allocate equal trim across all sub-batches (will be recalculated when weights are entered)
+            const numSubBatches = existingSubBatches.length + 1; // Including new one
+            const trimUsed = parentTrimWeight / numSubBatches;
             
-            // Calculate trim allocation for new sub-batch
-            const trimUsed = (finalWeight / newTotalOutput) * parentTrimWeight;
-            
-            // Determine status based on parent - set to 'finishing' so it shows up for packaging
-            let newStatus = 'finishing';
-            if (parentBatch.status === 'complete') {
-                // If parent is complete, new sub-batch goes to packaging
-                newStatus = 'packaging';
-            } else if (parentBatch.status === 'testing' || parentBatch.status === 'labeling') {
-                newStatus = 'packaging';
-            }
+            // Set status to 'extraction' so it must go through post-processing (finishing)
+            // This ensures the post-processor completes it properly
+            const newStatus = 'extraction';
             
             // Create sub-batch
             const subBatch = {
@@ -4676,19 +4661,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 is_sub_batch: true,
                 parent_batch_id: parentBatchId,
                 
-                // Set extraction/finishing data
-                extraction_date: parentBatch.extraction_date,
+                // Set extraction data (completed by extractor)
+                extraction_date: parentBatch.extraction_date || new Date().toISOString().split('T')[0],
                 extraction_method: parentBatch.extraction_method,
                 product_made: productType,
-                extraction_notes: `Sub-batch of ${parentBatchId}`,
-                extraction_user: parentBatch.extraction_user,
+                extraction_notes: `Retroactive sub-batch of ${parentBatchId} - needs post-processing`,
+                extraction_user: parentBatch.extraction_user || currentRole.name,
                 
-                finishing_date: parentBatch.finishing_date || new Date().toISOString().split('T')[0],
-                final_weight: finalWeight,
-                sample_weight: sampleWeight,
-                net_weight: netWeight,
-                finishing_notes: `Retroactive sub-batch. ${notes}`,
-                finishing_user: currentRole.name,
+                // NO finishing data yet - post-processor must complete this
+                finishing_date: null,
+                final_weight: null,
+                sample_weight: null,
+                net_weight: null,
+                finishing_notes: `Retroactive sub-batch - awaiting post-processing. Target weight: ${finalWeight}g`,
+                finishing_user: null,
                 
                 timeline: [
                     {
@@ -4701,13 +4687,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         stage: 'extraction',
                         timestamp: parentBatch.extraction_date || new Date().toISOString(),
                         user: parentBatch.extraction_user || currentRole.name,
-                        action: `Extracted as ${productType}`
-                    },
-                    {
-                        stage: 'finishing',
-                        timestamp: new Date().toISOString(),
-                        user: currentRole.name,
-                        action: `Retroactive sub-batch created: ${finalWeight}g (${netWeight}g net) - ${notes}`
+                        action: `Extracted as ${productType} - retroactive sub-batch created by ${currentRole.name}`
                     }
                 ],
                 created_at: new Date().toISOString()
@@ -4726,33 +4706,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            // Now recalculate trim allocation for ALL sub-batches (including the new one)
-            const allSubBatches = [...existingSubBatches, subBatch];
-            
-            // Update each sub-batch with recalculated trim
-            for (const sub of allSubBatches) {
-                const subWeight = parseFloat(sub.final_weight || sub.net_weight || 0);
-                const recalculatedTrim = (subWeight / newTotalOutput) * parentTrimWeight;
-                
-                const { error: updateError } = await supabaseClient
-                    .from('wm_batches')
-                    .update({
-                        trim_weight: recalculatedTrim
-                    })
-                    .eq('id', sub.id);
-                
-                if (updateError) {
-                    console.error(`Error updating trim for ${sub.id}:`, updateError);
-                }
-            }
-            
             // Update parent batch timeline
             const parentTimeline = parentBatch.timeline || [];
             parentTimeline.push({
                 stage: 'admin',
                 timestamp: new Date().toISOString(),
                 user: currentRole.name,
-                action: `Retroactive sub-batch created: ${newSubBatchId} (${finalWeight}g). All sub-batch yields recalculated.`
+                action: `Retroactive sub-batch created: ${newSubBatchId} (${productType}) - needs post-processing`
             });
             
             await supabaseClient
@@ -4760,18 +4720,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 .update({ timeline: parentTimeline })
                 .eq('id', parentBatchId);
             
-            const yieldPercent = parentTrimWeight > 0 ? ((finalWeight / trimUsed) * 100).toFixed(2) : 0;
-            alert(`✅ Sub-batch ${newSubBatchId} created successfully!\n\nProduct: ${productType}\nWeight: ${finalWeight}g (${netWeight}g net)\nTrim Used: ${trimUsed.toFixed(1)}g\nYield: ${yieldPercent}%\n\n✓ All sub-batch yields recalculated\n✓ Status: ${newStatus}\n✓ Ready for ${newStatus === 'packaging' ? 'packaging' : 'next stage'}`);
+            alert(`✅ Sub-batch ${newSubBatchId} created successfully!\n\nProduct: ${productType}\nStatus: extraction\n\n⚙️ NEXT STEP:\nPost-processor must complete this batch on the "Post Extraction" page to:\n• Enter final bulk weight\n• Enter sample weight\n• Complete finishing\n\nYields will be recalculated when weights are entered.`);
             
             closeCreateSubBatch();
             await loadBatches();
             renderBatches();
             
-            // Refresh the relevant selects
-            if (newStatus === 'packaging') {
-                populatePackagingSelect();
-            }
-            populateTestingSelect();
+            // Refresh finishing select
+            populateFinishingSelect();
         }
 
         // Close modal when clicking outside
