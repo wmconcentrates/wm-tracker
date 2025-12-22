@@ -948,19 +948,13 @@
                             <div id="preSiftSummary"></div>
                         </div>
 
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Extraction Date</label>
-                                <input type="date" id="extractionDate" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Extraction Method</label>
-                                <select id="extractionMethod" required>
-                                    <option value="">Select Method</option>
-                                    <option value="BHO">BHO (Butane Hash Oil)</option>
-                                    <option value="RSO">RSO</option>
-                                </select>
-                            </div>
+                        <div class="form-group">
+                            <label>Extraction Method</label>
+                            <select id="extractionMethod" required>
+                                <option value="">Select Method</option>
+                                <option value="BHO">BHO (Butane Hash Oil)</option>
+                                <option value="RSO">RSO</option>
+                            </select>
                         </div>
 
                         <!-- BHO Product Selection (shown when BHO selected) -->
@@ -2404,7 +2398,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             if (this.value) {
                 const batch = batches.find(b => b.id === this.value);
-                document.getElementById('extractionDate').value = new Date().toISOString().split('T')[0];
                 
                 // Display planned products and batch info
                 const plannedProductsDisplay = document.getElementById('plannedProductsDisplay');
@@ -2611,11 +2604,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             if (!batch) return;
             
-            const extractionDate = document.getElementById('extractionDate').value;
             const extractionMethod = document.getElementById('extractionMethod').value;
             
-            if (!extractionDate || !extractionMethod) {
-                alert('Please select extraction date and method');
+            if (!extractionMethod) {
+                alert('Please select extraction method');
                 return;
             }
             
@@ -2641,7 +2633,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const { error } = await supabaseClient
                 .from('wm_batches')
                 .update({
-                    extraction_date: extractionDate,
                     extraction_method: extractionMethod,
                     extraction_notes: document.getElementById('extractionNotes').value || null,
                     timeline: timeline
@@ -2708,7 +2699,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 .from('wm_batches')
                 .update({
                     status: 'extraction',
-                    extraction_date: document.getElementById('extractionDate').value,
                     extraction_method: extractionMethod,
                     product_made: productMade,
                     extraction_notes: document.getElementById('extractionNotes').value,
@@ -4616,7 +4606,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             // Processing Timeline
             const intakeDate = new Date(batch.intake_date);
-            const extractionDate = batch.extraction_date ? new Date(batch.extraction_date) : null;
+            
+            // Derive extraction date from timeline completion
+            let extractionDate = null;
+            if (batch.timeline && batch.timeline.length > 0) {
+                const extractionComplete = batch.timeline.find(t => 
+                    t.stage === 'extraction' && t.timestamp
+                );
+                if (extractionComplete) {
+                    extractionDate = new Date(extractionComplete.timestamp);
+                }
+            }
+            
             const finishingDate = batch.finishing_date ? new Date(batch.finishing_date) : null;
             const packagingDate = batch.packaging_date ? new Date(batch.packaging_date) : null;
             const testingDate = batch.test_results_received_date ? new Date(batch.test_results_received_date) : null;
