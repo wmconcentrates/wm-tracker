@@ -1208,6 +1208,29 @@
                         <div id="testBatchDetails"></div>
                     </div>
 
+                    <!-- Product Name Section -->
+                    <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(59, 130, 246, 0.15)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-purple);">
+                        <h3 style="color: var(--accent-purple); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                            <span>🏷️</span> Final Product Name & Classification (For Wholesale Shelf)
+                        </h3>
+                        <div class="form-grid">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Product Name</label>
+                                <input type="text" id="finalProductName" placeholder="e.g., Blue Dream Live Resin, Gelato Sugar Wax" required>
+                                <div class="help-text">This name will be used on labels and in METRC</div>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Strain Type (Lid Color)</label>
+                                <select id="finalStrainType" required>
+                                    <option value="Indica">Indica (Blue Lid)</option>
+                                    <option value="Sativa">Sativa (Red Lid)</option>
+                                    <option value="Hybrid">Hybrid (Green Lid)</option>
+                                </select>
+                                <div class="help-text">Redesignate if needed for wholesale variety</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Date Submitted to Lab</label>
@@ -1573,33 +1596,38 @@
                     <span>🔑</span> METRC API Credentials
                     <span id="metrcConfigStatus" style="margin-left: auto; font-size: 0.85rem; padding: 5px 12px; border-radius: 15px;"></span>
                 </h3>
-                <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--accent-red); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <strong>⚠️ Direct API Connection Issues:</strong>
-                    <ul style="margin: 10px 0 0 20px; line-height: 1.6;">
-                        <li>METRC API calls from browsers are typically blocked by CORS security</li>
-                        <li>Authentication may fail even with correct credentials due to browser restrictions</li>
-                        <li><strong>Recommended:</strong> Use the Manual Entry tab below instead</li>
-                        <li>For production: Set up a server-side proxy to handle METRC API calls</li>
-                    </ul>
-                </div>
-                <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--accent-orange); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <strong>If you want to try API connection:</strong> 
-                    <ul style="margin: 10px 0 0 20px; line-height: 1.6;">
-                        <li>License: <strong>404R-00016</strong> (your manufacturing license)</li>
-                        <li>API Key from METRC: Settings → Integrations → API Keys</li>
-                        <li>Format options:
-                            <ul style="margin: 5px 0 0 20px;">
-                                <li>Software Vendor Key (if you have one): <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">vendorKey:userKey</code></li>
-                                <li>User API Key only: <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">your-user-api-key</code></li>
-                            </ul>
+                
+                <div style="background: rgba(59, 130, 246, 0.15); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>📘 METRC Requires Two API Keys:</strong>
+                    <ol style="margin: 10px 0 0 20px; line-height: 1.8;">
+                        <li><strong>Integrator/Software API Key</strong> - Your company's key from METRC Connect
+                            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 3px;">This stays the same for all users</div>
                         </li>
+                        <li><strong>User API Key</strong> - Created by the user in their METRC account
+                            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 3px;">Settings → Integrations → User API Keys</div>
+                        </li>
+                    </ol>
+                </div>
+
+                <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--accent-red); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>⚠️ Browser CORS Limitation:</strong>
+                    <ul style="margin: 10px 0 0 20px; line-height: 1.6;">
+                        <li>Direct API calls from browsers are blocked by CORS security</li>
+                        <li>Even with correct keys, browser connections will likely fail</li>
+                        <li><strong>Recommended:</strong> Use Manual Entry tab or set up a server proxy</li>
                     </ul>
                 </div>
+
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>User API Key (or VendorKey:UserKey)</label>
-                        <input type="password" id="metrcUserKey" placeholder="Enter your METRC API key">
-                        <div class="help-text">Keep this secure - it provides access to your METRC data</div>
+                        <label>Integrator API Key (Software Key)</label>
+                        <input type="password" id="metrcIntegratorKey" placeholder="Your White Mousse integrator key">
+                        <div class="help-text">From METRC Connect - stays the same for all users</div>
+                    </div>
+                    <div class="form-group">
+                        <label>User API Key</label>
+                        <input type="password" id="metrcUserKey" placeholder="Individual user's API key">
+                        <div class="help-text">Created in METRC: Settings → Integrations → User API Keys</div>
                     </div>
                     <div class="form-group">
                         <label>Manufacturing License Number</label>
@@ -1607,6 +1635,7 @@
                         <div class="help-text">Your White Mousse manufacturing license (locked)</div>
                     </div>
                 </div>
+                
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button class="btn" style="background: var(--accent-blue); flex: 1;" onclick="saveMetrcConfig()">
                         💾 Save Credentials
@@ -3118,6 +3147,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                             <div class="batch-detail-label">Strain</div>
                             <div class="batch-detail-value">${batch.strain} (${batch.strain_type})</div>
                         </div>
+                        ${batch.final_product_name ? `
+                            <div class="batch-detail">
+                                <div class="batch-detail-label">Final Product Name</div>
+                                <div class="batch-detail-value" style="color: var(--accent-purple); font-weight: 700;">
+                                    ${batch.final_product_name}
+                                    ${batch.final_strain_type && batch.final_strain_type !== batch.strain_type ? 
+                                        `<span style="display: block; font-size: 0.85rem; color: var(--accent-orange); margin-top: 3px;">
+                                            ${batch.final_strain_type} Lid (redesignated from ${batch.strain_type})
+                                        </span>` 
+                                    : batch.final_strain_type ? 
+                                        `<span style="display: block; font-size: 0.85rem; color: var(--accent-green); margin-top: 3px;">
+                                            ${batch.final_strain_type} Lid
+                                        </span>`
+                                    : ''}
+                                </div>
+                            </div>
+                        ` : ''}
                         <div class="batch-detail">
                             <div class="batch-detail-label">Trim Weight</div>
                             <div class="batch-detail-value">${batch.trim_weight}g</div>
@@ -3295,6 +3341,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 `;
                 document.getElementById('testBatchDetails').innerHTML = details;
                 
+                // Auto-populate product name with current strain + product type
+                // User can modify if they want to rename for wholesale variety
+                const defaultProductName = batch.final_product_name || `${batch.strain} ${batch.product_made}`;
+                document.getElementById('finalProductName').value = defaultProductName;
+                
+                // Auto-populate strain type from batch, but allow redesignation
+                const strainType = batch.final_strain_type || batch.strain_type;
+                document.getElementById('finalStrainType').value = strainType;
+                
                 // Pre-fill if test results already exist
                 if (batch.test_results_received_date) {
                     document.getElementById('testSubmittedDate').value = batch.test_submitted_date || '';
@@ -3304,6 +3359,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     document.getElementById('testCbdPercent').value = batch.test_cbd_percent || '';
                     document.getElementById('isRTA').value = batch.is_rta || 'no';
                     document.getElementById('testResultsNotes').value = batch.test_results_notes || '';
+                    // Load saved product name and strain type if exists
+                    if (batch.final_product_name) {
+                        document.getElementById('finalProductName').value = batch.final_product_name;
+                    }
+                    if (batch.final_strain_type) {
+                        document.getElementById('finalStrainType').value = batch.final_strain_type;
+                    }
                 } else {
                     // Clear form
                     document.getElementById('testSubmittedDate').value = '';
@@ -3421,13 +3483,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const isRTA = document.getElementById('isRTA').value;
             const submittedDate = document.getElementById('testSubmittedDate').value;
             const expirationDate = document.getElementById('testExpirationDate').value;
+            const finalProductName = document.getElementById('finalProductName').value.trim();
+            const finalStrainType = document.getElementById('finalStrainType').value;
+            
+            if (!finalProductName) {
+                alert('Please enter a product name for this batch.');
+                return;
+            }
+            
+            // Show redesignation note in timeline if strain type changed
+            const strainTypeNote = batch.strain_type !== finalStrainType ? ` | Redesignated: ${batch.strain_type} → ${finalStrainType}` : '';
             
             const timeline = batch.timeline || [];
             timeline.push({
                 stage: 'testing',
                 user: currentRole ? currentRole.name : "Unknown",
                 date: new Date().toISOString(),
-                action: `Test results: THC ${thcPercent}%, CBD ${cbdPercent}%${isRTA === 'yes' ? ' - RTA FULL PANEL' : ''}`
+                action: `Test results: THC ${thcPercent}%, CBD ${cbdPercent}%${isRTA === 'yes' ? ' - RTA FULL PANEL' : ''} | Named: ${finalProductName}${strainTypeNote}`
             });
             
             const { error } = await supabaseClient
@@ -3440,6 +3512,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     test_cbd_percent: cbdPercent,
                     is_rta: isRTA,
                     test_results_notes: document.getElementById('testResultsNotes').value || null,
+                    final_product_name: finalProductName,
+                    final_strain_type: finalStrainType,
                     timeline: timeline
                 })
                 .eq('id', batchId);
@@ -3450,7 +3524,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            alert(`Test results saved for ${batchId}!\nTHC: ${thcPercent}% | CBD: ${cbdPercent}%\n${isRTA === 'yes' ? '✓ RTA Full Panel' : 'Standard Potency'}\nExpires: ${expirationDate}`);
+            const lidColor = finalStrainType === 'Indica' ? 'Blue' : finalStrainType === 'Sativa' ? 'Red' : 'Green';
+            alert(`Test results saved for ${batchId}!\n\nProduct Name: ${finalProductName}\nStrain Type: ${finalStrainType} (${lidColor} Lid)${strainTypeNote ? '\n✓ Strain type redesignated' : ''}\nTHC: ${thcPercent}% | CBD: ${cbdPercent}%\n${isRTA === 'yes' ? '✓ RTA Full Panel' : 'Standard Potency'}\nExpires: ${expirationDate}`);
             
             document.getElementById('testingForm').style.display = 'none';
             document.getElementById('testingBatchSelect').value = '';
@@ -4391,12 +4466,19 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
         // Load METRC config from localStorage
         function loadMetrcConfig() {
+            const integratorKey = localStorage.getItem('metrcIntegratorKey');
             const userKey = localStorage.getItem('metrcUserKey');
-            const licenseNumber = localStorage.getItem('metrcLicenseNumber') || '403R-00000';
+            const licenseNumber = localStorage.getItem('metrcLicenseNumber') || '404R-00016';
             
+            if (integratorKey) {
+                document.getElementById('metrcIntegratorKey').value = integratorKey;
+            }
             if (userKey) {
                 document.getElementById('metrcUserKey').value = userKey;
-                document.getElementById('metrcLicenseNumber').value = licenseNumber;
+            }
+            document.getElementById('metrcLicenseNumber').value = licenseNumber;
+            
+            if (integratorKey && userKey) {
                 updateMetrcConfigStatus(true);
             } else {
                 updateMetrcConfigStatus(false);
@@ -4419,14 +4501,16 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         function saveMetrcConfig() {
+            const integratorKey = document.getElementById('metrcIntegratorKey').value.trim();
             const userKey = document.getElementById('metrcUserKey').value.trim();
             const licenseNumber = document.getElementById('metrcLicenseNumber').value.trim();
             
-            if (!userKey || !licenseNumber) {
-                alert('Please enter both User API Key and License Number');
+            if (!integratorKey || !userKey || !licenseNumber) {
+                alert('Please enter both Integrator Key and User API Key');
                 return;
             }
             
+            localStorage.setItem('metrcIntegratorKey', integratorKey);
             localStorage.setItem('metrcUserKey', userKey);
             localStorage.setItem('metrcLicenseNumber', licenseNumber);
             
@@ -4435,10 +4519,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         async function testMetrcConnection() {
+            const integratorKey = localStorage.getItem('metrcIntegratorKey');
             const userKey = localStorage.getItem('metrcUserKey');
             const licenseNumber = localStorage.getItem('metrcLicenseNumber');
             
-            if (!userKey || !licenseNumber) {
+            if (!integratorKey || !userKey || !licenseNumber) {
                 showTestResult('error', 'Please save your credentials first.');
                 return;
             }
@@ -4449,7 +4534,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 // Try to get facilities as a simple test
                 const url = `https://api-co.metrc.com/facilities/v1/`;
                 
-                const authString = userKey.includes(':') ? userKey : `${userKey}:`;
+                // METRC requires: integratorKey:userKey
+                const authString = `${integratorKey}:${userKey}`;
                 
                 const response = await fetch(url, {
                     method: 'GET',
@@ -4462,7 +4548,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
                 if (response.ok) {
                     const data = await response.json();
-                    showTestResult('success', `✅ Connection successful!\n\nFound ${data.length} facilities in your account.\n\nYou can now try loading manifests, but CORS may still block it.`);
+                    showTestResult('success', `✅ Connection successful!\n\nFound ${data.length} facilities in your account.\n\nAuthentication format is correct.\nYou can try loading manifests (may still face CORS).`);
                 } else {
                     let errorDetails = '';
                     try {
@@ -4472,7 +4558,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         errorDetails = await response.text();
                     }
 
-                    showTestResult('error', `❌ METRC returned ${response.status}\n\n${errorDetails}\n\nTroubleshooting:\n• Verify API key is correct in METRC Settings → Integrations\n• Check if API access is enabled for license 404R-00016\n• Try the Manual Entry option instead`);
+                    showTestResult('error', `❌ METRC returned ${response.status}\n\n${errorDetails}\n\nTroubleshooting:\n• Verify Integrator Key is from METRC Connect\n• Verify User API Key from Settings → Integrations → User API Keys\n• Check if user has permissions for license 404R-00016\n• Try Manual Entry instead`);
                 }
             } catch (error) {
                 if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
@@ -4530,11 +4616,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         async function loadMetrcManifests() {
+            const integratorKey = localStorage.getItem('metrcIntegratorKey');
             const userKey = localStorage.getItem('metrcUserKey');
             const licenseNumber = localStorage.getItem('metrcLicenseNumber');
             
-            if (!userKey || !licenseNumber) {
-                showMetrcError('Please configure your METRC API credentials first.');
+            if (!integratorKey || !userKey || !licenseNumber) {
+                showMetrcError('Please configure your METRC API credentials first (both Integrator and User keys required).');
                 return;
             }
             
@@ -4553,13 +4640,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             try {
                 // METRC API endpoint for incoming transfers
-                // Note: You'll need to use your manufacturing license (403R-xxxxx), not retail
                 const url = `https://api-co.metrc.com/transfers/v1/incoming?licenseNumber=${licenseNumber}&lastModifiedStart=${startDate}&lastModifiedEnd=${endDate}`;
                 
-                // METRC requires API key in specific format
-                // If you have a vendor key, use: vendorKey:userKey
-                // Otherwise just: userKey (with blank password)
-                const authString = userKey.includes(':') ? userKey : `${userKey}:`;
+                // METRC requires: integratorKey:userKey
+                const authString = `${integratorKey}:${userKey}`;
                 
                 const response = await fetch(url, {
                     method: 'GET',
@@ -4574,9 +4658,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     let errorMsg = `METRC API returned ${response.status}`;
                     
                     if (response.status === 401) {
-                        errorMsg = `Authentication failed (401).\n\nTroubleshooting:\n• Verify your API key is correct\n• Make sure you're using your MANUFACTURING license (404R-00016)\n• API key format should be either:\n  - Just the user key, OR\n  - vendorKey:userKey if you have a vendor key\n• Check that the license has API access enabled in METRC`;
+                        errorMsg = `Authentication failed (401).\n\nTroubleshooting:\n• Verify your Integrator Key is from METRC Connect\n• Verify your User API Key from Settings → Integrations → User API Keys\n• Format must be integratorKey:userKey (done automatically)\n• Check that user has permissions for license 404R-00016\n• User must have access to view incoming transfers`;
                     } else if (response.status === 403) {
-                        errorMsg = `Access forbidden (403).\n\nThis license may not have permission to access the API.`;
+                        errorMsg = `Access forbidden (403).\n\nThe user may not have permission to access transfers for this license.`;
                     } else if (response.status === 404) {
                         errorMsg = `Endpoint not found (404).\n\nThe license number may be incorrect.`;
                     }
