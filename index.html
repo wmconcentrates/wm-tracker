@@ -1253,12 +1253,12 @@
                             <div class="help-text">Full panel RTA required once per month</div>
                         </div>
                         <div class="form-group">
-                            <label>THC %</label>
-                            <input type="number" id="testThcPercent" step="0.01" required>
+                            <label>THC % (if results received)</label>
+                            <input type="number" id="testThcPercent" step="0.01" placeholder="Enter when results arrive">
                         </div>
                         <div class="form-group">
-                            <label>CBD %</label>
-                            <input type="number" id="testCbdPercent" step="0.01">
+                            <label>CBD % (if results received)</label>
+                            <input type="number" id="testCbdPercent" step="0.01" placeholder="Enter when results arrive">
                         </div>
                     </div>
                     
@@ -1618,32 +1618,34 @@
                     </ul>
                 </div>
 
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Integrator API Key (Software Key)</label>
-                        <input type="password" id="metrcIntegratorKey" placeholder="Your White Mousse integrator key">
-                        <div class="help-text">From METRC Connect - stays the same for all users</div>
+                <form id="metrcCredentialsForm" onsubmit="event.preventDefault(); saveMetrcConfig();">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Integrator API Key (Software Key)</label>
+                            <input type="password" id="metrcIntegratorKey" placeholder="Your White Mousse integrator key" autocomplete="off">
+                            <div class="help-text">From METRC Connect - stays the same for all users</div>
+                        </div>
+                        <div class="form-group">
+                            <label>User API Key</label>
+                            <input type="password" id="metrcUserKey" placeholder="Individual user's API key" autocomplete="off">
+                            <div class="help-text">Created in METRC: Settings → Integrations → User API Keys</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Manufacturing License Number</label>
+                            <input type="text" id="metrcLicenseNumber" value="404R-00016" readonly style="opacity: 0.7; background: var(--bg-tertiary);">
+                            <div class="help-text">Your White Mousse manufacturing license (locked)</div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>User API Key</label>
-                        <input type="password" id="metrcUserKey" placeholder="Individual user's API key">
-                        <div class="help-text">Created in METRC: Settings → Integrations → User API Keys</div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button type="submit" class="btn" style="background: var(--accent-blue); flex: 1;">
+                            💾 Save Credentials
+                        </button>
+                        <button type="button" class="btn" style="background: var(--accent-green); flex: 1;" onclick="testMetrcConnection()">
+                            🔬 Test Connection
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label>Manufacturing License Number</label>
-                        <input type="text" id="metrcLicenseNumber" value="404R-00016" readonly style="opacity: 0.7; background: var(--bg-tertiary);">
-                        <div class="help-text">Your White Mousse manufacturing license (locked)</div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button class="btn" style="background: var(--accent-blue); flex: 1;" onclick="saveMetrcConfig()">
-                        💾 Save Credentials
-                    </button>
-                    <button class="btn" style="background: var(--accent-green); flex: 1;" onclick="testMetrcConnection()">
-                        🔬 Test Connection
-                    </button>
-                </div>
+                </form>
                 <div id="metrcTestResult" style="margin-top: 15px; display: none;"></div>
             </div>
 
@@ -3331,7 +3333,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     <p><strong>Net Weight:</strong> ${batch.net_weight || batch.final_weight || 'N/A'}g</p>
                     ${trimUsedInfo}
                     <div style="background: rgba(245, 158, 11, 0.2); padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid var(--accent-orange);">
-                        <p style="margin: 0;"><strong style="color: var(--accent-orange);">📋 METRC Tags:</strong> <span style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">${batch.metrc_tags || 'Not entered'}</span></p>
+                        <p style="margin: 0;"><strong style="color: var(--accent-orange);">📋 METRC Tags:</strong> <span style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">${batch.metrc_tags && batch.metrc_tags.trim() !== '' ? batch.metrc_tags : 'Not entered at intake'}</span></p>
                     </div>
                     <p><strong>Cultivation License:</strong> ${batch.cultivation_license}</p>
                     <p><strong>Grower:</strong> ${batch.grower_name || 'N/A'}</p>
@@ -3478,8 +3480,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             if (!batch) return;
             
-            const thcPercent = parseFloat(document.getElementById('testThcPercent').value);
-            const cbdPercent = parseFloat(document.getElementById('testCbdPercent').value) || 0;
+            const thcPercent = parseFloat(document.getElementById('testThcPercent').value) || null;
+            const cbdPercent = parseFloat(document.getElementById('testCbdPercent').value) || null;
             const isRTA = document.getElementById('isRTA').value;
             const submittedDate = document.getElementById('testSubmittedDate').value;
             const expirationDate = document.getElementById('testExpirationDate').value;
@@ -3495,27 +3497,33 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const strainTypeNote = batch.strain_type !== finalStrainType ? ` | Redesignated: ${batch.strain_type} → ${finalStrainType}` : '';
             
             const timeline = batch.timeline || [];
+            const resultsText = thcPercent !== null ? `THC ${thcPercent}%, CBD ${cbdPercent || 0}%` : 'Test submitted - results pending';
             timeline.push({
                 stage: 'testing',
                 user: currentRole ? currentRole.name : "Unknown",
                 date: new Date().toISOString(),
-                action: `Test results: THC ${thcPercent}%, CBD ${cbdPercent}%${isRTA === 'yes' ? ' - RTA FULL PANEL' : ''} | Named: ${finalProductName}${strainTypeNote}`
+                action: `${resultsText}${isRTA === 'yes' ? ' - RTA FULL PANEL' : ''} | Named: ${finalProductName}${strainTypeNote}`
             });
+            
+            // Build update object - only include fields that exist in database
+            const updates = {
+                test_submitted_date: submittedDate,
+                test_expiration_date: expirationDate,
+                test_results_received_date: document.getElementById('testResultsReceivedDate').value,
+                test_thc_percent: thcPercent,
+                test_cbd_percent: cbdPercent,
+                is_rta: isRTA,
+                test_results_notes: document.getElementById('testResultsNotes').value || null,
+                timeline: timeline
+            };
+            
+            // Store product name and strain type in notes for now until we add columns
+            const productInfo = `\n\n[PRODUCT INFO]\nName: ${finalProductName}\nType: ${finalStrainType}`;
+            updates.test_results_notes = (updates.test_results_notes || '') + productInfo;
             
             const { error } = await supabaseClient
                 .from('wm_batches')
-                .update({
-                    test_submitted_date: submittedDate,
-                    test_expiration_date: expirationDate,
-                    test_results_received_date: document.getElementById('testResultsReceivedDate').value,
-                    test_thc_percent: thcPercent,
-                    test_cbd_percent: cbdPercent,
-                    is_rta: isRTA,
-                    test_results_notes: document.getElementById('testResultsNotes').value || null,
-                    final_product_name: finalProductName,
-                    final_strain_type: finalStrainType,
-                    timeline: timeline
-                })
+                .update(updates)
                 .eq('id', batchId);
             
             if (error) {
@@ -3525,7 +3533,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
             
             const lidColor = finalStrainType === 'Indica' ? 'Blue' : finalStrainType === 'Sativa' ? 'Red' : 'Green';
-            alert(`Test results saved for ${batchId}!\n\nProduct Name: ${finalProductName}\nStrain Type: ${finalStrainType} (${lidColor} Lid)${strainTypeNote ? '\n✓ Strain type redesignated' : ''}\nTHC: ${thcPercent}% | CBD: ${cbdPercent}%\n${isRTA === 'yes' ? '✓ RTA Full Panel' : 'Standard Potency'}\nExpires: ${expirationDate}`);
+            const resultsInfo = thcPercent !== null ? `\nTHC: ${thcPercent}% | CBD: ${cbdPercent || 0}%` : '\nTest submitted - awaiting results';
+            alert(`Test results saved for ${batchId}!\n\nProduct Name: ${finalProductName}\nStrain Type: ${finalStrainType} (${lidColor} Lid)${strainTypeNote ? '\n✓ Strain type redesignated' : ''}${resultsInfo}\n${isRTA === 'yes' ? '✓ RTA Full Panel' : 'Standard Potency'}\nExpires: ${expirationDate}`);
             
             document.getElementById('testingForm').style.display = 'none';
             document.getElementById('testingBatchSelect').value = '';
