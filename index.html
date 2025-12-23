@@ -1601,6 +1601,8 @@
             </div>
             
             <div id="editBatchForm">
+                <input type="hidden" id="originalBatchId">
+                
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Batch ID</label>
@@ -5188,6 +5190,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const batch = batches.find(b => b.id === batchId);
             if (!batch) return;
             
+            // Store original batch ID in hidden field
+            document.getElementById('originalBatchId').value = batch.id;
+            
             // Populate form
             document.getElementById('editBatchId').value = batch.id;
             document.getElementById('editStrainName').value = batch.strain;
@@ -5254,10 +5259,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         async function saveEditedBatch() {
-            const oldBatchId = batches.find(b => b.id === document.getElementById('editBatchId').value)?.id;
+            const oldBatchId = document.getElementById('originalBatchId').value;
             const newBatchId = document.getElementById('editBatchId').value.trim();
             const batch = batches.find(b => b.id === oldBatchId);
             const editNotes = document.getElementById('editNotes').value;
+            
+            if (!batch) {
+                alert('Error: Could not find batch to edit.');
+                return;
+            }
             
             if (!editNotes || editNotes.trim() === '') {
                 alert('Please enter a note explaining why you\'re making this change.');
