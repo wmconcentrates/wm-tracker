@@ -1238,15 +1238,22 @@
                     <!-- Batch ID Reassignment -->
                     <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(147, 51, 234, 0.15)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-orange);">
                         <h3 style="color: var(--accent-orange); margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                            <span>📋</span> Assign New Batch Number (Optional)
+                            <span>📋</span> Assign New Batch Number
                         </h3>
                         <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px; line-height: 1.5;">
-                            When Alex creates a METRC tag for lab testing, METRC assigns a new batch number. Enter it here to update this batch's ID in the system.
+                            Protocol: MM.DD.XXXX (expiration month.day.last 4 of METRC tag)
                         </p>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label>New Batch ID from METRC</label>
-                            <input type="text" id="newBatchId" placeholder="e.g., WM-001234" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">
-                            <div class="help-text">Leave blank to keep the current batch ID. Enter new ID to reassign.</div>
+                        <div class="form-grid">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Last 4 Digits of New METRC Tag</label>
+                                <input type="text" id="metrcLast4" maxlength="4" placeholder="e.g., 5678" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">
+                                <div class="help-text">From the testing package tag</div>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Generated Batch ID</label>
+                                <input type="text" id="newBatchId" readonly placeholder="Auto-generated from expiration date" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700; background: var(--bg-primary); color: var(--accent-green);">
+                                <div class="help-text">Format: MM.DD.XXXX</div>
+                            </div>
                         </div>
                     </div>
 
@@ -3669,6 +3676,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 if (batch.test_results_received_date) {
                     document.getElementById('testSubmittedDate').value = batch.test_submitted_date || '';
                     document.getElementById('testExpirationDate').value = batch.test_expiration_date || '';
+                    document.getElementById('metrcLast4').value = ''; // Clear - batch ID already set
                     document.getElementById('newBatchId').value = ''; // Always clear - this is for reassignment
                     document.getElementById('testResultsReceivedDate').value = batch.test_results_received_date;
                     document.getElementById('testThcPercent').value = batch.test_thc_percent || '';
@@ -3686,6 +3694,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     // Clear form
                     document.getElementById('testSubmittedDate').value = '';
                     document.getElementById('testExpirationDate').value = '';
+                    document.getElementById('metrcLast4').value = '';
                     document.getElementById('newBatchId').value = '';
                     document.getElementById('testResultsReceivedDate').value = new Date().toISOString().split('T')[0];
                     document.getElementById('testThcPercent').value = '';
@@ -3698,6 +3707,27 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Check RTA status after loading
             checkRTAStatus();
         });
+
+        // Auto-generate batch ID from expiration date and METRC tag last 4
+        function generateBatchId() {
+            const expirationDate = document.getElementById('testExpirationDate').value;
+            const metrcLast4 = document.getElementById('metrcLast4').value.trim();
+            
+            if (expirationDate && metrcLast4 && metrcLast4.length === 4) {
+                const expDate = new Date(expirationDate);
+                const month = String(expDate.getMonth() + 1).padStart(2, '0');
+                const day = String(expDate.getDate()).padStart(2, '0');
+                
+                const batchId = `${month}.${day}.${metrcLast4}`;
+                document.getElementById('newBatchId').value = batchId;
+            } else {
+                document.getElementById('newBatchId').value = '';
+            }
+        }
+
+        // Add event listeners for auto-generation
+        document.getElementById('testExpirationDate').addEventListener('change', generateBatchId);
+        document.getElementById('metrcLast4').addEventListener('input', generateBatchId);
 
         // Check RTA status and show reminder if needed - BY EXTRACTION METHOD
         function checkRTAStatus() {
