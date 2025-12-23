@@ -3690,6 +3690,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     if (batch.final_strain_type) {
                         document.getElementById('finalStrainType').value = batch.final_strain_type;
                     }
+                    // Trigger batch ID generation in case user wants to reassign
+                    generateBatchId();
                 } else {
                     // Clear form
                     document.getElementById('testSubmittedDate').value = '';
