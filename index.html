@@ -1604,7 +1604,18 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Batch ID</label>
-                        <input type="text" id="editBatchId" readonly style="background: var(--bg-tertiary); opacity: 0.7;">
+                        <input type="text" id="editBatchId" style="font-family: 'Space Mono', monospace; font-weight: 700;">
+                        <div class="help-text">Format: M.D.XXXX (e.g., 9.15.5678)</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Parsed METRC Last 4 (Auto)</label>
+                        <input type="text" id="parsedMetrcLast4" readonly style="background: var(--bg-primary); color: var(--accent-green); font-family: 'Space Mono', monospace;">
+                        <div class="help-text">Automatically extracted from Batch ID</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Parsed Expiration Date (Auto)</label>
+                        <input type="date" id="parsedExpirationDate" readonly style="background: var(--bg-primary); color: var(--accent-green);">
+                        <div class="help-text">Automatically calculated from Batch ID</div>
                     </div>
                     <div class="form-group">
                         <label>Strain Name</label>
@@ -4579,9 +4590,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             let totalCostPerGram = 0, costCount = 0;
             
             completedBatches.forEach(b => {
-                // Yield
-                if (b.trim_weight && b.net_weight) {
-                    totalYield += (parseFloat(b.net_weight) / parseFloat(b.trim_weight)) * 100;
+                // Yield - use grams_labeled (actual sellable weight) instead of net_weight
+                if (b.trim_weight && b.grams_labeled) {
+                    totalYield += (parseFloat(b.grams_labeled) / parseFloat(b.trim_weight)) * 100;
                     yieldCount++;
                 }
                 // THC
@@ -4595,9 +4606,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     totalProcessingDays += days;
                     timeCount++;
                 }
-                // Cost per gram
-                if (b.material_cost && b.net_weight) {
-                    totalCostPerGram += parseFloat(b.material_cost) / parseFloat(b.net_weight);
+                // Cost per gram - use grams_labeled (actual sellable weight) instead of net_weight
+                if (b.material_cost && b.grams_labeled) {
+                    totalCostPerGram += parseFloat(b.material_cost) / parseFloat(b.grams_labeled);
                     costCount++;
                 }
             });
@@ -4880,14 +4891,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Economics
             const trimWeight = parseFloat(batch.trim_weight || 0);
             const netWeight = parseFloat(batch.net_weight || 0);
-            const yield_percent = trimWeight > 0 ? ((netWeight / trimWeight) * 100).toFixed(2) : 0;
+            const gramsLabeled = parseFloat(batch.grams_labeled || 0);
+            
+            // Use grams_labeled for yield if available, otherwise fall back to net_weight
+            const finalWeight = gramsLabeled > 0 ? gramsLabeled : netWeight;
+            const yield_percent = trimWeight > 0 ? ((finalWeight / trimWeight) * 100).toFixed(2) : 0;
+            
             const materialCost = parseFloat(batch.material_cost || 0);
-            const costPerGram = netWeight > 0 ? (materialCost / netWeight).toFixed(2) : 0;
+            const costPerGram = finalWeight > 0 ? (materialCost / finalWeight).toFixed(2) : 0;
             const costPerUnit = batch.units_packaged > 0 ? (materialCost / batch.units_packaged).toFixed(2) : 0;
             
             const economics = `
                 <p><strong>Trim Used:</strong> ${trimWeight}g</p>
                 <p><strong>Final Net Weight:</strong> ${netWeight}g</p>
+                ${gramsLabeled > 0 ? `<p><strong>Labeled Weight:</strong> ${gramsLabeled}g</p>` : ''}
                 <p style="color: var(--accent-green); font-size: 1.2rem; font-weight: 700; margin: 10px 0;"><strong>Yield:</strong> ${yield_percent}%</p>
                 <p><strong>Material Cost:</strong> $${materialCost.toFixed(2)}</p>
                 <p><strong>Cost Per Gram:</strong> $${costPerGram}</p>
@@ -5182,22 +5199,91 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             document.getElementById('editMetrcTags').value = batch.metrc_tags || '';
             document.getElementById('editNotes').value = '';
             
+            // Parse batch ID to extract info
+            parseBatchIdForEdit(batch.id);
+            
             // Show modal
             document.getElementById('editBatchModal').style.display = 'block';
         }
+
+        // Parse batch ID to extract METRC last 4 and expiration date
+        function parseBatchIdForEdit(batchId) {
+            // Format: M.D.XXXX or MM.DD.XXXX
+            const parts = batchId.split('.');
+            
+            if (parts.length === 3) {
+                const month = parts[0];
+                const day = parts[1];
+                const last4 = parts[2];
+                
+                // Show parsed METRC last 4
+                document.getElementById('parsedMetrcLast4').value = last4;
+                
+                // Calculate expiration date (use current/next year)
+                const currentYear = new Date().getFullYear();
+                const expMonth = parseInt(month, 10);
+                const expDay = parseInt(day, 10);
+                
+                if (expMonth >= 1 && expMonth <= 12 && expDay >= 1 && expDay <= 31) {
+                    // Create date - if it's in the past, use next year
+                    let expDate = new Date(currentYear, expMonth - 1, expDay);
+                    const today = new Date();
+                    
+                    if (expDate < today) {
+                        expDate = new Date(currentYear + 1, expMonth - 1, expDay);
+                    }
+                    
+                    document.getElementById('parsedExpirationDate').value = expDate.toISOString().split('T')[0];
+                } else {
+                    document.getElementById('parsedExpirationDate').value = '';
+                }
+            } else {
+                // Invalid format
+                document.getElementById('parsedMetrcLast4').value = '';
+                document.getElementById('parsedExpirationDate').value = '';
+            }
+        }
+
+        // Add event listener for batch ID changes
+        document.getElementById('editBatchId').addEventListener('input', function() {
+            parseBatchIdForEdit(this.value);
+        });
 
         function closeEditBatch() {
             document.getElementById('editBatchModal').style.display = 'none';
         }
 
         async function saveEditedBatch() {
-            const batchId = document.getElementById('editBatchId').value;
-            const batch = batches.find(b => b.id === batchId);
+            const oldBatchId = batches.find(b => b.id === document.getElementById('editBatchId').value)?.id;
+            const newBatchId = document.getElementById('editBatchId').value.trim();
+            const batch = batches.find(b => b.id === oldBatchId);
             const editNotes = document.getElementById('editNotes').value;
             
             if (!editNotes || editNotes.trim() === '') {
                 alert('Please enter a note explaining why you\'re making this change.');
                 return;
+            }
+            
+            // Check if batch ID changed
+            const batchIdChanged = oldBatchId !== newBatchId;
+            
+            if (batchIdChanged) {
+                // Verify new batch ID doesn't already exist
+                const existingBatch = batches.find(b => b.id === newBatchId);
+                if (existingBatch && existingBatch.id !== oldBatchId) {
+                    alert(`Error: Batch ID "${newBatchId}" already exists. Please choose a different ID.`);
+                    return;
+                }
+                
+                const confirmChange = confirm(
+                    `⚠️ BATCH ID CHANGE\n\n` +
+                    `Old ID: ${oldBatchId}\n` +
+                    `New ID: ${newBatchId}\n\n` +
+                    `This will update the batch ID and recalculate expiration date.\n\n` +
+                    `Continue?`
+                );
+                
+                if (!confirmChange) return;
             }
             
             // Collect updated values
@@ -5211,29 +5297,66 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 metrc_tags: document.getElementById('editMetrcTags').value || null
             };
             
+            // If expiration date was parsed, update it
+            const parsedExpDate = document.getElementById('parsedExpirationDate').value;
+            if (parsedExpDate) {
+                updates.test_expiration_date = parsedExpDate;
+            }
+            
             // Add edit to timeline
             const timeline = batch.timeline || [];
+            const batchIdNote = batchIdChanged ? ` | Batch ID changed: ${oldBatchId} → ${newBatchId}` : '';
             timeline.push({
                 stage: 'edit',
                 timestamp: new Date().toISOString(),
                 user: currentRole.name,
-                action: `Edited batch - ${editNotes}`
+                action: `Edited batch - ${editNotes}${batchIdNote}`
             });
             updates.timeline = timeline;
             
-            // Save to database
-            const { error } = await supabaseClient
-                .from('wm_batches')
-                .update(updates)
-                .eq('id', batchId);
-            
-            if (error) {
-                console.error('Error updating batch:', error);
-                alert('Error saving changes. Please try again.');
-                return;
+            // Handle batch ID change
+            if (batchIdChanged) {
+                // Create new batch with new ID
+                const { error: insertError } = await supabaseClient
+                    .from('wm_batches')
+                    .insert({
+                        ...batch,
+                        ...updates,
+                        id: newBatchId
+                    });
+                
+                if (insertError) {
+                    console.error('Error creating new batch:', insertError);
+                    alert('Error updating batch ID. Please try again.');
+                    return;
+                }
+                
+                // Delete old batch
+                const { error: deleteError } = await supabaseClient
+                    .from('wm_batches')
+                    .delete()
+                    .eq('id', oldBatchId);
+                
+                if (deleteError) {
+                    console.error('Error deleting old batch:', deleteError);
+                    alert('Warning: New batch created but old batch could not be removed.');
+                }
+            } else {
+                // Normal update
+                const { error } = await supabaseClient
+                    .from('wm_batches')
+                    .update(updates)
+                    .eq('id', oldBatchId);
+                
+                if (error) {
+                    console.error('Error updating batch:', error);
+                    alert('Error saving changes. Please try again.');
+                    return;
+                }
             }
             
-            alert(`Batch ${batchId} updated successfully!`);
+            const finalBatchId = batchIdChanged ? newBatchId : oldBatchId;
+            alert(`Batch ${finalBatchId} updated successfully!${batchIdChanged ? '\n✓ Batch ID changed and expiration date updated' : ''}`);
             closeEditBatch();
             await loadBatches();
             renderBatches();
