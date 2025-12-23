@@ -5001,103 +5001,220 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Calculate date range (last 30 days)
             const now = new Date();
             const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+            const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
             
-            // Get all timeline events from batches
-            const activities = [];
-            batches.forEach(batch => {
-                if (batch.timeline && Array.isArray(batch.timeline)) {
-                    batch.timeline.forEach(event => {
-                        const eventDate = new Date(event.timestamp || event.date);
-                        if (eventDate >= thirtyDaysAgo) {
-                            activities.push({
-                                ...event,
-                                batchId: batch.id,
-                                strain: batch.strain,
-                                date: eventDate
-                            });
-                        }
-                    });
-                }
-            });
-
-            // Filter by employee if needed
-            const filteredActivities = filter === 'all' 
-                ? activities 
-                : activities.filter(a => a.user === filter);
-
-            // Group by employee and task
+            // Track employee performance by role
             const employeeStats = {};
             
-            filteredActivities.forEach(activity => {
-                if (!employeeStats[activity.user]) {
-                    employeeStats[activity.user] = {
-                        name: activity.user,
-                        tasks: {},
-                        totalActions: 0,
-                        firstAction: activity.date,
-                        lastAction: activity.date
-                    };
-                }
+            batches.forEach(batch => {
+                if (!batch.timeline) return;
                 
-                const emp = employeeStats[activity.user];
-                emp.totalActions++;
+                // PACKAGING: Track grams packaged
+                const packagingEvents = batch.timeline.filter(e => 
+                    e.stage === 'finishing' && 
+                    e.action && 
+                    e.action.includes('Post-extraction completed')
+                );
                 
-                const taskName = activity.stage || 'unknown';
-                if (!emp.tasks[taskName]) {
-                    emp.tasks[taskName] = {
-                        count: 0,
-                        dates: []
-                    };
-                }
+                packagingEvents.forEach(event => {
+                    const eventDate = new Date(event.timestamp || event.date);
+                    if (eventDate >= thirtyDaysAgo && event.user && batch.net_weight) {
+                        if (!employeeStats[event.user]) {
+                            employeeStats[event.user] = {
+                                name: event.user,
+                                packaging: { total: 0, last7Days: 0, dates: [] },
+                                labeling: { total: 0, last7Days: 0, dates: [] },
+                                extraction: { total: 0, last7Days: 0, dates: [] }
+                            };
+                        }
+                        
+                        const grams = parseFloat(batch.net_weight);
+                        employeeStats[event.user].packaging.total += grams;
+                        employeeStats[event.user].packaging.dates.push(eventDate);
+                        
+                        if (eventDate >= sevenDaysAgo) {
+                            employeeStats[event.user].packaging.last7Days += grams;
+                        }
+                    }
+                });
                 
-                emp.tasks[taskName].count++;
-                emp.tasks[taskName].dates.push(activity.date);
+                // LABELING: Track grams labeled
+                const labelingEvents = batch.timeline.filter(e => 
+                    e.stage === 'labeling' && 
+                    e.action && 
+                    e.action.includes('labeled')
+                );
                 
-                if (activity.date < emp.firstAction) emp.firstAction = activity.date;
-                if (activity.date > emp.lastAction) emp.lastAction = activity.date;
-            });
-
-            // Calculate averages
-            Object.values(employeeStats).forEach(emp => {
-                const daysDiff = Math.max(1, Math.ceil((emp.lastAction - emp.firstAction) / (1000 * 60 * 60 * 24)) + 1);
-                const weeksDiff = Math.max(1, daysDiff / 7);
+                labelingEvents.forEach(event => {
+                    const eventDate = new Date(event.timestamp || event.date);
+                    if (eventDate >= thirtyDaysAgo && event.user && batch.grams_labeled) {
+                        if (!employeeStats[event.user]) {
+                            employeeStats[event.user] = {
+                                name: event.user,
+                                packaging: { total: 0, last7Days: 0, dates: [] },
+                                labeling: { total: 0, last7Days: 0, dates: [] },
+                                extraction: { total: 0, last7Days: 0, dates: [] }
+                            };
+                        }
+                        
+                        const grams = parseFloat(batch.grams_labeled);
+                        employeeStats[event.user].labeling.total += grams;
+                        employeeStats[event.user].labeling.dates.push(eventDate);
+                        
+                        if (eventDate >= sevenDaysAgo) {
+                            employeeStats[event.user].labeling.last7Days += grams;
+                        }
+                    }
+                });
                 
-                emp.daysActive = daysDiff;
-                emp.avgPerDay = (emp.totalActions / daysDiff).toFixed(1);
-                emp.avgPerWeek = (emp.totalActions / weeksDiff).toFixed(1);
+                // EXTRACTION: Track trim processed
+                const extractionEvents = batch.timeline.filter(e => 
+                    (e.stage === 'extraction' || e.stage === 'finishing') && 
+                    e.action && 
+                    (e.action.includes('Extraction completed') || e.action.includes('completed'))
+                );
                 
-                // Calculate per-task averages
-                Object.keys(emp.tasks).forEach(taskName => {
-                    const task = emp.tasks[taskName];
-                    task.avgPerDay = (task.count / daysDiff).toFixed(1);
-                    task.avgPerWeek = (task.count / weeksDiff).toFixed(1);
+                extractionEvents.forEach(event => {
+                    const eventDate = new Date(event.timestamp || event.date);
+                    if (eventDate >= thirtyDaysAgo && event.user && batch.trim_weight) {
+                        if (!employeeStats[event.user]) {
+                            employeeStats[event.user] = {
+                                name: event.user,
+                                packaging: { total: 0, last7Days: 0, dates: [] },
+                                labeling: { total: 0, last7Days: 0, dates: [] },
+                                extraction: { total: 0, last7Days: 0, dates: [] }
+                            };
+                        }
+                        
+                        const grams = parseFloat(batch.adjusted_trim_weight || batch.trim_weight);
+                        employeeStats[event.user].extraction.total += grams;
+                        employeeStats[event.user].extraction.dates.push(eventDate);
+                        
+                        if (eventDate >= sevenDaysAgo) {
+                            employeeStats[event.user].extraction.last7Days += grams;
+                        }
+                    }
                 });
             });
 
-            // Render stats cards
-            const sortedEmployees = Object.values(employeeStats).sort((a, b) => b.totalActions - a.totalActions);
+            // Filter by employee if needed
+            let displayStats = Object.values(employeeStats);
+            if (filter !== 'all') {
+                displayStats = displayStats.filter(emp => emp.name === filter);
+            }
             
-            if (sortedEmployees.length === 0) {
+            if (displayStats.length === 0) {
                 statsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No activity found in the last 30 days</p>';
             } else {
-                statsContainer.innerHTML = sortedEmployees.map(emp => {
-                    const taskBreakdown = Object.entries(emp.tasks)
-                        .sort((a, b) => b[1].count - a[1].count)
-                        .map(([taskName, task]) => `
-                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-top: 10px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <span style="font-weight: 600; color: var(--accent-blue); text-transform: capitalize;">${taskName}</span>
-                                    <span style="font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700;">${task.count}</span>
-                                </div>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; color: var(--text-secondary);">
-                                    <div>📊 ${task.avgPerDay}/day</div>
-                                    <div>📈 ${task.avgPerWeek}/week</div>
-                                </div>
-                            </div>
-                        `).join('');
-
+                statsContainer.innerHTML = displayStats.map(emp => {
+                    // Calculate days active and averages for each category
+                    const packagingDays = emp.packaging.dates.length > 0 ? 
+                        Math.max(1, Math.ceil((Math.max(...emp.packaging.dates) - Math.min(...emp.packaging.dates)) / (1000 * 60 * 60 * 24)) + 1) : 0;
+                    const labelingDays = emp.labeling.dates.length > 0 ?
+                        Math.max(1, Math.ceil((Math.max(...emp.labeling.dates) - Math.min(...emp.labeling.dates)) / (1000 * 60 * 60 * 24)) + 1) : 0;
+                    const extractionDays = emp.extraction.dates.length > 0 ?
+                        Math.max(1, Math.ceil((Math.max(...emp.extraction.dates) - Math.min(...emp.extraction.dates)) / (1000 * 60 * 60 * 24)) + 1) : 0;
+                    
+                    const packagingPerDay = packagingDays > 0 ? (emp.packaging.total / packagingDays).toFixed(1) : 0;
+                    const packagingPerWeek = packagingDays > 0 ? (emp.packaging.total / Math.max(1, packagingDays / 7)).toFixed(1) : 0;
+                    
+                    const labelingPerDay = labelingDays > 0 ? (emp.labeling.total / labelingDays).toFixed(1) : 0;
+                    const labelingPerWeek = labelingDays > 0 ? (emp.labeling.total / Math.max(1, labelingDays / 7)).toFixed(1) : 0;
+                    
+                    const extractionPerDay = extractionDays > 0 ? (emp.extraction.total / extractionDays).toFixed(1) : 0;
+                    const extractionPerWeek = extractionDays > 0 ? (emp.extraction.total / Math.max(1, extractionDays / 7)).toFixed(1) : 0;
+                    
                     return `
                         <div style="background: var(--bg-tertiary); padding: 25px; border-radius: 15px; border: 2px solid var(--border); margin-bottom: 20px;">
+                            <h3 style="color: var(--accent-purple); margin-bottom: 20px; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
+                                <span>👤</span> ${emp.name}
+                            </h3>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                                
+                                <!-- Packaging Stats -->
+                                ${emp.packaging.total > 0 ? `
+                                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1)); padding: 20px; border-radius: 12px; border: 2px solid var(--accent-blue);">
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 15px;">📦 Packaging</div>
+                                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${emp.packaging.total.toFixed(0)}g</div>
+                                    <div style="color: var(--text-secondary); margin-bottom: 15px;">Total (30 days)</div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Day</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${packagingPerDay}g</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Week</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${packagingPerWeek}g</div>
+                                        </div>
+                                    </div>
+                                    ${emp.packaging.last7Days > 0 ? `
+                                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div style="font-size: 0.9rem; color: var(--text-secondary);">Last 7 Days</div>
+                                        <div style="font-size: 1.2rem; font-weight: 700; color: var(--accent-orange);">${emp.packaging.last7Days.toFixed(0)}g</div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                ` : ''}
+                                
+                                <!-- Labeling Stats -->
+                                ${emp.labeling.total > 0 ? `
+                                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); padding: 20px; border-radius: 12px; border: 2px solid var(--accent-green);">
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-green); margin-bottom: 15px;">🏷️ Labeling</div>
+                                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${emp.labeling.total.toFixed(0)}g</div>
+                                    <div style="color: var(--text-secondary); margin-bottom: 15px;">Total (30 days)</div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Day</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${labelingPerDay}g</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Week</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${labelingPerWeek}g</div>
+                                        </div>
+                                    </div>
+                                    ${emp.labeling.last7Days > 0 ? `
+                                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div style="font-size: 0.9rem; color: var(--text-secondary);">Last 7 Days</div>
+                                        <div style="font-size: 1.2rem; font-weight: 700; color: var(--accent-orange);">${emp.labeling.last7Days.toFixed(0)}g</div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                ` : ''}
+                                
+                                <!-- Extraction Stats -->
+                                ${emp.extraction.total > 0 ? `
+                                <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1)); padding: 20px; border-radius: 12px; border: 2px solid var(--accent-orange);">
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-orange); margin-bottom: 15px;">⚗️ Extraction</div>
+                                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${emp.extraction.total.toFixed(0)}g</div>
+                                    <div style="color: var(--text-secondary); margin-bottom: 15px;">Trim Processed (30 days)</div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Day</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${extractionPerDay}g</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Week</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${extractionPerWeek}g</div>
+                                        </div>
+                                    </div>
+                                    ${emp.extraction.last7Days > 0 ? `
+                                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div style="font-size: 0.9rem; color: var(--text-secondary);">Last 7 Days</div>
+                                        <div style="font-size: 1.2rem; font-weight: 700; color: var(--accent-orange);">${emp.extraction.last7Days.toFixed(0)}g</div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Simplified activity log
+            logContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">Use the filter above to view specific employee performance</p>';
+        }
                             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
                                 <div>
                                     <h3 style="font-size: 1.5rem; margin-bottom: 5px; color: var(--accent-purple);">${emp.name}</h3>
