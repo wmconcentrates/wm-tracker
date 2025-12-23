@@ -3714,9 +3714,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const metrcLast4 = document.getElementById('metrcLast4').value.trim();
             
             if (expirationDate && metrcLast4 && metrcLast4.length === 4) {
-                const expDate = new Date(expirationDate);
-                const month = String(expDate.getMonth() + 1).padStart(2, '0');
-                const day = String(expDate.getDate()).padStart(2, '0');
+                // Parse date string directly to avoid timezone issues
+                // Date format from input is YYYY-MM-DD
+                const dateParts = expirationDate.split('-');
+                const month = dateParts[1]; // Already zero-padded
+                const day = dateParts[2];   // Already zero-padded
                 
                 const batchId = `${month}.${day}.${metrcLast4}`;
                 document.getElementById('newBatchId').value = batchId;
