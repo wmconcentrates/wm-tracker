@@ -4624,51 +4624,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
             
             container.innerHTML = completedBatches.map(batch => {
-                const yield_percent = batch.trim_weight && batch.net_weight ? 
-                    ((parseFloat(batch.net_weight) / parseFloat(batch.trim_weight)) * 100).toFixed(2) : 0;
-                const thc = batch.test_thc_percent || 'N/A';
-                const processingDays = batch.intake_date && batch.finishing_date ?
-                    ((new Date(batch.finishing_date) - new Date(batch.intake_date)) / (1000 * 60 * 60 * 24)).toFixed(1) : 'N/A';
-                const costPerGram = batch.material_cost && batch.net_weight ?
-                    (parseFloat(batch.material_cost) / parseFloat(batch.net_weight)).toFixed(2) : '0';
-                
                 return `
-                    <div class="batch-card" onclick="showBatchDetails('${batch.id}')" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                            <div>
-                                <div style="font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent-green);">${batch.id}</div>
-                                <div style="color: var(--text-secondary); font-size: 0.9rem;">${batch.strain}</div>
-                            </div>
-                            <div style="padding: 4px 10px; background: rgba(147, 51, 234, 0.2); border-radius: 12px; font-size: 0.85rem; color: var(--accent-purple);">
+                    <div class="batch-card" onclick="showBatchDetails('${batch.id}')" style="cursor: pointer; transition: all 0.2s; background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 2px solid var(--border);">
+                        <div style="text-align: center;">
+                            <div style="font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--accent-green); margin-bottom: 8px;">${batch.id}</div>
+                            <div style="color: var(--text-primary); font-size: 1rem; font-weight: 600;">${batch.strain}</div>
+                            <div style="margin-top: 8px; padding: 4px 12px; background: rgba(147, 51, 234, 0.2); border-radius: 12px; font-size: 0.85rem; color: var(--accent-purple); display: inline-block;">
                                 ${batch.strain_type}
-                            </div>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-                            <div>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 3px;">Yield</div>
-                                <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-green);">${yield_percent}%</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 3px;">THC</div>
-                                <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-blue);">${thc}${typeof thc === 'number' ? '%' : ''}</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 3px;">Processing Time</div>
-                                <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-orange);">${processingDays}${processingDays !== 'N/A' ? ' days' : ''}</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 3px;">Cost/Gram</div>
-                                <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-purple);">$${costPerGram}</div>
-                            </div>
-                        </div>
-                        
-                        <div style="padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                            <div style="font-size: 0.85rem; color: var(--text-secondary);">
-                                ${batch.product_made || 'N/A'} • ${batch.net_weight || 0}g
-                            </div>
-                            <div style="color: var(--accent-blue); font-weight: 600; font-size: 0.9rem;">
-                                View Details →
                             </div>
                         </div>
                     </div>
@@ -4679,11 +4641,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             document.querySelectorAll('.batch-card').forEach(card => {
                 card.addEventListener('mouseenter', function() {
                     this.style.transform = 'translateY(-4px)';
-                    this.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)';
+                    this.style.boxShadow = '0 8px 24px rgba(147, 51, 234, 0.3)';
+                    this.style.borderColor = 'var(--accent-purple)';
                 });
                 card.addEventListener('mouseleave', function() {
                     this.style.transform = 'translateY(0)';
                     this.style.boxShadow = 'none';
+                    this.style.borderColor = 'var(--border)';
                 });
             });
         }
