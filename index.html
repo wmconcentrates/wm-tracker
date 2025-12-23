@@ -1606,20 +1606,31 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Batch ID</label>
-                        <input type="text" id="editBatchId" style="font-family: 'Space Mono', monospace; font-weight: 700;">
+                        <input type="text" id="editBatchId" style="font-family: 'Space Mono', monospace; font-weight: 700; font-size: 1.2rem;">
                         <div class="help-text">Format: M.D.XXXX (e.g., 9.15.5678)</div>
                     </div>
-                    <div class="form-group">
-                        <label>Parsed METRC Last 4 (Auto)</label>
-                        <input type="text" id="parsedMetrcLast4" readonly style="background: var(--bg-primary); color: var(--accent-green); font-family: 'Space Mono', monospace;">
-                        <div class="help-text">Automatically extracted from Batch ID</div>
+                </div>
+                
+                <!-- Auto-Parsed Information -->
+                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid var(--accent-green);">
+                    <h3 style="color: var(--accent-green); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <span>🔄</span> Auto-Parsed from Batch ID
+                    </h3>
+                    <div class="form-grid">
+                        <div class="form-group" style="margin: 0;">
+                            <label>METRC Last 4 Digits</label>
+                            <input type="text" id="parsedMetrcLast4" readonly style="background: var(--bg-primary); color: var(--accent-green); font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; text-align: center;">
+                            <div class="help-text">Extracted from batch ID</div>
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label>Expiration Date</label>
+                            <input type="date" id="parsedExpirationDate" readonly style="background: var(--bg-primary); color: var(--accent-green); font-size: 1.1rem; font-weight: 700;">
+                            <div class="help-text">Calculated from batch ID month.day</div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Parsed Expiration Date (Auto)</label>
-                        <input type="date" id="parsedExpirationDate" readonly style="background: var(--bg-primary); color: var(--accent-green);">
-                        <div class="help-text">Automatically calculated from Batch ID</div>
-                    </div>
-                    <div class="form-group">
+                </div>
+                
+                <div class="form-grid">
                         <label>Strain Name</label>
                         <input type="text" id="editStrainName">
                     </div>
