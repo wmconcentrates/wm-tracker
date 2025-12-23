@@ -3579,8 +3579,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         // Testing functions
         function populateTestingSelect() {
             const select = document.getElementById('testingBatchSelect');
-            // Show batches that are finishing or complete (can add test results at any point after finishing)
-            const testableBatches = batches.filter(b => b.status === 'finishing' || b.status === 'complete');
+            // Show batches that are finishing or complete, but NOT yet labeled
+            const testableBatches = batches.filter(b => 
+                (b.status === 'finishing' || b.status === 'complete') && !b.labeling_date
+            );
             
             select.innerHTML = '<option value="">Select a batch...</option>';
             testableBatches.forEach(batch => {
