@@ -1241,7 +1241,7 @@
                             <span>📋</span> Assign New Batch Number
                         </h3>
                         <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px; line-height: 1.5;">
-                            Protocol: MM.DD.XXXX (expiration month.day.last 4 of METRC tag)
+                            Protocol: M.D.XXXX (expiration month.day.last 4 of METRC tag)
                         </p>
                         <div class="form-grid">
                             <div class="form-group" style="margin-bottom: 0;">
@@ -1252,7 +1252,7 @@
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label>Generated Batch ID</label>
                                 <input type="text" id="newBatchId" readonly placeholder="Auto-generated from expiration date" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700; background: var(--bg-primary); color: var(--accent-green);">
-                                <div class="help-text">Format: MM.DD.XXXX</div>
+                                <div class="help-text">Format: M.D.XXXX (e.g., 3.21.1234)</div>
                             </div>
                         </div>
                     </div>
@@ -3719,8 +3719,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 // Parse date string directly to avoid timezone issues
                 // Date format from input is YYYY-MM-DD
                 const dateParts = expirationDate.split('-');
-                const month = dateParts[1]; // Already zero-padded
-                const day = dateParts[2];   // Already zero-padded
+                const month = parseInt(dateParts[1], 10); // Remove leading zero
+                const day = parseInt(dateParts[2], 10);   // Remove leading zero
                 
                 const batchId = `${month}.${day}.${metrcLast4}`;
                 document.getElementById('newBatchId').value = batchId;
