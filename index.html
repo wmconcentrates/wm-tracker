@@ -1226,7 +1226,28 @@
                 <div id="testingForm" style="display: none;">
                     <div id="currentTestInfo" style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                         <h3 style="color: var(--accent-purple); margin-bottom: 10px;">Current Batch Info</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div>
+                                <strong style="color: var(--accent-orange);">Current Batch ID:</strong> 
+                                <span id="currentBatchIdDisplay" style="font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent-green);"></span>
+                            </div>
+                        </div>
                         <div id="testBatchDetails"></div>
+                    </div>
+
+                    <!-- Batch ID Reassignment -->
+                    <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(147, 51, 234, 0.15)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-orange);">
+                        <h3 style="color: var(--accent-orange); margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                            <span>📋</span> Assign New Batch Number (Optional)
+                        </h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px; line-height: 1.5;">
+                            When Alex creates a METRC tag for lab testing, METRC assigns a new batch number. Enter it here to update this batch's ID in the system.
+                        </p>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>New Batch ID from METRC</label>
+                            <input type="text" id="newBatchId" placeholder="e.g., WM-001234" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">
+                            <div class="help-text">Leave blank to keep the current batch ID. Enter new ID to reassign.</div>
+                        </div>
                     </div>
 
                     <!-- Product Name Section -->
@@ -3568,6 +3589,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             if (this.value) {
                 const batch = batches.find(b => b.id === this.value);
                 
+                // Display current batch ID
+                document.getElementById('currentBatchIdDisplay').textContent = batch.id;
+                
                 // Calculate trim used for this batch
                 let trimUsedInfo = '';
                 if (batch.is_sub_batch && batch.parent_batch_id) {
@@ -3645,6 +3669,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 if (batch.test_results_received_date) {
                     document.getElementById('testSubmittedDate').value = batch.test_submitted_date || '';
                     document.getElementById('testExpirationDate').value = batch.test_expiration_date || '';
+                    document.getElementById('newBatchId').value = ''; // Always clear - this is for reassignment
                     document.getElementById('testResultsReceivedDate').value = batch.test_results_received_date;
                     document.getElementById('testThcPercent').value = batch.test_thc_percent || '';
                     document.getElementById('testCbdPercent').value = batch.test_cbd_percent || '';
@@ -3661,6 +3686,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     // Clear form
                     document.getElementById('testSubmittedDate').value = '';
                     document.getElementById('testExpirationDate').value = '';
+                    document.getElementById('newBatchId').value = '';
                     document.getElementById('testResultsReceivedDate').value = new Date().toISOString().split('T')[0];
                     document.getElementById('testThcPercent').value = '';
                     document.getElementById('testCbdPercent').value = '';
@@ -3763,6 +3789,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const isRTA = document.getElementById('isRTA').value;
             const submittedDate = document.getElementById('testSubmittedDate').value;
             const expirationDate = document.getElementById('testExpirationDate').value;
+            const newBatchId = document.getElementById('newBatchId').value.trim();
             const finalProductName = document.getElementById('finalProductName').value.trim();
             const finalStrainType = document.getElementById('finalStrainType').value;
             
@@ -3771,8 +3798,33 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
+            // Check if new batch ID is being assigned
+            let batchIdChanged = false;
+            let oldBatchId = batchId;
+            if (newBatchId && newBatchId !== batchId) {
+                // Verify new batch ID doesn't already exist
+                const existingBatch = batches.find(b => b.id === newBatchId);
+                if (existingBatch) {
+                    alert(`Error: Batch ID "${newBatchId}" already exists in the system. Please choose a different ID.`);
+                    return;
+                }
+                
+                const confirmChange = confirm(
+                    `⚠️ BATCH ID REASSIGNMENT\n\n` +
+                    `Current ID: ${oldBatchId}\n` +
+                    `New ID: ${newBatchId}\n\n` +
+                    `This will permanently change the batch ID in the system.\n\n` +
+                    `Continue?`
+                );
+                
+                if (!confirmChange) return;
+                
+                batchIdChanged = true;
+            }
+            
             // Show redesignation note in timeline if strain type changed
             const strainTypeNote = batch.strain_type !== finalStrainType ? ` | Redesignated: ${batch.strain_type} → ${finalStrainType}` : '';
+            const batchIdNote = batchIdChanged ? ` | Batch ID reassigned: ${oldBatchId} → ${newBatchId}` : '';
             
             const timeline = batch.timeline || [];
             const resultsText = thcPercent !== null ? `THC ${thcPercent}%, CBD ${cbdPercent || 0}%` : 'Test submitted - results pending';
@@ -3780,7 +3832,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 stage: 'testing',
                 user: currentRole ? currentRole.name : "Unknown",
                 date: new Date().toISOString(),
-                action: `${resultsText}${isRTA === 'yes' ? ' - RTA FULL PANEL' : ''} | Named: ${finalProductName}${strainTypeNote}`
+                action: `${resultsText}${isRTA === 'yes' ? ' - RTA FULL PANEL' : ''} | Named: ${finalProductName}${strainTypeNote}${batchIdNote}`
             });
             
             // Build update object - only include fields that exist in database
@@ -3804,20 +3856,55 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const productInfo = `\n\n[PRODUCT INFO]\nOriginal Strain: ${batch.strain}\nOriginal Type: ${batch.strain_type}\nFinal Name: ${finalProductName}\nFinal Type: ${finalStrainType}`;
             updates.test_results_notes = (updates.test_results_notes || '') + productInfo;
             
-            const { error } = await supabaseClient
-                .from('wm_batches')
-                .update(updates)
-                .eq('id', batchId);
-            
-            if (error) {
-                console.error('Error updating test results:', error);
-                alert('Error saving test results. Please try again.');
-                return;
+            // If batch ID is being changed, we need to handle it specially
+            if (batchIdChanged) {
+                // Add new batch ID to updates
+                updates.id = newBatchId;
+                
+                // First, insert a new record with the new ID
+                const { error: insertError } = await supabaseClient
+                    .from('wm_batches')
+                    .insert({
+                        ...batch,
+                        ...updates,
+                        id: newBatchId
+                    });
+                
+                if (insertError) {
+                    console.error('Error creating new batch with new ID:', insertError);
+                    alert('Error reassigning batch ID. Please try again.');
+                    return;
+                }
+                
+                // Then delete the old record
+                const { error: deleteError } = await supabaseClient
+                    .from('wm_batches')
+                    .delete()
+                    .eq('id', oldBatchId);
+                
+                if (deleteError) {
+                    console.error('Error deleting old batch record:', deleteError);
+                    alert('Warning: New batch created but old batch could not be removed. You may need to manually delete batch ' + oldBatchId);
+                }
+            } else {
+                // Normal update without ID change
+                const { error } = await supabaseClient
+                    .from('wm_batches')
+                    .update(updates)
+                    .eq('id', batchId);
+                
+                if (error) {
+                    console.error('Error updating test results:', error);
+                    alert('Error saving test results. Please try again.');
+                    return;
+                }
             }
             
             const lidColor = finalStrainType === 'Indica' ? 'Blue' : finalStrainType === 'Sativa' ? 'Red' : 'Green';
             const resultsInfo = thcPercent !== null ? `\nTHC: ${thcPercent}% | CBD: ${cbdPercent || 0}%` : '\nTest submitted - awaiting results';
-            alert(`Test results saved for ${batchId}!\n\nProduct Name: ${finalProductName}\nStrain Type: ${finalStrainType} (${lidColor} Lid)${strainTypeNote ? '\n✓ Strain type redesignated' : ''}${resultsInfo}\n${isRTA === 'yes' ? '✓ RTA Full Panel' : 'Standard Potency'}\nExpires: ${expirationDate}`);
+            const finalBatchId = batchIdChanged ? newBatchId : batchId;
+            const batchChangeMsg = batchIdChanged ? `\n✓ Batch ID changed: ${oldBatchId} → ${newBatchId}` : '';
+            alert(`Test results saved for ${finalBatchId}!${batchChangeMsg}\n\nProduct Name: ${finalProductName}\nStrain Type: ${finalStrainType} (${lidColor} Lid)${strainTypeNote ? '\n✓ Strain type redesignated' : ''}${resultsInfo}\n${isRTA === 'yes' ? '✓ RTA Full Panel' : 'Standard Potency'}\nExpires: ${expirationDate}`);
             
             document.getElementById('testingForm').style.display = 'none';
             document.getElementById('testingBatchSelect').value = '';
