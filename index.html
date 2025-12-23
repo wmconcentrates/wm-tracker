@@ -3453,9 +3453,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             container.innerHTML = filteredBatches.map(batch => `
                 <div class="batch-item">
-                    <div class="batch-header">
+                    <div class="batch-header" onclick="toggleBatchTimeline('${batch.id}')" style="cursor: pointer;">
                         <div class="batch-id">${batch.id}</div>
                         <div class="batch-status status-${batch.status}">${batch.status.toUpperCase()}</div>
+                        <div style="margin-left: auto; color: var(--accent-blue); font-size: 0.9rem; font-weight: 600;">
+                            <span id="timeline-toggle-${batch.id}">Show History ▼</span>
+                        </div>
                     </div>
                     
                     <div class="batch-details">
@@ -3481,7 +3484,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         ` : ''}
                     </div>
                     
-                    <div class="timeline">
+                    <div class="timeline" id="timeline-${batch.id}" style="display: none;">
                         ${(batch.timeline || []).map(t => `
                             <div class="timeline-item">
                                 <div class="timeline-content">
@@ -3528,6 +3531,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
             renderBatches(activeFilter, this.value);
         });
+
+        // Toggle batch timeline visibility
+        function toggleBatchTimeline(batchId) {
+            const timeline = document.getElementById(`timeline-${batchId}`);
+            const toggle = document.getElementById(`timeline-toggle-${batchId}`);
+            
+            if (timeline.style.display === 'none') {
+                timeline.style.display = 'block';
+                toggle.textContent = 'Hide History ▲';
+            } else {
+                timeline.style.display = 'none';
+                toggle.textContent = 'Show History ▼';
+            }
+        }
 
         function initializeApp() {
             document.querySelectorAll('input[type="date"]').forEach(input => {
