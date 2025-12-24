@@ -899,7 +899,12 @@
                         <textarea id="intakeNotes" placeholder="Any special notes about this batch..."></textarea>
                     </div>
                     
-                    <button type="submit" class="btn">Submit Intake</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple)); flex: 1;" onclick="testPrintBatchLabel()">
+                            🖨️ Test Print Batch Label
+                        </button>
+                        <button type="submit" class="btn" style="flex: 2;">Submit Intake</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -2429,13 +2434,146 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             batchCounter++;
             
-            alert(`Batch ${batch.id} created successfully!`);
+            // Show option to print batch tracking label
+            const printLabel = confirm(`Batch ${batch.id} created successfully!\n\nPrint batch tracking label now?`);
+            if (printLabel) {
+                printIntakeBatchLabel(batch);
+            }
+            
             this.reset();
             document.getElementById('batchId').value = `WM-${batchCounter}`;
             document.getElementById('intakeDate').value = new Date().toISOString().split('T')[0];
             
             await loadBatches();
         });
+
+        // Test print batch label with current form data (no batch creation)
+        function testPrintBatchLabel() {
+            // Gather data from form - using correct field IDs
+            const batchId = document.getElementById('batchId')?.value || 'WM-TEST';
+            const strain = document.getElementById('strainName')?.value || 'Test Strain';
+            const strainType = document.getElementById('strainType')?.value || 'Hybrid';
+            const trimWeight = document.getElementById('trimWeight')?.value || '100';
+            const intakeDate = document.getElementById('intakeDate')?.value || new Date().toISOString().split('T')[0];
+            const cultivationLicense = document.getElementById('cultivationLicense')?.value || '403R-01007';
+            const materialAgreement = document.getElementById('materialAgreement')?.value || 'Wholesale';
+            
+            // Get planned products
+            const checkboxes = document.querySelectorAll('input[name="products"]:checked');
+            const products = Array.from(checkboxes).map(cb => ({ type: cb.value }));
+            
+            // Create test batch object
+            const testBatch = {
+                id: batchId,
+                strain: strain,
+                strain_type: strainType,
+                trim_weight: trimWeight,
+                intake_date: intakeDate,
+                cultivation_license: cultivationLicense,
+                material_agreement: materialAgreement,
+                planned_products: products
+            };
+            
+            // Generate and print
+            printIntakeBatchLabel(testBatch);
+        }
+
+        // Generate ZPL for intake batch tracking label (2" x 2.5")
+        function generateIntakeBatchLabelZPL(batch) {
+            // 2" x 2.5" label at 203dpi = 406 x 508 dots
+            const width = 406;
+            const height = 508;
+            const centerX = 203;
+            
+            // Format date
+            const date = new Date(batch.intake_date).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: 'numeric'});
+            
+            // Get planned products as string
+            let plannedProducts = 'See notes';
+            if (batch.planned_products && batch.planned_products.length > 0) {
+                plannedProducts = batch.planned_products.map(p => p.type).join(', ');
+            }
+            
+            // Truncate if too long
+            if (plannedProducts.length > 50) {
+                plannedProducts = plannedProducts.substring(0, 47) + '...';
+            }
+            
+            const zpl = `^XA
+^MMT
+^PW${width}
+^LL${height}
+^LS0
+
+~SD20
+
+^CF0,60
+^FO${centerX},30^FB${width},2,0,C^FD${batch.strain.toUpperCase()}^FS
+
+^FO20,140^GB366,3,3^FS
+
+^CF0,50
+^FO${centerX},160^FB${width},1,0,C^FDBATCH: ${batch.id}^FS
+
+^FO20,230^GB366,2,2^FS
+
+^CF0,28
+^FO${centerX},250^FB${width},1,0,C^FDPLANNED PRODUCT^FS
+^CF0,24
+^FO${centerX},285^FB${width},2,0,C^FD${plannedProducts}^FS
+
+^FO20,350^GB366,2,2^FS
+
+^CF0,20
+^FO20,370^FDType: ${batch.strain_type}^FS
+^FO20,395^FDWeight: ${batch.trim_weight}g^FS
+^FO20,420^FDDate: ${date}^FS
+^FO20,445^FDGrower: ${batch.cultivation_license}^FS
+^FO20,470^FDAgreement: ${batch.material_agreement}^FS
+
+^XZ`;
+            
+            return zpl;
+        }
+
+        // Print intake batch tracking label
+        async function printIntakeBatchLabel(batch) {
+            const zpl = generateIntakeBatchLabelZPL(batch);
+            
+            // Try print server first
+            const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
+            
+            try {
+                const response = await fetch(printServerURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ zpl: zpl })
+                });
+                
+                if (response.ok) {
+                    console.log('Batch tracking label sent to printer');
+                    return;
+                }
+            } catch (error) {
+                console.log('Print server not available:', error.message);
+            }
+            
+            // Fallback to Browser Print
+            if (window.BrowserPrint) {
+                try {
+                    const printer = await window.BrowserPrint.getDefaultDevice('printer');
+                    printer.send(zpl, undefined, (error) => {
+                        if (error) {
+                            alert('Print failed. Check printer connection.');
+                        }
+                    });
+                } catch (error) {
+                    alert('Printer not available. Make sure Zebra printer is connected.');
+                }
+            } else {
+                alert('Printer not available. Make sure Zebra printer is connected or print server is running.');
+            }
+        }
 
         // Extraction functions
         function populateExtractionSelect() {
@@ -4159,10 +4297,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Format product type for label
             const productType = batch.packaged_product_type.toUpperCase().replace('WAX/SUGAR', 'WAX');
             
-            // Format expiration date (use by)
-            const expDate = batch.test_expiration_date ? 
-                new Date(batch.test_expiration_date).toLocaleDateString('en-US', {month: 'numeric', day: 'numeric', year: '2-digit'}) : 
-                'N/A';
+            // Format expiration date as M.D.YY (like 3.6.26)
+            let expDate = 'N/A';
+            if (batch.test_expiration_date) {
+                const d = new Date(batch.test_expiration_date);
+                expDate = `${d.getMonth() + 1}.${d.getDate()}.${d.getFullYear().toString().slice(-2)}`;
+            }
             
             // Get THC and CBD percentages
             const thc = parseFloat(batch.test_thc_percent) || 0;
@@ -4182,46 +4322,48 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // White Mousse extraction license (404R)
             const extractionLicense = '404R-00016';
             
-            // ZPL template for CIRCULAR bottom label with all compliance info
-            // Scaled appropriately for small circular label
+            // ZPL for 45mm circular label matching Canva design
+            const diameter = 360;  // 45mm at 203dpi
+            const center = 180;
             const zpl = `^XA
 ^MMT
-^PW${size.diameter}
-^LL${size.diameter}
+^PW${diameter}
+^LL${diameter}
 ^LS0
 
 ~SD20
 
 ^CF0,22
-^FO${centerX},10^FD${productType}^FS
+^FO${center},35^FB${diameter},1,0,C^FD${productType}^FS
 
-^CF0,35
-^FO${centerX},35^FD${batch.strain.toUpperCase()}^FS
+^CF0,40
+^FO${center},60^FB${diameter},2,0,C^FD${batch.strain.toUpperCase()}^FS
 
-^FO${Math.floor(centerX - 90)},75^GB180,35,2^FS
-^CF0,16
-^FO${centerX},82^FDTHC: ${thc}% CBD: ${cbd}%^FS
+^FO${center - 100},110^GB200,40,3^FS
+^CF0,14
+^FO${center},118^FB${diameter},1,0,C^FDTOTAL THC: ${thc.toFixed(1)}%^FS
+^FO${center},133^FB${diameter},1,0,C^FDTOTAL CBD: ${cbd.toFixed(1)}%^FS
 
-^CF0,13
-^FO${centerX},118^FDCULTIVATED BY ${cultivationLicense}^FS
-^FO${centerX},133^FDEXTRACTED BY ${extractionLicense}^FS
+^CF0,11
+^FO${center},165^FB${diameter},1,0,C^FDCULTIVATED BY ${cultivationLicense}^FS
+^FO${center},180^FB${diameter},1,0,C^FDEXTRACTED BY ${extractionLicense}^FS
+
+^CF0,10
+^FO${center},198^FB${diameter},1,0,C^FDINTENDED USE: INHALED PRODUCT.^FS
+^FO${center},210^FB${diameter},1,0,C^FDNOT APPROVED BY THE FDA.^FS
 
 ^CF0,12
-^FO${centerX},150^FDINHALED PRODUCT.^FS
-^FO${centerX},163^FDNOT APPROVED BY FDA.^FS
+^FO${center},228^FB${diameter},1,0,C^FDNET WEIGHT: ${netWeight}^FS
 
-^CF0,14
-^FO${centerX},180^FDNET WEIGHT: ${netWeight}^FS
+^CF0,12
+^FO${center},245^FB${diameter},1,0,C^FDSERVING SIZE: ^FS
+^FO${center + 40},243^GC6,6,B^FS
 
-^CF0,14
-^FO${centerX},198^FDSERVING SIZE: ^FS
-^FO${Math.floor(centerX + 48)},198^GC8,8,B^FS
+^CF0,16
+^FO${center},265^FB${diameter},1,0,C^FDBATCH ${batch.id}^FS
 
-^CF0,18
-^FO${centerX},218^FDBATCH ${batch.id}^FS
-
-^CF0,14
-^FO${centerX},240^FDUSE BY ${expDate}^FS
+^CF0,12
+^FO${center},285^FB${diameter},1,0,C^FDUSE BY ${expDate}^FS
 
 ^XZ`;
             
