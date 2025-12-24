@@ -5471,36 +5471,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Simplified activity log
             logContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">Use the filter above to view specific employee performance</p>';
         }
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-                                <div>
-                                    <h3 style="font-size: 1.5rem; margin-bottom: 5px; color: var(--accent-purple);">${emp.name}</h3>
-                                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Active for ${emp.daysActive} days in last 30 days</p>
-                                </div>
-                                <div style="text-align: right;">
-                                    <div style="font-family: 'Space Mono', monospace; font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${emp.totalActions}</div>
-                                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Actions</div>
-                                </div>
-                            </div>
-                            
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
-                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Average Per Day</div>
-                                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${emp.avgPerDay}</div>
-                                </div>
-                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
-                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Average Per Week</div>
-                                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">${emp.avgPerWeek}</div>
-                                </div>
-                            </div>
-
-                            <div style="border-top: 2px solid var(--border); padding-top: 15px;">
-                                <h4 style="margin-bottom: 10px; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Task Breakdown</h4>
-                                ${taskBreakdown}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
 
             // Render activity log
             const sortedActivities = filteredActivities.sort((a, b) => b.date - a.date);
