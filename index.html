@@ -2609,12 +2609,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 <head>
     <title>Print Batch Label - ${batch.id}</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        @page {
+            size: 2in 1.5in landscape;
+            margin: 0mm;
+        }
+        
         @media print {
-            @page {
-                size: 2in 1.5in landscape;
-                margin: 0;
-            }
-            
             html, body {
                 width: 2in;
                 height: 1.5in;
@@ -2623,23 +2629,29 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
             
             .no-print {
-                display: none;
+                display: none !important;
+            }
+            
+            .page-wrapper {
+                width: 2in;
+                height: 1.5in;
+                position: relative;
+                page-break-after: avoid;
             }
             
             .batch-label {
-                margin: 0 !important;
-                box-shadow: none !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
             }
         }
         
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
             background: #f0f0f0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 20px;
         }
         
         .no-print {
@@ -2649,6 +2661,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: center;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .no-print h1 {
@@ -2672,26 +2687,32 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             background: #7c2db8;
         }
         
-        .batch-label {
+        .page-wrapper {
             width: 2in;
             height: 1.5in;
+            margin: 0 auto;
             background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .batch-label {
+            width: 100%;
+            height: 100%;
             border: 3px solid #000;
             padding: 8px;
-            box-sizing: border-box;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin: 0;
+            display: flex;
+            flex-direction: column;
         }
         
         .strain-name {
             font-size: 20pt;
             font-weight: bold;
             text-align: left;
-            line-height: 1;
+            line-height: 0.9;
             text-transform: uppercase;
             border-bottom: 2px solid #000;
-            padding-bottom: 3px;
-            margin-bottom: 3px;
+            padding-bottom: 2px;
+            margin-bottom: 2px;
         }
         
         .batch-id {
@@ -2699,28 +2720,25 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             font-weight: bold;
             text-align: left;
             border-bottom: 2px solid #000;
-            padding: 3px 0;
-            margin-bottom: 5px;
+            padding: 2px 0;
+            margin-bottom: 4px;
         }
         
         .details-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            grid-template-columns: 0.9in 1.1in;
+            gap: 0;
             font-size: 8pt;
-            line-height: 1.5;
+            line-height: 1.4;
+            flex: 1;
         }
         
-        .left-col {
-            text-align: left;
-        }
-        
-        .right-col {
+        .left-col, .right-col {
             text-align: left;
         }
         
         .details-row div {
-            margin: 1px 0;
+            margin: 0.5px 0;
         }
     </style>
 </head>
@@ -2728,31 +2746,36 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
     <div class="no-print">
         <h1>Intake Batch Label - ${batch.id}</h1>
         <p>Size: 2" × 1.5" (Horizontal)</p>
-        <p><strong>⚠️ Print Settings:</strong></p>
-        <ul style="text-align: left; display: inline-block;">
-            <li>Select your Zebra printer</li>
-            <li>Set margins to 0 (or minimum)</li>
-            <li>Disable "Fit to page"</li>
-            <li>Use "Actual size" or 100% scale</li>
-        </ul>
+        <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ff9800;">
+            <strong>⚠️ Important Print Settings:</strong>
+            <ol style="text-align: left; margin: 10px 0 0 20px;">
+                <li>In print dialog, click "More settings"</li>
+                <li>Set <strong>Margins</strong> to "None"</li>
+                <li>Set <strong>Scale</strong> to "Default" (100%)</li>
+                <li>Uncheck "Headers and footers"</li>
+                <li>Make sure orientation is <strong>Landscape</strong></li>
+            </ol>
+        </div>
         <button onclick="window.print()">🖨️ Print Label</button>
         <button onclick="window.close()">Close</button>
     </div>
     
-    <div class="batch-label">
-        <div class="strain-name">${batch.strain.toUpperCase()}</div>
-        <div class="batch-id">BATCH: ${batch.id}</div>
-        <div class="details-row">
-            <div class="left-col">
-                <div><strong>Type:</strong> ${batch.strain_type}</div>
-                <div><strong>Weight:</strong> ${batch.trim_weight}g</div>
-                <div><strong>Date:</strong> ${date}</div>
-            </div>
-            <div class="right-col">
-                <div><strong>Grower:</strong></div>
-                <div>${batch.cultivation_license}</div>
-                <div><strong>Products:</strong></div>
-                <div>${plannedProducts}</div>
+    <div class="page-wrapper">
+        <div class="batch-label">
+            <div class="strain-name">${batch.strain.toUpperCase()}</div>
+            <div class="batch-id">BATCH: ${batch.id}</div>
+            <div class="details-row">
+                <div class="left-col">
+                    <div><strong>Type:</strong> ${batch.strain_type}</div>
+                    <div><strong>Weight:</strong> ${batch.trim_weight}g</div>
+                    <div><strong>Date:</strong> ${date}</div>
+                </div>
+                <div class="right-col">
+                    <div><strong>Grower:</strong></div>
+                    <div>${batch.cultivation_license}</div>
+                    <div><strong>Products:</strong></div>
+                    <div>${plannedProducts}</div>
+                </div>
             </div>
         </div>
     </div>
