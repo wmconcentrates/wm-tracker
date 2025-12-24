@@ -5468,10 +5468,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 }).join('');
             }
 
-            // Simplified activity log
-            logContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">Use the filter above to view specific employee performance</p>';
-        }
-
             // Render activity log
             const sortedActivities = filteredActivities.sort((a, b) => b.date - a.date);
             
