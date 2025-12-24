@@ -970,15 +970,19 @@
                             <div class="form-group">
                                 <label>BHO Products Made</label>
                                 <div class="checkbox-group">
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="bho_products" value="Sugar Wax" id="sugarWaxCheck">
-                                        <span>Sugar Wax/Wax</span>
-                                        <div class="help-text" style="margin-left: 28px; font-size: 0.85rem;">Can be split in Post Extraction</div>
+                                    <label class="checkbox-item" style="display: flex; align-items: center; gap: 15px;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="checkbox" name="bho_products" value="Sugar Wax" id="sugarWaxCheck">
+                                            <span>Sugar Wax/Wax</span>
+                                        </div>
+                                        <input type="number" id="bulkJarsCount" min="0" step="1" placeholder="# jars" style="width: 90px; padding: 8px; background: var(--bg-secondary); border: 2px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.95rem;">
                                     </label>
-                                    <label class="checkbox-item">
-                                        <input type="checkbox" name="bho_products" value="Shatter" id="shatterCheck">
-                                        <span>Shatter</span>
-                                        <div class="help-text" style="margin-left: 28px; font-size: 0.85rem;">Can convert to Sugar/Wax in Post Extraction</div>
+                                    <label class="checkbox-item" style="display: flex; align-items: center; gap: 15px;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="checkbox" name="bho_products" value="Shatter" id="shatterCheck">
+                                            <span>Shatter</span>
+                                        </div>
+                                        <input type="number" id="shatterSlabsCount" min="0" step="1" placeholder="# slabs" style="width: 90px; padding: 8px; background: var(--bg-secondary); border: 2px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.95rem;">
                                     </label>
                                 </div>
                             </div>
@@ -2199,6 +2203,8 @@ CREATE TABLE wm_batches (
     extraction_user TEXT,
     extraction_yield DECIMAL(5,2),
     extraction_paused BOOLEAN DEFAULT FALSE,
+    bulk_jars_count INTEGER,
+    shatter_slabs_count INTEGER,
     sift_weight DECIMAL(10,2),
     adjusted_trim_weight DECIMAL(10,2),
     sift_sub_batch_created BOOLEAN DEFAULT FALSE,
@@ -3048,6 +3054,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 productMade = 'RSO';
             }
             
+            // Get bulk jars and shatter slabs counts
+            const bulkJarsCount = parseInt(document.getElementById('bulkJarsCount')?.value) || null;
+            const shatterSlabsCount = parseInt(document.getElementById('shatterSlabsCount')?.value) || null;
+            
             const timeline = batch.timeline || [];
             
             timeline.push({
@@ -3056,16 +3066,26 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 user: currentRole ? currentRole.name : "Unknown"
             });
             
+            const updateData = {
+                status: 'extraction',
+                extraction_method: extractionMethod,
+                product_made: productMade,
+                extraction_notes: document.getElementById('extractionNotes').value,
+                extraction_user: currentRole ? currentRole.name : "Unknown",
+                timeline: timeline
+            };
+            
+            // Add optional fields if they have values
+            if (bulkJarsCount !== null) {
+                updateData.bulk_jars_count = bulkJarsCount;
+            }
+            if (shatterSlabsCount !== null) {
+                updateData.shatter_slabs_count = shatterSlabsCount;
+            }
+            
             const { error } = await supabaseClient
                 .from('wm_batches')
-                .update({
-                    status: 'extraction',
-                    extraction_method: extractionMethod,
-                    product_made: productMade,
-                    extraction_notes: document.getElementById('extractionNotes').value,
-                    extraction_user: currentRole ? currentRole.name : "Unknown",
-                    timeline: timeline
-                })
+                .update(updateData)
                 .eq('id', batchId);
             
             if (error) {
@@ -3081,6 +3101,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             document.getElementById('extractionNotes').value = '';
             document.getElementById('crudeWeight').value = '';
             document.getElementById('rsoWeight').value = '';
+            document.getElementById('bulkJarsCount').value = '';
+            document.getElementById('shatterSlabsCount').value = '';
             
             // Uncheck BHO product checkboxes
             document.querySelectorAll('input[name="bho_products"]').forEach(cb => cb.checked = false);
