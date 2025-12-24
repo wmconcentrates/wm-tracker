@@ -3267,7 +3267,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             await loadBatches();
             populateExtractionSelect();
-            updatePauseButtons();
+            // Keep the batch selected
+            document.getElementById('extractionBatchSelect').value = batchId;
+            document.getElementById('extractionBatchSelect').dispatchEvent(new Event('change'));
         }
 
         async function submitExtraction() {
@@ -3922,7 +3924,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             await loadBatches();
             populatePackagingSelect();
-            updatePauseButtons();
+            // Keep the batch selected
+            document.getElementById('packagingBatchSelect').value = batchId;
+            document.getElementById('packagingBatchSelect').dispatchEvent(new Event('change'));
         }
 
         async function submitPackaging() {
@@ -5411,7 +5415,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             await loadBatches();
             populateLabelingSelect();
-            updatePauseButtons();
+            // Keep the batch selected
+            document.getElementById('labelingBatchSelect').value = batchId;
+            document.getElementById('labelingBatchSelect').dispatchEvent(new Event('change'));
         }
 
         async function markAsLabeled() {
