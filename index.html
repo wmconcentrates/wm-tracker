@@ -1001,13 +1001,15 @@
                             <strong>💡 Workflow Options:</strong>
                             <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
                                 <li><strong>Start Processing:</strong> Mark batch as in-progress (tracking only, can finish later)</li>
+                                <li><strong>Pause/Resume:</strong> Temporarily pause work (breaks, end of shift, equipment issues)</li>
                                 <li><strong>Complete Extraction:</strong> Finish processing (skips "start" if single run)</li>
                             </ul>
                         </div>
                         
-                        <div style="display: flex; gap: 10px;">
-                            <button type="button" class="btn" style="background: var(--accent-blue); flex: 1;" onclick="startProcessing()">▶️ Start Processing</button>
-                            <button type="button" class="btn" style="background: var(--accent-green); flex: 1;" onclick="submitExtraction()">✅ Complete Extraction</button>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button type="button" class="btn" style="background: var(--accent-blue); flex: 1; min-width: 200px;" onclick="startProcessing()">▶️ Start Processing</button>
+                            <button type="button" class="btn" id="pauseExtractionBtn" style="background: var(--accent-orange); flex: 1; min-width: 200px; display: none;" onclick="togglePauseExtraction()">⏸️ Pause</button>
+                            <button type="button" class="btn" style="background: var(--accent-green); flex: 1; min-width: 200px;" onclick="submitExtraction()">✅ Complete Extraction</button>
                         </div>
                     </div>
                 </div>
@@ -1208,13 +1210,15 @@
                         <strong>💡 Workflow Options:</strong>
                         <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
                             <li><strong>Start Packaging:</strong> Mark batch as in-progress (tracking only, can finish later)</li>
+                            <li><strong>Pause/Resume:</strong> Temporarily pause work (breaks, end of shift, equipment issues)</li>
                             <li><strong>Complete Packaging:</strong> Finish packaging (skips "start" if single session)</li>
                         </ul>
                     </div>
                     
-                    <div style="display: flex; gap: 10px;">
-                        <button type="button" class="btn" style="background: var(--accent-blue); flex: 1;" onclick="startPackaging()">▶️ Start Packaging</button>
-                        <button type="button" class="btn" style="background: var(--accent-green); flex: 1;" onclick="submitPackaging()">✅ Complete Packaging</button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" class="btn" style="background: var(--accent-blue); flex: 1; min-width: 200px;" onclick="startPackaging()">▶️ Start Packaging</button>
+                        <button type="button" class="btn" id="pausePackagingBtn" style="background: var(--accent-orange); flex: 1; min-width: 200px; display: none;" onclick="togglePausePackaging()">⏸️ Pause</button>
+                        <button type="button" class="btn" style="background: var(--accent-green); flex: 1; min-width: 200px;" onclick="submitPackaging()">✅ Complete Packaging</button>
                     </div>
                 </div>
             </div>
@@ -1403,13 +1407,15 @@
                         <strong>💡 Workflow Options:</strong>
                         <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
                             <li><strong>Start Labeling:</strong> Mark batch as in-progress (tracking only, can finish later)</li>
+                            <li><strong>Pause/Resume:</strong> Temporarily pause work (breaks, end of shift, equipment issues)</li>
                             <li><strong>Complete Labeling:</strong> Finish labeling with weight verification</li>
                         </ul>
                     </div>
                     
-                    <div style="display: flex; gap: 10px;">
-                        <button type="button" class="btn" style="background: var(--accent-blue); flex: 1;" onclick="startLabeling()">▶️ Start Labeling</button>
-                        <button type="button" class="btn" style="background: var(--accent-green); flex: 1;" onclick="markAsLabeled()">✅ Complete Labeling</button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" class="btn" style="background: var(--accent-blue); flex: 1; min-width: 200px;" onclick="startLabeling()">▶️ Start Labeling</button>
+                        <button type="button" class="btn" id="pauseLabelingBtn" style="background: var(--accent-orange); flex: 1; min-width: 200px; display: none;" onclick="togglePauseLabeling()">⏸️ Pause</button>
+                        <button type="button" class="btn" style="background: var(--accent-green); flex: 1; min-width: 200px;" onclick="markAsLabeled()">✅ Complete Labeling</button>
                     </div>
                 </div>
             </div>
@@ -2165,6 +2171,7 @@ CREATE TABLE wm_batches (
     extraction_notes TEXT,
     extraction_user TEXT,
     extraction_yield DECIMAL(5,2),
+    extraction_paused BOOLEAN DEFAULT FALSE,
     sift_weight DECIMAL(10,2),
     adjusted_trim_weight DECIMAL(10,2),
     sift_sub_batch_created BOOLEAN DEFAULT FALSE,
@@ -2198,6 +2205,7 @@ CREATE TABLE wm_batches (
     units_4g INTEGER,
     total_grams_packaged DECIMAL(10,2),
     packaging_breakdown TEXT,
+    packaging_paused BOOLEAN DEFAULT FALSE,
     thc_percent DECIMAL(5,2),
     cbd_percent DECIMAL(5,2),
     ready_to_list TEXT,
@@ -2205,6 +2213,10 @@ CREATE TABLE wm_batches (
     leaflink_description TEXT,
     packaging_notes TEXT,
     packaging_user TEXT,
+    
+    -- Labeling fields
+    labeling_paused BOOLEAN DEFAULT FALSE,
+    
     completed_at TIMESTAMP WITH TIME ZONE
 );
 
@@ -2227,6 +2239,66 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 const lastId = maxBatch[0].id;
                 const num = parseInt(lastId.split('-')[1]);
                 batchCounter = num + 1;
+            }
+        }
+
+        // Update pause button visibility and text based on current batch selection
+        function updatePauseButtons() {
+            // Update extraction pause button
+            const extractionBatchId = document.getElementById('extractionBatchSelect')?.value;
+            const extractionBatch = batches.find(b => b.id === extractionBatchId);
+            const extractionPauseBtn = document.getElementById('pauseExtractionBtn');
+            
+            if (extractionPauseBtn && extractionBatch) {
+                // Show button only if batch has been started (has extraction_method or timeline entry)
+                const hasStarted = extractionBatch.extraction_method || 
+                                  (extractionBatch.timeline || []).some(t => t.stage === 'extraction');
+                
+                if (hasStarted && extractionBatch.status === 'intake') {
+                    extractionPauseBtn.style.display = 'block';
+                    const isPaused = extractionBatch.extraction_paused || false;
+                    extractionPauseBtn.innerHTML = isPaused ? '▶️ Resume' : '⏸️ Pause';
+                    extractionPauseBtn.style.background = isPaused ? 'var(--accent-blue)' : 'var(--accent-orange)';
+                } else {
+                    extractionPauseBtn.style.display = 'none';
+                }
+            }
+            
+            // Update packaging pause button
+            const packagingBatchId = document.getElementById('packagingBatchSelect')?.value;
+            const packagingBatch = batches.find(b => b.id === packagingBatchId);
+            const packagingPauseBtn = document.getElementById('pausePackagingBtn');
+            
+            if (packagingPauseBtn && packagingBatch) {
+                const hasStarted = packagingBatch.product_type || 
+                                  (packagingBatch.timeline || []).some(t => t.stage === 'packaging');
+                
+                if (hasStarted && packagingBatch.status === 'finishing') {
+                    packagingPauseBtn.style.display = 'block';
+                    const isPaused = packagingBatch.packaging_paused || false;
+                    packagingPauseBtn.innerHTML = isPaused ? '▶️ Resume' : '⏸️ Pause';
+                    packagingPauseBtn.style.background = isPaused ? 'var(--accent-blue)' : 'var(--accent-orange)';
+                } else {
+                    packagingPauseBtn.style.display = 'none';
+                }
+            }
+            
+            // Update labeling pause button
+            const labelingBatchId = document.getElementById('labelingBatchSelect')?.value;
+            const labelingBatch = batches.find(b => b.id === labelingBatchId);
+            const labelingPauseBtn = document.getElementById('pauseLabelingBtn');
+            
+            if (labelingPauseBtn && labelingBatch) {
+                const hasStarted = (labelingBatch.timeline || []).some(t => t.stage === 'labeling');
+                
+                if (hasStarted && labelingBatch.status === 'packaged') {
+                    labelingPauseBtn.style.display = 'block';
+                    const isPaused = labelingBatch.labeling_paused || false;
+                    labelingPauseBtn.innerHTML = isPaused ? '▶️ Resume' : '⏸️ Pause';
+                    labelingPauseBtn.style.background = isPaused ? 'var(--accent-blue)' : 'var(--accent-orange)';
+                } else {
+                    labelingPauseBtn.style.display = 'none';
+                }
             }
         }
 
@@ -2582,7 +2654,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             select.innerHTML = '<option value="">Select a batch...</option>';
             intakeBatches.forEach(batch => {
-                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} (${batch.trim_weight}g)</option>`;
+                const pauseIndicator = batch.extraction_paused ? ' ⏸️ PAUSED' : '';
+                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} (${batch.trim_weight}g)${pauseIndicator}</option>`;
             });
         }
 
@@ -2660,6 +2733,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         preSiftInfo.style.display = 'none';
                     }
                 }
+                
+                // Update pause button visibility
+                updatePauseButtons();
             }
         });
 
@@ -2854,6 +2930,66 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             await loadBatches();
             populateExtractionSelect();
+        }
+
+        // Toggle pause/resume for extraction
+        async function togglePauseExtraction() {
+            if (!currentUser) {
+                alert('Please select a user first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('extractionBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) {
+                alert('Please select a batch first!');
+                return;
+            }
+            
+            const isPaused = batch.extraction_paused || false;
+            const action = isPaused ? 'RESUME' : 'PAUSE';
+            const actionVerb = isPaused ? 'Resumed' : 'Paused';
+            
+            const confirmation = confirm(
+                `${action} extraction for batch ${batchId}?\n\n` +
+                `This will:\n` +
+                `• Add "${actionVerb}" to timeline\n` +
+                `• ${isPaused ? 'Allow work to continue' : 'Temporarily stop work'}\n` +
+                `• Keep batch in extraction stage`
+            );
+            
+            if (!confirmation) return;
+            
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'extraction',
+                user: currentRole ? currentRole.name : "Unknown",
+                date: new Date().toISOString(),
+                action: `Extraction ${actionVerb.toLowerCase()} - ${batch.extraction_method || 'unknown method'}`
+            });
+            
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .update({
+                    extraction_paused: !isPaused,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error toggling pause:', error);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+            
+            alert(`✅ Extraction ${actionVerb.toLowerCase()} for batch ${batchId}!\n\n` +
+                  `${isPaused ? 'Work can continue.' : 'Work temporarily stopped.'}\n` +
+                  `${actionVerb} by: ${currentRole.name}`);
+            
+            await loadBatches();
+            populateExtractionSelect();
+            updatePauseButtons();
         }
 
         async function submitExtraction() {
@@ -3237,7 +3373,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             select.innerHTML = '<option value="">Select a batch...</option>';
             finishingBatches.forEach(batch => {
                 const weight = batch.final_weight || batch.net_weight || 0;
-                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.product_made} (${weight}g)</option>`;
+                const pauseIndicator = batch.packaging_paused ? ' ⏸️ PAUSED' : '';
+                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.product_made} (${weight}g)${pauseIndicator}</option>`;
             });
         }
 
@@ -3277,6 +3414,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 } else {
                     strainTypeAlert.style.display = 'none';
                 }
+                
+                // Update pause button visibility
+                updatePauseButtons();
             }
         });
 
@@ -3415,6 +3555,66 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Re-select the batch
             document.getElementById('packagingBatchSelect').value = batchId;
             document.getElementById('packagingForm').style.display = 'block';
+        }
+
+        // Toggle pause/resume for packaging
+        async function togglePausePackaging() {
+            if (!currentUser) {
+                alert('Please select a user first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('packagingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) {
+                alert('Please select a batch first!');
+                return;
+            }
+            
+            const isPaused = batch.packaging_paused || false;
+            const action = isPaused ? 'RESUME' : 'PAUSE';
+            const actionVerb = isPaused ? 'Resumed' : 'Paused';
+            
+            const confirmation = confirm(
+                `${action} packaging for batch ${batchId}?\n\n` +
+                `This will:\n` +
+                `• Add "${actionVerb}" to timeline\n` +
+                `• ${isPaused ? 'Allow work to continue' : 'Temporarily stop work'}\n` +
+                `• Keep batch in packaging stage`
+            );
+            
+            if (!confirmation) return;
+            
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'packaging',
+                user: currentRole ? currentRole.name : "Unknown",
+                date: new Date().toISOString(),
+                action: `Packaging ${actionVerb.toLowerCase()} - ${batch.product_type || 'unknown product'}`
+            });
+            
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .update({
+                    packaging_paused: !isPaused,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error toggling pause:', error);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+            
+            alert(`✅ Packaging ${actionVerb.toLowerCase()} for batch ${batchId}!\n\n` +
+                  `${isPaused ? 'Work can continue.' : 'Work temporarily stopped.'}\n` +
+                  `${actionVerb} by: ${currentRole.name}`);
+            
+            await loadBatches();
+            populatePackagingSelect();
+            updatePauseButtons();
         }
 
         async function submitPackaging() {
@@ -4166,7 +4366,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             select.innerHTML = '<option value="">Select a batch...</option>';
             labelableBatches.forEach(batch => {
-                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.packaged_product_type} (${batch.units_packaged} units)</option>`;
+                const pauseIndicator = batch.labeling_paused ? ' ⏸️ PAUSED' : '';
+                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.packaged_product_type} (${batch.units_packaged} units)${pauseIndicator}</option>`;
             });
             
             // Load saved settings
@@ -4198,6 +4399,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     expectedWeightEl.textContent = expectedGrams.toFixed(1) + 'g';
                     actualWeightEl.textContent = '-';
                 }
+                
+                // Update pause button visibility
+                updatePauseButtons();
             }
         });
 
@@ -4622,6 +4826,66 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     expectedWeightEl.textContent = expectedGrams.toFixed(1) + 'g';
                 }
             }
+        }
+
+        // Toggle pause/resume for labeling
+        async function togglePauseLabeling() {
+            if (!currentUser) {
+                alert('Please select a user first!');
+                return;
+            }
+            
+            const batchId = document.getElementById('labelingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) {
+                alert('Please select a batch first!');
+                return;
+            }
+            
+            const isPaused = batch.labeling_paused || false;
+            const action = isPaused ? 'RESUME' : 'PAUSE';
+            const actionVerb = isPaused ? 'Resumed' : 'Paused';
+            
+            const confirmation = confirm(
+                `${action} labeling for batch ${batchId}?\n\n` +
+                `This will:\n` +
+                `• Add "${actionVerb}" to timeline\n` +
+                `• ${isPaused ? 'Allow work to continue' : 'Temporarily stop work'}\n` +
+                `• Keep batch in labeling stage`
+            );
+            
+            if (!confirmation) return;
+            
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'labeling',
+                user: currentRole ? currentRole.name : "Unknown",
+                date: new Date().toISOString(),
+                action: `Labeling ${actionVerb.toLowerCase()}`
+            });
+            
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .update({
+                    labeling_paused: !isPaused,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            
+            if (error) {
+                console.error('Error toggling pause:', error);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+            
+            alert(`✅ Labeling ${actionVerb.toLowerCase()} for batch ${batchId}!\n\n` +
+                  `${isPaused ? 'Work can continue.' : 'Work temporarily stopped.'}\n` +
+                  `${actionVerb} by: ${currentRole.name}`);
+            
+            await loadBatches();
+            populateLabelingSelect();
+            updatePauseButtons();
         }
 
         async function markAsLabeled() {
