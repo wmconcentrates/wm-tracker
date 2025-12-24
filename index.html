@@ -3367,7 +3367,24 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             select.innerHTML = '<option value="">Select a batch...</option>';
             extractionBatches.forEach(batch => {
-                const label = batch.is_sub_batch ? `${batch.id} - ${batch.strain} - ${batch.product_made} (SUB-BATCH)` : `${batch.id} - ${batch.strain} - ${batch.product_made} (${batch.crude_weight || 0}g crude)`;
+                let label;
+                
+                if (batch.is_sub_batch) {
+                    label = `${batch.id} - ${batch.strain} - ${batch.product_made} (SUB-BATCH)`;
+                } else {
+                    // Build label with jar/slab counts instead of crude weight
+                    let counts = [];
+                    if (batch.bulk_jars_count > 0) {
+                        counts.push(`${batch.bulk_jars_count} jars`);
+                    }
+                    if (batch.shatter_slabs_count > 0) {
+                        counts.push(`${batch.shatter_slabs_count} slabs`);
+                    }
+                    
+                    const countText = counts.length > 0 ? counts.join(', ') : 'no counts';
+                    label = `${batch.id} - ${batch.strain} - ${batch.product_made} (${countText})`;
+                }
+                
                 select.innerHTML += `<option value="${batch.id}">${label}</option>`;
             });
         }
