@@ -901,7 +901,7 @@
                     
                     <div style="display: flex; gap: 10px;">
                         <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple)); flex: 1;" onclick="testPrintBatchLabel()">
-                            🖨️ Test Print Batch Label
+                            🖨️ Print Batch Label
                         </button>
                         <button type="submit" class="btn" style="flex: 2;">Submit Intake</button>
                     </div>
@@ -1410,6 +1410,7 @@
                     <div style="background: rgba(59, 130, 246, 0.15); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; margin: 20px 0;">
                         <strong>💡 Workflow Options:</strong>
                         <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
+                            <li><strong>Print Labels:</strong> Open printable label page (use browser print)</li>
                             <li><strong>Start Labeling:</strong> Mark batch as in-progress (tracking only, can finish later)</li>
                             <li><strong>Pause/Resume:</strong> Temporarily pause work (breaks, end of shift, equipment issues)</li>
                             <li><strong>Complete Labeling:</strong> Finish labeling with weight verification</li>
@@ -1417,6 +1418,7 @@
                     </div>
                     
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); flex: 1; min-width: 200px;" onclick="openPrintableLabels()">🖨️ Print Labels</button>
                         <button type="button" class="btn" style="background: var(--accent-blue); flex: 1; min-width: 200px;" onclick="startLabeling()">▶️ Start Labeling</button>
                         <button type="button" class="btn" id="pauseLabelingBtn" style="background: var(--accent-orange); flex: 1; min-width: 200px; display: none;" onclick="togglePauseLabeling()">⏸️ Pause</button>
                         <button type="button" class="btn" style="background: var(--accent-green); flex: 1; min-width: 200px;" onclick="markAsLabeled()">✅ Complete Labeling</button>
@@ -2579,8 +2581,171 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 planned_products: products
             };
             
-            // Generate and print
-            printIntakeBatchLabel(testBatch);
+            // Open printable version
+            openPrintableIntakeLabel(testBatch);
+        }
+
+        // Open printable intake batch label
+        function openPrintableIntakeLabel(batch) {
+            // Format date
+            const date = new Date(batch.intake_date).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: 'numeric'});
+            
+            // Get planned products as string
+            let plannedProducts = 'See notes';
+            if (batch.planned_products && batch.planned_products.length > 0) {
+                plannedProducts = batch.planned_products.map(p => p.type).join(', ');
+            }
+            
+            // Create popup window
+            const popup = window.open('', 'PrintIntakeLabel', 'width=600,height=700');
+            popup.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Print Batch Label - ${batch.id}</title>
+    <style>
+        @media print {
+            @page {
+                size: 2in 2.5in;
+                margin: 0;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .no-print {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .no-print h1 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 20px;
+        }
+        
+        .no-print button {
+            background: #9333ea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .no-print button:hover {
+            background: #7c2db8;
+        }
+        
+        .batch-label {
+            width: 2in;
+            height: 2.5in;
+            background: white;
+            border: 3px solid #000;
+            padding: 15px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .strain-name {
+            font-size: 20pt;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+        
+        .divider {
+            width: 100%;
+            height: 2px;
+            background: #000;
+            margin: 8px 0;
+        }
+        
+        .batch-id {
+            font-size: 16pt;
+            font-weight: bold;
+            text-align: center;
+            margin: 8px 0;
+        }
+        
+        .section-title {
+            font-size: 9pt;
+            font-weight: bold;
+            text-align: center;
+            margin: 8px 0 5px 0;
+        }
+        
+        .planned-products {
+            font-size: 8pt;
+            text-align: center;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+        
+        .details {
+            font-size: 7pt;
+            width: 100%;
+            line-height: 1.4;
+        }
+        
+        .details div {
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <h1>Intake Batch Label - ${batch.id}</h1>
+        <button onclick="window.print()">🖨️ Print Label</button>
+        <button onclick="window.close()">Close</button>
+    </div>
+    
+    <div class="batch-label">
+        <div class="strain-name">${batch.strain.toUpperCase()}</div>
+        <div class="divider"></div>
+        <div class="batch-id">BATCH: ${batch.id}</div>
+        <div class="divider"></div>
+        <div class="section-title">PLANNED PRODUCT</div>
+        <div class="planned-products">${plannedProducts}</div>
+        <div class="divider"></div>
+        <div class="details">
+            <div><strong>Type:</strong> ${batch.strain_type}</div>
+            <div><strong>Weight:</strong> ${batch.trim_weight}g</div>
+            <div><strong>Date:</strong> ${date}</div>
+            <div><strong>Grower:</strong> ${batch.cultivation_license}</div>
+            <div><strong>Agreement:</strong> ${batch.material_agreement}</div>
+        </div>
+    </div>
+</body>
+</html>
+            `);
+            popup.document.close();
         }
 
         // Generate ZPL for intake batch tracking label (2" x 2.5")
@@ -4545,6 +4710,224 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 </div>
                 ` : ''}
             `;
+        }
+
+        // Open printable label popup
+        function openPrintableLabels() {
+            const batchId = document.getElementById('labelingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            
+            if (!batch) {
+                alert('Please select a batch first');
+                return;
+            }
+            
+            const quantity = batch.units_packaged || 1;
+            
+            // Format expiration date
+            let expDate = 'N/A';
+            if (batch.test_expiration_date) {
+                const d = new Date(batch.test_expiration_date);
+                expDate = `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear().toString().slice(-2)}`;
+            }
+            
+            // Determine net weight
+            let netWeight = '1 GRAM';
+            if (batch.packaged_product_type.includes('4g')) {
+                netWeight = '4 GRAM';
+            } else if (batch.packaged_product_type.includes('0.5')) {
+                netWeight = '0.5 GRAM';
+            }
+            
+            const thc = parseFloat(batch.test_thc_percent) || 0;
+            const cbd = parseFloat(batch.test_cbd_percent) || 0;
+            const cultivationLicense = batch.cultivation_license || '403R-01007';
+            const extractionLicense = '404R-00016';
+            
+            // Create labels array
+            let labelsHTML = '';
+            for (let i = 0; i < quantity; i++) {
+                labelsHTML += `
+                    <div class="label">
+                        <div class="product-type">${batch.packaged_product_type.toUpperCase()}</div>
+                        <div class="strain">${batch.strain.toUpperCase()}</div>
+                        <div class="cannabinoids">
+                            <div class="cannabinoid-box">
+                                <div>TOTAL THC: ${thc.toFixed(1)}%</div>
+                                <div>TOTAL CBD: ${cbd.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        <div class="licenses">
+                            <div>CULTIVATED BY ${cultivationLicense}</div>
+                            <div>EXTRACTED BY ${extractionLicense}</div>
+                        </div>
+                        <div class="warnings">
+                            <div>INTENDED USE: INHALED PRODUCT.</div>
+                            <div>NOT APPROVED BY THE FDA.</div>
+                        </div>
+                        <div class="net-weight">NET WEIGHT: ${netWeight}</div>
+                        <div class="serving">SERVING SIZE: •</div>
+                        <div class="batch-id">BATCH ${batch.id}</div>
+                        <div class="expiration">USE BY ${expDate}</div>
+                    </div>
+                `;
+            }
+            
+            // Create popup window
+            const popup = window.open('', 'PrintLabels', 'width=800,height=600');
+            popup.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Print Labels - ${batch.id}</title>
+    <style>
+        @media print {
+            @page {
+                size: 1.77in 1.77in;
+                margin: 0;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            .label {
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        
+        .no-print {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .no-print h1 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .no-print button {
+            background: #9333ea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .no-print button:hover {
+            background: #7c2db8;
+        }
+        
+        .labels-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 1.77in);
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .label {
+            width: 1.77in;
+            height: 1.77in;
+            border: 2px solid #333;
+            border-radius: 50%;
+            background: white;
+            padding: 8px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+        
+        .product-type {
+            font-size: 9pt;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        
+        .strain {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 4px;
+            line-height: 1.1;
+        }
+        
+        .cannabinoid-box {
+            border: 2px solid #000;
+            padding: 4px 8px;
+            margin: 4px 0;
+            font-size: 6pt;
+            font-weight: bold;
+        }
+        
+        .licenses {
+            font-size: 5pt;
+            margin: 4px 0;
+            line-height: 1.3;
+        }
+        
+        .warnings {
+            font-size: 4.5pt;
+            margin: 3px 0;
+            line-height: 1.2;
+        }
+        
+        .net-weight {
+            font-size: 6pt;
+            font-weight: bold;
+            margin: 3px 0;
+        }
+        
+        .serving {
+            font-size: 6pt;
+            margin: 2px 0;
+        }
+        
+        .batch-id {
+            font-size: 7pt;
+            font-weight: bold;
+            margin: 3px 0;
+        }
+        
+        .expiration {
+            font-size: 6pt;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <h1>Print Labels for ${batch.id}</h1>
+        <p>Quantity: ${quantity} labels</p>
+        <button onclick="window.print()">🖨️ Print Labels</button>
+        <button onclick="window.close()">Close</button>
+    </div>
+    
+    <div class="labels-container">
+        ${labelsHTML}
+    </div>
+</body>
+</html>
+            `);
+            popup.document.close();
         }
 
         function generateZPL(batch) {
