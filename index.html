@@ -1501,62 +1501,89 @@
         <div class="station-content" id="performance">
             <div class="form-section">
                 <h2>👥 Employee Performance Analytics</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 20px;">Last 30 days • Updated in real-time</p>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Production tracking • Real-time staffing insights</p>
                 
-                <!-- Employee PIN Reference -->
-                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 4px solid var(--accent-green);">
-                    <h3 style="color: var(--accent-green); margin-bottom: 15px; font-size: 1.1rem;">🔐 Employee PINs</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
-                            <div style="font-weight: 600; margin-bottom: 5px;">Ryan (Admin)</div>
-                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">1827</div>
-                        </div>
-                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
-                            <div style="font-weight: 600; margin-bottom: 5px;">Alex</div>
-                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">1980</div>
-                        </div>
-                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
-                            <div style="font-weight: 600; margin-bottom: 5px;">Paige</div>
-                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">1992</div>
-                        </div>
-                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
-                            <div style="font-weight: 600; margin-bottom: 5px;">Donald</div>
-                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">1425</div>
-                        </div>
-                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
-                            <div style="font-weight: 600; margin-bottom: 5px;">Andrew</div>
-                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">2817</div>
-                        </div>
-                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
-                            <div style="font-weight: 600; margin-bottom: 5px;">Tobias</div>
-                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">4200</div>
-                        </div>
-                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 8px;">
-                            <div style="font-weight: 600; margin-bottom: 5px;">Jeremy</div>
-                            <div style="font-family: 'Space Mono', monospace; color: var(--accent-purple); font-size: 1.2rem; font-weight: 700;">0710</div>
+                <!-- Time Period Selector -->
+                <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
+                    <div class="form-group" style="flex: 1; min-width: 200px;">
+                        <label>Time Period:</label>
+                        <select id="performanceTimeRange" onchange="renderPerformanceAnalytics()">
+                            <option value="7">Last 7 Days</option>
+                            <option value="14">Last 14 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                            <option value="60">Last 60 Days</option>
+                            <option value="90">Last 90 Days</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="flex: 1; min-width: 200px;">
+                        <label>Filter by Employee:</label>
+                        <select id="performanceFilter" onchange="renderPerformanceAnalytics()">
+                            <option value="all">All Employees</option>
+                            <option value="Ryan (Admin)">Ryan (Admin)</option>
+                            <option value="Alex">Alex</option>
+                            <option value="Paige">Paige</option>
+                            <option value="Donald">Donald</option>
+                            <option value="Andrew">Andrew</option>
+                            <option value="Tobias">Tobias</option>
+                            <option value="Jeremy">Jeremy</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="flex: 1; min-width: 200px;">
+                        <label>View Mode:</label>
+                        <select id="performanceViewMode" onchange="renderPerformanceAnalytics()">
+                            <option value="overview">Production Overview</option>
+                            <option value="packaging">Packaging Detail</option>
+                            <option value="labeling">Labeling Detail</option>
+                            <option value="extraction">Extraction Detail</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Company-Wide Summary -->
+                <div id="companySummary" style="margin-bottom: 40px;"></div>
+
+                <!-- Individual Performance Cards -->
+                <div id="performanceStats" style="margin-top: 30px;"></div>
+                
+                <!-- Staffing Recommendations -->
+                <div id="staffingRecommendations" style="margin-top: 40px;"></div>
+            </div>
+
+            <div class="form-section">
+                <h2>🎯 Production Targets & Capacity Planning</h2>
+                <div id="targetSettings" style="margin-bottom: 30px;">
+                    <div style="background: var(--bg-tertiary); padding: 25px; border-radius: 15px; border: 2px solid var(--accent-orange);">
+                        <h3 style="color: var(--accent-orange); margin-bottom: 20px;">Set Daily Production Targets</h3>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Packaging Target (units/day):</label>
+                                <input type="number" id="targetPackagingUnits" value="200" min="0" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1.1rem;" onchange="saveTargets(); renderPerformanceAnalytics();">
+                                <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">Per employee daily goal</div>
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Labeling Target (units/day):</label>
+                                <input type="number" id="targetLabelingUnits" value="300" min="0" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1.1rem;" onchange="saveTargets(); renderPerformanceAnalytics();">
+                                <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">Per employee daily goal</div>
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Extraction Target (batches/day):</label>
+                                <input type="number" id="targetExtractionBatches" value="3" min="0" step="0.5" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1.1rem;" onchange="saveTargets(); renderPerformanceAnalytics();">
+                                <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">Per employee daily goal</div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="form-group" style="max-width: 400px;">
-                    <label>Filter by Employee:</label>
-                    <select id="performanceFilter">
-                        <option value="all">All Employees</option>
-                        <option value="Ryan (Admin)">Ryan (Admin)</option>
-                        <option value="Alex">Alex</option>
-                        <option value="Paige">Paige</option>
-                        <option value="Donald">Donald</option>
-                        <option value="Andrew">Andrew</option>
-                        <option value="Tobias">Tobias</option>
-                        <option value="Jeremy">Jeremy</option>
-                    </select>
-                </div>
-
-                <div id="performanceStats" style="margin-top: 30px;"></div>
+                <div id="capacityPlanning"></div>
             </div>
 
             <div class="form-section">
-                <h2>📊 Detailed Activity Log</h2>
+                <h2>📊 Detailed Activity Timeline</h2>
                 <div id="activityLog"></div>
             </div>
         </div>
@@ -5397,181 +5424,498 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             renderPerformanceAnalytics();
         });
 
+        // Save and load targets
+        function saveTargets() {
+            const targets = {
+                packaging: parseFloat(document.getElementById('targetPackagingUnits')?.value) || 200,
+                labeling: parseFloat(document.getElementById('targetLabelingUnits')?.value) || 300,
+                extraction: parseFloat(document.getElementById('targetExtractionBatches')?.value) || 3
+            };
+            localStorage.setItem('productionTargets', JSON.stringify(targets));
+        }
+
+        function loadTargets() {
+            const saved = localStorage.getItem('productionTargets');
+            if (saved) {
+                const targets = JSON.parse(saved);
+                if (document.getElementById('targetPackagingUnits')) {
+                    document.getElementById('targetPackagingUnits').value = targets.packaging || 200;
+                    document.getElementById('targetLabelingUnits').value = targets.labeling || 300;
+                    document.getElementById('targetExtractionBatches').value = targets.extraction || 3;
+                }
+            }
+            return saved ? JSON.parse(saved) : { packaging: 200, labeling: 300, extraction: 3 };
+        }
+
         function renderPerformanceAnalytics() {
             const filter = document.getElementById('performanceFilter')?.value || 'all';
+            const viewMode = document.getElementById('performanceViewMode')?.value || 'overview';
+            const timeRange = parseInt(document.getElementById('performanceTimeRange')?.value) || 30;
             const statsContainer = document.getElementById('performanceStats');
+            const companySummary = document.getElementById('companySummary');
+            const staffingContainer = document.getElementById('staffingRecommendations');
+            const capacityContainer = document.getElementById('capacityPlanning');
             const logContainer = document.getElementById('activityLog');
             
-            if (!statsContainer || !logContainer) return;
+            if (!statsContainer) return;
 
-            // Calculate date range (last 30 days)
-            const now = new Date();
-            const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+            const targets = loadTargets();
             
-            // Get all timeline events from batches
-            const activities = [];
+            // Calculate date range
+            const now = new Date();
+            const rangeStart = new Date(now.getTime() - (timeRange * 24 * 60 * 60 * 1000));
+            
+            // Build employee production data from batches
+            const employeeData = {};
+            const dailyProduction = {}; // For trend analysis
+            
             batches.forEach(batch => {
-                if (batch.timeline && Array.isArray(batch.timeline)) {
+                // Track packaging production
+                if (batch.packaging_user && batch.packaging_date && batch.units_packaged) {
+                    const packagingDate = new Date(batch.packaging_date);
+                    if (packagingDate >= rangeStart) {
+                        const user = batch.packaging_user;
+                        if (!employeeData[user]) {
+                            employeeData[user] = {
+                                name: user,
+                                packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
+                                labeling: { units: 0, batches: 0, dates: [] },
+                                extraction: { batches: 0, grams: 0, dates: [] },
+                                daysActive: new Set()
+                            };
+                        }
+                        
+                        employeeData[user].packaging.units += batch.units_packaged;
+                        employeeData[user].packaging.batches += 1;
+                        employeeData[user].packaging.dates.push(packagingDate);
+                        employeeData[user].daysActive.add(packagingDate.toDateString());
+                        
+                        // Track by product type
+                        const productType = batch.packaged_product_type || 'Unknown';
+                        if (!employeeData[user].packaging.byProduct[productType]) {
+                            employeeData[user].packaging.byProduct[productType] = 0;
+                        }
+                        employeeData[user].packaging.byProduct[productType] += batch.units_packaged;
+                        
+                        // Daily production tracking
+                        const dateKey = packagingDate.toDateString();
+                        if (!dailyProduction[dateKey]) dailyProduction[dateKey] = { packaging: 0, labeling: 0 };
+                        dailyProduction[dateKey].packaging += batch.units_packaged;
+                    }
+                }
+                
+                // Track labeling production (from timeline)
+                if (batch.timeline && batch.timeline.length > 0) {
                     batch.timeline.forEach(event => {
                         const eventDate = new Date(event.timestamp || event.date);
-                        if (eventDate >= thirtyDaysAgo) {
-                            activities.push({
-                                ...event,
-                                batchId: batch.id,
-                                strain: batch.strain,
-                                date: eventDate
-                            });
+                        
+                        // Labeling completion
+                        if (event.stage === 'labeling' && 
+                            event.action && 
+                            (event.action.toLowerCase().includes('completed') || event.action.toLowerCase().includes('labeled')) &&
+                            eventDate >= rangeStart &&
+                            batch.units_packaged) {
+                            
+                            const user = event.user;
+                            if (!employeeData[user]) {
+                                employeeData[user] = {
+                                    name: user,
+                                    packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
+                                    labeling: { units: 0, batches: 0, dates: [] },
+                                    extraction: { batches: 0, grams: 0, dates: [] },
+                                    daysActive: new Set()
+                                };
+                            }
+                            
+                            employeeData[user].labeling.units += batch.units_packaged;
+                            employeeData[user].labeling.batches += 1;
+                            employeeData[user].labeling.dates.push(eventDate);
+                            employeeData[user].daysActive.add(eventDate.toDateString());
+                            
+                            const dateKey = eventDate.toDateString();
+                            if (!dailyProduction[dateKey]) dailyProduction[dateKey] = { packaging: 0, labeling: 0 };
+                            dailyProduction[dateKey].labeling += batch.units_packaged;
+                        }
+                        
+                        // Extraction completion
+                        if (event.stage === 'extraction' && 
+                            event.action && 
+                            event.action.toLowerCase().includes('completed') &&
+                            eventDate >= rangeStart) {
+                            
+                            const user = event.user;
+                            if (!employeeData[user]) {
+                                employeeData[user] = {
+                                    name: user,
+                                    packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
+                                    labeling: { units: 0, batches: 0, dates: [] },
+                                    extraction: { batches: 0, grams: 0, dates: [] },
+                                    daysActive: new Set()
+                                };
+                            }
+                            
+                            employeeData[user].extraction.batches += 1;
+                            if (batch.crude_weight) {
+                                employeeData[user].extraction.grams += parseFloat(batch.crude_weight);
+                            }
+                            employeeData[user].extraction.dates.push(eventDate);
+                            employeeData[user].daysActive.add(eventDate.toDateString());
                         }
                     });
                 }
             });
-
-            // Filter by employee if needed
-            const filteredActivities = filter === 'all' 
-                ? activities 
-                : activities.filter(a => a.user === filter);
-
-            // Group by employee and task
-            const employeeStats = {};
             
-            filteredActivities.forEach(activity => {
-                if (!employeeStats[activity.user]) {
-                    employeeStats[activity.user] = {
-                        name: activity.user,
-                        tasks: {},
-                        totalActions: 0,
-                        firstAction: activity.date,
-                        lastAction: activity.date
-                    };
-                }
-                
-                const emp = employeeStats[activity.user];
-                emp.totalActions++;
-                
-                const taskName = activity.stage || 'unknown';
-                if (!emp.tasks[taskName]) {
-                    emp.tasks[taskName] = {
-                        count: 0,
-                        dates: []
-                    };
-                }
-                
-                emp.tasks[taskName].count++;
-                emp.tasks[taskName].dates.push(activity.date);
-                
-                if (activity.date < emp.firstAction) emp.firstAction = activity.date;
-                if (activity.date > emp.lastAction) emp.lastAction = activity.date;
+            // Calculate per-day averages for each employee
+            Object.values(employeeData).forEach(emp => {
+                const daysActive = emp.daysActive.size;
+                emp.daysActiveCount = daysActive;
+                emp.packaging.perDay = daysActive > 0 ? (emp.packaging.units / daysActive).toFixed(1) : 0;
+                emp.labeling.perDay = daysActive > 0 ? (emp.labeling.units / daysActive).toFixed(1) : 0;
+                emp.extraction.perDay = daysActive > 0 ? (emp.extraction.batches / daysActive).toFixed(2) : 0;
             });
-
-            // Calculate averages
-            Object.values(employeeStats).forEach(emp => {
-                const daysDiff = Math.max(1, Math.ceil((emp.lastAction - emp.firstAction) / (1000 * 60 * 60 * 24)) + 1);
-                const weeksDiff = Math.max(1, daysDiff / 7);
-                
-                emp.daysActive = daysDiff;
-                emp.avgPerDay = (emp.totalActions / daysDiff).toFixed(1);
-                emp.avgPerWeek = (emp.totalActions / weeksDiff).toFixed(1);
-                
-                // Calculate per-task averages
-                Object.keys(emp.tasks).forEach(taskName => {
-                    const task = emp.tasks[taskName];
-                    task.avgPerDay = (task.count / daysDiff).toFixed(1);
-                    task.avgPerWeek = (task.count / weeksDiff).toFixed(1);
-                });
-            });
-
-            // Render stats cards
-            const sortedEmployees = Object.values(employeeStats).sort((a, b) => b.totalActions - a.totalActions);
             
-            if (sortedEmployees.length === 0) {
-                statsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No activity found in the last 30 days</p>';
+            // Filter data if needed
+            const displayData = filter === 'all' 
+                ? Object.values(employeeData) 
+                : Object.values(employeeData).filter(e => e.name === filter);
+            
+            // Render company-wide summary
+            if (companySummary && filter === 'all') {
+                const totalPackaging = Object.values(employeeData).reduce((sum, e) => sum + e.packaging.units, 0);
+                const totalLabeling = Object.values(employeeData).reduce((sum, e) => sum + e.labeling.units, 0);
+                const totalExtraction = Object.values(employeeData).reduce((sum, e) => sum + e.extraction.batches, 0);
+                const avgDailyPackaging = totalPackaging / timeRange;
+                const avgDailyLabeling = totalLabeling / timeRange;
+                
+                companySummary.innerHTML = `
+                    <div style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 30px; border-radius: 15px; box-shadow: 0 10px 40px rgba(147, 51, 234, 0.3);">
+                        <h3 style="font-size: 1.8rem; margin-bottom: 25px; color: white;">📊 Company Production Summary (${timeRange} Days)</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                            <div style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 12px; backdrop-filter: blur(10px);">
+                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">Units Packaged</div>
+                                <div style="font-size: 2.5rem; font-weight: 700; font-family: 'Space Mono', monospace;">${totalPackaging.toLocaleString()}</div>
+                                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 5px;">${avgDailyPackaging.toFixed(0)}/day avg</div>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 12px; backdrop-filter: blur(10px);">
+                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">Units Labeled</div>
+                                <div style="font-size: 2.5rem; font-weight: 700; font-family: 'Space Mono', monospace;">${totalLabeling.toLocaleString()}</div>
+                                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 5px;">${avgDailyLabeling.toFixed(0)}/day avg</div>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 12px; backdrop-filter: blur(10px);">
+                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">Batches Extracted</div>
+                                <div style="font-size: 2.5rem; font-weight: 700; font-family: 'Space Mono', monospace;">${totalExtraction}</div>
+                                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 5px;">${(totalExtraction / timeRange).toFixed(1)}/day avg</div>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 12px; backdrop-filter: blur(10px);">
+                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">Active Employees</div>
+                                <div style="font-size: 2.5rem; font-weight: 700; font-family: 'Space Mono', monospace;">${Object.keys(employeeData).length}</div>
+                                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 5px;">Contributing to production</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (companySummary) {
+                companySummary.innerHTML = '';
+            }
+            
+            // Render individual employee cards based on view mode
+            if (displayData.length === 0) {
+                statsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No production data found for this period</p>';
             } else {
+                const sortedEmployees = displayData.sort((a, b) => {
+                    if (viewMode === 'packaging') return b.packaging.units - a.packaging.units;
+                    if (viewMode === 'labeling') return b.labeling.units - a.labeling.units;
+                    if (viewMode === 'extraction') return b.extraction.batches - a.extraction.batches;
+                    return (b.packaging.units + b.labeling.units) - (a.packaging.units + a.labeling.units);
+                });
+                
                 statsContainer.innerHTML = sortedEmployees.map(emp => {
-                    const taskBreakdown = Object.entries(emp.tasks)
-                        .sort((a, b) => b[1].count - a[1].count)
-                        .map(([taskName, task]) => `
-                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-top: 10px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <span style="font-weight: 600; color: var(--accent-blue); text-transform: capitalize;">${taskName}</span>
-                                    <span style="font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700;">${task.count}</span>
+                    const packagingTarget = targets.packaging * emp.daysActiveCount;
+                    const labelingTarget = targets.labeling * emp.daysActiveCount;
+                    const extractionTarget = targets.extraction * emp.daysActiveCount;
+                    
+                    const packagingPct = packagingTarget > 0 ? ((emp.packaging.units / packagingTarget) * 100).toFixed(0) : 0;
+                    const labelingPct = labelingTarget > 0 ? ((emp.labeling.units / labelingTarget) * 100).toFixed(0) : 0;
+                    const extractionPct = extractionTarget > 0 ? ((emp.extraction.batches / extractionTarget) * 100).toFixed(0) : 0;
+                    
+                    // Determine performance color
+                    const getPerformanceColor = (pct) => {
+                        if (pct >= 90) return 'var(--accent-green)';
+                        if (pct >= 70) return 'var(--accent-blue)';
+                        if (pct >= 50) return 'var(--accent-orange)';
+                        return 'var(--accent-red)';
+                    };
+                    
+                    let detailSection = '';
+                    
+                    if (viewMode === 'overview' || viewMode === 'packaging') {
+                        const productBreakdown = Object.entries(emp.packaging.byProduct)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([product, units]) => `
+                                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border);">
+                                    <span>${product}</span>
+                                    <span style="font-weight: 700; font-family: 'Space Mono', monospace;">${units} units</span>
                                 </div>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; color: var(--text-secondary);">
-                                    <div>📊 ${task.avgPerDay}/day</div>
-                                    <div>📈 ${task.avgPerWeek}/week</div>
+                            `).join('');
+                        
+                        detailSection += `
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; margin-top: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                    <h4 style="color: var(--accent-blue); font-size: 1.1rem;">📦 Packaging Performance</h4>
+                                    <span style="font-size: 1.5rem; font-weight: 700; color: ${getPerformanceColor(packagingPct)};">${packagingPct}%</span>
+                                </div>
+                                
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Units</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${emp.packaging.units.toLocaleString()}</div>
+                                    </div>
+                                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Per Day</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);">${emp.packaging.perDay}</div>
+                                    </div>
+                                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Batches</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">${emp.packaging.batches}</div>
+                                    </div>
+                                </div>
+                                
+                                ${Object.keys(emp.packaging.byProduct).length > 0 ? `
+                                    <div style="border-top: 2px solid var(--border); padding-top: 15px;">
+                                        <h5 style="margin-bottom: 10px; color: var(--text-secondary); font-size: 0.9rem;">By Product Type:</h5>
+                                        ${productBreakdown}
+                                    </div>
+                                ` : ''}
+                                
+                                <div style="margin-top: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid ${getPerformanceColor(packagingPct)};">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-secondary);">Target: ${targets.packaging}/day × ${emp.daysActiveCount} days</span>
+                                        <span style="font-weight: 700;">${emp.packaging.units} / ${packagingTarget}</span>
+                                    </div>
                                 </div>
                             </div>
-                        `).join('');
-
+                        `;
+                    }
+                    
+                    if (viewMode === 'overview' || viewMode === 'labeling') {
+                        detailSection += `
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; margin-top: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                    <h4 style="color: var(--accent-green); font-size: 1.1rem;">🏷️ Labeling Performance</h4>
+                                    <span style="font-size: 1.5rem; font-weight: 700; color: ${getPerformanceColor(labelingPct)};">${labelingPct}%</span>
+                                </div>
+                                
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Units</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);">${emp.labeling.units.toLocaleString()}</div>
+                                    </div>
+                                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Per Day</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${emp.labeling.perDay}</div>
+                                    </div>
+                                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Batches</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">${emp.labeling.batches}</div>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-top: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid ${getPerformanceColor(labelingPct)};">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-secondary);">Target: ${targets.labeling}/day × ${emp.daysActiveCount} days</span>
+                                        <span style="font-weight: 700;">${emp.labeling.units} / ${labelingTarget}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    if (viewMode === 'overview' || viewMode === 'extraction') {
+                        detailSection += `
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; margin-top: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                    <h4 style="color: var(--accent-orange); font-size: 1.1rem;">🧪 Extraction Performance</h4>
+                                    <span style="font-size: 1.5rem; font-weight: 700; color: ${getPerformanceColor(extractionPct)};">${extractionPct}%</span>
+                                </div>
+                                
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Batches</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-orange);">${emp.extraction.batches}</div>
+                                    </div>
+                                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Per Day</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${emp.extraction.perDay}</div>
+                                    </div>
+                                    <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Grams</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);">${emp.extraction.grams.toFixed(0)}</div>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-top: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid ${getPerformanceColor(extractionPct)};">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-secondary);">Target: ${targets.extraction}/day × ${emp.daysActiveCount} days</span>
+                                        <span style="font-weight: 700;">${emp.extraction.batches} / ${extractionTarget.toFixed(1)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
                     return `
-                        <div style="background: var(--bg-tertiary); padding: 25px; border-radius: 15px; border: 2px solid var(--border); margin-bottom: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+                        <div style="background: var(--bg-tertiary); padding: 25px; border-radius: 15px; border: 2px solid var(--border); margin-bottom: 25px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                                 <div>
-                                    <h3 style="font-size: 1.5rem; margin-bottom: 5px; color: var(--accent-purple);">${emp.name}</h3>
-                                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Active for ${emp.daysActive} days in last 30 days</p>
+                                    <h3 style="font-size: 1.8rem; margin-bottom: 5px; color: var(--accent-purple);">${emp.name}</h3>
+                                    <p style="color: var(--text-secondary); font-size: 0.95rem;">Active ${emp.daysActiveCount} of ${timeRange} days</p>
                                 </div>
                                 <div style="text-align: right;">
-                                    <div style="font-family: 'Space Mono', monospace; font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${emp.totalActions}</div>
-                                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Actions</div>
+                                    <div style="font-family: 'Space Mono', monospace; font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${(emp.packaging.units + emp.labeling.units).toLocaleString()}</div>
+                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Total Units</div>
                                 </div>
                             </div>
                             
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
-                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Average Per Day</div>
-                                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${emp.avgPerDay}</div>
-                                </div>
-                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
-                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Average Per Week</div>
-                                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">${emp.avgPerWeek}</div>
-                                </div>
-                            </div>
-
-                            <div style="border-top: 2px solid var(--border); padding-top: 15px;">
-                                <h4 style="margin-bottom: 10px; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Task Breakdown</h4>
-                                ${taskBreakdown}
-                            </div>
+                            ${detailSection}
                         </div>
                     `;
                 }).join('');
             }
-
-            // Render activity log
-            const sortedActivities = filteredActivities.sort((a, b) => b.date - a.date);
             
-            if (sortedActivities.length === 0) {
-                logContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No activities to display</p>';
-            } else {
-                logContainer.innerHTML = `
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border);">
-                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Date</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Employee</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Task</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Batch</th>
-                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">Strain</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${sortedActivities.slice(0, 100).map(activity => `
-                                    <tr style="border-bottom: 1px solid var(--border);">
-                                        <td style="padding: 12px; color: var(--text-secondary);">${activity.date.toLocaleDateString()} ${activity.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                                        <td style="padding: 12px; font-weight: 600;">${activity.user}</td>
-                                        <td style="padding: 12px;">
-                                            <span style="background: rgba(147, 51, 234, 0.2); color: var(--accent-purple); padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; text-transform: capitalize;">
-                                                ${activity.stage || 'unknown'}
-                                            </span>
-                                        </td>
-                                        <td style="padding: 12px; font-family: 'Space Mono', monospace;">${activity.batchId}</td>
-                                        <td style="padding: 12px; color: var(--text-secondary);">${activity.strain}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+            // Staffing recommendations (only show when viewing all employees)
+            if (staffingContainer && filter === 'all') {
+                const totalPackaging = Object.values(employeeData).reduce((sum, e) => sum + e.packaging.units, 0);
+                const totalLabeling = Object.values(employeeData).reduce((sum, e) => sum + e.labeling.units, 0);
+                const avgDailyPackaging = totalPackaging / timeRange;
+                const avgDailyLabeling = totalLabeling / timeRange;
+                const activeEmployees = Object.keys(employeeData).length;
+                
+                const packagingCapacity = activeEmployees * targets.packaging;
+                const labelingCapacity = activeEmployees * targets.labeling;
+                
+                const packagingUtilization = packagingCapacity > 0 ? ((avgDailyPackaging / packagingCapacity) * 100).toFixed(0) : 0;
+                const labelingUtilization = labelingCapacity > 0 ? ((avgDailyLabeling / labelingCapacity) * 100).toFixed(0) : 0;
+                
+                // Calculate needed employees to meet different inventory targets
+                const inventoryTargets = [500, 1000, 1500, 2000];
+                
+                staffingContainer.innerHTML = `
+                    <div style="background: var(--bg-tertiary); padding: 25px; border-radius: 15px; border: 2px solid var(--accent-green);">
+                        <h3 style="color: var(--accent-green); margin-bottom: 20px; font-size: 1.4rem;">🎯 Capacity & Staffing Analysis</h3>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px;">
+                                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 10px;">Packaging Capacity Utilization</div>
+                                <div style="font-size: 2.5rem; font-weight: 700; color: ${packagingUtilization >= 80 ? 'var(--accent-red)' : packagingUtilization >= 60 ? 'var(--accent-orange)' : 'var(--accent-green)'};">${packagingUtilization}%</div>
+                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px;">${avgDailyPackaging.toFixed(0)} / ${packagingCapacity} units per day</div>
+                            </div>
+                            
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px;">
+                                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 10px;">Labeling Capacity Utilization</div>
+                                <div style="font-size: 2.5rem; font-weight: 700; color: ${labelingUtilization >= 80 ? 'var(--accent-red)' : labelingUtilization >= 60 ? 'var(--accent-orange)' : 'var(--accent-green)'};">${labelingUtilization}%</div>
+                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px;">${avgDailyLabeling.toFixed(0)} / ${labelingCapacity} units per day</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px;">
+                            <h4 style="margin-bottom: 15px; color: var(--accent-blue);">Staffing to Meet Daily Production Targets:</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                ${inventoryTargets.map(target => {
+                                    const packagingNeeded = Math.ceil(target / targets.packaging);
+                                    const labelingNeeded = Math.ceil(target / targets.labeling);
+                                    const maxNeeded = Math.max(packagingNeeded, labelingNeeded);
+                                    const diff = maxNeeded - activeEmployees;
+                                    
+                                    return `
+                                        <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; border-left: 4px solid ${diff > 0 ? 'var(--accent-orange)' : 'var(--accent-green)'};">
+                                            <div style="font-weight: 700; font-size: 1.3rem; margin-bottom: 8px; color: var(--accent-purple);">${target} units/day</div>
+                                            <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Packaging: ${packagingNeeded} employees</div>
+                                            <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 10px;">Labeling: ${labelingNeeded} employees</div>
+                                            <div style="font-weight: 600; color: ${diff > 0 ? 'var(--accent-orange)' : 'var(--accent-green)'};">
+                                                ${diff > 0 ? `Need +${diff} more` : diff < 0 ? `${Math.abs(diff)} extra capacity` : '✓ Fully staffed'}
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
                     </div>
-                    ${sortedActivities.length > 100 ? '<p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">Showing most recent 100 activities</p>' : ''}
                 `;
+            } else if (staffingContainer) {
+                staffingContainer.innerHTML = '';
+            }
+            
+            // Render activity log
+            if (logContainer) {
+                const activities = [];
+                batches.forEach(batch => {
+                    if (batch.timeline && Array.isArray(batch.timeline)) {
+                        batch.timeline.forEach(event => {
+                            const eventDate = new Date(event.timestamp || event.date);
+                            if (eventDate >= rangeStart) {
+                                activities.push({
+                                    ...event,
+                                    batchId: batch.id,
+                                    strain: batch.strain,
+                                    date: eventDate,
+                                    units: batch.units_packaged || 0
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                const filteredActivities = filter === 'all' 
+                    ? activities 
+                    : activities.filter(a => a.user === filter);
+                
+                const sortedActivities = filteredActivities.sort((a, b) => b.date - a.date);
+                
+                if (sortedActivities.length === 0) {
+                    logContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No activities to display</p>';
+                } else {
+                    logContainer.innerHTML = `
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: var(--bg-tertiary); border-bottom: 2px solid var(--border);">
+                                        <th style="padding: 15px; text-align: left; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Date</th>
+                                        <th style="padding: 15px; text-align: left; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Employee</th>
+                                        <th style="padding: 15px; text-align: left; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Action</th>
+                                        <th style="padding: 15px; text-align: left; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Batch</th>
+                                        <th style="padding: 15px; text-align: left; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Strain</th>
+                                        <th style="padding: 15px; text-align: right; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Units</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${sortedActivities.slice(0, 100).map(activity => {
+                                        const isCompletion = activity.action && (
+                                            activity.action.toLowerCase().includes('completed') ||
+                                            activity.action.toLowerCase().includes('labeled')
+                                        );
+                                        
+                                        return `
+                                            <tr style="border-bottom: 1px solid var(--border);">
+                                                <td style="padding: 12px; color: var(--text-secondary); font-size: 0.95rem;">${activity.date.toLocaleDateString()} ${activity.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                                <td style="padding: 12px; font-weight: 600; font-size: 0.95rem;">${activity.user}</td>
+                                                <td style="padding: 12px;">
+                                                    <span style="background: rgba(147, 51, 234, 0.2); color: var(--accent-purple); padding: 6px 12px; border-radius: 12px; font-size: 0.85rem; text-transform: capitalize;">
+                                                        ${activity.stage || 'unknown'}
+                                                    </span>
+                                                    ${isCompletion ? '<span style="margin-left: 8px; color: var(--accent-green);">✓</span>' : ''}
+                                                </td>
+                                                <td style="padding: 12px; font-family: 'Space Mono', monospace; font-size: 0.95rem;">${activity.batchId}</td>
+                                                <td style="padding: 12px; color: var(--text-secondary); font-size: 0.95rem;">${activity.strain}</td>
+                                                <td style="padding: 12px; text-align: right; font-weight: 700; font-family: 'Space Mono', monospace; font-size: 0.95rem;">${isCompletion && activity.units > 0 ? activity.units : '-'}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        ${sortedActivities.length > 100 ? '<p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">Showing most recent 100 activities</p>' : ''}
+                    `;
+                }
             }
         }
 
@@ -6798,6 +7142,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     input.addEventListener('input', updateManualSummary);
                 });
             }
+            
+            // Load production targets
+            loadTargets();
         });
 
     </script>
