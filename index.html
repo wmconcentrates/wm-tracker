@@ -899,6 +899,14 @@
                         <textarea id="intakeNotes" placeholder="Any special notes about this batch..."></textarea>
                     </div>
                     
+                    <div class="form-group">
+                        <label>Print To</label>
+                        <select id="printerSelect">
+                            <option value="network">Network Printer (WiFi - 10.1.10.95)</option>
+                            <option value="usb">USB Printer (Local)</option>
+                        </select>
+                    </div>
+                    
                     <div style="display: flex; gap: 10px;">
                         <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple)); flex: 1;" onclick="testPrintBatchLabel()">
                             🖨️ Print Label
@@ -2589,15 +2597,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         async function printIntakeLabelDirectly(batch) {
             const zpl = generateIntakeBatchLabelZPL(batch);
             
+            // Get selected printer
+            const printerType = document.getElementById('printerSelect')?.value || 'network';
+            
             // Try to get proxy server URL from localStorage, or use default
             let proxyURL = localStorage.getItem('zebraPrintProxy');
             
             if (!proxyURL) {
                 // First time - ask for proxy server address
-                const serverIP = prompt('Enter the IP address of the computer running the print server:\n\n(e.g., 10.1.10.50)\n\nOr click Cancel to download ZPL file instead.');
+                const serverIP = prompt('Enter the IP address of the computer running the print server:\n\n(e.g., 10.1.10.160)\n\nOr click Cancel to download ZPL file instead.');
                 
                 if (serverIP) {
-                    proxyURL = `http://${serverIP}:3000/print`;
+                    proxyURL = `http://${serverIP}:3000`;
                     localStorage.setItem('zebraPrintProxy', proxyURL);
                 } else {
                     downloadIntakeLabelZPL(batch);
@@ -2605,8 +2616,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 }
             }
             
+            // Append the printer endpoint
+            const fullURL = `${proxyURL}/print/${printerType}`;
+            
             try {
-                const response = await fetch(proxyURL, {
+                const response = await fetch(fullURL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'text/plain',
@@ -2616,7 +2630,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 
                 if (response.ok) {
                     const result = await response.json();
-                    alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}`);
+                    const printerName = printerType === 'usb' ? 'USB printer' : 'network printer';
+                    alert(`✅ Label sent to ${printerName}!\n\nBatch: ${batch.id}`);
                 } else {
                     throw new Error('Server returned error: ' + response.status);
                 }
