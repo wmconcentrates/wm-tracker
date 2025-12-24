@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>White Mousse Production Tracker - Cloud Sync</title>
+    <!-- jsPDF for PDF label generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@300;400;600;700&display=swap');
         
@@ -1353,6 +1355,46 @@
                         <div id="labelPreview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                             <!-- Auto-populated from batch data -->
                         </div>
+                    </div>
+
+                    <!-- ZEBRA PRINTER LABEL GENERATION -->
+                    <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(59, 130, 246, 0.15)); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-purple);">
+                        <h3 style="color: var(--accent-purple); margin-bottom: 15px;">🖨️ Zebra ZT230 Label Printing</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 15px;">
+                            Automatically generates 45mm circular labels for your Zebra thermal printer with all batch information.
+                        </p>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div>
+                                <strong style="color: var(--accent-green);">Auto-populated data:</strong>
+                                <ul style="margin: 8px 0 0 20px; line-height: 1.8; color: var(--text-secondary); font-size: 0.9rem;">
+                                    <li>Product type & strain</li>
+                                    <li>Total THC & Total CBD %</li>
+                                    <li>Batch ID & expiration</li>
+                                    <li>Net weight & compliance info</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <strong style="color: var(--accent-blue);">Label specs:</strong>
+                                <ul style="margin: 8px 0 0 20px; line-height: 1.8; color: var(--text-secondary); font-size: 0.9rem;">
+                                    <li>45mm diameter circle</li>
+                                    <li>Black & white thermal</li>
+                                    <li>Roll feed format</li>
+                                    <li>ZPL code generated</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); flex: 1;" onclick="generateCanvaStyleLabels()">
+                                📄 Preview Label (PDF)
+                            </button>
+                            <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-green), var(--accent-blue)); flex: 1;" onclick="printToZebra()">
+                                🖨️ Print to Zebra
+                            </button>
+                        </div>
+                        
+                        <div id="labelGenerationStatus" style="margin-top: 15px; display: none;"></div>
                     </div>
 
                     <!-- Weight Verification -->
@@ -4142,37 +4184,166 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             `;
         }
 
+        // Generate preview PDF label (for visual verification before Zebra printing)
+        function generateCanvaStyleLabels() {
+            const batch = batches.find(b => b.id === document.getElementById('labelingBatchSelect').value);
+            if (!batch) {
+                alert('Please select a batch first');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('labelGenerationStatus');
+            
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<div style="color: var(--accent-blue);">⏳ Generating preview...</div>';
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: [70, 70] // Square for the circular label
+                });
+                
+                // Extract data from batch
+                const productType = batch.packaged_product_type ? batch.packaged_product_type.toUpperCase().replace('WAX/SUGAR', 'WAX').replace(/[\d.]+G/g, '').trim() : 'WAX';
+                const strainName = batch.strain ? batch.strain.toUpperCase() : 'UNKNOWN';
+                const totalThc = parseFloat(batch.test_thc_percent) || 0;
+                const totalCbd = parseFloat(batch.test_cbd_percent) || 0;
+                const batchId = batch.id || 'N/A';
+                
+                // Format expiration date as M.D.YY
+                let expirationDate = 'N/A';
+                if (batch.test_expiration_date) {
+                    const expDate = new Date(batch.test_expiration_date);
+                    const month = expDate.getMonth() + 1;
+                    const day = expDate.getDate();
+                    const year = expDate.getFullYear().toString().slice(-2);
+                    expirationDate = `${month}.${day}.${year}`;
+                }
+                
+                // Determine net weight from product type
+                let netWeight = '1 GRAM';
+                if (batch.packaged_product_type && batch.packaged_product_type.includes('4')) {
+                    netWeight = '4 GRAM';
+                } else if (batch.packaged_product_type && batch.packaged_product_type.includes('0.5')) {
+                    netWeight = '0.5 GRAM';
+                }
+                
+                // Label dimensions (45mm diameter)
+                const labelDiameter = 45;
+                const labelRadius = labelDiameter / 2;
+                const centerX = 35;
+                const centerY = 35;
+                
+                // Draw border circle (black outline only for thermal printer simulation)
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.8);
+                doc.circle(centerX, centerY, labelRadius, 'S');
+                
+                // Add product type
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text(productType, centerX, centerY - 14, { align: 'center' });
+                
+                // Add strain name (split if too long)
+                doc.setFontSize(13);
+                doc.setFont('helvetica', 'bold');
+                const strainLines = doc.splitTextToSize(strainName, labelDiameter - 12);
+                const strainY = strainLines.length > 1 ? centerY - 10 : centerY - 8;
+                doc.text(strainLines, centerX, strainY, { align: 'center' });
+                
+                // Add potency box (black border, white fill)
+                doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.4);
+                doc.roundedRect(centerX - 18, centerY - 3, 36, 7, 1, 1, 'FD');
+                
+                // Add potency text - TOTAL THC AND TOTAL CBD
+                doc.setFontSize(5.5);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`TOTAL THC: ${totalThc.toFixed(1)}%`, centerX, centerY - 0.5, { align: 'center' });
+                doc.text(`TOTAL CBD: ${totalCbd.toFixed(1)}%`, centerX, centerY + 2.5, { align: 'center' });
+                
+                // Add compliance info
+                doc.setFontSize(4.5);
+                doc.setFont('helvetica', 'bold');
+                const infoY = centerY + 6;
+                const lineHeight = 1.6;
+                
+                doc.text('CULTIVATED BY 403R-01007', centerX, infoY, { align: 'center' });
+                doc.text('EXTRACTED BY 404R-00016', centerX, infoY + lineHeight, { align: 'center' });
+                doc.text('INTENDED USE: INHALED PRODUCT.', centerX, infoY + lineHeight * 2, { align: 'center' });
+                doc.text('NOT APPROVED BY THE FDA.', centerX, infoY + lineHeight * 3, { align: 'center' });
+                doc.text(`NET WEIGHT: ${netWeight}`, centerX, infoY + lineHeight * 4, { align: 'center' });
+                doc.text('SERVING SIZE: ●', centerX, infoY + lineHeight * 5, { align: 'center' });
+                doc.text(`BATCH ${batchId}`, centerX, infoY + lineHeight * 6, { align: 'center' });
+                doc.text(`USE BY ${expirationDate}`, centerX, infoY + lineHeight * 7, { align: 'center' });
+                
+                // Save PDF
+                const fileName = `WM_Label_Preview_${strainName.replace(/\s+/g, '_')}_${batchId.replace(/\./g, '-')}.pdf`;
+                doc.save(fileName);
+                
+                statusDiv.innerHTML = `
+                    <div style="background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); padding: 15px; border-radius: 8px;">
+                        <div style="color: var(--accent-green); font-weight: 700; margin-bottom: 5px;">✅ Preview Generated!</div>
+                        <div style="color: var(--text-primary);">
+                            Check the PDF to verify label layout before printing to Zebra.<br>
+                            <strong>Note:</strong> This is a visual preview - actual Zebra label will be thermal printed.
+                        </div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 7000);
+                
+            } catch (error) {
+                console.error('Error generating preview:', error);
+                statusDiv.innerHTML = `
+                    <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); padding: 15px; border-radius: 8px;">
+                        <div style="color: var(--accent-red); font-weight: 700;">❌ Error generating preview</div>
+                        <div style="color: var(--text-primary); font-size: 0.9rem;">${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+
         function generateZPL(batch) {
-            // Generate ZPL (Zebra Programming Language) code for CIRCULAR label
+            // Generate ZPL (Zebra Programming Language) code for 45mm CIRCULAR label
+            // Matching the exact Canva design layout
+            
             const labelSize = document.getElementById('labelSize').value;
             
-            // Circular label dimensions (in dots at 203dpi)
-            const sizes = {
-                '1.0': { diameter: 203 },   // 1.0" circle
-                '1.5': { diameter: 305 },   // 1.5" circle
-                '2.0': { diameter: 406 }    // 2.0" circle
-            };
+            // 45mm = 1.77 inches at 203dpi = 359 dots
+            // Using 360 dots for clean numbers
+            const diameter = 360;
+            const centerX = 180;
             
-            const size = sizes[labelSize] || sizes['1.5'];
-            const centerX = Math.floor(size.diameter / 2);
+            // Format product type for label (remove size info)
+            const productType = batch.packaged_product_type ? 
+                batch.packaged_product_type.toUpperCase().replace('WAX/SUGAR', 'WAX').replace(/[\d.]+G/g, '').trim() : 
+                'WAX';
             
-            // Format product type for label
-            const productType = batch.packaged_product_type.toUpperCase().replace('WAX/SUGAR', 'WAX');
-            
-            // Format expiration date (use by)
-            const expDate = batch.test_expiration_date ? 
-                new Date(batch.test_expiration_date).toLocaleDateString('en-US', {month: 'numeric', day: 'numeric', year: '2-digit'}) : 
-                'N/A';
+            // Format expiration date as M.D.YY (matching Canva: 3.6.26)
+            let expDate = 'N/A';
+            if (batch.test_expiration_date) {
+                const d = new Date(batch.test_expiration_date);
+                const month = d.getMonth() + 1;
+                const day = d.getDate();
+                const year = d.getFullYear().toString().slice(-2);
+                expDate = `${month}.${day}.${year}`;
+            }
             
             // Get THC and CBD percentages
-            const thc = parseFloat(batch.test_thc_percent) || 0;
-            const cbd = parseFloat(batch.test_cbd_percent) || 0;
+            const totalThc = parseFloat(batch.test_thc_percent) || 0;
+            const totalCbd = parseFloat(batch.test_cbd_percent) || 0;
             
             // Determine net weight based on product type
             let netWeight = '1 GRAM';
-            if (batch.packaged_product_type.includes('4g')) {
+            if (batch.packaged_product_type && batch.packaged_product_type.includes('4')) {
                 netWeight = '4 GRAM';
-            } else if (batch.packaged_product_type.includes('0.5')) {
+            } else if (batch.packaged_product_type && batch.packaged_product_type.includes('0.5')) {
                 netWeight = '0.5 GRAM';
             }
             
@@ -4182,46 +4353,46 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // White Mousse extraction license (404R)
             const extractionLicense = '404R-00016';
             
-            // ZPL template for CIRCULAR bottom label with all compliance info
-            // Scaled appropriately for small circular label
+            // ZPL template matching Canva design - 45mm circular label
             const zpl = `^XA
 ^MMT
-^PW${size.diameter}
-^LL${size.diameter}
+^PW${diameter}
+^LL${diameter}
 ^LS0
 
 ~SD20
 
 ^CF0,22
-^FO${centerX},10^FD${productType}^FS
+^FO${centerX},35^FB${diameter},1,0,C^FD${productType}^FS
 
-^CF0,35
-^FO${centerX},35^FD${batch.strain.toUpperCase()}^FS
+^CF0,40
+^FO${centerX},60^FB${diameter},2,0,C^FD${batch.strain.toUpperCase()}^FS
 
-^FO${Math.floor(centerX - 90)},75^GB180,35,2^FS
-^CF0,16
-^FO${centerX},82^FDTHC: ${thc}% CBD: ${cbd}%^FS
+^FO${centerX - 100},110^GB200,40,3^FS
+^CF0,14
+^FO${centerX},118^FB${diameter},1,0,C^FDTOTAL THC: ${totalThc.toFixed(1)}%^FS
+^FO${centerX},133^FB${diameter},1,0,C^FDTOTAL CBD: ${totalCbd.toFixed(1)}%^FS
 
-^CF0,13
-^FO${centerX},118^FDCULTIVATED BY ${cultivationLicense}^FS
-^FO${centerX},133^FDEXTRACTED BY ${extractionLicense}^FS
+^CF0,11
+^FO${centerX},165^FB${diameter},1,0,C^FDCULTIVATED BY ${cultivationLicense}^FS
+^FO${centerX},180^FB${diameter},1,0,C^FDEXTRACTED BY ${extractionLicense}^FS
+
+^CF0,10
+^FO${centerX},198^FB${diameter},1,0,C^FDINTENDED USE: INHALED PRODUCT.^FS
+^FO${centerX},210^FB${diameter},1,0,C^FDNOT APPROVED BY THE FDA.^FS
 
 ^CF0,12
-^FO${centerX},150^FDINHALED PRODUCT.^FS
-^FO${centerX},163^FDNOT APPROVED BY FDA.^FS
+^FO${centerX},228^FB${diameter},1,0,C^FDNET WEIGHT: ${netWeight}^FS
 
-^CF0,14
-^FO${centerX},180^FDNET WEIGHT: ${netWeight}^FS
+^CF0,12
+^FO${centerX},245^FB${diameter},1,0,C^FDSERVING SIZE: ^FS
+^FO${centerX + 40},243^GC6,6,B^FS
 
-^CF0,14
-^FO${centerX},198^FDSERVING SIZE: ^FS
-^FO${Math.floor(centerX + 48)},198^GC8,8,B^FS
+^CF0,16
+^FO${centerX},265^FB${diameter},1,0,C^FDBATCH ${batch.id}^FS
 
-^CF0,18
-^FO${centerX},218^FDBATCH ${batch.id}^FS
-
-^CF0,14
-^FO${centerX},240^FDUSE BY ${expDate}^FS
+^CF0,12
+^FO${centerX},285^FB${diameter},1,0,C^FDUSE BY ${expDate}^FS
 
 ^XZ`;
             
@@ -4274,6 +4445,91 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                             <li>Click "Print Labels" and they'll go straight to your ZT230!</li>
                         </ol>
                         <p style="color: var(--text-primary); margin-top: 15px;"><strong>Mode saved:</strong> USB Direct Connection</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Simplified print function for the new label generation section
+        async function printToZebra() {
+            const batch = batches.find(b => b.id === document.getElementById('labelingBatchSelect').value);
+            if (!batch) {
+                alert('Please select a batch first');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('labelGenerationStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<div style="color: var(--accent-blue);">🖨️ Sending to printer...</div>';
+            
+            try {
+                // Generate the ZPL code with updated format
+                const zpl = generateZPL(batch);
+                
+                // Try print server first
+                const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
+                
+                try {
+                    const response = await fetch(printServerURL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ zpl: zpl })
+                    });
+                    
+                    if (response.ok) {
+                        statusDiv.innerHTML = `
+                            <div style="background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); padding: 15px; border-radius: 8px;">
+                                <div style="color: var(--accent-green); font-weight: 700;">✅ Sent to Zebra ZT230!</div>
+                                <div style="color: var(--text-primary);">Label is printing...</div>
+                            </div>
+                        `;
+                        setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
+                        return;
+                    }
+                } catch (error) {
+                    console.log('Print server not available, trying Browser Print...');
+                }
+                
+                // Fallback to Browser Print
+                if (window.BrowserPrint) {
+                    const printer = await window.BrowserPrint.getDefaultDevice('printer');
+                    printer.send(zpl, undefined, (error) => {
+                        if (error) {
+                            statusDiv.innerHTML = `
+                                <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); padding: 15px; border-radius: 8px;">
+                                    <div style="color: var(--accent-red); font-weight: 700;">❌ Print failed</div>
+                                    <div style="color: var(--text-primary);">Try downloading ZPL instead or check printer connection.</div>
+                                </div>
+                            `;
+                        } else {
+                            statusDiv.innerHTML = `
+                                <div style="background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); padding: 15px; border-radius: 8px;">
+                                    <div style="color: var(--accent-green); font-weight: 700;">✅ Sent to Zebra ZT230!</div>
+                                    <div style="color: var(--text-primary);">Label is printing...</div>
+                                </div>
+                            `;
+                            setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
+                        }
+                    });
+                } else {
+                    statusDiv.innerHTML = `
+                        <div style="background: rgba(245, 158, 11, 0.2); border: 2px solid var(--accent-orange); padding: 15px; border-radius: 8px;">
+                            <div style="color: var(--accent-orange); font-weight: 700;">⚠️ Printer not connected</div>
+                            <div style="color: var(--text-primary);">
+                                Options:<br>
+                                • Start print server<br>
+                                • Install Zebra Browser Print<br>
+                                • Use the existing Print Labels section below
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error printing:', error);
+                statusDiv.innerHTML = `
+                    <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); padding: 15px; border-radius: 8px;">
+                        <div style="color: var(--accent-red); font-weight: 700;">❌ Error</div>
+                        <div style="color: var(--text-primary); font-size: 0.9rem;">${error.message}</div>
                     </div>
                 `;
             }
@@ -5001,103 +5257,220 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Calculate date range (last 30 days)
             const now = new Date();
             const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+            const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
             
-            // Get all timeline events from batches
-            const activities = [];
-            batches.forEach(batch => {
-                if (batch.timeline && Array.isArray(batch.timeline)) {
-                    batch.timeline.forEach(event => {
-                        const eventDate = new Date(event.timestamp || event.date);
-                        if (eventDate >= thirtyDaysAgo) {
-                            activities.push({
-                                ...event,
-                                batchId: batch.id,
-                                strain: batch.strain,
-                                date: eventDate
-                            });
-                        }
-                    });
-                }
-            });
-
-            // Filter by employee if needed
-            const filteredActivities = filter === 'all' 
-                ? activities 
-                : activities.filter(a => a.user === filter);
-
-            // Group by employee and task
+            // Track employee performance by role
             const employeeStats = {};
             
-            filteredActivities.forEach(activity => {
-                if (!employeeStats[activity.user]) {
-                    employeeStats[activity.user] = {
-                        name: activity.user,
-                        tasks: {},
-                        totalActions: 0,
-                        firstAction: activity.date,
-                        lastAction: activity.date
-                    };
-                }
+            batches.forEach(batch => {
+                if (!batch.timeline) return;
                 
-                const emp = employeeStats[activity.user];
-                emp.totalActions++;
+                // PACKAGING: Track grams packaged
+                const packagingEvents = batch.timeline.filter(e => 
+                    e.stage === 'finishing' && 
+                    e.action && 
+                    e.action.includes('Post-extraction completed')
+                );
                 
-                const taskName = activity.stage || 'unknown';
-                if (!emp.tasks[taskName]) {
-                    emp.tasks[taskName] = {
-                        count: 0,
-                        dates: []
-                    };
-                }
+                packagingEvents.forEach(event => {
+                    const eventDate = new Date(event.timestamp || event.date);
+                    if (eventDate >= thirtyDaysAgo && event.user && batch.net_weight) {
+                        if (!employeeStats[event.user]) {
+                            employeeStats[event.user] = {
+                                name: event.user,
+                                packaging: { total: 0, last7Days: 0, dates: [] },
+                                labeling: { total: 0, last7Days: 0, dates: [] },
+                                extraction: { total: 0, last7Days: 0, dates: [] }
+                            };
+                        }
+                        
+                        const grams = parseFloat(batch.net_weight);
+                        employeeStats[event.user].packaging.total += grams;
+                        employeeStats[event.user].packaging.dates.push(eventDate);
+                        
+                        if (eventDate >= sevenDaysAgo) {
+                            employeeStats[event.user].packaging.last7Days += grams;
+                        }
+                    }
+                });
                 
-                emp.tasks[taskName].count++;
-                emp.tasks[taskName].dates.push(activity.date);
+                // LABELING: Track grams labeled
+                const labelingEvents = batch.timeline.filter(e => 
+                    e.stage === 'labeling' && 
+                    e.action && 
+                    e.action.includes('labeled')
+                );
                 
-                if (activity.date < emp.firstAction) emp.firstAction = activity.date;
-                if (activity.date > emp.lastAction) emp.lastAction = activity.date;
-            });
-
-            // Calculate averages
-            Object.values(employeeStats).forEach(emp => {
-                const daysDiff = Math.max(1, Math.ceil((emp.lastAction - emp.firstAction) / (1000 * 60 * 60 * 24)) + 1);
-                const weeksDiff = Math.max(1, daysDiff / 7);
+                labelingEvents.forEach(event => {
+                    const eventDate = new Date(event.timestamp || event.date);
+                    if (eventDate >= thirtyDaysAgo && event.user && batch.grams_labeled) {
+                        if (!employeeStats[event.user]) {
+                            employeeStats[event.user] = {
+                                name: event.user,
+                                packaging: { total: 0, last7Days: 0, dates: [] },
+                                labeling: { total: 0, last7Days: 0, dates: [] },
+                                extraction: { total: 0, last7Days: 0, dates: [] }
+                            };
+                        }
+                        
+                        const grams = parseFloat(batch.grams_labeled);
+                        employeeStats[event.user].labeling.total += grams;
+                        employeeStats[event.user].labeling.dates.push(eventDate);
+                        
+                        if (eventDate >= sevenDaysAgo) {
+                            employeeStats[event.user].labeling.last7Days += grams;
+                        }
+                    }
+                });
                 
-                emp.daysActive = daysDiff;
-                emp.avgPerDay = (emp.totalActions / daysDiff).toFixed(1);
-                emp.avgPerWeek = (emp.totalActions / weeksDiff).toFixed(1);
+                // EXTRACTION: Track trim processed
+                const extractionEvents = batch.timeline.filter(e => 
+                    (e.stage === 'extraction' || e.stage === 'finishing') && 
+                    e.action && 
+                    (e.action.includes('Extraction completed') || e.action.includes('completed'))
+                );
                 
-                // Calculate per-task averages
-                Object.keys(emp.tasks).forEach(taskName => {
-                    const task = emp.tasks[taskName];
-                    task.avgPerDay = (task.count / daysDiff).toFixed(1);
-                    task.avgPerWeek = (task.count / weeksDiff).toFixed(1);
+                extractionEvents.forEach(event => {
+                    const eventDate = new Date(event.timestamp || event.date);
+                    if (eventDate >= thirtyDaysAgo && event.user && batch.trim_weight) {
+                        if (!employeeStats[event.user]) {
+                            employeeStats[event.user] = {
+                                name: event.user,
+                                packaging: { total: 0, last7Days: 0, dates: [] },
+                                labeling: { total: 0, last7Days: 0, dates: [] },
+                                extraction: { total: 0, last7Days: 0, dates: [] }
+                            };
+                        }
+                        
+                        const grams = parseFloat(batch.adjusted_trim_weight || batch.trim_weight);
+                        employeeStats[event.user].extraction.total += grams;
+                        employeeStats[event.user].extraction.dates.push(eventDate);
+                        
+                        if (eventDate >= sevenDaysAgo) {
+                            employeeStats[event.user].extraction.last7Days += grams;
+                        }
+                    }
                 });
             });
 
-            // Render stats cards
-            const sortedEmployees = Object.values(employeeStats).sort((a, b) => b.totalActions - a.totalActions);
+            // Filter by employee if needed
+            let displayStats = Object.values(employeeStats);
+            if (filter !== 'all') {
+                displayStats = displayStats.filter(emp => emp.name === filter);
+            }
             
-            if (sortedEmployees.length === 0) {
+            if (displayStats.length === 0) {
                 statsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No activity found in the last 30 days</p>';
             } else {
-                statsContainer.innerHTML = sortedEmployees.map(emp => {
-                    const taskBreakdown = Object.entries(emp.tasks)
-                        .sort((a, b) => b[1].count - a[1].count)
-                        .map(([taskName, task]) => `
-                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px; margin-top: 10px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <span style="font-weight: 600; color: var(--accent-blue); text-transform: capitalize;">${taskName}</span>
-                                    <span style="font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700;">${task.count}</span>
-                                </div>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; color: var(--text-secondary);">
-                                    <div>📊 ${task.avgPerDay}/day</div>
-                                    <div>📈 ${task.avgPerWeek}/week</div>
-                                </div>
-                            </div>
-                        `).join('');
-
+                statsContainer.innerHTML = displayStats.map(emp => {
+                    // Calculate days active and averages for each category
+                    const packagingDays = emp.packaging.dates.length > 0 ? 
+                        Math.max(1, Math.ceil((Math.max(...emp.packaging.dates) - Math.min(...emp.packaging.dates)) / (1000 * 60 * 60 * 24)) + 1) : 0;
+                    const labelingDays = emp.labeling.dates.length > 0 ?
+                        Math.max(1, Math.ceil((Math.max(...emp.labeling.dates) - Math.min(...emp.labeling.dates)) / (1000 * 60 * 60 * 24)) + 1) : 0;
+                    const extractionDays = emp.extraction.dates.length > 0 ?
+                        Math.max(1, Math.ceil((Math.max(...emp.extraction.dates) - Math.min(...emp.extraction.dates)) / (1000 * 60 * 60 * 24)) + 1) : 0;
+                    
+                    const packagingPerDay = packagingDays > 0 ? (emp.packaging.total / packagingDays).toFixed(1) : 0;
+                    const packagingPerWeek = packagingDays > 0 ? (emp.packaging.total / Math.max(1, packagingDays / 7)).toFixed(1) : 0;
+                    
+                    const labelingPerDay = labelingDays > 0 ? (emp.labeling.total / labelingDays).toFixed(1) : 0;
+                    const labelingPerWeek = labelingDays > 0 ? (emp.labeling.total / Math.max(1, labelingDays / 7)).toFixed(1) : 0;
+                    
+                    const extractionPerDay = extractionDays > 0 ? (emp.extraction.total / extractionDays).toFixed(1) : 0;
+                    const extractionPerWeek = extractionDays > 0 ? (emp.extraction.total / Math.max(1, extractionDays / 7)).toFixed(1) : 0;
+                    
                     return `
                         <div style="background: var(--bg-tertiary); padding: 25px; border-radius: 15px; border: 2px solid var(--border); margin-bottom: 20px;">
+                            <h3 style="color: var(--accent-purple); margin-bottom: 20px; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
+                                <span>👤</span> ${emp.name}
+                            </h3>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                                
+                                <!-- Packaging Stats -->
+                                ${emp.packaging.total > 0 ? `
+                                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1)); padding: 20px; border-radius: 12px; border: 2px solid var(--accent-blue);">
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 15px;">📦 Packaging</div>
+                                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${emp.packaging.total.toFixed(0)}g</div>
+                                    <div style="color: var(--text-secondary); margin-bottom: 15px;">Total (30 days)</div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Day</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${packagingPerDay}g</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Week</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${packagingPerWeek}g</div>
+                                        </div>
+                                    </div>
+                                    ${emp.packaging.last7Days > 0 ? `
+                                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div style="font-size: 0.9rem; color: var(--text-secondary);">Last 7 Days</div>
+                                        <div style="font-size: 1.2rem; font-weight: 700; color: var(--accent-orange);">${emp.packaging.last7Days.toFixed(0)}g</div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                ` : ''}
+                                
+                                <!-- Labeling Stats -->
+                                ${emp.labeling.total > 0 ? `
+                                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); padding: 20px; border-radius: 12px; border: 2px solid var(--accent-green);">
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-green); margin-bottom: 15px;">🏷️ Labeling</div>
+                                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${emp.labeling.total.toFixed(0)}g</div>
+                                    <div style="color: var(--text-secondary); margin-bottom: 15px;">Total (30 days)</div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Day</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${labelingPerDay}g</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Week</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${labelingPerWeek}g</div>
+                                        </div>
+                                    </div>
+                                    ${emp.labeling.last7Days > 0 ? `
+                                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div style="font-size: 0.9rem; color: var(--text-secondary);">Last 7 Days</div>
+                                        <div style="font-size: 1.2rem; font-weight: 700; color: var(--accent-orange);">${emp.labeling.last7Days.toFixed(0)}g</div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                ` : ''}
+                                
+                                <!-- Extraction Stats -->
+                                ${emp.extraction.total > 0 ? `
+                                <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1)); padding: 20px; border-radius: 12px; border: 2px solid var(--accent-orange);">
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-orange); margin-bottom: 15px;">⚗️ Extraction</div>
+                                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${emp.extraction.total.toFixed(0)}g</div>
+                                    <div style="color: var(--text-secondary); margin-bottom: 15px;">Trim Processed (30 days)</div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Day</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${extractionPerDay}g</div>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-secondary);">Per Week</div>
+                                            <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${extractionPerWeek}g</div>
+                                        </div>
+                                    </div>
+                                    ${emp.extraction.last7Days > 0 ? `
+                                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                                        <div style="font-size: 0.9rem; color: var(--text-secondary);">Last 7 Days</div>
+                                        <div style="font-size: 1.2rem; font-weight: 700; color: var(--accent-orange);">${emp.extraction.last7Days.toFixed(0)}g</div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Simplified activity log
+            logContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">Use the filter above to view specific employee performance</p>';
+        }
                             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
                                 <div>
                                     <h3 style="font-size: 1.5rem; margin-bottom: 5px; color: var(--accent-purple);">${emp.name}</h3>
