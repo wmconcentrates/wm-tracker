@@ -901,7 +901,7 @@
                     
                     <div style="display: flex; gap: 10px;">
                         <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple)); flex: 1;" onclick="testPrintBatchLabel()">
-                            🖨️ Print Batch Label
+                            🖨️ Print Label
                         </button>
                         <button type="submit" class="btn" style="flex: 2;">Submit Intake</button>
                     </div>
@@ -2581,8 +2581,69 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 planned_products: products
             };
             
-            // Open printable version
-            openPrintableIntakeLabel(testBatch);
+            // Ask user: Direct print or download?
+            const printerIP = localStorage.getItem('zebraIP');
+            if (printerIP) {
+                if (confirm(`Print directly to Zebra printer at ${printerIP}?\n\nClick OK to print now, or Cancel to download ZPL file instead.`)) {
+                    printIntakeLabelDirectly(testBatch);
+                } else {
+                    downloadIntakeLabelZPL(testBatch);
+                }
+            } else {
+                // First time - ask for IP
+                const ip = prompt('Enter your Zebra printer IP address:\n\n(e.g., 192.168.1.100)\n\nThis will be saved for future prints.\n\nOr click Cancel to download ZPL file instead.');
+                if (ip) {
+                    localStorage.setItem('zebraIP', ip);
+                    printIntakeLabelDirectly(testBatch);
+                } else {
+                    downloadIntakeLabelZPL(testBatch);
+                }
+            }
+        }
+
+        // Print directly to Zebra printer via IP
+        async function printIntakeLabelDirectly(batch) {
+            const printerIP = localStorage.getItem('zebraIP');
+            const zpl = generateIntakeBatchLabelZPL(batch);
+            
+            try {
+                const response = await fetch(`http://${printerIP}:9100`, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: zpl
+                });
+                
+                alert(`✅ Label sent to printer at ${printerIP}!\n\nBatch: ${batch.id}\n\nIf it didn't print, check:\n- Printer is on and connected\n- IP address is correct\n- Port 9100 is open`);
+            } catch (error) {
+                console.error('Print error:', error);
+                alert(`⚠️ Could not connect to printer at ${printerIP}\n\nError: ${error.message}\n\nTry downloading the ZPL file instead.`);
+                
+                // Offer to download instead
+                if (confirm('Download ZPL file instead?')) {
+                    downloadIntakeLabelZPL(batch);
+                }
+            }
+        }
+
+        // Download ZPL file for intake label
+        function downloadIntakeLabelZPL(batch) {
+            const zpl = generateIntakeBatchLabelZPL(batch);
+            
+            // Create blob and download
+            const blob = new Blob([zpl], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `batch-label-${batch.id}.zpl`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            alert(`ZPL file downloaded: batch-label-${batch.id}.zpl\n\nTo print:\n1. Open Zebra Setup Utilities\n2. Click "Open Communication with Printer"\n3. Go to Tools → Send File\n4. Select the downloaded .zpl file\n5. Click Send`);
         }
 
         // Open printable intake batch label
@@ -2785,12 +2846,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             popup.document.close();
         }
 
-        // Generate ZPL for intake batch tracking label (2" x 2.5")
+        // Generate ZPL for intake batch tracking label (2" x 1.5" horizontal)
         function generateIntakeBatchLabelZPL(batch) {
-            // 2" x 2.5" label at 203dpi = 406 x 508 dots
+            // 2" x 1.5" label at 203dpi = 406 x 305 dots (horizontal)
             const width = 406;
-            const height = 508;
-            const centerX = 203;
+            const height = 305;
             
             // Format date
             const date = new Date(batch.intake_date).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: 'numeric'});
@@ -2802,8 +2862,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
             
             // Truncate if too long
-            if (plannedProducts.length > 50) {
-                plannedProducts = plannedProducts.substring(0, 47) + '...';
+            if (plannedProducts.length > 20) {
+                plannedProducts = plannedProducts.substring(0, 17) + '...';
             }
             
             const zpl = `^XA
@@ -2814,29 +2874,28 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
 ~SD20
 
-^CF0,60
-^FO${centerX},30^FB${width},2,0,C^FD${batch.strain.toUpperCase()}^FS
+^FO0,0^GB${width},${height},3^FS
 
-^FO20,140^GB366,3,3^FS
+^CF0,40
+^FO10,10^FD${batch.strain.toUpperCase()}^FS
 
-^CF0,50
-^FO${centerX},160^FB${width},1,0,C^FDBATCH: ${batch.id}^FS
+^FO10,55^GB386,2,2^FS
 
-^FO20,230^GB366,2,2^FS
+^CF0,32
+^FO10,65^FDBATCH: ${batch.id}^FS
 
-^CF0,28
-^FO${centerX},250^FB${width},1,0,C^FDPLANNED PRODUCT^FS
-^CF0,24
-^FO${centerX},285^FB${width},2,0,C^FD${plannedProducts}^FS
+^FO10,105^GB386,2,2^FS
 
-^FO20,350^GB366,2,2^FS
+^CF0,16
+^FO10,115^FDType: ${batch.strain_type}^FS
+^FO10,135^FDWeight: ${batch.trim_weight}g^FS
+^FO10,155^FDDate: ${date}^FS
 
-^CF0,20
-^FO20,370^FDType: ${batch.strain_type}^FS
-^FO20,395^FDWeight: ${batch.trim_weight}g^FS
-^FO20,420^FDDate: ${date}^FS
-^FO20,445^FDGrower: ${batch.cultivation_license}^FS
-^FO20,470^FDAgreement: ${batch.material_agreement}^FS
+^CF0,16
+^FO210,115^FDGrower:^FS
+^FO210,135^FD${batch.cultivation_license}^FS
+^FO210,155^FDProducts:^FS
+^FO210,175^FD${plannedProducts}^FS
 
 ^XZ`;
             
