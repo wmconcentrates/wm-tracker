@@ -2597,7 +2597,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
             
             // Create popup window
-            const popup = window.open('', 'PrintIntakeLabel', 'width=600,height=700');
+            const popup = window.open('', 'PrintIntakeLabel', 'width=700,height=600');
             popup.document.write(`
 <!DOCTYPE html>
 <html>
@@ -2606,7 +2606,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
     <style>
         @media print {
             @page {
-                size: 2in 2.5in;
+                size: 2in 1.5in landscape;
                 margin: 0;
             }
             body {
@@ -2660,86 +2660,72 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         
         .batch-label {
             width: 2in;
-            height: 2.5in;
+            height: 1.5in;
             background: white;
             border: 3px solid #000;
-            padding: 15px;
+            padding: 10px;
             box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 5px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
         .strain-name {
-            font-size: 20pt;
+            grid-column: 1 / -1;
+            font-size: 18pt;
             font-weight: bold;
             text-align: center;
-            margin-bottom: 10px;
-            line-height: 1.1;
+            line-height: 1;
             text-transform: uppercase;
-        }
-        
-        .divider {
-            width: 100%;
-            height: 2px;
-            background: #000;
-            margin: 8px 0;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
         }
         
         .batch-id {
-            font-size: 16pt;
+            grid-column: 1 / -1;
+            font-size: 14pt;
             font-weight: bold;
             text-align: center;
-            margin: 8px 0;
+            border-bottom: 2px solid #000;
+            padding: 3px 0;
         }
         
-        .section-title {
-            font-size: 9pt;
-            font-weight: bold;
-            text-align: center;
-            margin: 8px 0 5px 0;
-        }
-        
-        .planned-products {
-            font-size: 8pt;
-            text-align: center;
-            margin-bottom: 8px;
-            line-height: 1.2;
-        }
-        
-        .details {
+        .left-details {
             font-size: 7pt;
-            width: 100%;
+            line-height: 1.4;
+        }
+        
+        .right-details {
+            font-size: 7pt;
             line-height: 1.4;
         }
         
         .details div {
-            margin: 2px 0;
+            margin: 1px 0;
         }
     </style>
 </head>
 <body>
     <div class="no-print">
         <h1>Intake Batch Label - ${batch.id}</h1>
+        <p>Size: 2" × 1.5" (Horizontal)</p>
         <button onclick="window.print()">🖨️ Print Label</button>
         <button onclick="window.close()">Close</button>
     </div>
     
     <div class="batch-label">
         <div class="strain-name">${batch.strain.toUpperCase()}</div>
-        <div class="divider"></div>
         <div class="batch-id">BATCH: ${batch.id}</div>
-        <div class="divider"></div>
-        <div class="section-title">PLANNED PRODUCT</div>
-        <div class="planned-products">${plannedProducts}</div>
-        <div class="divider"></div>
-        <div class="details">
+        <div class="left-details">
             <div><strong>Type:</strong> ${batch.strain_type}</div>
             <div><strong>Weight:</strong> ${batch.trim_weight}g</div>
             <div><strong>Date:</strong> ${date}</div>
+        </div>
+        <div class="right-details">
             <div><strong>Grower:</strong> ${batch.cultivation_license}</div>
-            <div><strong>Agreement:</strong> ${batch.material_agreement}</div>
+            <div><strong>Products:</strong> ${plannedProducts.length > 25 ? plannedProducts.substring(0, 22) + '...' : plannedProducts}</div>
         </div>
     </div>
 </body>
