@@ -4159,12 +4159,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Format product type for label
             const productType = batch.packaged_product_type.toUpperCase().replace('WAX/SUGAR', 'WAX');
             
-            // Format expiration date as M.D.YY
-            let expDate = 'N/A';
-            if (batch.test_expiration_date) {
-                const d = new Date(batch.test_expiration_date);
-                expDate = `${d.getMonth() + 1}.${d.getDate()}.${d.getFullYear().toString().slice(-2)}`;
-            }
+            // Format expiration date (use by)
+            const expDate = batch.test_expiration_date ? 
+                new Date(batch.test_expiration_date).toLocaleDateString('en-US', {month: 'numeric', day: 'numeric', year: '2-digit'}) : 
+                'N/A';
             
             // Get THC and CBD percentages
             const thc = parseFloat(batch.test_thc_percent) || 0;
@@ -4184,48 +4182,46 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // White Mousse extraction license (404R)
             const extractionLicense = '404R-00016';
             
-            // ZPL for 45mm circular label - 360 dots at 203dpi
-            const diameter = 360;
-            const center = 180;
+            // ZPL template for CIRCULAR bottom label with all compliance info
+            // Scaled appropriately for small circular label
             const zpl = `^XA
 ^MMT
-^PW${diameter}
-^LL${diameter}
+^PW${size.diameter}
+^LL${size.diameter}
 ^LS0
 
 ~SD20
 
 ^CF0,22
-^FO${center},35^FB${diameter},1,0,C^FD${productType}^FS
+^FO${centerX},10^FD${productType}^FS
 
-^CF0,40
-^FO${center},60^FB${diameter},2,0,C^FD${batch.strain.toUpperCase()}^FS
+^CF0,35
+^FO${centerX},35^FD${batch.strain.toUpperCase()}^FS
 
-^FO${center - 100},110^GB200,40,3^FS
-^CF0,14
-^FO${center},118^FB${diameter},1,0,C^FDTOTAL THC: ${thc.toFixed(1)}%^FS
-^FO${center},133^FB${diameter},1,0,C^FDTOTAL CBD: ${cbd.toFixed(1)}%^FS
-
-^CF0,11
-^FO${center},165^FB${diameter},1,0,C^FDCULTIVATED BY ${cultivationLicense}^FS
-^FO${center},180^FB${diameter},1,0,C^FDEXTRACTED BY ${extractionLicense}^FS
-
-^CF0,10
-^FO${center},198^FB${diameter},1,0,C^FDINTENDED USE: INHALED PRODUCT.^FS
-^FO${center},210^FB${diameter},1,0,C^FDNOT APPROVED BY THE FDA.^FS
-
-^CF0,12
-^FO${center},228^FB${diameter},1,0,C^FDNET WEIGHT: ${netWeight}^FS
-
-^CF0,12
-^FO${center},245^FB${diameter},1,0,C^FDSERVING SIZE: ^FS
-^FO${center + 40},243^GC6,6,B^FS
-
+^FO${Math.floor(centerX - 90)},75^GB180,35,2^FS
 ^CF0,16
-^FO${center},265^FB${diameter},1,0,C^FDBATCH ${batch.id}^FS
+^FO${centerX},82^FDTHC: ${thc}% CBD: ${cbd}%^FS
+
+^CF0,13
+^FO${centerX},118^FDCULTIVATED BY ${cultivationLicense}^FS
+^FO${centerX},133^FDEXTRACTED BY ${extractionLicense}^FS
 
 ^CF0,12
-^FO${center},285^FB${diameter},1,0,C^FDUSE BY ${expDate}^FS
+^FO${centerX},150^FDINHALED PRODUCT.^FS
+^FO${centerX},163^FDNOT APPROVED BY FDA.^FS
+
+^CF0,14
+^FO${centerX},180^FDNET WEIGHT: ${netWeight}^FS
+
+^CF0,14
+^FO${centerX},198^FDSERVING SIZE: ^FS
+^FO${Math.floor(centerX + 48)},198^GC8,8,B^FS
+
+^CF0,18
+^FO${centerX},218^FDBATCH ${batch.id}^FS
+
+^CF0,14
+^FO${centerX},240^FDUSE BY ${expDate}^FS
 
 ^XZ`;
             
@@ -5216,8 +5212,41 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 }).join('');
             }
 
-            // Render activity log (simplified - no filtering for now)
-            const filteredActivities = [];
+            // Simplified activity log
+            logContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">Use the filter above to view specific employee performance</p>';
+        }
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+                                <div>
+                                    <h3 style="font-size: 1.5rem; margin-bottom: 5px; color: var(--accent-purple);">${emp.name}</h3>
+                                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Active for ${emp.daysActive} days in last 30 days</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-family: 'Space Mono', monospace; font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${emp.totalActions}</div>
+                                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Actions</div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Average Per Day</div>
+                                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${emp.avgPerDay}</div>
+                                </div>
+                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Average Per Week</div>
+                                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">${emp.avgPerWeek}</div>
+                                </div>
+                            </div>
+
+                            <div style="border-top: 2px solid var(--border); padding-top: 15px;">
+                                <h4 style="margin-bottom: 10px; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Task Breakdown</h4>
+                                ${taskBreakdown}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Render activity log
             const sortedActivities = filteredActivities.sort((a, b) => b.date - a.date);
             
             if (sortedActivities.length === 0) {
