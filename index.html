@@ -2581,29 +2581,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 planned_products: products
             };
             
-            // Ask user: Direct print or download?
-            const printerIP = localStorage.getItem('zebraIP');
-            if (printerIP) {
-                if (confirm(`Print directly to Zebra printer at ${printerIP}?\n\nClick OK to print now, or Cancel to download ZPL file instead.`)) {
-                    printIntakeLabelDirectly(testBatch);
-                } else {
-                    downloadIntakeLabelZPL(testBatch);
-                }
-            } else {
-                // First time - ask for IP
-                const ip = prompt('Enter your Zebra printer IP address:\n\n(e.g., 192.168.1.100)\n\nThis will be saved for future prints.\n\nOr click Cancel to download ZPL file instead.');
-                if (ip) {
-                    localStorage.setItem('zebraIP', ip);
-                    printIntakeLabelDirectly(testBatch);
-                } else {
-                    downloadIntakeLabelZPL(testBatch);
-                }
-            }
+            // Print directly to static IP
+            printIntakeLabelDirectly(testBatch);
         }
 
         // Print directly to Zebra printer via IP
         async function printIntakeLabelDirectly(batch) {
-            const printerIP = localStorage.getItem('zebraIP');
+            const printerIP = '10.1.10.95'; // Static IP for Zebra ZT230
             const zpl = generateIntakeBatchLabelZPL(batch);
             
             try {
@@ -2616,7 +2600,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     body: zpl
                 });
                 
-                alert(`✅ Label sent to printer at ${printerIP}!\n\nBatch: ${batch.id}\n\nIf it didn't print, check:\n- Printer is on and connected\n- IP address is correct\n- Port 9100 is open`);
+                alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}\n\nIf it didn't print, check:\n- Printer is on and connected\n- Network connection is active`);
             } catch (error) {
                 console.error('Print error:', error);
                 alert(`⚠️ Could not connect to printer at ${printerIP}\n\nError: ${error.message}\n\nTry downloading the ZPL file instead.`);
