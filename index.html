@@ -2585,39 +2585,57 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             printIntakeLabelDirectly(testBatch);
         }
 
-        // Print directly to Zebra printer via IP
+        // Print directly to Zebra printer via proxy server
         async function printIntakeLabelDirectly(batch) {
-            const printerIP = '10.1.10.95'; // Static IP for Zebra ZT230
             const zpl = generateIntakeBatchLabelZPL(batch);
             
+            // Try to get proxy server URL from localStorage, or use default
+            let proxyURL = localStorage.getItem('zebraPrintProxy');
+            
+            if (!proxyURL) {
+                // First time - ask for proxy server address
+                const serverIP = prompt('Enter the IP address of the computer running the print server:\n\n(e.g., 10.1.10.50)\n\nOr click Cancel to download ZPL file instead.');
+                
+                if (serverIP) {
+                    proxyURL = `http://${serverIP}:3000/print`;
+                    localStorage.setItem('zebraPrintProxy', proxyURL);
+                } else {
+                    downloadIntakeLabelZPL(batch);
+                    return;
+                }
+            }
+            
             try {
-                const response = await fetch(`http://${printerIP}:9100`, {
+                const response = await fetch(proxyURL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'text/plain',
                     },
                     body: zpl
                 });
                 
-                alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}`);
+                } else {
+                    throw new Error('Server returned error: ' + response.status);
+                }
             } catch (error) {
                 console.error('Print error:', error);
                 
-                // Check if it's an iPhone/Safari issue
-                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-                
-                let errorMsg = `⚠️ Could not connect to printer\n\nError: ${error.message}`;
-                
-                if (isIOS || isSafari) {
-                    errorMsg += `\n\n💡 Try using Chrome or Firefox instead of Safari.\n\niPhone users: Install Chrome from the App Store, then open this page in Chrome.`;
-                }
+                let errorMsg = `⚠️ Could not connect to print server\n\nError: ${error.message}\n\n`;
+                errorMsg += `Make sure:\n`;
+                errorMsg += `1. Print server is running on the computer\n`;
+                errorMsg += `2. You're on the same network\n`;
+                errorMsg += `3. Server address is correct: ${proxyURL}`;
                 
                 alert(errorMsg);
                 
-                // Offer to download instead
-                if (confirm('Download ZPL file instead?')) {
+                // Offer to change server address or download
+                if (confirm('Try different server address?')) {
+                    localStorage.removeItem('zebraPrintProxy');
+                    printIntakeLabelDirectly(batch);
+                } else if (confirm('Download ZPL file instead?')) {
                     downloadIntakeLabelZPL(batch);
                 }
             }
