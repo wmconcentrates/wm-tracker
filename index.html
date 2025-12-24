@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>White Mousse Production Tracker - Cloud Sync</title>
-    <!-- jsPDF for PDF label generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@300;400;600;700&display=swap');
         
@@ -1355,46 +1353,6 @@
                         <div id="labelPreview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                             <!-- Auto-populated from batch data -->
                         </div>
-                    </div>
-
-                    <!-- ZEBRA PRINTER LABEL GENERATION -->
-                    <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(59, 130, 246, 0.15)); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-purple);">
-                        <h3 style="color: var(--accent-purple); margin-bottom: 15px;">🖨️ Zebra ZT230 Label Printing</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 15px;">
-                            Automatically generates 45mm circular labels for your Zebra thermal printer with all batch information.
-                        </p>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                            <div>
-                                <strong style="color: var(--accent-green);">Auto-populated data:</strong>
-                                <ul style="margin: 8px 0 0 20px; line-height: 1.8; color: var(--text-secondary); font-size: 0.9rem;">
-                                    <li>Product type & strain</li>
-                                    <li>Total THC & Total CBD %</li>
-                                    <li>Batch ID & expiration</li>
-                                    <li>Net weight & compliance info</li>
-                                </ul>
-                            </div>
-                            <div>
-                                <strong style="color: var(--accent-blue);">Label specs:</strong>
-                                <ul style="margin: 8px 0 0 20px; line-height: 1.8; color: var(--text-secondary); font-size: 0.9rem;">
-                                    <li>45mm diameter circle</li>
-                                    <li>Black & white thermal</li>
-                                    <li>Roll feed format</li>
-                                    <li>ZPL code generated</li>
-                                </ul>
-                            </div>
-                        </div>
-                        
-                        <div style="display: flex; gap: 10px;">
-                            <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); flex: 1;" onclick="generateCanvaStyleLabels()">
-                                📄 Preview Label (PDF)
-                            </button>
-                            <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-green), var(--accent-blue)); flex: 1;" onclick="printToZebra()">
-                                🖨️ Print to Zebra
-                            </button>
-                        </div>
-                        
-                        <div id="labelGenerationStatus" style="margin-top: 15px; display: none;"></div>
                     </div>
 
                     <!-- Weight Verification -->
@@ -4184,166 +4142,37 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             `;
         }
 
-        // Generate preview PDF label (for visual verification before Zebra printing)
-        function generateCanvaStyleLabels() {
-            const batch = batches.find(b => b.id === document.getElementById('labelingBatchSelect').value);
-            if (!batch) {
-                alert('Please select a batch first');
-                return;
-            }
-            
-            const statusDiv = document.getElementById('labelGenerationStatus');
-            
-            statusDiv.style.display = 'block';
-            statusDiv.innerHTML = '<div style="color: var(--accent-blue);">⏳ Generating preview...</div>';
-            
-            try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: [70, 70] // Square for the circular label
-                });
-                
-                // Extract data from batch
-                const productType = batch.packaged_product_type ? batch.packaged_product_type.toUpperCase().replace('WAX/SUGAR', 'WAX').replace(/[\d.]+G/g, '').trim() : 'WAX';
-                const strainName = batch.strain ? batch.strain.toUpperCase() : 'UNKNOWN';
-                const totalThc = parseFloat(batch.test_thc_percent) || 0;
-                const totalCbd = parseFloat(batch.test_cbd_percent) || 0;
-                const batchId = batch.id || 'N/A';
-                
-                // Format expiration date as M.D.YY
-                let expirationDate = 'N/A';
-                if (batch.test_expiration_date) {
-                    const expDate = new Date(batch.test_expiration_date);
-                    const month = expDate.getMonth() + 1;
-                    const day = expDate.getDate();
-                    const year = expDate.getFullYear().toString().slice(-2);
-                    expirationDate = `${month}.${day}.${year}`;
-                }
-                
-                // Determine net weight from product type
-                let netWeight = '1 GRAM';
-                if (batch.packaged_product_type && batch.packaged_product_type.includes('4')) {
-                    netWeight = '4 GRAM';
-                } else if (batch.packaged_product_type && batch.packaged_product_type.includes('0.5')) {
-                    netWeight = '0.5 GRAM';
-                }
-                
-                // Label dimensions (45mm diameter)
-                const labelDiameter = 45;
-                const labelRadius = labelDiameter / 2;
-                const centerX = 35;
-                const centerY = 35;
-                
-                // Draw border circle (black outline only for thermal printer simulation)
-                doc.setDrawColor(0, 0, 0);
-                doc.setLineWidth(0.8);
-                doc.circle(centerX, centerY, labelRadius, 'S');
-                
-                // Add product type
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'bold');
-                doc.text(productType, centerX, centerY - 14, { align: 'center' });
-                
-                // Add strain name (split if too long)
-                doc.setFontSize(13);
-                doc.setFont('helvetica', 'bold');
-                const strainLines = doc.splitTextToSize(strainName, labelDiameter - 12);
-                const strainY = strainLines.length > 1 ? centerY - 10 : centerY - 8;
-                doc.text(strainLines, centerX, strainY, { align: 'center' });
-                
-                // Add potency box (black border, white fill)
-                doc.setFillColor(255, 255, 255);
-                doc.setDrawColor(0, 0, 0);
-                doc.setLineWidth(0.4);
-                doc.roundedRect(centerX - 18, centerY - 3, 36, 7, 1, 1, 'FD');
-                
-                // Add potency text - TOTAL THC AND TOTAL CBD
-                doc.setFontSize(5.5);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`TOTAL THC: ${totalThc.toFixed(1)}%`, centerX, centerY - 0.5, { align: 'center' });
-                doc.text(`TOTAL CBD: ${totalCbd.toFixed(1)}%`, centerX, centerY + 2.5, { align: 'center' });
-                
-                // Add compliance info
-                doc.setFontSize(4.5);
-                doc.setFont('helvetica', 'bold');
-                const infoY = centerY + 6;
-                const lineHeight = 1.6;
-                
-                doc.text('CULTIVATED BY 403R-01007', centerX, infoY, { align: 'center' });
-                doc.text('EXTRACTED BY 404R-00016', centerX, infoY + lineHeight, { align: 'center' });
-                doc.text('INTENDED USE: INHALED PRODUCT.', centerX, infoY + lineHeight * 2, { align: 'center' });
-                doc.text('NOT APPROVED BY THE FDA.', centerX, infoY + lineHeight * 3, { align: 'center' });
-                doc.text(`NET WEIGHT: ${netWeight}`, centerX, infoY + lineHeight * 4, { align: 'center' });
-                doc.text('SERVING SIZE: ●', centerX, infoY + lineHeight * 5, { align: 'center' });
-                doc.text(`BATCH ${batchId}`, centerX, infoY + lineHeight * 6, { align: 'center' });
-                doc.text(`USE BY ${expirationDate}`, centerX, infoY + lineHeight * 7, { align: 'center' });
-                
-                // Save PDF
-                const fileName = `WM_Label_Preview_${strainName.replace(/\s+/g, '_')}_${batchId.replace(/\./g, '-')}.pdf`;
-                doc.save(fileName);
-                
-                statusDiv.innerHTML = `
-                    <div style="background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); padding: 15px; border-radius: 8px;">
-                        <div style="color: var(--accent-green); font-weight: 700; margin-bottom: 5px;">✅ Preview Generated!</div>
-                        <div style="color: var(--text-primary);">
-                            Check the PDF to verify label layout before printing to Zebra.<br>
-                            <strong>Note:</strong> This is a visual preview - actual Zebra label will be thermal printed.
-                        </div>
-                    </div>
-                `;
-                
-                setTimeout(() => {
-                    statusDiv.style.display = 'none';
-                }, 7000);
-                
-            } catch (error) {
-                console.error('Error generating preview:', error);
-                statusDiv.innerHTML = `
-                    <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); padding: 15px; border-radius: 8px;">
-                        <div style="color: var(--accent-red); font-weight: 700;">❌ Error generating preview</div>
-                        <div style="color: var(--text-primary); font-size: 0.9rem;">${error.message}</div>
-                    </div>
-                `;
-            }
-        }
-
         function generateZPL(batch) {
-            // Generate ZPL (Zebra Programming Language) code for 45mm CIRCULAR label
-            // Matching the exact Canva design layout
-            
+            // Generate ZPL (Zebra Programming Language) code for CIRCULAR label
             const labelSize = document.getElementById('labelSize').value;
             
-            // 45mm = 1.77 inches at 203dpi = 359 dots
-            // Using 360 dots for clean numbers
-            const diameter = 360;
-            const centerX = 180;
+            // Circular label dimensions (in dots at 203dpi)
+            const sizes = {
+                '1.0': { diameter: 203 },   // 1.0" circle
+                '1.5': { diameter: 305 },   // 1.5" circle
+                '2.0': { diameter: 406 }    // 2.0" circle
+            };
             
-            // Format product type for label (remove size info)
-            const productType = batch.packaged_product_type ? 
-                batch.packaged_product_type.toUpperCase().replace('WAX/SUGAR', 'WAX').replace(/[\d.]+G/g, '').trim() : 
-                'WAX';
+            const size = sizes[labelSize] || sizes['1.5'];
+            const centerX = Math.floor(size.diameter / 2);
             
-            // Format expiration date as M.D.YY (matching Canva: 3.6.26)
-            let expDate = 'N/A';
-            if (batch.test_expiration_date) {
-                const d = new Date(batch.test_expiration_date);
-                const month = d.getMonth() + 1;
-                const day = d.getDate();
-                const year = d.getFullYear().toString().slice(-2);
-                expDate = `${month}.${day}.${year}`;
-            }
+            // Format product type for label
+            const productType = batch.packaged_product_type.toUpperCase().replace('WAX/SUGAR', 'WAX');
+            
+            // Format expiration date (use by)
+            const expDate = batch.test_expiration_date ? 
+                new Date(batch.test_expiration_date).toLocaleDateString('en-US', {month: 'numeric', day: 'numeric', year: '2-digit'}) : 
+                'N/A';
             
             // Get THC and CBD percentages
-            const totalThc = parseFloat(batch.test_thc_percent) || 0;
-            const totalCbd = parseFloat(batch.test_cbd_percent) || 0;
+            const thc = parseFloat(batch.test_thc_percent) || 0;
+            const cbd = parseFloat(batch.test_cbd_percent) || 0;
             
             // Determine net weight based on product type
             let netWeight = '1 GRAM';
-            if (batch.packaged_product_type && batch.packaged_product_type.includes('4')) {
+            if (batch.packaged_product_type.includes('4g')) {
                 netWeight = '4 GRAM';
-            } else if (batch.packaged_product_type && batch.packaged_product_type.includes('0.5')) {
+            } else if (batch.packaged_product_type.includes('0.5')) {
                 netWeight = '0.5 GRAM';
             }
             
@@ -4353,46 +4182,46 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // White Mousse extraction license (404R)
             const extractionLicense = '404R-00016';
             
-            // ZPL template matching Canva design - 45mm circular label
+            // ZPL template for CIRCULAR bottom label with all compliance info
+            // Scaled appropriately for small circular label
             const zpl = `^XA
 ^MMT
-^PW${diameter}
-^LL${diameter}
+^PW${size.diameter}
+^LL${size.diameter}
 ^LS0
 
 ~SD20
 
 ^CF0,22
-^FO${centerX},35^FB${diameter},1,0,C^FD${productType}^FS
+^FO${centerX},10^FD${productType}^FS
 
-^CF0,40
-^FO${centerX},60^FB${diameter},2,0,C^FD${batch.strain.toUpperCase()}^FS
+^CF0,35
+^FO${centerX},35^FD${batch.strain.toUpperCase()}^FS
 
-^FO${centerX - 100},110^GB200,40,3^FS
-^CF0,14
-^FO${centerX},118^FB${diameter},1,0,C^FDTOTAL THC: ${totalThc.toFixed(1)}%^FS
-^FO${centerX},133^FB${diameter},1,0,C^FDTOTAL CBD: ${totalCbd.toFixed(1)}%^FS
-
-^CF0,11
-^FO${centerX},165^FB${diameter},1,0,C^FDCULTIVATED BY ${cultivationLicense}^FS
-^FO${centerX},180^FB${diameter},1,0,C^FDEXTRACTED BY ${extractionLicense}^FS
-
-^CF0,10
-^FO${centerX},198^FB${diameter},1,0,C^FDINTENDED USE: INHALED PRODUCT.^FS
-^FO${centerX},210^FB${diameter},1,0,C^FDNOT APPROVED BY THE FDA.^FS
-
-^CF0,12
-^FO${centerX},228^FB${diameter},1,0,C^FDNET WEIGHT: ${netWeight}^FS
-
-^CF0,12
-^FO${centerX},245^FB${diameter},1,0,C^FDSERVING SIZE: ^FS
-^FO${centerX + 40},243^GC6,6,B^FS
-
+^FO${Math.floor(centerX - 90)},75^GB180,35,2^FS
 ^CF0,16
-^FO${centerX},265^FB${diameter},1,0,C^FDBATCH ${batch.id}^FS
+^FO${centerX},82^FDTHC: ${thc}% CBD: ${cbd}%^FS
+
+^CF0,13
+^FO${centerX},118^FDCULTIVATED BY ${cultivationLicense}^FS
+^FO${centerX},133^FDEXTRACTED BY ${extractionLicense}^FS
 
 ^CF0,12
-^FO${centerX},285^FB${diameter},1,0,C^FDUSE BY ${expDate}^FS
+^FO${centerX},150^FDINHALED PRODUCT.^FS
+^FO${centerX},163^FDNOT APPROVED BY FDA.^FS
+
+^CF0,14
+^FO${centerX},180^FDNET WEIGHT: ${netWeight}^FS
+
+^CF0,14
+^FO${centerX},198^FDSERVING SIZE: ^FS
+^FO${Math.floor(centerX + 48)},198^GC8,8,B^FS
+
+^CF0,18
+^FO${centerX},218^FDBATCH ${batch.id}^FS
+
+^CF0,14
+^FO${centerX},240^FDUSE BY ${expDate}^FS
 
 ^XZ`;
             
@@ -4445,91 +4274,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                             <li>Click "Print Labels" and they'll go straight to your ZT230!</li>
                         </ol>
                         <p style="color: var(--text-primary); margin-top: 15px;"><strong>Mode saved:</strong> USB Direct Connection</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Simplified print function for the new label generation section
-        async function printToZebra() {
-            const batch = batches.find(b => b.id === document.getElementById('labelingBatchSelect').value);
-            if (!batch) {
-                alert('Please select a batch first');
-                return;
-            }
-            
-            const statusDiv = document.getElementById('labelGenerationStatus');
-            statusDiv.style.display = 'block';
-            statusDiv.innerHTML = '<div style="color: var(--accent-blue);">🖨️ Sending to printer...</div>';
-            
-            try {
-                // Generate the ZPL code with updated format
-                const zpl = generateZPL(batch);
-                
-                // Try print server first
-                const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
-                
-                try {
-                    const response = await fetch(printServerURL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ zpl: zpl })
-                    });
-                    
-                    if (response.ok) {
-                        statusDiv.innerHTML = `
-                            <div style="background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); padding: 15px; border-radius: 8px;">
-                                <div style="color: var(--accent-green); font-weight: 700;">✅ Sent to Zebra ZT230!</div>
-                                <div style="color: var(--text-primary);">Label is printing...</div>
-                            </div>
-                        `;
-                        setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
-                        return;
-                    }
-                } catch (error) {
-                    console.log('Print server not available, trying Browser Print...');
-                }
-                
-                // Fallback to Browser Print
-                if (window.BrowserPrint) {
-                    const printer = await window.BrowserPrint.getDefaultDevice('printer');
-                    printer.send(zpl, undefined, (error) => {
-                        if (error) {
-                            statusDiv.innerHTML = `
-                                <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); padding: 15px; border-radius: 8px;">
-                                    <div style="color: var(--accent-red); font-weight: 700;">❌ Print failed</div>
-                                    <div style="color: var(--text-primary);">Try downloading ZPL instead or check printer connection.</div>
-                                </div>
-                            `;
-                        } else {
-                            statusDiv.innerHTML = `
-                                <div style="background: rgba(16, 185, 129, 0.2); border: 2px solid var(--accent-green); padding: 15px; border-radius: 8px;">
-                                    <div style="color: var(--accent-green); font-weight: 700;">✅ Sent to Zebra ZT230!</div>
-                                    <div style="color: var(--text-primary);">Label is printing...</div>
-                                </div>
-                            `;
-                            setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
-                        }
-                    });
-                } else {
-                    statusDiv.innerHTML = `
-                        <div style="background: rgba(245, 158, 11, 0.2); border: 2px solid var(--accent-orange); padding: 15px; border-radius: 8px;">
-                            <div style="color: var(--accent-orange); font-weight: 700;">⚠️ Printer not connected</div>
-                            <div style="color: var(--text-primary);">
-                                Options:<br>
-                                • Start print server<br>
-                                • Install Zebra Browser Print<br>
-                                • Use the existing Print Labels section below
-                            </div>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error printing:', error);
-                statusDiv.innerHTML = `
-                    <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); padding: 15px; border-radius: 8px;">
-                        <div style="color: var(--accent-red); font-weight: 700;">❌ Error</div>
-                        <div style="color: var(--text-primary); font-size: 0.9rem;">${error.message}</div>
                     </div>
                 `;
             }
@@ -5462,6 +5206,40 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                                     ` : ''}
                                 </div>
                                 ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Simplified activity log
+            logContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">Use the filter above to view specific employee performance</p>';
+        }
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+                                <div>
+                                    <h3 style="font-size: 1.5rem; margin-bottom: 5px; color: var(--accent-purple);">${emp.name}</h3>
+                                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Active for ${emp.daysActive} days in last 30 days</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-family: 'Space Mono', monospace; font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${emp.totalActions}</div>
+                                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Actions</div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Average Per Day</div>
+                                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${emp.avgPerDay}</div>
+                                </div>
+                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Average Per Week</div>
+                                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">${emp.avgPerWeek}</div>
+                                </div>
+                            </div>
+
+                            <div style="border-top: 2px solid var(--border); padding-top: 15px;">
+                                <h4 style="margin-bottom: 10px; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Task Breakdown</h4>
+                                ${taskBreakdown}
                             </div>
                         </div>
                     `;
