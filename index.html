@@ -2581,7 +2581,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 planned_products: products
             };
             
-            // Print directly to static IP
+            // Always try direct print first
             printIntakeLabelDirectly(testBatch);
         }
 
@@ -2600,10 +2600,21 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     body: zpl
                 });
                 
-                alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}\n\nIf it didn't print, check:\n- Printer is on and connected\n- Network connection is active`);
+                alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}`);
             } catch (error) {
                 console.error('Print error:', error);
-                alert(`⚠️ Could not connect to printer at ${printerIP}\n\nError: ${error.message}\n\nTry downloading the ZPL file instead.`);
+                
+                // Check if it's an iPhone/Safari issue
+                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                
+                let errorMsg = `⚠️ Could not connect to printer\n\nError: ${error.message}`;
+                
+                if (isIOS || isSafari) {
+                    errorMsg += `\n\n💡 Try using Chrome or Firefox instead of Safari.\n\niPhone users: Install Chrome from the App Store, then open this page in Chrome.`;
+                }
+                
+                alert(errorMsg);
                 
                 // Offer to download instead
                 if (confirm('Download ZPL file instead?')) {
@@ -2627,7 +2638,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             
-            alert(`ZPL file downloaded: batch-label-${batch.id}.zpl\n\nTo print:\n1. Open Zebra Setup Utilities\n2. Click "Open Communication with Printer"\n3. Go to Tools → Send File\n4. Select the downloaded .zpl file\n5. Click Send`);
+            alert(`ZPL file downloaded: batch-label-${batch.id}.zpl\n\nTo print:\n1. Open Zebra Setup Utilities\n2. Go to Tools → Send File\n3. Select the .zpl file\n4. Click Send`);
         }
 
         // Open printable intake batch label
