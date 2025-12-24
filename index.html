@@ -3140,6 +3140,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     <p><strong>Material Agreement:</strong> ${batch.material_agreement}</p>
                 `;
                 
+                // Show bulk jars count if available
+                if (batch.bulk_jars_count && batch.bulk_jars_count > 0) {
+                    info += `<p style="background: rgba(147, 51, 234, 0.2); padding: 10px; border-radius: 8px; border-left: 4px solid var(--accent-purple); margin-top: 10px;">
+                        <strong>📦 Bulk Jars to Process:</strong> <span style="font-size: 1.3rem; font-weight: 700; color: var(--accent-purple);">${batch.bulk_jars_count}</span>
+                    </p>`;
+                }
+                
+                // Show shatter slabs count if available
+                if (batch.shatter_slabs_count && batch.shatter_slabs_count > 0) {
+                    info += `<p style="background: rgba(245, 158, 11, 0.2); padding: 10px; border-radius: 8px; border-left: 4px solid var(--accent-orange); margin-top: 10px;">
+                        <strong>🔶 Shatter Slabs to Process:</strong> <span style="font-size: 1.3rem; font-weight: 700; color: var(--accent-orange);">${batch.shatter_slabs_count}</span>
+                    </p>`;
+                }
+                
                 if (batch.is_sub_batch) {
                     info += `<p style="color: var(--accent-purple); font-weight: 700;"><strong>⚡ RETROACTIVE SUB-BATCH</strong> of ${batch.parent_batch_id}</p>`;
                     info += `<p style="color: var(--accent-orange);"><strong>Note:</strong> Enter the actual weight of this separated material</p>`;
