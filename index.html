@@ -5216,7 +5216,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 }).join('');
             }
 
-            // Render activity log
+            // Render activity log (simplified - no filtering for now)
+            const filteredActivities = [];
             const sortedActivities = filteredActivities.sort((a, b) => b.date - a.date);
             
             if (sortedActivities.length === 0) {
