@@ -2709,9 +2709,21 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 printIntakeBatchLabel(batch);
             }
             
+            // Save fields we want to keep after reset
+            const savedLicense = document.getElementById('cultivationLicense').value;
+            const savedGrowerName = document.getElementById('growerName').value;
+            const savedIntakeDate = document.getElementById('intakeDate').value;
+            
+            // Reset form
             this.reset();
+            
+            // Restore saved fields
+            document.getElementById('cultivationLicense').value = savedLicense;
+            document.getElementById('growerName').value = savedGrowerName;
+            document.getElementById('intakeDate').value = savedIntakeDate;
+            
+            // Update batch ID for next submission
             document.getElementById('batchId').value = `WM-${batchCounter}`;
-            document.getElementById('intakeDate').value = new Date().toISOString().split('T')[0];
             
             await loadBatches();
         });
