@@ -265,6 +265,28 @@
         .station-tab .icon {
             font-size: 2rem;
             margin-bottom: 10px;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -12px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            min-width: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
+            display: none;
+        }
+        
+        .badge.has-count {
+            display: inline-block;
         }
         
         .station-content {
@@ -682,6 +704,10 @@
         <div class="status-dot"></div>
         <span id="statusText">Connecting...</span>
     </div>
+    
+    <button id="myStatsBtn" onclick="openPersonalStatsModal()" style="position: fixed; top: 20px; left: 20px; z-index: 999; background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3); transition: all 0.3s ease; display: none;">
+        📊 My Stats
+    </button>
 
     <!-- Setup Section -->
     <div class="setup-section" id="setupSection">
@@ -742,27 +768,27 @@
                 <p>Log trim batches</p>
             </div>
             <div class="station-tab" data-station="extraction">
-                <div class="icon">⚗️</div>
+                <div class="icon">⚗️<span class="badge" id="badge-extraction">0</span></div>
                 <h3>Extraction</h3>
                 <p>Process batches</p>
             </div>
             <div class="station-tab" data-station="finishing">
-                <div class="icon">✨</div>
+                <div class="icon">✨<span class="badge" id="badge-finishing">0</span></div>
                 <h3>Post Extraction</h3>
                 <p>Bulk weight & splitting</p>
             </div>
             <div class="station-tab" data-station="packaging">
-                <div class="icon">📊</div>
+                <div class="icon">📊<span class="badge" id="badge-packaging">0</span></div>
                 <h3>Packaging</h3>
                 <p>Final count & listing</p>
             </div>
             <div class="station-tab" data-station="testing">
-                <div class="icon">🧪</div>
+                <div class="icon">🧪<span class="badge" id="badge-testing">0</span></div>
                 <h3>Testing</h3>
                 <p>Test results entry</p>
             </div>
             <div class="station-tab" data-station="labeling">
-                <div class="icon">🏷️</div>
+                <div class="icon">🏷️<span class="badge" id="badge-labeling">0</span></div>
                 <h3>Labeling</h3>
                 <p>Print & apply labels</p>
             </div>
@@ -1596,6 +1622,23 @@
 
         <!-- Dashboard -->
         <div class="station-content" id="dashboard">
+            <!-- Personal Quick Stats -->
+            <div id="personalStats" style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(59, 130, 246, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-purple);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="color: var(--accent-purple); margin: 0; display: flex; align-items: center; gap: 10px;">
+                        <span>👤</span>
+                        <span id="personalStatsTitle">Your Workload</span>
+                    </h2>
+                    <button class="btn" style="background: var(--accent-green); padding: 10px 20px;" onclick="showDailyReportPopup()">
+                        📊 Daily Report
+                    </button>
+                </div>
+                <div id="personalStatsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- System-Wide Stats -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value" id="totalBatches">0</div>
@@ -2000,6 +2043,115 @@
         </div>
     </div>
 
+    <!-- Personal Stats Modal -->
+    <div id="personalStatsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; overflow-y: auto;">
+        <div style="max-width: 900px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 2rem;">
+                            📊 <span id="modalPersonalStatName">Your Performance</span>
+                        </h2>
+                        <p style="color: rgba(255,255,255,0.9); margin: 0;">Track your productivity and see your progress</p>
+                    </div>
+                    <button onclick="closePersonalStatsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px; transition: all 0.3s ease;">&times;</button>
+                </div>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 30px;">
+                <!-- Quick Time Selector -->
+                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap;">
+                    <button class="personal-time-btn active" data-period="today" onclick="updatePersonalStats('today')">Today</button>
+                    <button class="personal-time-btn" data-period="week" onclick="updatePersonalStats('week')">This Week</button>
+                    <button class="personal-time-btn" data-period="month" onclick="updatePersonalStats('month')">This Month</button>
+                    <button class="personal-time-btn" data-period="all" onclick="updatePersonalStats('all')">All Time</button>
+                </div>
+                
+                <!-- Stats Grid -->
+                <div id="personalStatsContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <!-- Populated dynamically -->
+                </div>
+                
+                <!-- Personal Records -->
+                <div id="personalRecords" style="padding-top: 30px; border-top: 2px solid var(--border);">
+                    <h3 style="color: var(--accent-purple); margin-bottom: 20px; text-align: center; font-size: 1.5rem;">🏆 Your Best Days</h3>
+                    <div id="personalRecordsContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        .personal-time-btn {
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .personal-time-btn:hover {
+            border-color: var(--accent-purple);
+            background: rgba(147, 51, 234, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .personal-time-btn.active {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+            color: white;
+        }
+        
+        .stat-box {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-box:hover {
+            border-color: var(--accent-purple);
+            transform: translateY(-2px);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .record-box {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid var(--accent-green);
+        }
+        
+        #myStatsBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(147, 51, 234, 0.5);
+        }
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // Role configuration with PINs and permissions
@@ -2089,6 +2241,7 @@
                     document.getElementById('pinInput').style.display = 'none';
                     document.getElementById('loginBtn').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
+                    document.getElementById('myStatsBtn').style.display = 'block'; // Show My Stats button
                     applyRolePermissions();
                 }
             }
@@ -2351,6 +2504,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             batches = data || [];
             updateDashboard();
             renderBatches();
+            
+            // Initialize dropdown search filters (only once)
+            if (!window.searchFiltersInitialized) {
+                setTimeout(() => {
+                    addDropdownSearchFilters();
+                    window.searchFiltersInitialized = true;
+                }, 500);
+            }
         }
 
         function setupRealtime() {
@@ -2404,6 +2565,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('pinInput').style.display = 'none';
                 document.getElementById('loginBtn').style.display = 'none';
                 document.getElementById('appContent').style.display = 'block';
+                document.getElementById('myStatsBtn').style.display = 'block'; // Show My Stats button
                 errorMsg.style.display = 'none';
                 
                 applyRolePermissions();
@@ -4099,7 +4261,578 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             const totalGrams = batches.reduce((sum, b) => sum + (parseFloat(b.trim_weight) || 0), 0);
             document.getElementById('totalGramsIn').textContent = totalGrams.toFixed(0) + 'g';
+            
+            // Update personal workload stats
+            updatePersonalWorkloadStats();
+            
+            // Update badge counts on navigation tabs
+            updateBadgeCounts();
         }
+
+        // Update badge counts on navigation tabs
+        function updateBadgeCounts() {
+            // Count batches at each stage (excluding intake)
+            const counts = {
+                extraction: batches.filter(b => b.status === 'intake').length, // Waiting for extraction
+                finishing: batches.filter(b => b.status === 'extraction').length, // Waiting for post-extraction
+                packaging: batches.filter(b => b.status === 'finishing').length, // Waiting for packaging
+                testing: batches.filter(b => b.status === 'packaging' || (b.status === 'complete' && !b.test_thc_percent)).length,
+                labeling: batches.filter(b => b.status === 'complete' && b.test_thc_percent && !b.labels_applied).length
+            };
+            
+            // Update each badge
+            Object.entries(counts).forEach(([stage, count]) => {
+                const badge = document.getElementById(`badge-${stage}`);
+                if (badge) {
+                    badge.textContent = count;
+                    if (count > 0) {
+                        badge.classList.add('has-count');
+                    } else {
+                        badge.classList.remove('has-count');
+                    }
+                }
+            });
+        }
+
+        // Personal Performance Stats Dashboard
+        let currentPersonalPeriod = 'today';
+        
+        function updatePersonalStats(period = 'today') {
+            currentPersonalPeriod = period;
+            
+            // Update button states
+            document.querySelectorAll('.personal-time-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const periodBtn = document.querySelector(`[data-period="${period}"]`);
+            if (periodBtn) periodBtn.classList.add('active');
+            
+            if (!currentRole) {
+                document.getElementById('personalStatsContent').innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">Please login to see your stats</p>';
+                document.getElementById('personalRecordsContent').innerHTML = '';
+                return;
+            }
+            
+            // Calculate date range
+            const now = new Date();
+            let startDate;
+            
+            switch(period) {
+                case 'today':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    break;
+                case 'week':
+                    startDate = new Date(now);
+                    startDate.setDate(now.getDate() - 7);
+                    break;
+                case 'month':
+                    startDate = new Date(now);
+                    startDate.setDate(now.getDate() - 30);
+                    break;
+                case 'all':
+                default:
+                    startDate = new Date(0); // Beginning of time
+            }
+            
+            // Calculate stats
+            const stats = calculatePersonalStats(currentRole.name, startDate);
+            
+            // Display stats
+            displayPersonalStats(stats, period);
+            displayPersonalRecords(currentRole.name);
+        }
+        
+        function calculatePersonalStats(userName, startDate) {
+            console.log('=== PERSONAL STATS (Using Performance Method) ===');
+            console.log('User:', userName, 'From:', startDate);
+            
+            const stats = {
+                unitsPackaged: 0,
+                unitsLabeled: 0,
+                gramsExtracted: 0,
+                batchesFinished: 0,
+                avgPackagingRate: 0,
+                avgLabelingRate: 0
+            };
+            
+            batches.forEach(batch => {
+                // PACKAGING: Check packaging_user field (same as Performance tab uses)
+                if (batch.packaging_user === userName && batch.packaging_date && batch.units_packaged) {
+                    const packagingDate = new Date(batch.packaging_date);
+                    if (packagingDate >= startDate) {
+                        stats.unitsPackaged += parseInt(batch.units_packaged) || 0;
+                        console.log('✓ Packaged:', batch.units_packaged, 'units in batch', batch.id);
+                    }
+                }
+                
+                // LABELING & EXTRACTION: Check timeline (same as Performance tab)
+                if (batch.timeline && batch.timeline.length > 0) {
+                    batch.timeline.forEach(event => {
+                        if (!event.date || !event.user || event.user !== userName) return;
+                        
+                        const eventDate = new Date(event.timestamp || event.date);
+                        if (eventDate < startDate) return;
+                        
+                        // Labeling
+                        if (event.stage === 'labeling' && event.action && 
+                            (event.action.toLowerCase().includes('completed') || event.action.toLowerCase().includes('labeled')) &&
+                            batch.units_packaged) {
+                            stats.unitsLabeled += parseInt(batch.units_packaged) || 0;
+                            console.log('✓ Labeled:', batch.units_packaged, 'units in batch', batch.id);
+                        }
+                        
+                        // Extraction (using trim_weight)
+                        if (event.stage === 'extraction' && event.action && 
+                            event.action.toLowerCase().includes('completed')) {
+                            const grams = parseFloat(batch.trim_weight) || 0;
+                            stats.gramsExtracted += grams;
+                            console.log('✓ Extracted:', grams, 'grams in batch', batch.id);
+                        }
+                        
+                        // Post-extraction/Finishing
+                        if (event.stage === 'finishing' && event.action && 
+                            event.action.toLowerCase().includes('completed')) {
+                            stats.batchesFinished++;
+                            console.log('✓ Finished batch', batch.id);
+                        }
+                    });
+                }
+            });
+            
+            console.log('Final stats:', stats);
+            console.log('=== END ===');
+            return stats;
+        }
+        
+        function displayPersonalStats(stats, period) {
+            const periodLabel = {
+                'today': 'Today',
+                'week': 'This Week', 
+                'month': 'This Month',
+                'all': 'All Time'
+            }[period];
+            
+            const statName = `${currentRole.name}'s Performance - ${periodLabel}`;
+            const personalStatEl = document.getElementById('personalStatName');
+            const modalStatEl = document.getElementById('modalPersonalStatName');
+            if (personalStatEl) personalStatEl.textContent = statName;
+            if (modalStatEl) modalStatEl.textContent = statName;
+            
+            // Convert grams to pounds if over 454g (1 lb)
+            const extractedDisplay = stats.gramsExtracted >= 454 
+                ? `${(stats.gramsExtracted / 453.592).toFixed(1)} lbs`
+                : `${stats.gramsExtracted.toFixed(0)}g`;
+            
+            const content = `
+                <div class="stat-box">
+                    <div class="stat-number">${stats.unitsPackaged.toLocaleString()}</div>
+                    <div class="stat-label">📦 Units Packaged</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-number">${stats.unitsLabeled.toLocaleString()}</div>
+                    <div class="stat-label">🏷️ Units Labeled</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-number">${extractedDisplay}</div>
+                    <div class="stat-label">⚗️ Trim Extracted</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="stat-number">${stats.batchesFinished}</div>
+                    <div class="stat-label">✨ Batches Finished</div>
+                </div>
+                
+                ${stats.avgPackagingRate > 0 ? `
+                <div class="stat-box">
+                    <div class="stat-number">${stats.avgPackagingRate}</div>
+                    <div class="stat-label">📊 Units/Hour (Packaging)</div>
+                </div>
+                ` : ''}
+                
+                ${stats.avgLabelingRate > 0 ? `
+                <div class="stat-box">
+                    <div class="stat-number">${stats.avgLabelingRate}</div>
+                    <div class="stat-label">⚡ Units/Hour (Labeling)</div>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('personalStatsContent').innerHTML = content;
+        }
+        
+        // Open/close personal stats modal
+        function openPersonalStatsModal() {
+            if (!currentRole) {
+                alert('Please login first to see your stats!');
+                return;
+            }
+            
+            document.getElementById('personalStatsModal').style.display = 'block';
+            updatePersonalStats('today');
+        }
+        
+        function closePersonalStatsModal() {
+            document.getElementById('personalStatsModal').style.display = 'none';
+        }
+        
+        function displayPersonalRecords(userName) {
+            // Find best days
+            const dailyStats = {};
+            
+            batches.forEach(batch => {
+                (batch.timeline || []).forEach(entry => {
+                    // Skip entries without required fields
+                    if (!entry.date || !entry.user || !entry.action) return;
+                    if (entry.user !== userName) return;
+                    
+                    const date = new Date(entry.date).toISOString().split('T')[0];
+                    
+                    if (!dailyStats[date]) {
+                        dailyStats[date] = { packaged: 0, labeled: 0, extracted: 0 };
+                    }
+                    
+                    const actionLower = entry.action.toLowerCase();
+                    
+                    if (entry.stage === 'packaging' && actionLower.includes('completed')) {
+                        dailyStats[date].packaged += parseInt(batch.units_packaged) || 0;
+                    }
+                    if (entry.stage === 'labeling' && actionLower.includes('completed')) {
+                        dailyStats[date].labeled += parseInt(batch.units_packaged) || 0;
+                    }
+                    if (entry.stage === 'extraction' && actionLower.includes('completed')) {
+                        dailyStats[date].extracted += parseFloat(batch.trim_weight) || 0;
+                    }
+                });
+            });
+            
+            // Find best records
+            let bestPackaging = { date: '', units: 0 };
+            let bestLabeling = { date: '', units: 0 };
+            let bestExtraction = { date: '', grams: 0 };
+            
+            Object.entries(dailyStats).forEach(([date, stats]) => {
+                if (stats.packaged > bestPackaging.units) {
+                    bestPackaging = { date, units: stats.packaged };
+                }
+                if (stats.labeled > bestLabeling.units) {
+                    bestLabeling = { date, units: stats.labeled };
+                }
+                if (stats.extracted > bestExtraction.grams) {
+                    bestExtraction = { date, grams: stats.extracted };
+                }
+            });
+            
+            // Convert extraction grams to pounds if appropriate
+            const extractedDisplay = bestExtraction.grams >= 454 
+                ? `${(bestExtraction.grams / 453.592).toFixed(1)} lbs`
+                : `${bestExtraction.grams.toFixed(0)}g`;
+            
+            const content = `
+                ${bestPackaging.units > 0 ? `
+                <div class="record-box">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green); margin-bottom: 5px;">
+                        ${bestPackaging.units} units
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                        📦 Best Packaging Day
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">
+                        ${new Date(bestPackaging.date).toLocaleDateString()}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${bestLabeling.units > 0 ? `
+                <div class="record-box" style="border-left-color: var(--accent-blue);">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 5px;">
+                        ${bestLabeling.units} units
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                        🏷️ Best Labeling Day
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">
+                        ${new Date(bestLabeling.date).toLocaleDateString()}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${bestExtraction.grams > 0 ? `
+                <div class="record-box" style="border-left-color: var(--accent-purple);">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple); margin-bottom: 5px;">
+                        ${extractedDisplay}
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                        ⚗️ Best Extraction Day
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">
+                        ${new Date(bestExtraction.date).toLocaleDateString()}
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('personalRecordsContent').innerHTML = content || '<p style="text-align: center; color: var(--text-secondary);">No records yet - start tracking your work!</p>';
+        }
+
+        // Feature #2: Personal Dashboard Quick Stats
+        // Feature #2: Personal Dashboard Quick Stats (Workload Summary)
+        function updatePersonalWorkloadStats() {
+            const statsGrid = document.getElementById('personalStatsGrid');
+            const statsTitle = document.getElementById('personalStatsTitle');
+            
+            if (!currentRole) {
+                statsGrid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1;">Login to see your personal workload</p>';
+                statsTitle.textContent = 'Your Workload';
+                return;
+            }
+            
+            statsTitle.textContent = `${currentRole.name}'s Workload`;
+            
+            // Count batches at each stage
+            const waitingExtraction = batches.filter(b => b.status === 'intake').length;
+            const waitingFinishing = batches.filter(b => b.status === 'extraction').length;
+            const waitingPackaging = batches.filter(b => b.status === 'finishing').length;
+            const waitingTesting = batches.filter(b => b.status === 'packaging' || (b.status === 'complete' && !b.test_thc_percent)).length;
+            const waitingLabeling = batches.filter(b => b.status === 'complete' && b.test_thc_percent && !b.labels_applied).length;
+            const paused = batches.filter(b => b.extraction_paused || b.packaging_paused || b.labeling_paused).length;
+            
+            const stats = [
+                { label: 'Waiting Extraction', count: waitingExtraction, icon: '⚗️', color: 'var(--accent-orange)' },
+                { label: 'Waiting Post-Extraction', count: waitingFinishing, icon: '✨', color: 'var(--accent-purple)' },
+                { label: 'Waiting Packaging', count: waitingPackaging, icon: '📦', color: 'var(--accent-blue)' },
+                { label: 'Waiting Testing', count: waitingTesting, icon: '🧪', color: 'var(--accent-green)' },
+                { label: 'Ready to Label', count: waitingLabeling, icon: '🏷️', color: 'var(--accent-purple)' },
+                { label: 'Paused (Need Attention)', count: paused, icon: '⏸️', color: '#ff9800' }
+            ];
+            
+            statsGrid.innerHTML = stats.map(s => `
+                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; border-left: 4px solid ${s.color};">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">${s.icon} ${s.label}</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: ${s.count > 0 ? s.color : 'var(--text-secondary)'};">${s.count}</div>
+                </div>
+            `).join('');
+        }
+
+        // Feature #1: Enhanced Batch Search with Filtering
+        function addDropdownSearchFilters() {
+            // Add search to extraction dropdown
+            addSearchToDropdown('extractionBatchSelect', 'extraction');
+            // Add search to packaging dropdown
+            addSearchToDropdown('packagingBatchSelect', 'packaging');
+            // Add search to finishing dropdown
+            addSearchToDropdown('finishingBatchSelect', 'finishing');
+            // Add search to labeling dropdown
+            addSearchToDropdown('labelingBatchSelect', 'labeling');
+        }
+
+        function addSearchToDropdown(selectId, stage) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            
+            // Create search input
+            const searchWrapper = document.createElement('div');
+            searchWrapper.style.cssText = 'position: relative; margin-bottom: 10px;';
+            
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = '🔍 Search batch ID or strain...';
+            searchInput.style.cssText = 'width: 100%; padding: 10px; background: var(--bg-secondary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem;';
+            
+            // Insert before dropdown
+            select.parentNode.insertBefore(searchWrapper, select);
+            searchWrapper.appendChild(searchInput);
+            
+            // Filter dropdown on search
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const options = select.querySelectorAll('option');
+                
+                options.forEach(opt => {
+                    if (opt.value === '') {
+                        opt.style.display = '';
+                        return;
+                    }
+                    
+                    const text = opt.textContent.toLowerCase();
+                    opt.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            });
+        }
+
+        // Feature #3: Batch Timeline Visual Progress Viewer
+        function showBatchTimeline(batchId) {
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) return;
+            
+            const stages = [
+                { name: 'Intake', status: 'intake', icon: '📥', completed: batch.intake_date },
+                { name: 'Extraction', status: 'extraction', icon: '⚗️', completed: batch.extraction_user, paused: batch.extraction_paused },
+                { name: 'Post-Extraction', status: 'finishing', icon: '✨', completed: batch.finishing_user },
+                { name: 'Packaging', status: 'packaging', icon: '📦', completed: batch.packaging_user, paused: batch.packaging_paused },
+                { name: 'Testing', status: 'testing', icon: '🧪', completed: batch.test_thc_percent },
+                { name: 'Labeling', status: 'complete', icon: '🏷️', completed: batch.labels_applied, paused: batch.labeling_paused }
+            ];
+            
+            let currentStageIndex = stages.findIndex(s => s.status === batch.status);
+            if (currentStageIndex === -1) currentStageIndex = stages.length - 1;
+            
+            return stages.map((stage, index) => {
+                let statusIcon, statusColor, statusText;
+                
+                if (index < currentStageIndex) {
+                    statusIcon = '✅';
+                    statusColor = 'var(--accent-green)';
+                    statusText = 'Complete';
+                } else if (index === currentStageIndex) {
+                    if (stage.paused) {
+                        statusIcon = '⏸️';
+                        statusColor = '#ff9800';
+                        statusText = 'Paused';
+                    } else {
+                        statusIcon = '🔄';
+                        statusColor = 'var(--accent-blue)';
+                        statusText = 'In Progress';
+                    }
+                } else {
+                    statusIcon = '⏳';
+                    statusColor = 'var(--text-secondary)';
+                    statusText = 'Waiting';
+                }
+                
+                return `
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: ${index === currentStageIndex ? 'rgba(59, 130, 246, 0.1)' : 'transparent'}; border-radius: 6px;">
+                        <div style="font-size: 1.5rem;">${stage.icon}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">${stage.name}</div>
+                            <div style="font-size: 0.85rem; color: ${statusColor};">${statusIcon} ${statusText}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('<div style="width: 2px; height: 15px; background: var(--border); margin-left: 23px;"></div>');
+        }
+
+        // Feature #4: Auto-Calculate Yield Percentage with Alerts
+        function calculateYield(batch) {
+            if (!batch.trim_weight || !batch.final_weight) return null;
+            
+            const trimWeight = parseFloat(batch.trim_weight);
+            const finalWeight = parseFloat(batch.final_weight);
+            
+            if (trimWeight === 0) return null;
+            
+            const yieldPercent = (finalWeight / trimWeight) * 100;
+            const expectedYield = 18; // Industry standard for BHO
+            const variance = yieldPercent - expectedYield;
+            
+            return {
+                actual: yieldPercent,
+                expected: expectedYield,
+                variance: variance,
+                status: variance < -3 ? 'low' : (variance > 3 ? 'high' : 'normal')
+            };
+        }
+
+        function displayYieldAlert(batch, yieldData) {
+            if (!yieldData) return '';
+            
+            let alertHTML = '';
+            let statusIcon, statusColor, statusText;
+            
+            if (yieldData.status === 'low') {
+                statusIcon = '⚠️';
+                statusColor = '#f44336';
+                statusText = 'Low Yield Alert';
+            } else if (yieldData.status === 'high') {
+                statusIcon = '🎉';
+                statusColor = 'var(--accent-green)';
+                statusText = 'Excellent Yield';
+            } else {
+                statusIcon = '✅';
+                statusColor = 'var(--accent-blue)';
+                statusText = 'Normal Yield';
+            }
+            
+            return `
+                <div style="background: rgba(${statusColor === '#f44336' ? '244, 67, 54' : '59, 130, 246'}, 0.1); padding: 12px; border-radius: 8px; border-left: 4px solid ${statusColor}; margin-top: 10px;">
+                    <div style="font-weight: 600; color: ${statusColor}; margin-bottom: 5px;">${statusIcon} ${statusText}</div>
+                    <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                        Actual: ${yieldData.actual.toFixed(1)}% | Expected: ${yieldData.expected}% | Variance: ${yieldData.variance > 0 ? '+' : ''}${yieldData.variance.toFixed(1)}%
+                    </div>
+                </div>
+            `;
+        }
+
+        // Feature #8: End-of-Day Report Generator
+        function generateDailyReport() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Filter batches with activity today
+            const todaysBatches = batches.filter(b => {
+                const timeline = b.timeline || [];
+                return timeline.some(t => t.date && t.date.startsWith(today));
+            });
+            
+            // Count by stage
+            const extracted = todaysBatches.filter(b => 
+                (b.timeline || []).some(t => t.stage === 'extraction' && t.date.startsWith(today))
+            ).length;
+            
+            const packaged = todaysBatches.filter(b => 
+                (b.timeline || []).some(t => t.stage === 'packaging' && t.date.startsWith(today) && t.action.includes('ompleted'))
+            ).length;
+            
+            const labeled = todaysBatches.filter(b => 
+                (b.timeline || []).some(t => t.stage === 'labeling' && t.date.startsWith(today))
+            ).length;
+            
+            // Employee performance
+            const employeeActivity = {};
+            todaysBatches.forEach(b => {
+                (b.timeline || []).forEach(t => {
+                    if (!t.date || !t.date.startsWith(today)) return;
+                    if (!employeeActivity[t.user]) {
+                        employeeActivity[t.user] = { extracted: 0, packaged: 0, labeled: 0 };
+                    }
+                    if (t.stage === 'extraction') employeeActivity[t.user].extracted++;
+                    if (t.stage === 'packaging' && t.action.includes('ompleted')) employeeActivity[t.user].packaged++;
+                    if (t.stage === 'labeling') employeeActivity[t.user].labeled++;
+                });
+            });
+            
+            return {
+                date: today,
+                batches: todaysBatches.length,
+                extracted,
+                packaged,
+                labeled,
+                employees: employeeActivity
+            };
+        }
+
+        function showDailyReportPopup() {
+            const report = generateDailyReport();
+            
+            let employeeReport = Object.entries(report.employees).map(([name, stats]) => 
+                `${name}: ${stats.extracted} extracted, ${stats.packaged} packaged, ${stats.labeled} labeled`
+            ).join('\n');
+            
+            alert(`📊 Daily Production Report
+            
+Date: ${report.date}
+
+Summary:
+• ${report.batches} batches with activity today
+• ${report.extracted} batches extracted
+• ${report.packaged} batches packaged  
+• ${report.labeled} batches labeled
+
+Employee Activity:
+${employeeReport || 'No activity recorded today'}
+            `);
+        }
+
 
         function renderBatches(filter = 'all', searchTerm = '') {
             const container = document.getElementById('batchesList');
@@ -4183,7 +4916,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         ` : ''}
                     </div>
                     
+                    ${(() => {
+                        const yieldData = calculateYield(batch);
+                        return yieldData ? displayYieldAlert(batch, yieldData) : '';
+                    })()}
+                    
                     <div class="timeline" id="timeline-${batch.id}" style="display: none;">
+                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h4 style="margin-bottom: 10px; color: var(--accent-purple);">📊 Progress Timeline</h4>
+                            ${showBatchTimeline(batch.id)}
+                        </div>
+                        
+                        <h4 style="margin-bottom: 10px; color: var(--accent-blue);">📝 Activity History</h4>
                         ${(batch.timeline || []).map(t => `
                             <div class="timeline-item">
                                 <div class="timeline-content">
