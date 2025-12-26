@@ -1190,6 +1190,7 @@
                                 <option value="Brick Hash">Brick Hash (1g & 4g)</option>
                                 <option value="Hash Hits">Hash Hits (2-pack & 5-pack)</option>
                                 <option value="RSO Syringe">RSO Syringes</option>
+                                <option value="Bulk Sale">🎯 Bulk Sale (Skip Labeling)</option>
                             </select>
                         </div>
                     </div>
@@ -1234,6 +1235,14 @@
                     <div class="form-group">
                         <label>Packaging Notes</label>
                         <textarea id="packagingNotes" placeholder="Any issues, special packaging notes..."></textarea>
+                    </div>
+                    
+                    <!-- Bulk Sale Alert -->
+                    <div id="bulkSaleAlert" style="display: none; background: rgba(16, 185, 129, 0.15); border-left: 4px solid var(--accent-green); padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <strong>🎯 Bulk Sale Selected</strong>
+                        <p style="margin: 8px 0 0 0; color: var(--text-secondary);">
+                            This batch will be marked as complete and will skip the labeling process. It will not appear in the labeling queue.
+                        </p>
                     </div>
                     
                     <div style="background: rgba(59, 130, 246, 0.15); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -1629,9 +1638,14 @@
                         <span>👤</span>
                         <span id="personalStatsTitle">Your Workload</span>
                     </h2>
-                    <button class="btn" style="background: var(--accent-green); padding: 10px 20px;" onclick="showDailyReportPopup()">
-                        📊 Daily Report
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" style="background: var(--accent-orange); padding: 10px 20px;" onclick="recalculateAllSubBatchYields()">
+                            🔄 Fix Sub-Batch Yields
+                        </button>
+                        <button class="btn" style="background: var(--accent-green); padding: 10px 20px;" onclick="showDailyReportPopup()">
+                            📊 Daily Report
+                        </button>
+                    </div>
                 </div>
                 <div id="personalStatsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <!-- Populated dynamically -->
@@ -1655,6 +1669,10 @@
                 <div class="stat-card">
                     <div class="stat-value" id="totalGramsIn">0g</div>
                     <div class="stat-label">Total Trim In</div>
+                </div>
+                <div class="stat-card" id="weightDiscrepancyCard" style="display: none;">
+                    <div class="stat-value" id="totalWeightLoss" style="color: var(--accent-orange);">0g</div>
+                    <div class="stat-label">⚠️ Weight Loss (Bulk→Label)</div>
                 </div>
             </div>
 
@@ -3724,7 +3742,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             const totalAllocated = splits.reduce((sum, s) => sum + s.weight, 0);
             
-            if (!confirm(`Create ${splits.length} sub-batches from ${batchId}?\n\nTotal: ${totalAllocated}g\n\n${splits.map((s, i) => `${String.fromCharCode(65 + i)}: ${s.weight}g → ${s.productType}`).join('\n')}`)) {
+            // Calculate overall yield percentage from parent batch
+            const parentTrimWeight = parseFloat(batch.trim_weight) || 0;
+            const overallYieldPercent = parentTrimWeight > 0 ? (totalAllocated / parentTrimWeight) * 100 : 0;
+            
+            if (!confirm(`Create ${splits.length} sub-batches from ${batchId}?\n\nParent Trim: ${parentTrimWeight.toFixed(1)}g\nTotal Yield: ${totalAllocated.toFixed(1)}g\nYield %: ${overallYieldPercent.toFixed(2)}%\n\n${splits.map((s, i) => `${String.fromCharCode(65 + i)}: ${s.weight}g → ${s.productType}`).join('\n')}`)) {
                 return;
             }
             
@@ -3736,12 +3758,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 stage: 'finishing',
                 user: currentRole ? currentRole.name : "Unknown",
                 date: new Date().toISOString(),
-                action: `Split into ${splits.length} sub-batches: ${splits.map(s => s.productType).join(', ')}`
+                action: `Split into ${splits.length} sub-batches: ${splits.map(s => s.productType).join(', ')} - Total yield: ${overallYieldPercent.toFixed(2)}%`
             });
             
             for (let i = 0; i < splits.length; i++) {
                 const split = splits[i];
                 const subBatchId = `${batchId}-${String.fromCharCode(65 + i)}`;
+                
+                // Calculate proportional trim weight based on this sub-batch's contribution to total yield
+                // If overall yield is 18% and this sub-batch is 50g, then it used (50 / 0.18) = 277.8g of trim
+                const subBatchTrimWeight = overallYieldPercent > 0 
+                    ? (split.weight / overallYieldPercent) * 100
+                    : parentTrimWeight * (split.weight / totalAllocated);
                 
                 const subBatch = {
                     id: subBatchId,
@@ -3749,7 +3777,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     is_sub_batch: true,
                     strain: batch.strain,
                     strain_type: batch.strain_type,
-                    trim_weight: batch.trim_weight, // Inherit from parent for reference
+                    trim_weight: subBatchTrimWeight, // Proportional trim weight based on actual yield
                     material_cost: batch.material_cost * (split.weight / totalAllocated), // Proportional cost
                     material_agreement: batch.material_agreement,
                     pre_sift: batch.pre_sift,
@@ -3757,7 +3785,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     grower_name: batch.grower_name,
                     intake_date: batch.intake_date,
                     planned_products: [split.productType],
-                    intake_notes: `Sub-batch from ${batchId}`,
+                    intake_notes: `Sub-batch from ${batchId} - Allocated ${subBatchTrimWeight.toFixed(1)}g trim for ${split.weight}g final product`,
                     status: 'finishing',
                     intake_user: batch.intake_user,
                     extraction_date: batch.extraction_date,
@@ -3772,7 +3800,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                             stage: 'split',
                             user: currentRole ? currentRole.name : "Unknown",
                             date: new Date().toISOString(),
-                            action: `Created from ${batchId} - ${split.weight}g for ${split.productType}`
+                            action: `Created from ${batchId} - ${subBatchTrimWeight.toFixed(1)}g trim → ${split.weight}g ${split.productType} (${overallYieldPercent.toFixed(2)}% yield)`
                         }
                     ],
                     created_at: new Date().toISOString()
@@ -3805,7 +3833,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 console.error('Error updating parent batch:', updateError);
             }
             
-            alert(`Successfully created ${splits.length} sub-batches!\n\n${subBatches.map(b => b.id).join('\n')}\n\nEach sub-batch can now be finished independently.`);
+            alert(`Successfully created ${splits.length} sub-batches!\n\nOverall Yield: ${overallYieldPercent.toFixed(2)}%\n\n${subBatches.map(b => `${b.id}: ${b.trim_weight.toFixed(1)}g trim → ${b.final_weight.toFixed(1)}g product`).join('\n')}\n\nEach sub-batch now has accurate trim allocation for yield tracking.`);
             
             document.getElementById('finishingForm').style.display = 'none';
             document.getElementById('finishingBatchSelect').value = '';
@@ -3926,8 +3954,16 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         document.getElementById('packagedProductType').addEventListener('change', function() {
             const multiSize = document.getElementById('multiSizeSection');
             const singleSize = document.getElementById('singleSizeSection');
+            const bulkSaleAlert = document.getElementById('bulkSaleAlert');
             const units1gLabel = multiSize.querySelector('label[for="units1g"]') || multiSize.querySelectorAll('label')[0];
             const units4gLabel = multiSize.querySelector('label[for="units4g"]') || multiSize.querySelectorAll('label')[1];
+            
+            // Show/hide bulk sale alert
+            if (this.value === 'Bulk Sale') {
+                bulkSaleAlert.style.display = 'block';
+            } else {
+                bulkSaleAlert.style.display = 'none';
+            }
             
             if (this.value === 'Wax/Sugar' || this.value === 'Brick Hash') {
                 multiSize.style.display = 'block';
@@ -4212,12 +4248,22 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             const timeline = batch.timeline || [];
             
+            // Check if this is a bulk sale
+            const isBulkSale = packagedProductType === 'Bulk Sale';
+            
             if (packagedProductType === 'Wax/Sugar' || packagedProductType === 'Brick Hash') {
                 timeline.push({
                     stage: 'packaging',
                     user: currentRole ? currentRole.name : "Unknown",
                     date: new Date().toISOString(),
                     action: `Packaged ${unitsPackaged} total units (${packagingDetails.packaging_breakdown} = ${totalGrams}g) - ${packagedProductType}`
+                });
+            } else if (isBulkSale) {
+                timeline.push({
+                    stage: 'packaging',
+                    user: currentRole ? currentRole.name : "Unknown",
+                    date: new Date().toISOString(),
+                    action: `Bulk sale - ${unitsPackaged} unit(s) - Skipping labeling process`
                 });
             } else {
                 timeline.push({
@@ -4228,23 +4274,47 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 });
             }
             
+            // Prepare update data
+            const updateData = {
+                packaging_date: document.getElementById('packagingDate').value,
+                packaged_product_type: packagedProductType,
+                units_packaged: unitsPackaged,
+                units_1g: packagingDetails.units_1g,
+                units_4g: packagingDetails.units_4g,
+                total_grams_packaged: packagingDetails.total_grams,
+                packaging_breakdown: packagingDetails.packaging_breakdown,
+                wholesale_price: wholesalePrice,
+                packaging_notes: document.getElementById('packagingNotes').value,
+                packaging_user: currentRole ? currentRole.name : "Unknown",
+                timeline: timeline
+            };
+            
+            // If bulk sale, mark as fully complete and skip labeling
+            if (isBulkSale) {
+                updateData.status = 'complete';
+                updateData.labels_applied = true; // Mark as "labeled" to skip labeling queue
+                updateData.labeling_date = document.getElementById('packagingDate').value;
+                updateData.labeling_user = currentRole ? currentRole.name : "Unknown";
+                updateData.labeling_notes = 'Bulk sale - labeling not required';
+                updateData.completed_at = new Date().toISOString();
+                
+                // Add completion timeline entry
+                timeline.push({
+                    stage: 'complete',
+                    user: currentRole ? currentRole.name : "Unknown",
+                    date: new Date().toISOString(),
+                    action: 'Bulk sale completed - no labeling required'
+                });
+                updateData.timeline = timeline;
+            } else {
+                // Normal packaging - goes to "complete" status waiting for labeling
+                updateData.status = 'complete';
+                updateData.completed_at = new Date().toISOString();
+            }
+            
             const { error } = await supabaseClient
                 .from('wm_batches')
-                .update({
-                    status: 'complete',
-                    packaging_date: document.getElementById('packagingDate').value,
-                    packaged_product_type: packagedProductType,
-                    units_packaged: unitsPackaged,
-                    units_1g: packagingDetails.units_1g,
-                    units_4g: packagingDetails.units_4g,
-                    total_grams_packaged: packagingDetails.total_grams,
-                    packaging_breakdown: packagingDetails.packaging_breakdown,
-                    wholesale_price: wholesalePrice,
-                    packaging_notes: document.getElementById('packagingNotes').value,
-                    packaging_user: currentRole ? currentRole.name : "Unknown",
-                    completed_at: new Date().toISOString(),
-                    timeline: timeline
-                })
+                .update(updateData)
                 .eq('id', batchId);
             
             if (error) {
@@ -4253,7 +4323,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            alert(`Packaging completed for ${batchId}!`);
+            if (isBulkSale) {
+                alert(`✅ Bulk sale completed for ${batchId}!\n\nThis batch is now marked as complete and will not require labeling.`);
+            } else {
+                alert(`Packaging completed for ${batchId}!`);
+            }
             
             document.getElementById('packagingForm').style.display = 'none';
             document.getElementById('packagingBatchSelect').value = '';
@@ -4274,6 +4348,49 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             const totalGrams = batches.reduce((sum, b) => sum + (parseFloat(b.trim_weight) || 0), 0);
             document.getElementById('totalGramsIn').textContent = totalGrams.toFixed(0) + 'g';
+            
+            // Calculate total weight loss from bulk to labeled
+            let totalWeightLoss = 0;
+            let batchesWithDiscrepancy = 0;
+            
+            batches.forEach(batch => {
+                if (batch.grams_labeled && batch.net_weight) {
+                    const labeled = parseFloat(batch.grams_labeled);
+                    const bulk = parseFloat(batch.net_weight);
+                    const loss = bulk - labeled;
+                    
+                    if (loss > 0) {
+                        totalWeightLoss += loss;
+                        
+                        // Count significant discrepancies (>5% or >5g)
+                        const lossPercent = (loss / bulk) * 100;
+                        if (lossPercent > 5 || loss > 5) {
+                            batchesWithDiscrepancy++;
+                        }
+                    }
+                }
+            });
+            
+            // Update weight discrepancy card
+            const discrepancyCard = document.getElementById('weightDiscrepancyCard');
+            const weightLossElement = document.getElementById('totalWeightLoss');
+            
+            if (totalWeightLoss > 0) {
+                discrepancyCard.style.display = 'block';
+                weightLossElement.textContent = `${totalWeightLoss.toFixed(1)}g`;
+                
+                // Update label to show count if there are significant discrepancies
+                const label = discrepancyCard.querySelector('.stat-label');
+                if (batchesWithDiscrepancy > 0) {
+                    label.innerHTML = `⚠️ Weight Loss (${batchesWithDiscrepancy} batches)`;
+                    weightLossElement.style.color = 'var(--accent-orange)';
+                } else {
+                    label.innerHTML = '⚠️ Weight Loss (Bulk→Label)';
+                    weightLossElement.style.color = 'var(--accent-blue)';
+                }
+            } else {
+                discrepancyCard.style.display = 'none';
+            }
             
             // Update personal workload stats
             updatePersonalWorkloadStats();
@@ -4775,10 +4892,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
         // Feature #4: Auto-Calculate Yield Percentage with Alerts
         function calculateYield(batch) {
-            if (!batch.trim_weight || !batch.final_weight) return null;
+            if (!batch.trim_weight) return null;
+            
+            // Prioritize grams_labeled (actual sellable weight after labeling) over final_weight (post-extraction)
+            const finalWeight = batch.grams_labeled ? parseFloat(batch.grams_labeled) : 
+                                batch.final_weight ? parseFloat(batch.final_weight) : null;
+            
+            if (!finalWeight) return null;
             
             const trimWeight = parseFloat(batch.trim_weight);
-            const finalWeight = parseFloat(batch.final_weight);
             
             if (trimWeight === 0) return null;
             
@@ -4871,6 +4993,102 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             };
         }
 
+        // Recalculate trim weight allocations for all existing sub-batches
+        async function recalculateAllSubBatchYields() {
+            if (!confirm('This will recalculate trim weight allocations for all sub-batches based on actual yields.\n\nThis affects yield calculations in the dashboard and analytics.\n\nContinue?')) {
+                return;
+            }
+            
+            // Find all parent batches that have been split
+            const parentBatches = batches.filter(b => b.status === 'split');
+            
+            if (parentBatches.length === 0) {
+                alert('No split batches found. Nothing to recalculate.');
+                return;
+            }
+            
+            let updatedCount = 0;
+            let errorCount = 0;
+            const updates = [];
+            
+            for (const parent of parentBatches) {
+                // Find all sub-batches for this parent
+                const subBatches = batches.filter(b => b.parent_batch_id === parent.id && b.is_sub_batch);
+                
+                if (subBatches.length === 0) continue;
+                
+                // Calculate total final weight across all sub-batches
+                // Prioritize grams_labeled (actual sellable) over final_weight (post-extraction)
+                const totalFinalWeight = subBatches.reduce((sum, sub) => {
+                    const weight = sub.grams_labeled ? parseFloat(sub.grams_labeled) : parseFloat(sub.final_weight) || 0;
+                    return sum + weight;
+                }, 0);
+                
+                if (totalFinalWeight === 0) continue;
+                
+                // Calculate overall yield from parent trim to total sub-batch output
+                const parentTrimWeight = parseFloat(parent.trim_weight) || 0;
+                if (parentTrimWeight === 0) continue;
+                
+                const overallYieldPercent = (totalFinalWeight / parentTrimWeight) * 100;
+                
+                // Update each sub-batch with proportional trim weight
+                for (const subBatch of subBatches) {
+                    // Use grams_labeled if available, otherwise final_weight
+                    const subFinalWeight = subBatch.grams_labeled ? parseFloat(subBatch.grams_labeled) : parseFloat(subBatch.final_weight) || 0;
+                    if (subFinalWeight === 0) continue;
+                    
+                    // Back-calculate trim weight: if yield is 18% and final is 50g, trim = 50/0.18 = 277.8g
+                    const newTrimWeight = overallYieldPercent > 0 
+                        ? (subFinalWeight / overallYieldPercent) * 100
+                        : 0;
+                    
+                    // Only update if different
+                    if (Math.abs(newTrimWeight - (parseFloat(subBatch.trim_weight) || 0)) > 0.1) {
+                        updates.push({
+                            id: subBatch.id,
+                            oldTrim: parseFloat(subBatch.trim_weight) || 0,
+                            newTrim: newTrimWeight,
+                            finalWeight: subFinalWeight,
+                            yieldPercent: overallYieldPercent,
+                            usedLabeledWeight: !!subBatch.grams_labeled
+                        });
+                        
+                        // Update in database
+                        const { error } = await supabaseClient
+                            .from('wm_batches')
+                            .update({
+                                trim_weight: newTrimWeight,
+                                intake_notes: (subBatch.intake_notes || '') + `\n[Yield recalculated: ${newTrimWeight.toFixed(1)}g trim for ${subFinalWeight.toFixed(1)}g ${subBatch.grams_labeled ? 'labeled' : 'bulk'} weight at ${overallYieldPercent.toFixed(2)}%]`
+                            })
+                            .eq('id', subBatch.id);
+                        
+                        if (error) {
+                            console.error(`Error updating ${subBatch.id}:`, error);
+                            errorCount++;
+                        } else {
+                            updatedCount++;
+                        }
+                    }
+                }
+            }
+            
+            if (updates.length === 0) {
+                alert('All sub-batches already have correct trim allocations. Nothing to update.');
+                return;
+            }
+            
+            // Reload batches to reflect changes
+            await loadBatches();
+            
+            // Show detailed report
+            const reportDetails = updates.map(u => 
+                `${u.id}: ${u.oldTrim.toFixed(1)}g → ${u.newTrim.toFixed(1)}g trim (${u.finalWeight.toFixed(1)}g @ ${u.yieldPercent.toFixed(2)}%)`
+            ).join('\n');
+            
+            alert(`✅ Sub-Batch Yield Recalculation Complete!\n\nUpdated: ${updatedCount} batches\nErrors: ${errorCount}\n\nDetails:\n${reportDetails.substring(0, 500)}${reportDetails.length > 500 ? '\n...(truncated)' : ''}`);
+        }
+
         function showDailyReportPopup() {
             const report = generateDailyReport();
             
@@ -4954,20 +5172,71 @@ ${employeeReport || 'No activity recorded today'}
                     </div>
                     
                     <div class="batch-details">
+                        ${batch.is_sub_batch ? `
+                            <div class="batch-detail" style="background: rgba(147, 51, 234, 0.1); border-left: 3px solid var(--accent-purple); padding: 8px; border-radius: 4px; grid-column: 1/-1;">
+                                <div class="batch-detail-label">🔗 Sub-Batch Of</div>
+                                <div class="batch-detail-value">${batch.parent_batch_id}</div>
+                            </div>
+                        ` : ''}
                         <div class="batch-detail">
                             <div class="batch-detail-label">Product</div>
                             <div class="batch-detail-value">${batch.strain} (${batch.strain_type})</div>
                         </div>
                         <div class="batch-detail">
                             <div class="batch-detail-label">Trim Weight</div>
-                            <div class="batch-detail-value">${batch.trim_weight}g</div>
+                            <div class="batch-detail-value">${batch.trim_weight}g${batch.is_sub_batch ? ' (allocated)' : ''}</div>
                         </div>
-                        ${batch.final_weight ? `
+                        ${batch.grams_labeled ? `
                             <div class="batch-detail">
-                                <div class="batch-detail-label">Final Weight</div>
-                                <div class="batch-detail-value">${batch.final_weight}g (${batch.net_weight}g net)</div>
+                                <div class="batch-detail-label">Labeled Weight</div>
+                                <div class="batch-detail-value">${batch.grams_labeled}g (sellable)</div>
+                            </div>
+                            ${batch.net_weight ? `
+                                <div class="batch-detail" style="grid-column: 1/-1;">
+                                    <div class="batch-detail-label">Bulk Weight (Pre-Label)</div>
+                                    <div class="batch-detail-value">${batch.net_weight}g</div>
+                                </div>
+                            ` : ''}
+                        ` : batch.final_weight ? `
+                            <div class="batch-detail">
+                                <div class="batch-detail-label">Post-Extraction Weight</div>
+                                <div class="batch-detail-value">${batch.final_weight}g${batch.net_weight ? ` (${batch.net_weight}g net)` : ''}</div>
                             </div>
                         ` : ''}
+                        ${(() => {
+                            // Calculate weight discrepancy between bulk and labeled weight
+                            if (batch.grams_labeled && batch.net_weight) {
+                                const labeled = parseFloat(batch.grams_labeled);
+                                const bulk = parseFloat(batch.net_weight);
+                                const discrepancy = bulk - labeled;
+                                const discrepancyPercent = (discrepancy / bulk) * 100;
+                                
+                                // Show alert if discrepancy is > 5% or > 5g
+                                if (Math.abs(discrepancyPercent) > 5 || Math.abs(discrepancy) > 5) {
+                                    const isHigh = discrepancyPercent > 0;
+                                    const icon = isHigh ? '⚠️' : '✅';
+                                    const color = isHigh ? 'var(--accent-orange)' : 'var(--accent-green)';
+                                    const bgColor = isHigh ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)';
+                                    
+                                    return `
+                                        <div style="grid-column: 1/-1; background: ${bgColor}; padding: 10px; border-radius: 8px; border-left: 4px solid ${color}; margin-top: 5px;">
+                                            <div style="font-weight: 600; color: ${color}; font-size: 0.9rem; margin-bottom: 3px;">
+                                                ${icon} Weight Discrepancy
+                                            </div>
+                                            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                                                Lost: ${discrepancy.toFixed(1)}g (${discrepancyPercent.toFixed(1)}%) between bulk and labeled
+                                            </div>
+                                            ${batch.weight_discrepancy !== undefined ? `
+                                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 3px; font-style: italic;">
+                                                    Note: ${batch.discrepancy_accepted ? 'Discrepancy noted and accepted' : 'Discrepancy recorded'}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    `;
+                                }
+                            }
+                            return '';
+                        })()}
                         ${batch.units_packaged ? `
                             <div class="batch-detail">
                                 <div class="batch-detail-label">Units Packaged</div>
