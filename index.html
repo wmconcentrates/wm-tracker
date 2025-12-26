@@ -3472,7 +3472,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             timeline.push({
                 stage: 'extraction',
                 timestamp: new Date().toISOString(),
-                user: currentRole ? currentRole.name : "Unknown"
+                user: currentRole ? currentRole.name : "Unknown",
+                action: `Extraction completed - ${extractionMethod} - ${productMade}`
             });
             
             const updateData = {
@@ -3821,7 +3822,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 stage: 'finishing',
                 user: currentRole ? currentRole.name : "Unknown",
                 date: new Date().toISOString(),
-                action: `QC complete: ${finalWeight}g bulk, ${sampleWeight}g sample pulled for testing`
+                action: `Finishing completed - QC: ${finalWeight}g bulk, ${sampleWeight}g sample pulled for testing`
             });
             
             const { error } = await supabaseClient
@@ -4365,10 +4366,52 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     }
                 }
                 
-                // LABELING & EXTRACTION: Check timeline (same as Performance tab)
+                // EXTRACTION: Check extraction_user field first (most reliable)
+                if (batch.extraction_user === userName && batch.status !== 'intake' && batch.trim_weight) {
+                    // Check if extraction was done in the date range
+                    let extractionDate = null;
+                    if (batch.timeline && batch.timeline.length > 0) {
+                        const extractionEvent = batch.timeline.find(e => 
+                            e.stage === 'extraction' && e.user === userName
+                        );
+                        if (extractionEvent) {
+                            extractionDate = new Date(extractionEvent.timestamp || extractionEvent.date);
+                        }
+                    }
+                    
+                    // If we found an extraction event in the date range, count it
+                    if (extractionDate && extractionDate >= startDate) {
+                        const grams = parseFloat(batch.trim_weight) || 0;
+                        stats.gramsExtracted += grams;
+                        console.log('✓ Extracted:', grams, 'grams in batch', batch.id);
+                    }
+                }
+                
+                // FINISHING: Check finishing_user field
+                if (batch.finishing_user === userName && batch.status !== 'intake' && batch.status !== 'extraction') {
+                    // Check if finishing was done in the date range
+                    let finishingDate = null;
+                    if (batch.timeline && batch.timeline.length > 0) {
+                        const finishingEvent = batch.timeline.find(e => 
+                            e.stage === 'finishing' && e.user === userName
+                        );
+                        if (finishingEvent) {
+                            finishingDate = new Date(finishingEvent.timestamp || finishingEvent.date);
+                        }
+                    }
+                    
+                    // If we found a finishing event in the date range, count it
+                    if (finishingDate && finishingDate >= startDate) {
+                        stats.batchesFinished++;
+                        console.log('✓ Finished batch', batch.id);
+                    }
+                }
+                
+                // LABELING: Check timeline (same as before)
                 if (batch.timeline && batch.timeline.length > 0) {
                     batch.timeline.forEach(event => {
-                        if (!event.date || !event.user || event.user !== userName) return;
+                        if (!event.date && !event.timestamp) return;
+                        if (!event.user || event.user !== userName) return;
                         
                         const eventDate = new Date(event.timestamp || event.date);
                         if (eventDate < startDate) return;
@@ -4379,21 +4422,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                             batch.units_packaged) {
                             stats.unitsLabeled += parseInt(batch.units_packaged) || 0;
                             console.log('✓ Labeled:', batch.units_packaged, 'units in batch', batch.id);
-                        }
-                        
-                        // Extraction (using trim_weight)
-                        if (event.stage === 'extraction' && event.action && 
-                            event.action.toLowerCase().includes('completed')) {
-                            const grams = parseFloat(batch.trim_weight) || 0;
-                            stats.gramsExtracted += grams;
-                            console.log('✓ Extracted:', grams, 'grams in batch', batch.id);
-                        }
-                        
-                        // Post-extraction/Finishing
-                        if (event.stage === 'finishing' && event.action && 
-                            event.action.toLowerCase().includes('completed')) {
-                            stats.batchesFinished++;
-                            console.log('✓ Finished batch', batch.id);
                         }
                     });
                 }
@@ -4482,12 +4510,38 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const dailyStats = {};
             
             batches.forEach(batch => {
+                // PACKAGING: Use packaging_user and packaging_date
+                if (batch.packaging_user === userName && batch.packaging_date && batch.units_packaged) {
+                    const date = batch.packaging_date;
+                    if (!dailyStats[date]) {
+                        dailyStats[date] = { packaged: 0, labeled: 0, extracted: 0 };
+                    }
+                    dailyStats[date].packaged += parseInt(batch.units_packaged) || 0;
+                }
+                
+                // EXTRACTION: Use extraction_user and look for extraction timeline entry
+                if (batch.extraction_user === userName && batch.trim_weight && batch.timeline) {
+                    const extractionEvent = batch.timeline.find(e => 
+                        e.stage === 'extraction' && e.user === userName
+                    );
+                    if (extractionEvent) {
+                        const eventDate = new Date(extractionEvent.timestamp || extractionEvent.date);
+                        const date = eventDate.toISOString().split('T')[0];
+                        if (!dailyStats[date]) {
+                            dailyStats[date] = { packaged: 0, labeled: 0, extracted: 0 };
+                        }
+                        dailyStats[date].extracted += parseFloat(batch.trim_weight) || 0;
+                    }
+                }
+                
+                // LABELING: Check timeline
                 (batch.timeline || []).forEach(entry => {
-                    // Skip entries without required fields
-                    if (!entry.date || !entry.user || !entry.action) return;
-                    if (entry.user !== userName) return;
+                    if (!entry.date && !entry.timestamp) return;
+                    if (!entry.user || entry.user !== userName) return;
+                    if (!entry.action) return;
                     
-                    const date = new Date(entry.date).toISOString().split('T')[0];
+                    const eventDate = new Date(entry.timestamp || entry.date);
+                    const date = eventDate.toISOString().split('T')[0];
                     
                     if (!dailyStats[date]) {
                         dailyStats[date] = { packaged: 0, labeled: 0, extracted: 0 };
@@ -4495,14 +4549,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     
                     const actionLower = entry.action.toLowerCase();
                     
-                    if (entry.stage === 'packaging' && actionLower.includes('completed')) {
-                        dailyStats[date].packaged += parseInt(batch.units_packaged) || 0;
-                    }
-                    if (entry.stage === 'labeling' && actionLower.includes('completed')) {
+                    if (entry.stage === 'labeling' && (actionLower.includes('labeled') || actionLower.includes('completed'))) {
                         dailyStats[date].labeled += parseInt(batch.units_packaged) || 0;
-                    }
-                    if (entry.stage === 'extraction' && actionLower.includes('completed')) {
-                        dailyStats[date].extracted += parseFloat(batch.trim_weight) || 0;
                     }
                 });
             });
