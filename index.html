@@ -4634,6 +4634,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 status: 'extraction',
                 extraction_method: 'BHO',
                 product_type: productTypeText,
+                product_made: productTypeText, // Also set product_made for finishing dropdown
                 extraction_machine: currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)',
                 extraction_runs: machineStatus.potRuns || 0,
                 extraction_slabs: productType === 'shatter' ? slabs : null,
