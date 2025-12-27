@@ -1499,11 +1499,11 @@
                         <label>Filter by Employee:</label>
                         <select id="performanceFilter" onchange="renderPerformanceAnalytics()">
                             <option value="all">All Employees</option>
-                            <option value="Ryan (Admin)">Ryan (Admin)</option>
-                            <option value="Alex">Alex</option>
-                            <option value="Paige">Paige</option>
-                            <option value="Donald">Donald</option>
-                            <option value="Andrew">Andrew</option>
+                            <option value="Ryan (Admin)">Ryan (Admin) - PIN: 1827</option>
+                            <option value="Alex">Alex - PIN: 1980</option>
+                            <option value="Paige">Paige - PIN: 1992</option>
+                            <option value="Donald">Donald - PIN: 1425</option>
+                            <option value="Andrew">Andrew - PIN: 2817</option>
                             <option value="Tobias">Tobias</option>
                             <option value="Jeremy">Jeremy</option>
                         </select>
@@ -7917,7 +7917,7 @@ ${employeeReport || 'No activity recorded today'}
                                         ${(() => {
                                             // Find PIN for this employee
                                             const roleEntry = Object.entries(ROLES).find(([key, role]) => role.name === emp.name);
-                                            return roleEntry ? `<span style="font-size: 1.2rem; color: var(--text-secondary); font-weight: 400; margin-left: 15px;">PIN: ${roleEntry[1].pin}</span>` : '';
+                                            return roleEntry ? ` - PIN: ${roleEntry[1].pin}` : '';
                                         })()}
                                     </h3>
                                     <p style="color: var(--text-secondary); font-size: 0.95rem;">Active ${emp.daysActiveCount} of ${timeRange} days</p>
