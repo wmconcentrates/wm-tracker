@@ -1482,6 +1482,24 @@
                 <h2>👥 Employee Performance Analytics</h2>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">Production tracking • Real-time staffing insights</p>
                 
+                <!-- Login Activity Tracker -->
+                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-blue);">
+                    <h3 style="color: var(--accent-blue); margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
+                        <span>👥</span>
+                        <span>Team Activity & Login Tracker</span>
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px;">
+                            <div style="font-size: 0.95rem; font-weight: 600; color: var(--accent-green); margin-bottom: 10px;">🟢 Currently Active</div>
+                            <div id="activeUsers" style="font-size: 0.9rem; color: var(--text-primary);">Loading...</div>
+                        </div>
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px;">
+                            <div style="font-size: 0.95rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 10px;">📅 Recent Logins (Last 24h)</div>
+                            <div id="recentLogins" style="font-size: 0.85rem; color: var(--text-secondary); max-height: 200px; overflow-y: auto;">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Time Period Selector -->
                 <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
                     <div class="form-group" style="flex: 1; min-width: 200px;">
@@ -1585,24 +1603,6 @@
                         <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">📊 Total Usage</div>
                         <div id="totalButaneUsed" style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary);">0 lbs</div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">Consumed from bulk tank</div>
-                    </div>
-                </div>
-            </div>
-        
-            <!-- Login Activity Tracker -->
-            <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-blue);">
-                <h2 style="color: var(--accent-blue); margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
-                    <span>👥</span>
-                    <span>Team Activity</span>
-                </h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
-                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px;">
-                        <div style="font-size: 0.95rem; font-weight: 600; color: var(--accent-green); margin-bottom: 10px;">🟢 Currently Active</div>
-                        <div id="activeUsers" style="font-size: 0.9rem; color: var(--text-primary);">Loading...</div>
-                    </div>
-                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px;">
-                        <div style="font-size: 0.95rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 10px;">📅 Recent Logins (Last 24h)</div>
-                        <div id="recentLogins" style="font-size: 0.85rem; color: var(--text-secondary); max-height: 200px; overflow-y: auto;">Loading...</div>
                     </div>
                 </div>
             </div>
@@ -4296,9 +4296,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             const totalGrams = batches.reduce((sum, b) => sum + (parseFloat(b.trim_weight) || 0), 0);
             document.getElementById('totalGramsIn').textContent = totalGrams.toFixed(0) + 'g';
-            
-            // Update login tracker
-            updateLoginTracker();
             
             // Calculate total weight loss from bulk to labeled
             let totalWeightLoss = 0;
@@ -8072,6 +8069,9 @@ ${employeeReport || 'No activity recorded today'}
             const logContainer = document.getElementById('activityLog');
             
             if (!statsContainer) return;
+            
+            // Update login tracker
+            updateLoginTracker();
 
             const targets = loadTargets();
             
