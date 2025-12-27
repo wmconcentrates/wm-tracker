@@ -1569,8 +1569,47 @@
                     </div>
                 </div>
 
-                <!-- Company-Wide Summary -->
-                <div id="companySummary" style="margin-bottom: 40px;"></div>
+                <!-- Company-Wide Production Summary (respects time range) -->
+                <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2)); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-orange);">
+                    <h3 style="color: var(--accent-orange); margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px; font-size: 1.5rem;">
+                        <span>🏢</span>
+                        <span>Company Production Summary</span>
+                        <span id="companyPeriodRange" style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 400; margin-left: auto;"></span>
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-orange);">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">⚗️ Trim Extracted</div>
+                            <div id="companyTrimExtracted" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-orange); font-family: 'Space Mono', monospace;">0g</div>
+                            <div id="companyTrimBatches" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0 batches</div>
+                        </div>
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-blue);">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">🔥 Post-Processing Finished</div>
+                            <div id="companyFinished" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-blue); font-family: 'Space Mono', monospace;">0g</div>
+                            <div id="companyFinishedBatches" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0 batches</div>
+                        </div>
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-purple);">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">📦 Units Packaged</div>
+                            <div id="companyPackaged" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-purple); font-family: 'Space Mono', monospace;">0</div>
+                            <div id="companyPackagedWeight" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0g total</div>
+                        </div>
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-green);">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">🏷️ Units Labeled</div>
+                            <div id="companyLabeled" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-green); font-family: 'Space Mono', monospace;">0</div>
+                            <div id="companyLabeledWeight" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0g total</div>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="form-group" style="flex: 1; min-width: 200px;">
+                        <label>View Mode:</label>
+                        <select id="performanceViewMode" onchange="renderPerformanceAnalytics()">
+                            <option value="overview">Production Overview</option>
+                            <option value="packaging">Packaging Detail</option>
+                            <option value="labeling">Labeling Detail</option>
+                            <option value="extraction">Extraction Detail</option>
+                        </select>
+                    </div>
+                </div>
 
                 <!-- Individual Performance Cards -->
                 <div id="performanceStats" style="margin-top: 30px;"></div>
@@ -5679,6 +5718,97 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 });
         }
         
+        // Company Production Summary (respects time range)
+        function updateCompanyProductionSummary(timeRange = 30) {
+            const now = new Date();
+            const rangeStart = new Date(now.getTime() - (timeRange * 24 * 60 * 60 * 1000));
+            
+            // Display time range
+            const periodEl = document.getElementById('companyPeriodRange');
+            if (periodEl) {
+                const startStr = rangeStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const endStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                periodEl.textContent = `${startStr} - ${endStr}`;
+            }
+            
+            let trimExtracted = 0;
+            let trimBatches = 0;
+            let finishedWeight = 0;
+            let finishedBatches = 0;
+            let packaged = 0;
+            let packagedWeight = 0;
+            let labeled = 0;
+            let labeledWeight = 0;
+            
+            batches.forEach(batch => {
+                // Check extraction completed in range (from timeline)
+                if (batch.timeline && batch.timeline.length > 0) {
+                    const extractionEvent = batch.timeline.find(event => {
+                        if (event.status === 'extraction' && event.timestamp) {
+                            const eventDate = new Date(event.timestamp);
+                            return eventDate >= rangeStart && eventDate <= now;
+                        }
+                        return false;
+                    });
+                    
+                    if (extractionEvent) {
+                        trimExtracted += parseFloat(batch.trim_weight) || 0;
+                        trimBatches++;
+                    }
+                }
+                
+                // Check finishing completed in range
+                if (batch.finishing_date) {
+                    const finishingDate = new Date(batch.finishing_date);
+                    if (finishingDate >= rangeStart && finishingDate <= now) {
+                        finishedWeight += parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
+                        finishedBatches++;
+                    }
+                }
+                
+                // Check packaging done in range
+                if (batch.packaging_date) {
+                    const packagingDate = new Date(batch.packaging_date);
+                    if (packagingDate >= rangeStart && packagingDate <= now && batch.units_packaged) {
+                        packaged += parseInt(batch.units_packaged) || 0;
+                        packagedWeight += parseFloat(batch.net_weight) || 0;
+                    }
+                }
+                
+                // Check labeling done in range (from timeline)
+                if (batch.timeline && batch.timeline.length > 0) {
+                    const labelingEvent = batch.timeline.find(event => {
+                        if ((event.stage === 'labeling' || event.status === 'complete') && event.timestamp) {
+                            const eventDate = new Date(event.timestamp);
+                            if (eventDate >= rangeStart && eventDate <= now) {
+                                const action = (event.action || event.note || '').toLowerCase();
+                                return action.includes('label') || action.includes('complet');
+                            }
+                        }
+                        return false;
+                    });
+                    
+                    if (labelingEvent && batch.units_packaged) {
+                        labeled += parseInt(batch.units_packaged) || 0;
+                        labeledWeight += parseFloat(batch.grams_labeled) || 0;
+                    }
+                }
+            });
+            
+            // Update displays
+            document.getElementById('companyTrimExtracted').textContent = `${trimExtracted.toLocaleString()}g`;
+            document.getElementById('companyTrimBatches').textContent = `${trimBatches} batch${trimBatches !== 1 ? 'es' : ''}`;
+            
+            document.getElementById('companyFinished').textContent = `${finishedWeight.toLocaleString()}g`;
+            document.getElementById('companyFinishedBatches').textContent = `${finishedBatches} batch${finishedBatches !== 1 ? 'es' : ''}`;
+            
+            document.getElementById('companyPackaged').textContent = packaged.toLocaleString();
+            document.getElementById('companyPackagedWeight').textContent = `${packagedWeight.toLocaleString()}g total`;
+            
+            document.getElementById('companyLabeled').textContent = labeled.toLocaleString();
+            document.getElementById('companyLabeledWeight').textContent = `${labeledWeight.toLocaleString()}g total`;
+        }
+        
         // Today's Production Summary
         function updateTodayProduction() {
             const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -8331,6 +8461,9 @@ ${employeeReport || 'No activity recorded today'}
             // Update today's production summary
             updateTodayProduction();
             
+            // Update company production summary based on time range
+            updateCompanyProductionSummary(timeRange);
+            
             // Update login tracker
             updateLoginTracker();
 
@@ -8459,44 +8592,7 @@ ${employeeReport || 'No activity recorded today'}
                 ? Object.values(employeeData) 
                 : Object.values(employeeData).filter(e => e.name === filter);
             
-            // Render company-wide summary
-            if (companySummary && filter === 'all') {
-                const totalPackaging = Object.values(employeeData).reduce((sum, e) => sum + e.packaging.units, 0);
-                const totalLabeling = Object.values(employeeData).reduce((sum, e) => sum + e.labeling.units, 0);
-                const totalExtraction = Object.values(employeeData).reduce((sum, e) => sum + e.extraction.batches, 0);
-                const avgDailyPackaging = totalPackaging / timeRange;
-                const avgDailyLabeling = totalLabeling / timeRange;
-                
-                companySummary.innerHTML = `
-                    <div style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 30px; border-radius: 15px; box-shadow: 0 10px 40px rgba(147, 51, 234, 0.3);">
-                        <h3 style="font-size: 1.8rem; margin-bottom: 25px; color: white;">📊 Company Production Summary (${timeRange} Days)</h3>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                            <div style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 12px; backdrop-filter: blur(10px);">
-                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">Units Packaged</div>
-                                <div style="font-size: 2.5rem; font-weight: 700; font-family: 'Space Mono', monospace;">${totalPackaging.toLocaleString()}</div>
-                                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 5px;">${avgDailyPackaging.toFixed(0)}/day avg</div>
-                            </div>
-                            <div style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 12px; backdrop-filter: blur(10px);">
-                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">Units Labeled</div>
-                                <div style="font-size: 2.5rem; font-weight: 700; font-family: 'Space Mono', monospace;">${totalLabeling.toLocaleString()}</div>
-                                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 5px;">${avgDailyLabeling.toFixed(0)}/day avg</div>
-                            </div>
-                            <div style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 12px; backdrop-filter: blur(10px);">
-                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">Batches Extracted</div>
-                                <div style="font-size: 2.5rem; font-weight: 700; font-family: 'Space Mono', monospace;">${totalExtraction}</div>
-                                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 5px;">${(totalExtraction / timeRange).toFixed(1)}/day avg</div>
-                            </div>
-                            <div style="background: rgba(255, 255, 255, 0.15); padding: 20px; border-radius: 12px; backdrop-filter: blur(10px);">
-                                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">Active Employees</div>
-                                <div style="font-size: 2.5rem; font-weight: 700; font-family: 'Space Mono', monospace;">${Object.keys(employeeData).length}</div>
-                                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 5px;">Contributing to production</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } else if (companySummary) {
-                companySummary.innerHTML = '';
-            }
+            // Render company-wide summary (removed - now using separate function)
             
             // Render individual employee cards based on view mode
             if (displayData.length === 0) {
