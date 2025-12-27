@@ -706,7 +706,7 @@
     </div>
     
     <button id="myStatsBtn" onclick="openPersonalStatsModal()" style="position: fixed; top: 20px; left: 20px; z-index: 999; background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3); transition: all 0.3s ease; display: none;">
-        📊 My Stats
+        👤 My Workload
     </button>
 
     <!-- Setup Section -->
@@ -2050,15 +2050,15 @@
 
     <!-- Personal Stats Modal -->
     <div id="personalStatsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; overflow-y: auto;">
-        <div style="max-width: 900px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);">
+        <div style="max-width: 1000px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);">
             <!-- Header -->
             <div style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 30px; border-radius: 20px 20px 0 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <h2 style="color: white; margin: 0 0 10px 0; font-size: 2rem;">
-                            📊 <span id="modalPersonalStatName">Your Performance</span>
+                            👤 <span id="modalPersonalStatName">Your Workload</span>
                         </h2>
-                        <p style="color: rgba(255,255,255,0.9); margin: 0;">Track your productivity and see your progress</p>
+                        <p style="color: rgba(255,255,255,0.9); margin: 0;">Your tasks and progress for today</p>
                     </div>
                     <button onclick="closePersonalStatsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px; transition: all 0.3s ease;">&times;</button>
                 </div>
@@ -2066,8 +2066,24 @@
             
             <!-- Content -->
             <div style="padding: 30px;">
+                <!-- What's Next Section -->
+                <div id="whatsNextSection" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2)); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-green);">
+                    <h3 style="color: var(--accent-green); margin: 0 0 15px 0; font-size: 1.3rem;">⚡ What's Next</h3>
+                    <div id="whatsNextContent">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Today's Progress -->
+                <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(59, 130, 246, 0.2)); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-purple);">
+                    <h3 style="color: var(--accent-purple); margin: 0 0 15px 0; font-size: 1.3rem;">📊 Today's Progress</h3>
+                    <div id="todayProgressContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+                
                 <!-- Quick Time Selector -->
-                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;">
                     <button class="personal-time-btn active" data-period="today" onclick="updatePersonalStats('today')">Today</button>
                     <button class="personal-time-btn" data-period="week" onclick="updatePersonalStats('week')">This Week</button>
                     <button class="personal-time-btn" data-period="month" onclick="updatePersonalStats('month')">This Month</button>
@@ -2079,8 +2095,16 @@
                     <!-- Populated dynamically -->
                 </div>
                 
+                <!-- My Current Batches -->
+                <div id="myBatchesSection" style="margin-top: 30px; padding-top: 30px; border-top: 2px solid var(--border);">
+                    <h3 style="color: var(--accent-blue); margin-bottom: 20px; font-size: 1.3rem;">📋 My Current Batches</h3>
+                    <div id="myBatchesList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+                
                 <!-- Personal Records -->
-                <div id="personalRecords" style="padding-top: 30px; border-top: 2px solid var(--border);">
+                <div id="personalRecords" style="padding-top: 30px; border-top: 2px solid var(--border); margin-top: 30px;">
                     <h3 style="color: var(--accent-purple); margin-bottom: 20px; text-align: center; font-size: 1.5rem;">🏆 Your Best Days</h3>
                     <div id="personalRecordsContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                         <!-- Populated dynamically -->
@@ -2494,42 +2518,49 @@
                 name: 'Ryan (Admin)',
                 pin: '1827',
                 tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance'],
+                access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance'],
                 readOnly: false
             },
             paige: {
                 name: 'Paige',
                 pin: '1992',
-                tabs: ['dashboard', 'intake', 'extraction', 'packaging', 'labeling'],
+                tabs: ['intake', 'extraction', 'packaging', 'labeling'],
+                access: ['intake', 'extraction', 'packaging', 'labeling'],
                 readOnly: false
             },
             alex: {
                 name: 'Alex',
                 pin: '1980',
                 tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics'],
+                access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics'],
                 readOnly: false
             },
             donald: {
                 name: 'Donald',
                 pin: '1425',
-                tabs: ['dashboard', 'finishing', 'packaging', 'labeling'],
+                tabs: ['finishing', 'packaging', 'labeling'],
+                access: ['finishing', 'packaging', 'labeling'],
                 readOnly: false
             },
             andrew: {
                 name: 'Andrew',
                 pin: '2817',
-                tabs: ['dashboard', 'packaging', 'labeling'],
+                tabs: ['packaging', 'labeling'],
+                access: ['packaging', 'labeling'],
                 readOnly: false
             },
             tobias: {
                 name: 'Tobias',
                 pin: '4200',
-                tabs: ['dashboard', 'intake', 'extraction', 'finishing'],
+                tabs: ['intake', 'extraction', 'finishing'],
+                access: ['intake', 'extraction', 'finishing'],
                 readOnly: false
             },
             jeremy: {
                 name: 'Jeremy',
                 pin: '0710',
-                tabs: ['dashboard', 'extraction', 'finishing'],
+                tabs: ['extraction', 'finishing'],
+                access: ['extraction', 'finishing'],
                 readOnly: false
             }
         };
@@ -4586,7 +4617,181 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
             
             document.getElementById('personalStatsModal').style.display = 'block';
+            populateWhatsNext();
+            populateTodayProgress();
+            populateMyBatches();
             updatePersonalStats('today');
+        }
+        
+        function populateWhatsNext() {
+            const userName = currentRole.name;
+            const whatsNextEl = document.getElementById('whatsNextContent');
+            
+            // Find next batch waiting for this user based on their role
+            let nextBatch = null;
+            let taskType = '';
+            
+            // Check for packaging tasks
+            if (currentRole.access.includes('packaging')) {
+                nextBatch = batches.find(b => b.status === 'finishing' && !b.packaging_user);
+                taskType = '📦 Packaging';
+            }
+            
+            // Check for labeling tasks
+            if (!nextBatch && currentRole.access.includes('labeling')) {
+                nextBatch = batches.find(b => b.status === 'packaging' && !b.labeling_user);
+                taskType = '🏷️ Labeling';
+            }
+            
+            // Check for extraction tasks
+            if (!nextBatch && currentRole.access.includes('extraction')) {
+                nextBatch = batches.find(b => b.status === 'intake');
+                taskType = '⚗️ Extraction';
+            }
+            
+            // Check for finishing tasks
+            if (!nextBatch && currentRole.access.includes('finishing')) {
+                nextBatch = batches.find(b => b.status === 'extraction');
+                taskType = '🔥 Finishing';
+            }
+            
+            if (nextBatch) {
+                whatsNextEl.innerHTML = `
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-green);">
+                        <div style="font-size: 1.1rem; font-weight: 600; color: var(--accent-green); margin-bottom: 10px;">${taskType}</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary); font-family: 'Space Mono', monospace;">${nextBatch.id}</div>
+                        <div style="color: var(--text-secondary); margin-top: 5px;">${nextBatch.strain || 'Unknown strain'}</div>
+                        ${nextBatch.trim_weight ? `<div style="color: var(--text-secondary); margin-top: 5px;">${parseFloat(nextBatch.trim_weight).toFixed(0)}g trim</div>` : ''}
+                    </div>
+                `;
+            } else {
+                whatsNextEl.innerHTML = `
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; text-align: center; color: var(--text-secondary);">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">🎉</div>
+                        <div>All caught up! No batches waiting for you.</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function populateTodayProgress() {
+            const userName = currentRole.name;
+            const today = new Date().toISOString().split('T')[0];
+            const progressEl = document.getElementById('todayProgressContent');
+            
+            let packaged = 0;
+            let labeled = 0;
+            let extracted = 0;
+            let finished = 0;
+            
+            batches.forEach(batch => {
+                // Packaging
+                if (batch.packaging_user === userName && batch.packaging_date) {
+                    const date = new Date(batch.packaging_date).toISOString().split('T')[0];
+                    if (date === today) packaged += parseInt(batch.units_packaged) || 0;
+                }
+                
+                // Labeling
+                if (batch.timeline) {
+                    batch.timeline.forEach(event => {
+                        if (event.user === userName && event.stage === 'labeling') {
+                            const date = new Date(event.timestamp).toISOString().split('T')[0];
+                            if (date === today) labeled += parseInt(batch.units_packaged) || 0;
+                        }
+                    });
+                }
+                
+                // Extraction
+                if (batch.timeline) {
+                    const extractionEvent = batch.timeline.find(e => e.status === 'extraction' && e.user === userName);
+                    if (extractionEvent) {
+                        const date = new Date(extractionEvent.timestamp).toISOString().split('T')[0];
+                        if (date === today) extracted++;
+                    }
+                }
+                
+                // Finishing
+                if (batch.finishing_user === userName && batch.finishing_date) {
+                    const date = new Date(batch.finishing_date).toISOString().split('T')[0];
+                    if (date === today) finished++;
+                }
+            });
+            
+            let html = '';
+            if (packaged > 0) {
+                html += `<div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">📦 Packaged</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">${packaged}</div>
+                </div>`;
+            }
+            if (labeled > 0) {
+                html += `<div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">🏷️ Labeled</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);">${labeled}</div>
+                </div>`;
+            }
+            if (extracted > 0) {
+                html += `<div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">⚗️ Extracted</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-orange);">${extracted}</div>
+                </div>`;
+            }
+            if (finished > 0) {
+                html += `<div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">🔥 Finished</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${finished}</div>
+                </div>`;
+            }
+            
+            if (html === '') {
+                html = `<div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; text-align: center; color: var(--text-secondary); grid-column: 1 / -1;">
+                    No production completed yet today
+                </div>`;
+            }
+            
+            progressEl.innerHTML = html;
+        }
+        
+        function populateMyBatches() {
+            const userName = currentRole.name;
+            const batchesEl = document.getElementById('myBatchesList');
+            
+            const myBatches = batches.filter(b => {
+                return (b.packaging_user === userName && b.status !== 'complete') ||
+                       (b.finishing_user === userName && b.status !== 'complete') ||
+                       (b.extraction_user === userName && b.status !== 'complete') ||
+                       (b.timeline && b.timeline.some(e => e.user === userName));
+            });
+            
+            if (myBatches.length === 0) {
+                batchesEl.innerHTML = `<div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; text-align: center; color: var(--text-secondary);">
+                    No active batches assigned to you
+                </div>`;
+                return;
+            }
+            
+            batchesEl.innerHTML = myBatches.map(batch => {
+                const statusColors = {
+                    'intake': 'var(--accent-orange)',
+                    'extraction': 'var(--accent-blue)',
+                    'finishing': 'var(--accent-purple)',
+                    'packaging': 'var(--accent-green)',
+                    'complete': 'var(--accent-green)'
+                };
+                
+                return `<div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${statusColors[batch.status] || 'var(--border)'};">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 1.1rem; font-weight: 700; font-family: 'Space Mono', monospace;">${batch.id}</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">${batch.strain || 'Unknown'} • ${batch.status}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            ${batch.units_packaged ? `<div style="font-size: 0.85rem; color: var(--text-secondary);">${batch.units_packaged} units</div>` : ''}
+                            ${batch.net_weight ? `<div style="font-size: 0.85rem; color: var(--text-secondary);">${parseFloat(batch.net_weight).toFixed(0)}g</div>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
         }
         
         function closePersonalStatsModal() {
