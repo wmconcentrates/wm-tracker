@@ -5497,7 +5497,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 });
         }
         
-        // Login Activity Tracker
+        // Today's Production Summary
         function updateTodayProduction() {
             const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
             
@@ -5521,29 +5521,29 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             let labeledWeight = 0;
             
             batches.forEach(batch => {
-                // Check extraction completed today
+                // Check extraction completed today (from timeline)
                 if (batch.timeline && batch.timeline.length > 0) {
-                    batch.timeline.forEach(event => {
-                        const eventDate = new Date(event.timestamp || event.date).toISOString().split('T')[0];
-                        
-                        // Extraction completed today
-                        if (eventDate === today && 
-                            event.status === 'extraction' && 
-                            event.action && 
-                            event.action.toLowerCase().includes('completed')) {
-                            trimExtracted += parseFloat(batch.trim_weight) || 0;
-                            trimBatches++;
+                    const extractionEvent = batch.timeline.find(event => {
+                        if (event.status === 'extraction' && event.timestamp) {
+                            const eventDate = new Date(event.timestamp).toISOString().split('T')[0];
+                            return eventDate === today;
                         }
-                        
-                        // Finishing completed today
-                        if (eventDate === today && 
-                            event.status === 'finishing' && 
-                            event.action && 
-                            event.action.toLowerCase().includes('completed')) {
-                            finishedWeight += parseFloat(batch.final_weight) || 0;
-                            finishedBatches++;
-                        }
+                        return false;
                     });
+                    
+                    if (extractionEvent) {
+                        trimExtracted += parseFloat(batch.trim_weight) || 0;
+                        trimBatches++;
+                    }
+                }
+                
+                // Check finishing completed today
+                if (batch.finishing_date) {
+                    const finishingDate = new Date(batch.finishing_date).toISOString().split('T')[0];
+                    if (finishingDate === today) {
+                        finishedWeight += parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
+                        finishedBatches++;
+                    }
                 }
                 
                 // Check packaging done today
@@ -5555,20 +5555,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     }
                 }
                 
-                // Check labeling done today
+                // Check labeling done today (from timeline)
                 if (batch.timeline && batch.timeline.length > 0) {
-                    batch.timeline.forEach(event => {
-                        const eventDate = new Date(event.timestamp || event.date).toISOString().split('T')[0];
-                        
-                        if (eventDate === today && 
-                            event.stage === 'labeling' && 
-                            event.action && 
-                            (event.action.toLowerCase().includes('completed') || 
-                             event.action.toLowerCase().includes('labeled'))) {
-                            labeled += parseInt(batch.units_packaged) || 0;
-                            labeledWeight += parseFloat(batch.grams_labeled) || 0;
+                    const labelingEvent = batch.timeline.find(event => {
+                        if ((event.stage === 'labeling' || event.status === 'complete') && event.timestamp) {
+                            const eventDate = new Date(event.timestamp).toISOString().split('T')[0];
+                            if (eventDate === today) {
+                                const action = (event.action || event.note || '').toLowerCase();
+                                return action.includes('label') || action.includes('complet');
+                            }
                         }
+                        return false;
                     });
+                    
+                    if (labelingEvent && batch.units_packaged) {
+                        labeled += parseInt(batch.units_packaged) || 0;
+                        labeledWeight += parseFloat(batch.grams_labeled) || 0;
+                    }
                 }
             });
             
