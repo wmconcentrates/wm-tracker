@@ -1589,6 +1589,24 @@
                 </div>
             </div>
         
+            <!-- Login Activity Tracker -->
+            <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-blue);">
+                <h2 style="color: var(--accent-blue); margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
+                    <span>👥</span>
+                    <span>Team Activity</span>
+                </h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px;">
+                        <div style="font-size: 0.95rem; font-weight: 600; color: var(--accent-green); margin-bottom: 10px;">🟢 Currently Active</div>
+                        <div id="activeUsers" style="font-size: 0.9rem; color: var(--text-primary);">Loading...</div>
+                    </div>
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px;">
+                        <div style="font-size: 0.95rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 10px;">📅 Recent Logins (Last 24h)</div>
+                        <div id="recentLogins" style="font-size: 0.85rem; color: var(--text-secondary); max-height: 200px; overflow-y: auto;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        
             <!-- Personal Quick Stats -->
             <div id="personalStats" style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(59, 130, 246, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-purple);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -2875,7 +2893,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 // Successful login
                 currentRole = ROLES[roleKey];
                 localStorage.setItem('wmRole', roleKey);
-                localStorage.setItem('wmSession', Date.now());
+                const sessionId = Date.now();
+                localStorage.setItem('wmSession', sessionId);
+                localStorage.setItem('wmSessionId', sessionId); // Store session ID for logout tracking
                 
                 document.getElementById('userName').textContent = currentRole.name;
                 document.getElementById('currentUser').style.display = 'block';
@@ -2884,6 +2904,22 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('appContent').style.display = 'block';
                 document.getElementById('myStatsBtn').style.display = 'block'; // Show My Stats button
                 errorMsg.style.display = 'none';
+                
+                // Log login to database
+                supabaseClient
+                    .from('wm_login_history')
+                    .insert({
+                        user_name: currentRole.name,
+                        login_time: new Date().toISOString()
+                    })
+                    .then(({ data, error }) => {
+                        if (error) {
+                            console.error('Error logging login:', error);
+                        } else if (data && data.length > 0) {
+                            // Store the login record ID for logout tracking
+                            localStorage.setItem('wmLoginRecordId', data[0].id);
+                        }
+                    });
                 
                 applyRolePermissions();
             } else {
@@ -2896,9 +2932,34 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         function logout() {
-            localStorage.removeItem('wmRole');
-            localStorage.removeItem('wmSession');
-            location.reload();
+            const loginRecordId = localStorage.getItem('wmLoginRecordId');
+            const sessionStart = parseInt(localStorage.getItem('wmSession'));
+            
+            if (loginRecordId && sessionStart) {
+                const sessionDuration = Math.floor((Date.now() - sessionStart) / 1000 / 60); // minutes
+                
+                // Update logout time and duration
+                supabaseClient
+                    .from('wm_login_history')
+                    .update({
+                        logout_time: new Date().toISOString(),
+                        session_duration: sessionDuration
+                    })
+                    .eq('id', loginRecordId)
+                    .then(() => {
+                        localStorage.removeItem('wmRole');
+                        localStorage.removeItem('wmSession');
+                        localStorage.removeItem('wmSessionId');
+                        localStorage.removeItem('wmLoginRecordId');
+                        location.reload();
+                    });
+            } else {
+                localStorage.removeItem('wmRole');
+                localStorage.removeItem('wmSession');
+                localStorage.removeItem('wmSessionId');
+                localStorage.removeItem('wmLoginRecordId');
+                location.reload();
+            }
         }
 
         function applyRolePermissions() {
@@ -4236,6 +4297,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const totalGrams = batches.reduce((sum, b) => sum + (parseFloat(b.trim_weight) || 0), 0);
             document.getElementById('totalGramsIn').textContent = totalGrams.toFixed(0) + 'g';
             
+            // Update login tracker
+            updateLoginTracker();
+            
             // Calculate total weight loss from bulk to labeled
             let totalWeightLoss = 0;
             let batchesWithDiscrepancy = 0;
@@ -5402,6 +5466,78 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                                     alert(`✅ Nitrogen Updated!\n\nManually set to ${setAmount.toFixed(1)} tanks (was ${currentNitrogen.toFixed(1)})\n\nReason: ${notes}`);
                                 });
                         });
+                });
+        }
+        
+        // Login Activity Tracker
+        function updateLoginTracker() {
+            const now = new Date();
+            const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+            const thirtyMinutesAgo = new Date(now.getTime() - (30 * 60 * 1000));
+            
+            // Get recent logins (last 24 hours)
+            supabaseClient
+                .from('wm_login_history')
+                .select('*')
+                .gte('login_time', twentyFourHoursAgo.toISOString())
+                .order('login_time', { ascending: false })
+                .limit(10)
+                .then(({ data: logins, error }) => {
+                    if (error) {
+                        console.error('Error loading login history:', error);
+                        return;
+                    }
+                    
+                    // Find currently active users (logged in within 30 min and no logout)
+                    const activeUsers = logins.filter(login => {
+                        const loginTime = new Date(login.login_time);
+                        return loginTime >= thirtyMinutesAgo && !login.logout_time;
+                    });
+                    
+                    // Display active users
+                    const activeUsersEl = document.getElementById('activeUsers');
+                    if (activeUsers.length === 0) {
+                        activeUsersEl.innerHTML = '<div style="color: var(--text-secondary); font-style: italic;">No active users</div>';
+                    } else {
+                        const uniqueUsers = [...new Set(activeUsers.map(u => u.user_name))];
+                        activeUsersEl.innerHTML = uniqueUsers.map(name => {
+                            const userLogin = activeUsers.find(u => u.user_name === name);
+                            const loginTime = new Date(userLogin.login_time);
+                            const minutesAgo = Math.floor((now - loginTime) / 1000 / 60);
+                            const timeText = minutesAgo < 1 ? 'just now' : `${minutesAgo}m ago`;
+                            return `<div style="padding: 5px 0; border-bottom: 1px solid var(--border);">
+                                <strong>${name}</strong> <span style="color: var(--text-secondary); font-size: 0.85rem;">(${timeText})</span>
+                            </div>`;
+                        }).join('');
+                    }
+                    
+                    // Display recent logins
+                    const recentLoginsEl = document.getElementById('recentLogins');
+                    if (logins.length === 0) {
+                        recentLoginsEl.innerHTML = '<div style="color: var(--text-secondary); font-style: italic;">No recent logins</div>';
+                    } else {
+                        recentLoginsEl.innerHTML = logins.map(login => {
+                            const loginTime = new Date(login.login_time);
+                            const timeStr = loginTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                            const dateStr = loginTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                            
+                            let sessionInfo = '';
+                            if (login.logout_time) {
+                                const duration = login.session_duration;
+                                const hours = Math.floor(duration / 60);
+                                const mins = duration % 60;
+                                const durationStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                                sessionInfo = `<span style="color: var(--text-secondary);">(${durationStr})</span>`;
+                            } else {
+                                sessionInfo = '<span style="color: var(--accent-green);">●</span>';
+                            }
+                            
+                            return `<div style="padding: 5px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
+                                <div><strong>${login.user_name}</strong></div>
+                                <div style="color: var(--text-secondary); font-size: 0.85rem;">${dateStr} ${timeStr} ${sessionInfo}</div>
+                            </div>`;
+                        }).join('');
+                    }
                 });
         }
         
