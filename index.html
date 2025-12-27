@@ -1618,26 +1618,6 @@
 
         <!-- Dashboard -->
         <div class="station-content" id="dashboard">
-            <!-- Supply Inventory Tracking -->
-            <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-orange);">
-                <h2 style="color: var(--accent-orange); margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
-                    <span>🛢️</span>
-                    <span>Butane Gas Inventory</span>
-                </h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-blue);">
-                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">🛢️ Bulk Tank Remaining</div>
-                        <div id="butaneInventory" style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">0 lbs</div>
-                        <div id="butaneUsageRate" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">Avg: 0 lbs/batch</div>
-                    </div>
-                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-green);">
-                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">📊 Total Usage</div>
-                        <div id="totalButaneUsed" style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary);">0 lbs</div>
-                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">Consumed from bulk tank</div>
-                    </div>
-                </div>
-            </div>
-        
             <!-- Personal Quick Stats -->
             <div id="personalStats" style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(59, 130, 246, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-purple);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -5724,53 +5704,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         
         function closeInventoryModal() {
             document.getElementById('inventoryModal').style.display = 'none';
-        }
-        
-        function updateInventoryDisplay() {
-            // Load inventory
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            
-            // Load transaction history to calculate total withdrawn
-            const transactions = JSON.parse(localStorage.getItem('wm_gas_transactions') || '[]');
-            let totalWithdrawn = 0;
-            
-            transactions.forEach(tx => {
-                if (tx.withdraw) {
-                    totalWithdrawn += tx.withdraw;
-                }
-            });
-            
-            // Calculate average from batches that logged butane usage
-            let totalButaneUsed = 0;
-            let batchesWithSupplies = 0;
-            
-            batches.forEach(batch => {
-                if (batch.butane_used) {
-                    totalButaneUsed += parseFloat(batch.butane_used);
-                    batchesWithSupplies++;
-                }
-            });
-            
-            const avgButanePerBatch = batchesWithSupplies > 0 ? totalButaneUsed / batchesWithSupplies : 0;
-            
-            // Update display
-            document.getElementById('butaneInventory').textContent = `${inventory.butane.toFixed(1)} lbs`;
-            document.getElementById('butaneUsageRate').textContent = `Avg: ${avgButanePerBatch.toFixed(1)} lbs/batch`;
-            document.getElementById('totalButaneUsed').textContent = `${totalWithdrawn.toFixed(1)} lbs`;
-            
-            // Add low inventory warnings
-            const butaneElement = document.getElementById('butaneInventory');
-            
-            if (inventory.butane < 50) {
-                butaneElement.style.color = 'var(--accent-red)';
-                butaneElement.parentElement.style.borderLeftColor = 'var(--accent-red)';
-            } else if (inventory.butane < 100) {
-                butaneElement.style.color = 'var(--accent-orange)';
-                butaneElement.parentElement.style.borderLeftColor = 'var(--accent-orange)';
-            } else {
-                butaneElement.style.color = 'var(--accent-blue)';
-                butaneElement.parentElement.style.borderLeftColor = 'var(--accent-blue)';
-            }
         }
         
         function displayPersonalRecords(userName) {
