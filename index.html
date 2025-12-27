@@ -7777,7 +7777,7 @@ ${employeeReport || 'No activity recorded today'}
                 statsContainer.innerHTML = sortedEmployees.map(emp => {
                     const packagingTarget = targets.packaging * emp.daysActiveCount;
                     const labelingTarget = targets.labeling * emp.daysActiveCount;
-                    const extractionTrimTarget = targets.extractionTrim * emp.daysActiveCount;
+                    const extractionTrimTarget = (targets.extractionTrim || 11200) * emp.daysActiveCount;
                     
                     const packagingPct = packagingTarget > 0 ? ((emp.packaging.units / packagingTarget) * 100).toFixed(0) : 0;
                     const labelingPct = labelingTarget > 0 ? ((emp.labeling.units / labelingTarget) * 100).toFixed(0) : 0;
@@ -7900,7 +7900,7 @@ ${employeeReport || 'No activity recorded today'}
                                 
                                 <div style="margin-top: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid ${getPerformanceColor(extractionPct)};">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <span style="color: var(--text-secondary);">Trim Target: ${targets.extractionTrim}g/day × ${emp.daysActiveCount} days</span>
+                                        <span style="color: var(--text-secondary);">Trim Target: ${targets.extractionTrim || 11200}g/day × ${emp.daysActiveCount} days</span>
                                         <span style="font-weight: 700;">${emp.extraction.trimWeight.toFixed(0)}g / ${extractionTrimTarget.toFixed(0)}g</span>
                                     </div>
                                 </div>
