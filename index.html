@@ -951,142 +951,39 @@
                     </button>
                 </div>
                 
-                <div class="form-group">
-                    <label>Select Batch to Process</label>
-                    <select id="extractionBatchSelect" required>
-                        <option value="">Select a batch...</option>
-                    </select>
+                <!-- Machine Status Buttons -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <button class="btn" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); padding: 20px; text-align: left;" onclick="openMachineModal('left')">
+                        <div style="font-weight: 700; margin-bottom: 8px;">⚗️ Left Machine</div>
+                        <div id="leftMachineStatus" style="font-size: 0.85rem; opacity: 0.9;">
+                            <div>Column: <span id="leftColumnBatch">Empty</span></div>
+                            <div>Pot: <span id="leftPotBatch">Empty</span></div>
+                            <div>Filter: <span id="leftFilterStatus">Not loaded</span></div>
+                        </div>
+                    </button>
+                    <button class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 20px; text-align: left;" onclick="openMachineModal('right')">
+                        <div style="font-weight: 700; margin-bottom: 8px;">⚗️ Right Machine</div>
+                        <div id="rightMachineStatus" style="font-size: 0.85rem; opacity: 0.9;">
+                            <div>Column: <span id="rightColumnBatch">Empty</span></div>
+                            <div>Pot: <span id="rightPotBatch">Empty</span></div>
+                            <div>Filter: <span id="rightFilterStatus">Not loaded</span></div>
+                        </div>
+                    </button>
                 </div>
                 
-                <div id="extractionForm" style="display: none;">
-                    <!-- Batch Destination Display -->
-                    <div id="batchDestinationSection" style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(59, 130, 246, 0.15)); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-purple);">
-                        <h3 style="color: var(--accent-purple); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                            <span>🎯</span> Planned Products for This Batch
-                        </h3>
-                        <div id="plannedProductsDisplay" style="display: flex; flex-wrap: wrap; gap: 10px;">
-                            <!-- Products will be displayed here dynamically -->
-                        </div>
-                        <div id="batchTypeDisplay" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
-                            <!-- Batch type info will be displayed here -->
-                        </div>
-                    </div>
-
-                    <!-- Step 1: Pre-Sift Only (shows first for pre-sift batches) -->
-                    <div id="preSiftOnlySection" style="display: none; background: rgba(245, 158, 11, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-orange);">
-                        <h3 style="color: var(--accent-orange); margin-bottom: 15px;">⚠️ Pre-Sift Required First</h3>
-                        <p style="margin-bottom: 20px; color: var(--text-secondary);">This batch is marked for pre-sifting. Enter the sift weight collected to create the sift sub-batch. After that, you can process the remaining material.</p>
-                        
-                        <div class="form-group">
-                            <label>Sift Weight Collected (grams)</label>
-                            <input type="number" id="siftWeightOnly" step="0.1" placeholder="Enter collected sift weight" required>
-                            <div class="help-text">This will create a sub-batch for the sift and subtract from the main batch.</div>
-                        </div>
-                        <div id="siftCalcDisplay" style="margin-top: 15px; padding: 15px; background: var(--bg-primary); border-radius: 8px; font-weight: 600;"></div>
-                        
-                        <button type="button" class="btn" style="background: var(--accent-orange);" onclick="submitSiftOnly()">Submit Sift Weight & Create Sub-Batch</button>
-                    </div>
-
-                    <!-- Step 2: Main Extraction Form (shows after sift is done, or immediately for non-sift batches) -->
-                    <div id="mainExtractionSection">
-                        <div id="preSiftInfo" style="display: none; background: rgba(16, 185, 129, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid var(--accent-green);">
-                            <p style="color: var(--accent-green); font-weight: 600;">✓ Sift sub-batch created</p>
-                            <div id="preSiftSummary"></div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Extraction Method</label>
-                            <select id="extractionMethod" required>
-                                <option value="">Select Method</option>
-                                <option value="BHO">BHO (Butane Hash Oil)</option>
-                                <option value="RSO">RSO</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Extraction Machine</label>
-                                <select id="extractionMachine" required>
-                                    <option value="">Select Machine</option>
-                                    <option value="Machine 1 (Left)">Machine 1 (Left)</option>
-                                    <option value="Machine 2 (Right)">Machine 2 (Right)</option>
-                                </select>
-                                <div class="help-text">Track which machine is processing this batch</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Supply Usage Tracking -->
-                        <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--accent-orange); padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <h4 style="color: var(--accent-orange); margin-bottom: 15px;">📊 Supply Usage</h4>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label>Butane Used (lbs)</label>
-                                    <input type="number" id="butaneUsed" step="0.1" min="0" placeholder="0.0">
-                                    <div class="help-text">Track butane consumption for this run</div>
-                                </div>
-                                <div class="form-group">
-                                    <label>Nitrogen Tanks Used</label>
-                                    <input type="number" id="nitrogenTanksUsed" step="0.5" min="0" placeholder="0">
-                                    <div class="help-text">Full or partial tanks consumed</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- BHO Product Selection (shown when BHO selected) -->
-                        <div id="bhoProductSection" style="display: none;">
-                            <div class="form-group">
-                                <label>BHO Products Made</label>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-item" style="display: flex; align-items: center; gap: 15px;">
-                                        <div style="display: flex; align-items: center; gap: 8px;">
-                                            <input type="checkbox" name="bho_products" value="Sugar Wax" id="sugarWaxCheck">
-                                            <span>Sugar Wax/Wax</span>
-                                        </div>
-                                        <input type="number" id="bulkJarsCount" min="0" step="1" placeholder="# jars" style="width: 90px; padding: 8px; background: var(--bg-secondary); border: 2px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.95rem;">
-                                    </label>
-                                    <label class="checkbox-item" style="display: flex; align-items: center; gap: 15px;">
-                                        <div style="display: flex; align-items: center; gap: 8px;">
-                                            <input type="checkbox" name="bho_products" value="Shatter" id="shatterCheck">
-                                            <span>Shatter</span>
-                                        </div>
-                                        <input type="number" id="shatterSlabsCount" min="0" step="1" placeholder="# slabs" style="width: 90px; padding: 8px; background: var(--bg-secondary); border: 2px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.95rem;">
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- RSO Section (shown when RSO selected) -->
-                        <div id="rsoSection" style="display: none;">
-                            <div class="form-group">
-                                <label>RSO Notes</label>
-                                <textarea id="rsoNotes" placeholder="Any notes about the RSO extraction..."></textarea>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Extraction Notes</label>
-                            <textarea id="extractionNotes" placeholder="Extraction conditions, observations, issues..."></textarea>
-                        </div>
-                        
-                        <div style="background: rgba(59, 130, 246, 0.15); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <strong>💡 Workflow Options:</strong>
-                            <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
-                                <li><strong>Start Processing:</strong> Mark batch as in-progress (tracking only, can finish later)</li>
-                                <li><strong>Pause/Resume:</strong> Temporarily pause work (breaks, end of shift, equipment issues)</li>
-                                <li><strong>Complete Extraction:</strong> Finish processing (skips "start" if single run)</li>
-                            </ul>
-                        </div>
-                        
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button type="button" class="btn" style="background: var(--accent-blue); flex: 1; min-width: 200px;" onclick="startProcessing()">▶️ Start Processing</button>
-                            <button type="button" class="btn" id="pauseExtractionBtn" style="background: var(--accent-orange); flex: 1; min-width: 200px; display: none;" onclick="togglePauseExtraction()">⏸️ Pause</button>
-                            <button type="button" class="btn" style="background: var(--accent-green); flex: 1; min-width: 200px;" onclick="submitExtraction()">✅ Complete Extraction</button>
-                        </div>
-                    </div>
+                <!-- Pull Batch Buttons -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                    <button class="btn" style="background: var(--accent-green); padding: 15px; font-weight: 600;" onclick="openPullBatchModal('left')">
+                        🫙 Pull Batch (Left)
+                    </button>
+                    <button class="btn" style="background: var(--accent-green); padding: 15px; font-weight: 600;" onclick="openPullBatchModal('right')">
+                        🫙 Pull Batch (Right)
+                    </button>
                 </div>
             </div>
         </div>
-
+        
+        <!-- Finishing Station -->
         <!-- Post Extraction Station -->
         <div class="station-content" id="finishing">
             <div class="form-section">
@@ -2187,6 +2084,136 @@
         </div>
     </div>
     
+    <!-- Pull Batch Modal -->
+    <div id="pullBatchModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10003; overflow-y: auto;">
+        <div style="max-width: 600px; margin: 50px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(16, 185, 129, 0.4);">
+            <div style="background: linear-gradient(135deg, var(--accent-green), var(--accent-blue)); padding: 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="color: white; margin: 0; font-size: 1.8rem;" id="pullBatchModalTitle">🫙 Pull Batch from Pot</h2>
+                    <button onclick="closePullBatchModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px;">&times;</button>
+                </div>
+            </div>
+            <div style="padding: 30px;">
+                <!-- Current Pot Info -->
+                <div id="pullBatchInfo" style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 25px; text-align: center;">
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 5px;">Batch in Pot</div>
+                    <div id="pullBatchNumber" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 10px;">-</div>
+                    <div id="pullBatchRuns" style="font-size: 1.2rem; color: var(--text-primary);">0 runs collected</div>
+                </div>
+                
+                <form id="pullBatchForm" onsubmit="event.preventDefault(); submitPullBatch();">
+                    <!-- Product Type Selection -->
+                    <div class="form-group">
+                        <label>Product Type Pulled</label>
+                        <select id="pullProductType" required onchange="updatePullFields()">
+                            <option value="">Select product type...</option>
+                            <option value="shatter">Shatter (count slabs)</option>
+                            <option value="wax">Wax (count bowls)</option>
+                            <option value="sugar_wax">Sugar Wax (count bowls)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Shatter Fields -->
+                    <div id="shatterFields" style="display: none;">
+                        <div class="form-group">
+                            <label>Number of Slabs</label>
+                            <input type="number" id="pullSlabs" min="0" placeholder="0">
+                            <div class="help-text">How many slabs of shatter were pulled?</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Wax/Sugar Wax Fields -->
+                    <div id="waxFields" style="display: none;">
+                        <div class="form-group">
+                            <label>Number of Bowls</label>
+                            <input type="number" id="pullBowls" min="0" placeholder="0">
+                            <div class="help-text">How many bowls of wax/sugar wax were pulled?</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div class="form-group">
+                        <label>Notes (Optional)</label>
+                        <textarea id="pullNotes" placeholder="Consistency, color, any observations..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn" style="background: var(--accent-green); width: 100%; font-size: 1.1rem;">
+                        ✅ Record Pull & Empty Pot
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Machine Status Modal -->
+    <div id="machineModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10003; overflow-y: auto;">
+        <div style="max-width: 600px; margin: 50px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);">
+            <div style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); padding: 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="color: white; margin: 0; font-size: 1.8rem;" id="machineModalTitle">⚗️ Machine Status</h2>
+                    <button onclick="closeMachineModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px;">&times;</button>
+                </div>
+            </div>
+            <div style="padding: 30px;">
+                <form id="machineForm" onsubmit="event.preventDefault(); saveMachineStatus();">
+                    <!-- Column Status -->
+                    <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">📦 Column</h3>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Batch in Column</label>
+                            <select id="machineColumnBatch">
+                                <option value="">Empty / Not Loaded</option>
+                            </select>
+                            <div class="help-text">Which batch of trim is packed in the column? (Large batches can be in both machines)</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pot Status -->
+                    <div style="background: rgba(147, 51, 234, 0.1); border-left: 4px solid var(--accent-purple); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-purple); margin: 0 0 15px 0;">🫙 Pot</h3>
+                        <div class="form-group">
+                            <label>Batch in Pot</label>
+                            <select id="machinePotBatch">
+                                <option value="">Empty / Not Loaded</option>
+                            </select>
+                            <div class="help-text">Which batch is currently in the pot? (Can be same as column or different)</div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Runs in Pot</label>
+                            <input type="number" id="machinePotRuns" min="0" placeholder="0">
+                            <div class="help-text">How many runs have been collected in the pot for this batch?</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Status -->
+                    <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--accent-green); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-green); margin: 0 0 15px 0;">🔬 Filter Column</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Clay (cups)</label>
+                                <input type="number" id="machineFilterClay" step="0.5" min="0" placeholder="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Silica (cups)</label>
+                                <input type="number" id="machineFilterSilica" step="0.5" min="0" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Runs Through Filter</label>
+                            <input type="number" id="machineFilterRuns" min="0" placeholder="0">
+                            <div class="help-text">How many runs have been processed through this filter?</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button type="button" class="btn" style="background: var(--accent-red);" onclick="clearMachineStatus()">🗑️ Clear All</button>
+                        <button type="submit" class="btn" style="background: var(--accent-green);">✅ Save Status</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
     <!-- Extraction Supplies Modal -->
     <div id="suppliesModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10002; overflow-y: auto;">
         <div style="max-width: 700px; margin: 50px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);">
@@ -2481,6 +2508,8 @@
         let supabaseClient = null;
         let batches = [];
         let currentRole = null;
+        let currentMachine = null; // 'left' or 'right' for machine modal
+        let currentPullMachine = null; // 'left' or 'right' for pull batch modal
         let batchCounter = 1000;
         let realtimeChannel = null;
 
@@ -2631,11 +2660,14 @@ CREATE TABLE wm_batches (
     extraction_date DATE,
     extraction_method TEXT,
     extraction_machine TEXT,
+    extraction_runs INTEGER,
+    extraction_slabs INTEGER,
+    extraction_bowls INTEGER,
+    extraction_notes TEXT,
     butane_used DECIMAL(10,2),
     nitrogen_tanks_used DECIMAL(5,2),
     product_made TEXT,
     crude_weight DECIMAL(10,2),
-    extraction_notes TEXT,
     extraction_user TEXT,
     extraction_yield DECIMAL(5,2),
     extraction_paused BOOLEAN DEFAULT FALSE,
@@ -2786,6 +2818,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             updateDashboard();
             renderBatches();
             updateSuppliesButton(); // Update supplies button display
+            updateMachineDisplays(); // Update machine status displays
             
             // Initialize dropdown search filters (only once)
             if (!window.searchFiltersInitialized) {
@@ -2905,7 +2938,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 } else if (station === 'performance') {
                     renderPerformanceAnalytics();
                 } else if (station === 'extraction') {
-                    populateExtractionSelect();
+                    
                 } else if (station === 'finishing') {
                     populateFinishingSelect();
                 } else if (station === 'packaging') {
@@ -3382,455 +3415,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         // Extraction functions
-        function populateExtractionSelect() {
-            const select = document.getElementById('extractionBatchSelect');
-            const intakeBatches = batches.filter(b => b.status === 'intake');
-            
-            select.innerHTML = '<option value="">Select a batch...</option>';
-            intakeBatches.forEach(batch => {
-                const pauseIndicator = batch.extraction_paused ? ' ⏸️ PAUSED' : '';
-                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} (${batch.trim_weight}g)${pauseIndicator}</option>`;
-            });
-        }
-
-        document.getElementById('extractionBatchSelect').addEventListener('change', function() {
-            const form = document.getElementById('extractionForm');
-            const preSiftOnlySection = document.getElementById('preSiftOnlySection');
-            const mainExtractionSection = document.getElementById('mainExtractionSection');
-            const preSiftInfo = document.getElementById('preSiftInfo');
-            
-            form.style.display = this.value ? 'block' : 'none';
-            
-            if (this.value) {
-                const batch = batches.find(b => b.id === this.value);
-                
-                // Display planned products and batch info
-                const plannedProductsDisplay = document.getElementById('plannedProductsDisplay');
-                const batchTypeDisplay = document.getElementById('batchTypeDisplay');
-                
-                // Show planned products if available
-                if (batch.planned_products && batch.planned_products.length > 0) {
-                    plannedProductsDisplay.innerHTML = batch.planned_products.map(product => `
-                        <div style="background: rgba(147, 51, 234, 0.2); color: var(--accent-purple); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95rem; border: 2px solid var(--accent-purple);">
-                            ${product}
-                        </div>
-                    `).join('');
-                } else {
-                    plannedProductsDisplay.innerHTML = '<div style="color: var(--text-secondary); font-style: italic;">No specific products planned at intake</div>';
-                }
-                
-                // Show batch type and material agreement
-                batchTypeDisplay.innerHTML = `
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9rem;">
-                        <div>
-                            <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Material Agreement</div>
-                            <div style="font-weight: 600; color: var(--accent-blue);">${batch.material_agreement || 'Not specified'}</div>
-                        </div>
-                        <div>
-                            <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Pre-Sift</div>
-                            <div style="font-weight: 600; color: ${batch.pre_sift === 'yes' ? 'var(--accent-orange)' : 'var(--accent-green)'};">${batch.pre_sift === 'yes' ? 'Yes - Sift first' : 'No - Direct to extraction'}</div>
-                        </div>
-                    </div>
-                `;
-                
-                // Check if this batch needs pre-sift AND hasn't had it done yet
-                if (batch.pre_sift === 'yes' && !batch.sift_sub_batch_created) {
-                    // Step 1: Show ONLY the sift weight entry
-                    preSiftOnlySection.style.display = 'block';
-                    mainExtractionSection.style.display = 'none';
-                    
-                    // Show calculation as user types
-                    document.getElementById('siftWeightOnly').addEventListener('input', function() {
-                        const siftWeight = parseFloat(this.value) || 0;
-                        const remaining = batch.trim_weight - siftWeight;
-                        document.getElementById('siftCalcDisplay').innerHTML = `
-                            <div>Original Trim: ${batch.trim_weight}g</div>
-                            <div style="color: var(--accent-orange);">Sift Collected: ${siftWeight}g</div>
-                            <div style="color: var(--accent-green);">Remaining for BHO: ${remaining}g</div>
-                        `;
-                    });
-                } else {
-                    // Step 2: Show main extraction form (either no sift needed, or sift already done)
-                    preSiftOnlySection.style.display = 'none';
-                    mainExtractionSection.style.display = 'block';
-                    
-                    // If sift was already done, show summary
-                    if (batch.pre_sift === 'yes' && batch.sift_sub_batch_created) {
-                        preSiftInfo.style.display = 'block';
-                        document.getElementById('preSiftSummary').innerHTML = `
-                            <div style="margin-top: 10px;">
-                                <div>Sift Collected: ${batch.sift_weight}g (sub-batch: ${batch.sift_sub_batch_id})</div>
-                                <div>Processing Material: ${batch.adjusted_trim_weight}g</div>
-                            </div>
-                        `;
-                    } else {
-                        preSiftInfo.style.display = 'none';
-                    }
-                }
-                
-                // Update pause button visibility
-                updatePauseButtons();
-            }
-        });
-
-        // Extraction method change handler - show appropriate product section
-        document.getElementById('extractionMethod').addEventListener('change', function() {
-            const bhoSection = document.getElementById('bhoProductSection');
-            const rsoSection = document.getElementById('rsoSection');
-            const crudeWeight = document.getElementById('crudeWeight');
-            const rsoWeight = document.getElementById('rsoWeight');
-            
-            if (this.value === 'BHO') {
-                bhoSection.style.display = 'block';
-                rsoSection.style.display = 'none';
-                crudeWeight.required = true;
-                rsoWeight.required = false;
-            } else if (this.value === 'RSO') {
-                bhoSection.style.display = 'none';
-                rsoSection.style.display = 'block';
-                crudeWeight.required = false;
-                rsoWeight.required = true;
-            } else {
-                bhoSection.style.display = 'none';
-                rsoSection.style.display = 'none';
-                crudeWeight.required = false;
-                rsoWeight.required = false;
-            }
-        });
-
-        // Submit sift weight only and create sub-batch
-        async function submitSiftOnly() {
-            if (!currentRole) {
-                alert('Please login first!');
-                return;
-            }
-            
-            const batchId = document.getElementById('extractionBatchSelect').value;
-            const batch = batches.find(b => b.id === batchId);
-            
-            if (!batch) {
-                alert('Batch not found');
-                return;
-            }
-            
-            const siftWeight = parseFloat(document.getElementById('siftWeightOnly').value);
-            
-            if (!siftWeight || siftWeight <= 0) {
-                alert('Please enter a valid sift weight');
-                return;
-            }
-            
-            if (siftWeight >= batch.trim_weight) {
-                alert('Sift weight cannot be greater than or equal to total trim weight');
-                return;
-            }
-            
-            const adjustedTrimWeight = batch.trim_weight - siftWeight;
-            const siftSubBatchId = `${batchId}-SIFT`;
-            
-            // Create the sift sub-batch - must include all NOT NULL fields
-            const siftBatch = {
-                id: siftSubBatchId,
-                strain: batch.strain,
-                strain_type: batch.strain_type,
-                trim_weight: siftWeight,
-                material_cost: 0,
-                material_agreement: batch.material_agreement || 'Wholesale',
-                pre_sift: 'no',
-                cultivation_license: batch.cultivation_license || '403R-00000',
-                intake_date: batch.intake_date,
-                planned_products: ['Dry Sift Hash'],
-                intake_notes: `Sift sub-batch from ${batchId}`,
-                status: 'extraction',
-                intake_user: batch.intake_user,
-                timeline: [{
-                    stage: 'intake',
-                    timestamp: new Date(batch.intake_date).toISOString(),
-                    user: batch.intake_user
-                }, {
-                    stage: 'extraction',
-                    timestamp: new Date().toISOString(),
-                    user: currentRole.name
-                }]
-            };
-            
-            console.log('Creating sift sub-batch:', siftBatch);
-            
-            // Insert sift sub-batch
-            const { error: siftError } = await supabaseClient
-                .from('wm_batches')
-                .insert([siftBatch]);
-            
-            if (siftError) {
-                console.error('Error creating sift sub-batch:', siftError);
-                alert(`Error creating sift sub-batch: ${siftError.message}`);
-                return;
-            }
-            
-            // Update main batch to mark sift as done
-            const timeline = batch.timeline || [];
-            timeline.push({
-                stage: 'extraction',
-                timestamp: new Date().toISOString(),
-                user: currentRole.name
-            });
-            
-            const { error: updateError } = await supabaseClient
-                .from('wm_batches')
-                .update({
-                    sift_weight: siftWeight,
-                    adjusted_trim_weight: adjustedTrimWeight,
-                    sift_sub_batch_created: true,
-                    sift_sub_batch_id: siftSubBatchId,
-                    timeline: timeline
-                })
-                .eq('id', batchId);
-            
-            if (updateError) {
-                console.error('Error updating main batch:', updateError);
-                alert('Error updating batch. Please try again.');
-                return;
-            }
-            
-            alert(`Sift sub-batch created!\n\nSift: ${siftWeight}g (${siftSubBatchId})\nRemaining: ${adjustedTrimWeight}g\n\nYou can now process the remaining material.`);
-            
-            await loadBatches();
-            // Re-trigger the select to update the display
-            document.getElementById('extractionBatchSelect').value = batchId;
-            document.getElementById('extractionBatchSelect').dispatchEvent(new Event('change'));
-        }
-
-        // Start processing (marks batch as in-progress)
-        async function startProcessing() {
-            if (!currentUser) {
-                alert('Please select a user first!');
-                return;
-            }
-            
-            const batchId = document.getElementById('extractionBatchSelect').value;
-            const batch = batches.find(b => b.id === batchId);
-            
-            if (!batch) return;
-            
-            const extractionMethod = document.getElementById('extractionMethod').value;
-            
-            if (!extractionMethod) {
-                alert('Please select extraction method');
-                return;
-            }
-            
-            const confirmation = confirm(
-                `Mark batch ${batchId} as STARTED?\n\n` +
-                `This will:\n` +
-                `• Add "Processing Started" to timeline\n` +
-                `• Keep status as "intake" (not yet complete)\n` +
-                `• Allow you to finish later\n\n` +
-                `You can skip this and go straight to "Complete Extraction" for single runs.`
-            );
-            
-            if (!confirmation) return;
-            
-            const timeline = batch.timeline || [];
-            timeline.push({
-                stage: 'extraction',
-                user: currentRole ? currentRole.name : "Unknown",
-                date: new Date().toISOString(),
-                action: `Processing started - ${extractionMethod} method`
-            });
-            
-            const { error } = await supabaseClient
-                .from('wm_batches')
-                .update({
-                    extraction_method: extractionMethod,
-                    extraction_notes: document.getElementById('extractionNotes').value || null,
-                    timeline: timeline
-                })
-                .eq('id', batchId);
-            
-            if (error) {
-                console.error('Error marking batch as started:', error);
-                alert('Error updating batch. Please try again.');
-                return;
-            }
-            
-            alert(`✅ Batch ${batchId} marked as processing!\n\n` +
-                  `Method: ${extractionMethod}\n` +
-                  `Started by: ${currentRole.name}\n\n` +
-                  `Return here and click "Complete Extraction" when done.`);
-            
-            // Clear form and refresh
-            document.getElementById('extractionForm').style.display = 'none';
-            document.getElementById('extractionBatchSelect').value = '';
-            
-            await loadBatches();
-            populateExtractionSelect();
-        }
-
-        // Toggle pause/resume for extraction
-        async function togglePauseExtraction() {
-            if (!currentUser) {
-                alert('Please select a user first!');
-                return;
-            }
-            
-            const batchId = document.getElementById('extractionBatchSelect').value;
-            const batch = batches.find(b => b.id === batchId);
-            
-            if (!batch) {
-                alert('Please select a batch first!');
-                return;
-            }
-            
-            const isPaused = batch.extraction_paused || false;
-            const action = isPaused ? 'RESUME' : 'PAUSE';
-            const actionVerb = isPaused ? 'Resumed' : 'Paused';
-            
-            const confirmation = confirm(
-                `${action} extraction for batch ${batchId}?\n\n` +
-                `This will:\n` +
-                `• Add "${actionVerb}" to timeline\n` +
-                `• ${isPaused ? 'Allow work to continue' : 'Temporarily stop work'}\n` +
-                `• Keep batch in extraction stage`
-            );
-            
-            if (!confirmation) return;
-            
-            const timeline = batch.timeline || [];
-            timeline.push({
-                stage: 'extraction',
-                user: currentRole ? currentRole.name : "Unknown",
-                date: new Date().toISOString(),
-                action: `Extraction ${actionVerb.toLowerCase()} - ${batch.extraction_method || 'unknown method'}`
-            });
-            
-            const { error } = await supabaseClient
-                .from('wm_batches')
-                .update({
-                    extraction_paused: !isPaused,
-                    timeline: timeline
-                })
-                .eq('id', batchId);
-            
-            if (error) {
-                console.error('Error toggling pause:', error);
-                alert('Error updating batch. Please try again.');
-                return;
-            }
-            
-            alert(`✅ Extraction ${actionVerb.toLowerCase()} for batch ${batchId}!\n\n` +
-                  `${isPaused ? 'Work can continue.' : 'Work temporarily stopped.'}\n` +
-                  `${actionVerb} by: ${currentRole.name}`);
-            
-            await loadBatches();
-            populateExtractionSelect();
-            // Keep the batch selected
-            document.getElementById('extractionBatchSelect').value = batchId;
-            document.getElementById('extractionBatchSelect').dispatchEvent(new Event('change'));
-        }
-
-        async function submitExtraction() {
-            if (!currentRole) {
-                alert('Please login first!');
-                return;
-            }
-            
-            const batchId = document.getElementById('extractionBatchSelect').value;
-            const batch = batches.find(b => b.id === batchId);
-            
-            if (!batch) return;
-            
-            const extractionMethod = document.getElementById('extractionMethod').value;
-            let productMade = '';
-            
-            // Handle BHO products (checkboxes)
-            if (extractionMethod === 'BHO') {
-                const selectedProducts = Array.from(document.querySelectorAll('input[name="bho_products"]:checked'))
-                    .map(cb => cb.value);
-                
-                if (selectedProducts.length === 0) {
-                    alert('Please select at least one BHO product type');
-                    return;
-                }
-                
-                productMade = selectedProducts.join(' + ');
-            } else if (extractionMethod === 'RSO') {
-                productMade = 'RSO';
-            }
-            
-            // Get bulk jars and shatter slabs counts
-            const bulkJarsCount = parseInt(document.getElementById('bulkJarsCount')?.value) || null;
-            const shatterSlabsCount = parseInt(document.getElementById('shatterSlabsCount')?.value) || null;
-            
-            // Get machine and supply usage
-            const extractionMachine = document.getElementById('extractionMachine').value;
-            const butaneUsed = parseFloat(document.getElementById('butaneUsed').value) || 0;
-            const nitrogenTanksUsed = parseFloat(document.getElementById('nitrogenTanksUsed').value) || 0;
-            
-            if (!extractionMachine) {
-                alert('Please select which extraction machine you are using');
-                return;
-            }
-            
-            const timeline = batch.timeline || [];
-            
-            timeline.push({
-                stage: 'extraction',
-                timestamp: new Date().toISOString(),
-                user: currentRole ? currentRole.name : "Unknown",
-                action: `Extraction completed - ${extractionMethod} - ${productMade} on ${extractionMachine}${butaneUsed > 0 ? ` - ${butaneUsed}lbs butane used` : ''}${nitrogenTanksUsed > 0 ? ` - ${nitrogenTanksUsed} N2 tanks used` : ''}`
-            });
-            
-            const updateData = {
-                status: 'extraction',
-                extraction_method: extractionMethod,
-                extraction_machine: extractionMachine,
-                butane_used: butaneUsed > 0 ? butaneUsed : null,
-                nitrogen_tanks_used: nitrogenTanksUsed > 0 ? nitrogenTanksUsed : null,
-                product_made: productMade,
-                extraction_notes: document.getElementById('extractionNotes').value,
-                extraction_user: currentRole ? currentRole.name : "Unknown",
-                timeline: timeline
-            };
-            
-            // Add optional fields if they have values
-            if (bulkJarsCount !== null) {
-                updateData.bulk_jars_count = bulkJarsCount;
-            }
-            if (shatterSlabsCount !== null) {
-                updateData.shatter_slabs_count = shatterSlabsCount;
-            }
-            
-            const { error } = await supabaseClient
-                .from('wm_batches')
-                .update(updateData)
-                .eq('id', batchId);
-            
-            if (error) {
-                console.error('Error updating batch:', error);
-                alert('Error updating batch. Please try again.');
-                return;
-            }
-            
-            alert(`Extraction completed for ${batchId}!`);
-            
-            document.getElementById('extractionForm').style.display = 'none';
-            document.getElementById('extractionBatchSelect').value = '';
-            document.getElementById('extractionNotes').value = '';
-            document.getElementById('crudeWeight').value = '';
-            document.getElementById('rsoWeight').value = '';
-            document.getElementById('bulkJarsCount').value = '';
-            document.getElementById('shatterSlabsCount').value = '';
-            document.getElementById('extractionMachine').value = '';
-            document.getElementById('butaneUsed').value = '';
-            document.getElementById('nitrogenTanksUsed').value = '';
-            
-            // Uncheck BHO product checkboxes
-            document.querySelectorAll('input[name="bho_products"]').forEach(cb => cb.checked = false);
-            
-            await loadBatches();
-            populateExtractionSelect();
-        }
-
+        
         // Finishing functions
         function populateFinishingSelect() {
             const select = document.getElementById('finishingBatchSelect');
@@ -4918,6 +4503,293 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
         
         // Inventory Management Functions
+        // Pull Batch Functions
+        
+        function openPullBatchModal(machine) {
+            currentPullMachine = machine;
+            const machineName = machine === 'left' ? 'Left Machine' : 'Right Machine';
+            document.getElementById('pullBatchModalTitle').textContent = `🫙 Pull Batch from ${machineName}`;
+            
+            // Get machine status
+            const machineStatus = JSON.parse(localStorage.getItem(`wm_machine_${machine}`) || '{}');
+            
+            if (!machineStatus.potBatch) {
+                alert('⚠️ No batch in pot!\n\nPlease load a batch in the pot first using the machine status button.');
+                return;
+            }
+            
+            // Get batch info
+            const batch = batches.find(b => b.id == machineStatus.potBatch);
+            if (batch) {
+                document.getElementById('pullBatchNumber').textContent = batch.id;
+                document.getElementById('pullBatchRuns').textContent = `${machineStatus.potRuns || 0} runs collected`;
+            }
+            
+            // Clear form
+            document.getElementById('pullProductType').value = '';
+            document.getElementById('pullSlabs').value = '';
+            document.getElementById('pullBowls').value = '';
+            document.getElementById('pullNotes').value = '';
+            updatePullFields();
+            
+            document.getElementById('pullBatchModal').style.display = 'block';
+        }
+        
+        function closePullBatchModal() {
+            document.getElementById('pullBatchModal').style.display = 'none';
+            currentPullMachine = null;
+        }
+        
+        function updatePullFields() {
+            const productType = document.getElementById('pullProductType').value;
+            
+            document.getElementById('shatterFields').style.display = productType === 'shatter' ? 'block' : 'none';
+            document.getElementById('waxFields').style.display = (productType === 'wax' || productType === 'sugar_wax') ? 'block' : 'none';
+        }
+        
+        function submitPullBatch() {
+            if (!currentPullMachine) return;
+            
+            const machineStatus = JSON.parse(localStorage.getItem(`wm_machine_${currentPullMachine}`) || '{}');
+            
+            if (!machineStatus.potBatch) {
+                alert('No batch in pot!');
+                return;
+            }
+            
+            const productType = document.getElementById('pullProductType').value;
+            const slabs = parseInt(document.getElementById('pullSlabs').value) || 0;
+            const bowls = parseInt(document.getElementById('pullBowls').value) || 0;
+            const notes = document.getElementById('pullNotes').value;
+            
+            if (!productType) {
+                alert('Please select a product type');
+                return;
+            }
+            
+            if (productType === 'shatter' && slabs === 0) {
+                alert('Please enter the number of slabs');
+                return;
+            }
+            
+            if ((productType === 'wax' || productType === 'sugar_wax') && bowls === 0) {
+                alert('Please enter the number of bowls');
+                return;
+            }
+            
+            // Get batch info
+            const batch = batches.find(b => b.id == machineStatus.potBatch);
+            
+            if (!batch) {
+                alert('Batch not found!');
+                return;
+            }
+            
+            // Create pull record
+            const pullRecord = {
+                batchId: machineStatus.potBatch,
+                batchNumber: batch.id,
+                machine: currentPullMachine,
+                productType: productType,
+                slabs: slabs,
+                bowls: bowls,
+                runs: machineStatus.potRuns || 0,
+                notes: notes,
+                timestamp: new Date().toISOString(),
+                pulledBy: currentRole ? currentRole.name : 'Unknown'
+            };
+            
+            // Save to localStorage
+            const pullHistory = JSON.parse(localStorage.getItem('wm_pull_history') || '[]');
+            pullHistory.push(pullRecord);
+            localStorage.setItem('wm_pull_history', JSON.stringify(pullHistory));
+            
+            // Update batch status to 'extraction' (completing extraction phase)
+            const productTypeText = productType === 'shatter' ? 'Shatter' : 
+                                   productType === 'wax' ? 'Wax' : 'Sugar Wax';
+            const amountText = productType === 'shatter' ? `${slabs} slab(s)` : `${bowls} bowl(s)`;
+            
+            const updatedBatch = {
+                ...batch,
+                status: 'extraction',
+                extraction_method: 'BHO',
+                product_type: productTypeText,
+                extraction_machine: currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)',
+                extraction_runs: machineStatus.potRuns || 0,
+                extraction_slabs: productType === 'shatter' ? slabs : null,
+                extraction_bowls: (productType === 'wax' || productType === 'sugar_wax') ? bowls : null,
+                extraction_notes: notes,
+                timeline: [
+                    ...(batch.timeline || []),
+                    {
+                        timestamp: new Date().toISOString(),
+                        status: 'extraction',
+                        user: currentRole ? currentRole.name : 'Unknown',
+                        note: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.potRuns || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}`
+                    }
+                ]
+            };
+            
+            // Update batch in Supabase
+            supabaseClient
+                .from('wm_batches')
+                .update(updatedBatch)
+                .eq('id', batch.id)
+                .then(({ error }) => {
+                    if (error) {
+                        console.error('Error updating batch:', error);
+                        alert('Error completing extraction. Please try again.');
+                        return;
+                    }
+                    
+                    // Clear pot in machine status
+                    machineStatus.potBatch = '';
+                    machineStatus.potRuns = 0;
+                    localStorage.setItem(`wm_machine_${currentPullMachine}`, JSON.stringify(machineStatus));
+                    
+                    // Reload batches and update displays
+                    loadBatches();
+                    updateMachineDisplays();
+                    closePullBatchModal();
+                    
+                    alert(`✅ Extraction Complete!\n\n${batch.id}\n${productTypeText}: ${amountText}\n${machineStatus.potRuns || 0} runs\n\nBatch moved to Finishing stage.\nPot has been emptied.`);
+                });
+        }
+        
+        // Machine Status Tracking
+        
+        function openMachineModal(machine) {
+            currentMachine = machine;
+            const machineName = machine === 'left' ? 'Left Machine' : 'Right Machine';
+            document.getElementById('machineModalTitle').textContent = `⚗️ ${machineName}`;
+            
+            // Load machine status from localStorage
+            const machineStatus = JSON.parse(localStorage.getItem(`wm_machine_${machine}`) || '{}');
+            
+            // Populate batch dropdowns with current batches in intake status
+            const columnSelect = document.getElementById('machineColumnBatch');
+            const potSelect = document.getElementById('machinePotBatch');
+            
+            // Clear and repopulate
+            columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+            potSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+            
+            batches.forEach(batch => {
+                if (batch.status === 'intake') {
+                    const option = `<option value="${batch.id}">${batch.id} - ${batch.cultivation_license} - ${batch.strain}</option>`;
+                    columnSelect.innerHTML += option;
+                    potSelect.innerHTML += option;
+                }
+            });
+            
+            // Set current values
+            columnSelect.value = machineStatus.columnBatch || '';
+            potSelect.value = machineStatus.potBatch || '';
+            document.getElementById('machinePotRuns').value = machineStatus.potRuns || '';
+            document.getElementById('machineFilterClay').value = machineStatus.filterClay || '';
+            document.getElementById('machineFilterSilica').value = machineStatus.filterSilica || '';
+            document.getElementById('machineFilterRuns').value = machineStatus.filterRuns || '';
+            
+            document.getElementById('machineModal').style.display = 'block';
+        }
+        
+        function closeMachineModal() {
+            document.getElementById('machineModal').style.display = 'none';
+            currentMachine = null;
+        }
+        
+        function saveMachineStatus() {
+            if (!currentMachine) return;
+            
+            const columnBatch = document.getElementById('machineColumnBatch').value;
+            const potBatch = document.getElementById('machinePotBatch').value;
+            const potRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
+            const filterClay = parseFloat(document.getElementById('machineFilterClay').value) || 0;
+            const filterSilica = parseFloat(document.getElementById('machineFilterSilica').value) || 0;
+            const filterRuns = parseInt(document.getElementById('machineFilterRuns').value) || 0;
+            
+            const machineStatus = {
+                columnBatch: columnBatch,
+                potBatch: potBatch,
+                potRuns: potRuns,
+                filterClay: filterClay,
+                filterSilica: filterSilica,
+                filterRuns: filterRuns,
+                lastUpdated: new Date().toISOString(),
+                updatedBy: currentRole ? currentRole.name : 'Unknown'
+            };
+            
+            localStorage.setItem(`wm_machine_${currentMachine}`, JSON.stringify(machineStatus));
+            updateMachineDisplays();
+            closeMachineModal();
+            
+            alert(`✅ ${currentMachine === 'left' ? 'Left' : 'Right'} Machine Status Saved!`);
+        }
+        
+        function clearMachineStatus() {
+            if (!currentMachine) return;
+            
+            if (!confirm(`Are you sure you want to clear all status for the ${currentMachine} machine?\n\nThis will reset column, pot, and filter information.`)) {
+                return;
+            }
+            
+            localStorage.removeItem(`wm_machine_${currentMachine}`);
+            
+            // Clear form
+            document.getElementById('machineColumnBatch').value = '';
+            document.getElementById('machinePotBatch').value = '';
+            document.getElementById('machinePotRuns').value = '';
+            document.getElementById('machineFilterClay').value = '';
+            document.getElementById('machineFilterSilica').value = '';
+            document.getElementById('machineFilterRuns').value = '';
+            
+            updateMachineDisplays();
+            
+            alert(`✅ ${currentMachine === 'left' ? 'Left' : 'Right'} Machine Cleared!`);
+        }
+        
+        function updateMachineDisplays() {
+            ['left', 'right'].forEach(machine => {
+                const machineStatus = JSON.parse(localStorage.getItem(`wm_machine_${machine}`) || '{}');
+                
+                // Get batch info
+                let columnText = 'Empty';
+                let potText = 'Empty';
+                
+                if (machineStatus.columnBatch) {
+                    const batch = batches.find(b => b.id == machineStatus.columnBatch);
+                    columnText = batch ? `${batch.id}` : 'Unknown batch';
+                }
+                
+                if (machineStatus.potBatch) {
+                    const batch = batches.find(b => b.id == machineStatus.potBatch);
+                    if (batch) {
+                        potText = `${batch.id}`;
+                        if (machineStatus.potRuns) {
+                            potText += ` (${machineStatus.potRuns} runs)`;
+                        }
+                    } else {
+                        potText = 'Unknown batch';
+                    }
+                }
+                
+                // Filter status
+                let filterText = 'Not loaded';
+                if (machineStatus.filterClay || machineStatus.filterSilica || machineStatus.filterRuns) {
+                    const parts = [];
+                    if (machineStatus.filterClay) parts.push(`${machineStatus.filterClay}c clay`);
+                    if (machineStatus.filterSilica) parts.push(`${machineStatus.filterSilica}c silica`);
+                    if (machineStatus.filterRuns) parts.push(`${machineStatus.filterRuns} runs`);
+                    filterText = parts.join(', ');
+                }
+                
+                // Update display
+                document.getElementById(`${machine}ColumnBatch`).textContent = columnText;
+                document.getElementById(`${machine}PotBatch`).textContent = potText;
+                document.getElementById(`${machine}FilterStatus`).textContent = filterText;
+            });
+        }
+        
         // Supplies Modal
         function openSuppliesModal() {
             const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
@@ -8720,7 +8592,7 @@ ${employeeReport || 'No activity recorded today'}
             renderBatches();
             
             // Refresh all selects
-            populateExtractionSelect();
+            
             populateFinishingSelect();
             populatePackagingSelect();
             populateTestingSelect();
