@@ -3430,12 +3430,19 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 if (batch.is_sub_batch) {
                     label = `${batch.id} - ${batch.strain} - ${batch.product_made} (SUB-BATCH)`;
                 } else {
-                    // Build label with jar/slab counts instead of crude weight
+                    // Build label with jar/slab counts from pull batch
                     let counts = [];
-                    if (batch.bulk_jars_count > 0) {
+                    if (batch.extraction_slabs && batch.extraction_slabs > 0) {
+                        counts.push(`${batch.extraction_slabs} slabs`);
+                    }
+                    if (batch.extraction_bowls && batch.extraction_bowls > 0) {
+                        counts.push(`${batch.extraction_bowls} bowls`);
+                    }
+                    // Fallback to old fields if they exist
+                    if (!counts.length && batch.bulk_jars_count && batch.bulk_jars_count > 0) {
                         counts.push(`${batch.bulk_jars_count} jars`);
                     }
-                    if (batch.shatter_slabs_count > 0) {
+                    if (!counts.length && batch.shatter_slabs_count && batch.shatter_slabs_count > 0) {
                         counts.push(`${batch.shatter_slabs_count} slabs`);
                     }
                     
@@ -3462,15 +3469,28 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     <p><strong>Material Agreement:</strong> ${batch.material_agreement}</p>
                 `;
                 
-                // Show bulk jars count if available
-                if (batch.bulk_jars_count && batch.bulk_jars_count > 0) {
+                // Show counts from pull batch
+                if (batch.extraction_slabs && batch.extraction_slabs > 0) {
+                    info += `<p style="background: rgba(245, 158, 11, 0.2); padding: 10px; border-radius: 8px; border-left: 4px solid var(--accent-orange); margin-top: 10px;">
+                        <strong>🔶 Shatter Slabs to Process:</strong> <span style="font-size: 1.3rem; font-weight: 700; color: var(--accent-orange);">${batch.extraction_slabs}</span>
+                    </p>`;
+                }
+                
+                if (batch.extraction_bowls && batch.extraction_bowls > 0) {
+                    const productName = batch.product_type === 'Sugar Wax' ? 'Sugar Wax' : 'Wax';
+                    info += `<p style="background: rgba(147, 51, 234, 0.2); padding: 10px; border-radius: 8px; border-left: 4px solid var(--accent-purple); margin-top: 10px;">
+                        <strong>📦 ${productName} Bowls to Process:</strong> <span style="font-size: 1.3rem; font-weight: 700; color: var(--accent-purple);">${batch.extraction_bowls}</span>
+                    </p>`;
+                }
+                
+                // Fallback to old fields if they exist (for legacy batches)
+                if (batch.bulk_jars_count && batch.bulk_jars_count > 0 && !batch.extraction_bowls) {
                     info += `<p style="background: rgba(147, 51, 234, 0.2); padding: 10px; border-radius: 8px; border-left: 4px solid var(--accent-purple); margin-top: 10px;">
                         <strong>📦 Bulk Jars to Process:</strong> <span style="font-size: 1.3rem; font-weight: 700; color: var(--accent-purple);">${batch.bulk_jars_count}</span>
                     </p>`;
                 }
                 
-                // Show shatter slabs count if available
-                if (batch.shatter_slabs_count && batch.shatter_slabs_count > 0) {
+                if (batch.shatter_slabs_count && batch.shatter_slabs_count > 0 && !batch.extraction_slabs) {
                     info += `<p style="background: rgba(245, 158, 11, 0.2); padding: 10px; border-radius: 8px; border-left: 4px solid var(--accent-orange); margin-top: 10px;">
                         <strong>🔶 Shatter Slabs to Process:</strong> <span style="font-size: 1.3rem; font-weight: 700; color: var(--accent-orange);">${batch.shatter_slabs_count}</span>
                     </p>`;
