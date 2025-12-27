@@ -1504,8 +1504,8 @@
                             <option value="Paige">Paige - PIN: 1992</option>
                             <option value="Donald">Donald - PIN: 1425</option>
                             <option value="Andrew">Andrew - PIN: 2817</option>
-                            <option value="Tobias">Tobias</option>
-                            <option value="Jeremy">Jeremy</option>
+                            <option value="Tobias">Tobias - PIN: 4200</option>
+                            <option value="Jeremy">Jeremy - PIN: 0710</option>
                         </select>
                     </div>
                     
@@ -4530,29 +4530,39 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const machineName = machine === 'left' ? 'Left Machine' : 'Right Machine';
             document.getElementById('pullBatchModalTitle').textContent = `🫙 Pull Batch from ${machineName}`;
             
-            // Get machine status
-            const machineStatus = JSON.parse(localStorage.getItem(`wm_machine_${machine}`) || '{}');
-            
-            if (!machineStatus.potBatch) {
-                alert('⚠️ No batch in pot!\n\nPlease load a batch in the pot first using the machine status button.');
-                return;
-            }
-            
-            // Get batch info
-            const batch = batches.find(b => b.id == machineStatus.potBatch);
-            if (batch) {
-                document.getElementById('pullBatchNumber').textContent = batch.id;
-                document.getElementById('pullBatchRuns').textContent = `${machineStatus.potRuns || 0} runs collected`;
-            }
-            
-            // Clear form
-            document.getElementById('pullProductType').value = '';
-            document.getElementById('pullSlabs').value = '';
-            document.getElementById('pullBowls').value = '';
-            document.getElementById('pullNotes').value = '';
-            updatePullFields();
-            
-            document.getElementById('pullBatchModal').style.display = 'block';
+            // Get machine status from Supabase
+            supabaseClient
+                .from('wm_machine_status')
+                .select('*')
+                .eq('machine', machine)
+                .single()
+                .then(({ data: machineStatus, error }) => {
+                    if (error) {
+                        console.error('Error loading machine status:', error);
+                        machineStatus = {};
+                    }
+                    
+                    if (!machineStatus.pot_batch) {
+                        alert('⚠️ No batch in pot!\n\nPlease load a batch in the pot first using the machine status button.');
+                        return;
+                    }
+                    
+                    // Get batch info
+                    const batch = batches.find(b => b.id == machineStatus.pot_batch);
+                    if (batch) {
+                        document.getElementById('pullBatchNumber').textContent = batch.id;
+                        document.getElementById('pullBatchRuns').textContent = `${machineStatus.pot_runs || 0} runs collected`;
+                    }
+                    
+                    // Clear form
+                    document.getElementById('pullProductType').value = '';
+                    document.getElementById('pullSlabs').value = '';
+                    document.getElementById('pullBowls').value = '';
+                    document.getElementById('pullNotes').value = '';
+                    updatePullFields();
+                    
+                    document.getElementById('pullBatchModal').style.display = 'block';
+                });
         }
         
         function closePullBatchModal() {
@@ -4570,50 +4580,61 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         function submitPullBatch() {
             if (!currentPullMachine) return;
             
-            const machineStatus = JSON.parse(localStorage.getItem(`wm_machine_${currentPullMachine}`) || '{}');
-            
-            if (!machineStatus.potBatch) {
-                alert('No batch in pot!');
-                return;
-            }
-            
-            const productType = document.getElementById('pullProductType').value;
-            const slabs = parseInt(document.getElementById('pullSlabs').value) || 0;
-            const bowls = parseInt(document.getElementById('pullBowls').value) || 0;
-            const notes = document.getElementById('pullNotes').value;
-            
-            if (!productType) {
-                alert('Please select a product type');
-                return;
-            }
-            
-            if (productType === 'shatter' && slabs === 0) {
-                alert('Please enter the number of slabs');
-                return;
-            }
-            
-            if ((productType === 'wax' || productType === 'sugar_wax') && bowls === 0) {
-                alert('Please enter the number of bowls');
-                return;
-            }
-            
-            // Get batch info
-            const batch = batches.find(b => b.id == machineStatus.potBatch);
-            
-            if (!batch) {
-                alert('Batch not found!');
-                return;
-            }
-            
+            // Get machine status from Supabase
+            supabaseClient
+                .from('wm_machine_status')
+                .select('*')
+                .eq('machine', currentPullMachine)
+                .single()
+                .then(({ data: machineStatus, error }) => {
+                    if (error || !machineStatus || !machineStatus.pot_batch) {
+                        alert('No batch in pot!');
+                        return;
+                    }
+                    
+                    const productType = document.getElementById('pullProductType').value;
+                    const slabs = parseInt(document.getElementById('pullSlabs').value) || 0;
+                    const bowls = parseInt(document.getElementById('pullBowls').value) || 0;
+                    const notes = document.getElementById('pullNotes').value;
+                    
+                    if (!productType) {
+                        alert('Please select a product type');
+                        return;
+                    }
+                    
+                    if (productType === 'shatter' && slabs === 0) {
+                        alert('Please enter the number of slabs');
+                        return;
+                    }
+                    
+                    if ((productType === 'wax' || productType === 'sugar_wax') && bowls === 0) {
+                        alert('Please enter the number of bowls');
+                        return;
+                    }
+                    
+                    // Get batch info
+                    const batch = batches.find(b => b.id == machineStatus.pot_batch);
+                    
+                    if (!batch) {
+                        alert('Batch not found!');
+                        return;
+                    }
+                    
+                    // Continue with the rest of the pull batch logic...
+                    completePullBatch(batch, machineStatus, productType, slabs, bowls, notes);
+                });
+        }
+        
+        function completePullBatch(batch, machineStatus, productType, slabs, bowls, notes) {
             // Create pull record
             const pullRecord = {
-                batchId: machineStatus.potBatch,
+                batchId: machineStatus.pot_batch,
                 batchNumber: batch.id,
                 machine: currentPullMachine,
                 productType: productType,
                 slabs: slabs,
                 bowls: bowls,
-                runs: machineStatus.potRuns || 0,
+                runs: machineStatus.pot_runs || 0,
                 notes: notes,
                 timestamp: new Date().toISOString(),
                 pulledBy: currentRole ? currentRole.name : 'Unknown'
@@ -4636,7 +4657,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 product_type: productTypeText,
                 product_made: productTypeText, // Also set product_made for finishing dropdown
                 extraction_machine: currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)',
-                extraction_runs: machineStatus.potRuns || 0,
+                extraction_runs: machineStatus.pot_runs || 0,
                 extraction_slabs: productType === 'shatter' ? slabs : null,
                 extraction_bowls: (productType === 'wax' || productType === 'sugar_wax') ? bowls : null,
                 extraction_notes: notes,
@@ -4646,7 +4667,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         timestamp: new Date().toISOString(),
                         status: 'extraction',
                         user: currentRole ? currentRole.name : 'Unknown',
-                        note: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.potRuns || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}`
+                        note: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.pot_runs || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}`
                     }
                 ]
             };
@@ -4665,17 +4686,30 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         return;
                     }
                     
-                    // Clear pot in machine status
-                    machineStatus.potBatch = '';
-                    machineStatus.potRuns = 0;
-                    localStorage.setItem(`wm_machine_${currentPullMachine}`, JSON.stringify(machineStatus));
+                    // Clear pot in machine status in Supabase
+                    const clearedPotStatus = {
+                        machine: currentPullMachine,
+                        pot_batch: null,
+                        pot_runs: 0,
+                        column_batch: machineStatus.column_batch, // Keep column
+                        filter_clay: machineStatus.filter_clay, // Keep filter
+                        filter_silica: machineStatus.filter_silica,
+                        filter_runs: machineStatus.filter_runs,
+                        last_updated: new Date().toISOString(),
+                        updated_by: currentRole ? currentRole.name : 'Unknown'
+                    };
                     
-                    // Reload batches and update displays
-                    loadBatches();
-                    updateMachineDisplays();
-                    closePullBatchModal();
-                    
-                    alert(`✅ Extraction Complete!\n\n${batch.id}\n${productTypeText}: ${amountText}\n${machineStatus.potRuns || 0} runs\n\nBatch moved to Finishing stage.\nPot has been emptied.`);
+                    supabaseClient
+                        .from('wm_machine_status')
+                        .upsert(clearedPotStatus, { onConflict: 'machine' })
+                        .then(() => {
+                            // Reload batches and update displays
+                            loadBatches();
+                            updateMachineDisplays();
+                            closePullBatchModal();
+                            
+                            alert(`✅ Extraction Complete!\n\n${batch.id}\n${productTypeText}: ${amountText}\n${machineStatus.pot_runs || 0} runs\n\nBatch moved to Finishing stage.\nPot has been emptied.`);
+                        });
                 });
         }
         
@@ -4686,34 +4720,44 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const machineName = machine === 'left' ? 'Left Machine' : 'Right Machine';
             document.getElementById('machineModalTitle').textContent = `⚗️ ${machineName}`;
             
-            // Load machine status from localStorage
-            const machineStatus = JSON.parse(localStorage.getItem(`wm_machine_${machine}`) || '{}');
-            
-            // Populate batch dropdowns with current batches in intake status
-            const columnSelect = document.getElementById('machineColumnBatch');
-            const potSelect = document.getElementById('machinePotBatch');
-            
-            // Clear and repopulate
-            columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
-            potSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
-            
-            batches.forEach(batch => {
-                if (batch.status === 'intake') {
-                    const option = `<option value="${batch.id}">${batch.id} - ${batch.cultivation_license} - ${batch.strain}</option>`;
-                    columnSelect.innerHTML += option;
-                    potSelect.innerHTML += option;
-                }
-            });
-            
-            // Set current values
-            columnSelect.value = machineStatus.columnBatch || '';
-            potSelect.value = machineStatus.potBatch || '';
-            document.getElementById('machinePotRuns').value = machineStatus.potRuns || '';
-            document.getElementById('machineFilterClay').value = machineStatus.filterClay || '';
-            document.getElementById('machineFilterSilica').value = machineStatus.filterSilica || '';
-            document.getElementById('machineFilterRuns').value = machineStatus.filterRuns || '';
-            
-            document.getElementById('machineModal').style.display = 'block';
+            // Load machine status from Supabase
+            supabaseClient
+                .from('wm_machine_status')
+                .select('*')
+                .eq('machine', machine)
+                .single()
+                .then(({ data: machineStatus, error }) => {
+                    if (error) {
+                        console.error('Error loading machine status:', error);
+                        machineStatus = {};
+                    }
+                    
+                    // Populate batch dropdowns with current batches in intake status
+                    const columnSelect = document.getElementById('machineColumnBatch');
+                    const potSelect = document.getElementById('machinePotBatch');
+                    
+                    // Clear and repopulate
+                    columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+                    potSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+                    
+                    batches.forEach(batch => {
+                        if (batch.status === 'intake') {
+                            const option = `<option value="${batch.id}">${batch.id} - ${batch.cultivation_license} - ${batch.strain}</option>`;
+                            columnSelect.innerHTML += option;
+                            potSelect.innerHTML += option;
+                        }
+                    });
+                    
+                    // Set current values
+                    columnSelect.value = machineStatus.column_batch || '';
+                    potSelect.value = machineStatus.pot_batch || '';
+                    document.getElementById('machinePotRuns').value = machineStatus.pot_runs || '';
+                    document.getElementById('machineFilterClay').value = machineStatus.filter_clay || '';
+                    document.getElementById('machineFilterSilica').value = machineStatus.filter_silica || '';
+                    document.getElementById('machineFilterRuns').value = machineStatus.filter_runs || '';
+                    
+                    document.getElementById('machineModal').style.display = 'block';
+                });
         }
         
         function closeMachineModal() {
@@ -4732,21 +4776,33 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const filterRuns = parseInt(document.getElementById('machineFilterRuns').value) || 0;
             
             const machineStatus = {
-                columnBatch: columnBatch,
-                potBatch: potBatch,
-                potRuns: potRuns,
-                filterClay: filterClay,
-                filterSilica: filterSilica,
-                filterRuns: filterRuns,
-                lastUpdated: new Date().toISOString(),
-                updatedBy: currentRole ? currentRole.name : 'Unknown'
+                machine: currentMachine,
+                column_batch: columnBatch,
+                pot_batch: potBatch,
+                pot_runs: potRuns,
+                filter_clay: filterClay,
+                filter_silica: filterSilica,
+                filter_runs: filterRuns,
+                last_updated: new Date().toISOString(),
+                updated_by: currentRole ? currentRole.name : 'Unknown'
             };
             
-            localStorage.setItem(`wm_machine_${currentMachine}`, JSON.stringify(machineStatus));
-            updateMachineDisplays();
-            closeMachineModal();
-            
-            alert(`✅ ${currentMachine === 'left' ? 'Left' : 'Right'} Machine Status Saved!`);
+            // Save to Supabase
+            supabaseClient
+                .from('wm_machine_status')
+                .upsert(machineStatus, { onConflict: 'machine' })
+                .then(({ error }) => {
+                    if (error) {
+                        console.error('Error saving machine status:', error);
+                        alert('Error saving machine status. Please try again.');
+                        return;
+                    }
+                    
+                    updateMachineDisplays();
+                    closeMachineModal();
+                    
+                    alert(`✅ ${currentMachine === 'left' ? 'Left' : 'Right'} Machine Status Saved!`);
+                });
         }
         
         function clearMachineStatus() {
@@ -4756,76 +4812,117 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            localStorage.removeItem(`wm_machine_${currentMachine}`);
+            const emptyStatus = {
+                machine: currentMachine,
+                column_batch: null,
+                pot_batch: null,
+                pot_runs: 0,
+                filter_clay: 0,
+                filter_silica: 0,
+                filter_runs: 0,
+                last_updated: new Date().toISOString(),
+                updated_by: currentRole ? currentRole.name : 'Unknown'
+            };
             
-            // Clear form
-            document.getElementById('machineColumnBatch').value = '';
-            document.getElementById('machinePotBatch').value = '';
-            document.getElementById('machinePotRuns').value = '';
-            document.getElementById('machineFilterClay').value = '';
-            document.getElementById('machineFilterSilica').value = '';
-            document.getElementById('machineFilterRuns').value = '';
-            
-            updateMachineDisplays();
-            
-            alert(`✅ ${currentMachine === 'left' ? 'Left' : 'Right'} Machine Cleared!`);
+            supabaseClient
+                .from('wm_machine_status')
+                .upsert(emptyStatus, { onConflict: 'machine' })
+                .then(({ error }) => {
+                    if (error) {
+                        console.error('Error clearing machine status:', error);
+                        return;
+                    }
+                    
+                    // Clear form
+                    document.getElementById('machineColumnBatch').value = '';
+                    document.getElementById('machinePotBatch').value = '';
+                    document.getElementById('machinePotRuns').value = '';
+                    document.getElementById('machineFilterClay').value = '';
+                    document.getElementById('machineFilterSilica').value = '';
+                    document.getElementById('machineFilterRuns').value = '';
+                    
+                    updateMachineDisplays();
+                    
+                    alert(`✅ ${currentMachine === 'left' ? 'Left' : 'Right'} Machine Cleared!`);
+                });
         }
         
         function updateMachineDisplays() {
-            ['left', 'right'].forEach(machine => {
-                const machineStatus = JSON.parse(localStorage.getItem(`wm_machine_${machine}`) || '{}');
-                
-                // Get batch info
-                let columnText = 'Empty';
-                let potText = 'Empty';
-                
-                if (machineStatus.columnBatch) {
-                    const batch = batches.find(b => b.id == machineStatus.columnBatch);
-                    columnText = batch ? `${batch.id}` : 'Unknown batch';
-                }
-                
-                if (machineStatus.potBatch) {
-                    const batch = batches.find(b => b.id == machineStatus.potBatch);
-                    if (batch) {
-                        potText = `${batch.id}`;
-                        if (machineStatus.potRuns) {
-                            potText += ` (${machineStatus.potRuns} runs)`;
-                        }
-                    } else {
-                        potText = 'Unknown batch';
+            supabaseClient
+                .from('wm_machine_status')
+                .select('*')
+                .then(({ data: machineStatuses, error }) => {
+                    if (error) {
+                        console.error('Error loading machine statuses:', error);
+                        return;
                     }
-                }
-                
-                // Filter status
-                let filterText = 'Not loaded';
-                if (machineStatus.filterClay || machineStatus.filterSilica || machineStatus.filterRuns) {
-                    const parts = [];
-                    if (machineStatus.filterClay) parts.push(`${machineStatus.filterClay}c clay`);
-                    if (machineStatus.filterSilica) parts.push(`${machineStatus.filterSilica}c silica`);
-                    if (machineStatus.filterRuns) parts.push(`${machineStatus.filterRuns} runs`);
-                    filterText = parts.join(', ');
-                }
-                
-                // Update display
-                document.getElementById(`${machine}ColumnBatch`).textContent = columnText;
-                document.getElementById(`${machine}PotBatch`).textContent = potText;
-                document.getElementById(`${machine}FilterStatus`).textContent = filterText;
-            });
+                    
+                    ['left', 'right'].forEach(machine => {
+                        const machineStatus = machineStatuses.find(m => m.machine === machine) || {};
+                        
+                        // Get batch info
+                        let columnText = 'Empty';
+                        let potText = 'Empty';
+                        
+                        if (machineStatus.column_batch) {
+                            const batch = batches.find(b => b.id == machineStatus.column_batch);
+                            columnText = batch ? `${batch.id}` : 'Unknown batch';
+                        }
+                        
+                        if (machineStatus.pot_batch) {
+                            const batch = batches.find(b => b.id == machineStatus.pot_batch);
+                            if (batch) {
+                                potText = `${batch.id}`;
+                                if (machineStatus.pot_runs) {
+                                    potText += ` (${machineStatus.pot_runs} runs)`;
+                                }
+                            } else {
+                                potText = 'Unknown batch';
+                            }
+                        }
+                        
+                        // Filter status
+                        let filterText = 'Not loaded';
+                        if (machineStatus.filter_clay || machineStatus.filter_silica || machineStatus.filter_runs) {
+                            const parts = [];
+                            if (machineStatus.filter_clay) parts.push(`${machineStatus.filter_clay}c clay`);
+                            if (machineStatus.filter_silica) parts.push(`${machineStatus.filter_silica}c silica`);
+                            if (machineStatus.filter_runs) parts.push(`${machineStatus.filter_runs} runs`);
+                            filterText = parts.join(', ');
+                        }
+                        
+                        // Update display
+                        document.getElementById(`${machine}ColumnBatch`).textContent = columnText;
+                        document.getElementById(`${machine}PotBatch`).textContent = potText;
+                        document.getElementById(`${machine}FilterStatus`).textContent = filterText;
+                    });
+                });
         }
         
         // Supplies Modal
         function openSuppliesModal() {
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            
-            // Update displays in modal
-            document.getElementById('modalButaneDisplay').textContent = `${inventory.butane.toFixed(1)} lbs`;
-            document.getElementById('modalNitrogenDisplay').textContent = `${inventory.nitrogen.toFixed(1)}`;
-            
-            // Clear input fields
-            document.getElementById('modalWithdrawButane').value = '';
-            document.getElementById('modalWithdrawNitrogen').value = '';
-            
-            document.getElementById('suppliesModal').style.display = 'block';
+            supabaseClient
+                .from('wm_inventory')
+                .select('*')
+                .then(({ data: inventory, error }) => {
+                    if (error) {
+                        console.error('Error loading inventory:', error);
+                        return;
+                    }
+                    
+                    const butane = inventory.find(i => i.supply_type === 'butane');
+                    const nitrogen = inventory.find(i => i.supply_type === 'nitrogen');
+                    
+                    // Update displays in modal
+                    document.getElementById('modalButaneDisplay').textContent = butane ? `${parseFloat(butane.current_level).toFixed(1)} lbs` : '0.0 lbs';
+                    document.getElementById('modalNitrogenDisplay').textContent = nitrogen ? `${parseFloat(nitrogen.current_level).toFixed(1)}` : '0.0';
+                    
+                    // Clear input fields
+                    document.getElementById('modalWithdrawButane').value = '';
+                    document.getElementById('modalWithdrawNitrogen').value = '';
+                    
+                    document.getElementById('suppliesModal').style.display = 'block';
+                });
         }
         
         function closeSuppliesModal() {
@@ -4840,30 +4937,64 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            const currentButane = parseFloat(inventory.butane) || 0;
-            
-            if (withdrawAmount > currentButane) {
-                if (!confirm(`⚠️ Warning: You're withdrawing ${withdrawAmount.toFixed(1)} lbs but only ${currentButane.toFixed(1)} lbs are in the bulk tank.\n\nContinue anyway?`)) {
-                    return;
-                }
-            }
-            
-            const newButane = currentButane - withdrawAmount;
-            const action = `Withdrew ${withdrawAmount.toFixed(1)} lbs butane (${currentButane.toFixed(1)} → ${newButane.toFixed(1)} lbs)`;
-            
-            saveTransaction('butane', action, currentButane, newButane, withdrawAmount, 0, '');
-            
-            inventory.butane = newButane;
-            inventory.lastUpdated = new Date().toISOString();
-            localStorage.setItem('wm_inventory', JSON.stringify(inventory));
-            
-            document.getElementById('modalWithdrawButane').value = '';
-            document.getElementById('modalButaneDisplay').textContent = `${newButane.toFixed(1)} lbs`;
-            updateInventoryDisplay();
-            updateSuppliesButton();
-            
-            alert(`✅ Withdrawn!\n\n${withdrawAmount.toFixed(1)} lbs butane removed\nRemaining: ${newButane.toFixed(1)} lbs`);
+            supabaseClient
+                .from('wm_inventory')
+                .select('*')
+                .eq('supply_type', 'butane')
+                .single()
+                .then(({ data: butaneRecord, error }) => {
+                    if (error) {
+                        console.error('Error loading butane inventory:', error);
+                        return;
+                    }
+                    
+                    const currentButane = parseFloat(butaneRecord.current_level) || 0;
+                    
+                    if (withdrawAmount > currentButane) {
+                        if (!confirm(`⚠️ Warning: You're withdrawing ${withdrawAmount.toFixed(1)} lbs but only ${currentButane.toFixed(1)} lbs are in the bulk tank.\n\nContinue anyway?`)) {
+                            return;
+                        }
+                    }
+                    
+                    const newButane = currentButane - withdrawAmount;
+                    
+                    // Update inventory in Supabase
+                    supabaseClient
+                        .from('wm_inventory')
+                        .update({
+                            current_level: newButane,
+                            last_updated: new Date().toISOString(),
+                            updated_by: currentRole ? currentRole.name : 'Unknown'
+                        })
+                        .eq('supply_type', 'butane')
+                        .then(({ error: updateError }) => {
+                            if (updateError) {
+                                console.error('Error updating butane:', updateError);
+                                return;
+                            }
+                            
+                            // Save transaction
+                            supabaseClient
+                                .from('wm_inventory_transactions')
+                                .insert({
+                                    supply_type: 'butane',
+                                    transaction_type: 'withdraw',
+                                    amount: withdrawAmount,
+                                    previous_level: currentButane,
+                                    new_level: newButane,
+                                    notes: `Withdrew ${withdrawAmount.toFixed(1)} lbs`,
+                                    timestamp: new Date().toISOString(),
+                                    user_name: currentRole ? currentRole.name : 'Unknown'
+                                })
+                                .then(() => {
+                                    document.getElementById('modalWithdrawButane').value = '';
+                                    document.getElementById('modalButaneDisplay').textContent = `${newButane.toFixed(1)} lbs`;
+                                    updateSuppliesButton();
+                                    
+                                    alert(`✅ Withdrawn!\n\n${withdrawAmount.toFixed(1)} lbs butane removed\nRemaining: ${newButane.toFixed(1)} lbs`);
+                                });
+                        });
+                });
         }
         
         function withdrawNitrogenFromModal() {
@@ -4874,30 +5005,64 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            const currentNitrogen = parseFloat(inventory.nitrogen) || 0;
-            
-            if (withdrawAmount > currentNitrogen) {
-                if (!confirm(`⚠️ Warning: You're withdrawing ${withdrawAmount.toFixed(1)} tank(s) but only ${currentNitrogen.toFixed(1)} remain.\n\nContinue anyway?`)) {
-                    return;
-                }
-            }
-            
-            const newNitrogen = currentNitrogen - withdrawAmount;
-            const action = `Withdrew ${withdrawAmount.toFixed(1)} nitrogen tank(s) (${currentNitrogen.toFixed(1)} → ${newNitrogen.toFixed(1)})`;
-            
-            saveTransaction('nitrogen', action, currentNitrogen, newNitrogen, withdrawAmount, 0, '');
-            
-            inventory.nitrogen = newNitrogen;
-            inventory.lastUpdated = new Date().toISOString();
-            localStorage.setItem('wm_inventory', JSON.stringify(inventory));
-            
-            document.getElementById('modalWithdrawNitrogen').value = '';
-            document.getElementById('modalNitrogenDisplay').textContent = `${newNitrogen.toFixed(1)}`;
-            updateInventoryDisplay();
-            updateSuppliesButton();
-            
-            alert(`✅ Withdrawn!\n\n${withdrawAmount.toFixed(1)} nitrogen tank(s) removed\nRemaining: ${newNitrogen.toFixed(1)} tanks`);
+            supabaseClient
+                .from('wm_inventory')
+                .select('*')
+                .eq('supply_type', 'nitrogen')
+                .single()
+                .then(({ data: nitrogenRecord, error }) => {
+                    if (error) {
+                        console.error('Error loading nitrogen inventory:', error);
+                        return;
+                    }
+                    
+                    const currentNitrogen = parseFloat(nitrogenRecord.current_level) || 0;
+                    
+                    if (withdrawAmount > currentNitrogen) {
+                        if (!confirm(`⚠️ Warning: You're withdrawing ${withdrawAmount.toFixed(1)} tank(s) but only ${currentNitrogen.toFixed(1)} remain.\n\nContinue anyway?`)) {
+                            return;
+                        }
+                    }
+                    
+                    const newNitrogen = currentNitrogen - withdrawAmount;
+                    
+                    // Update inventory in Supabase
+                    supabaseClient
+                        .from('wm_inventory')
+                        .update({
+                            current_level: newNitrogen,
+                            last_updated: new Date().toISOString(),
+                            updated_by: currentRole ? currentRole.name : 'Unknown'
+                        })
+                        .eq('supply_type', 'nitrogen')
+                        .then(({ error: updateError }) => {
+                            if (updateError) {
+                                console.error('Error updating nitrogen:', updateError);
+                                return;
+                            }
+                            
+                            // Save transaction
+                            supabaseClient
+                                .from('wm_inventory_transactions')
+                                .insert({
+                                    supply_type: 'nitrogen',
+                                    transaction_type: 'withdraw',
+                                    amount: withdrawAmount,
+                                    previous_level: currentNitrogen,
+                                    new_level: newNitrogen,
+                                    notes: `Withdrew ${withdrawAmount.toFixed(1)} tank(s)`,
+                                    timestamp: new Date().toISOString(),
+                                    user_name: currentRole ? currentRole.name : 'Unknown'
+                                })
+                                .then(() => {
+                                    document.getElementById('modalWithdrawNitrogen').value = '';
+                                    document.getElementById('modalNitrogenDisplay').textContent = `${newNitrogen.toFixed(1)}`;
+                                    updateSuppliesButton();
+                                    
+                                    alert(`✅ Withdrawn!\n\n${withdrawAmount.toFixed(1)} nitrogen tank(s) removed\nRemaining: ${newNitrogen.toFixed(1)} tanks`);
+                                });
+                        });
+                });
         }
         
         // Butane Modals
@@ -5080,18 +5245,29 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         
         // Update button display on extraction page
         function updateSuppliesButton() {
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            
-            const btnButane = document.getElementById('btnButaneDisplay');
-            const btnNitrogen = document.getElementById('btnNitrogenDisplay');
-            
-            if (btnButane) {
-                btnButane.textContent = `${inventory.butane.toFixed(1)} lbs`;
-            }
-            
-            if (btnNitrogen) {
-                btnNitrogen.textContent = `${inventory.nitrogen.toFixed(1)} tanks`;
-            }
+            supabaseClient
+                .from('wm_inventory')
+                .select('*')
+                .then(({ data: inventory, error }) => {
+                    if (error) {
+                        console.error('Error loading inventory:', error);
+                        return;
+                    }
+                    
+                    const butane = inventory.find(i => i.supply_type === 'butane');
+                    const nitrogen = inventory.find(i => i.supply_type === 'nitrogen');
+                    
+                    const btnButane = document.getElementById('btnButaneDisplay');
+                    const btnNitrogen = document.getElementById('btnNitrogenDisplay');
+                    
+                    if (btnButane && butane) {
+                        btnButane.textContent = `${parseFloat(butane.current_level).toFixed(1)} lbs`;
+                    }
+                    
+                    if (btnNitrogen && nitrogen) {
+                        btnNitrogen.textContent = `${parseFloat(nitrogen.current_level).toFixed(1)} tanks`;
+                    }
+                });
         }
         
         // Helper function to save transactions
