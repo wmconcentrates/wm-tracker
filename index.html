@@ -939,6 +939,33 @@
         <div class="station-content" id="extraction">
             <div class="form-section">
                 <h2>⚗️ Extraction Processing</h2>
+                
+                <!-- Standalone Gas Tracking -->
+                <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-orange);">
+                    <h3 style="color: var(--accent-orange); margin: 0 0 15px 0; text-align: center;">🛢️ Bulk Tank Gas</h3>
+                    
+                    <!-- Current Gas Display -->
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 5px;">Current Bulk Tank</div>
+                        <div id="extractionButaneDisplay" style="font-size: 3rem; font-weight: 700; color: var(--accent-blue);">0 lbs</div>
+                    </div>
+                    
+                    <!-- Quick Withdrawal -->
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">📤 Withdraw Gas</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="quickWithdraw" step="0.1" min="0" placeholder="Enter lbs taken" style="flex: 1; padding: 12px; font-size: 1.1rem; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary);">
+                            <button class="btn" style="background: var(--accent-red); padding: 12px 24px;" onclick="quickWithdrawGas()">Withdraw</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button class="btn" style="background: var(--accent-green);" onclick="openAddShipmentModal()">➕ Add Shipment</button>
+                        <button class="btn" style="background: var(--accent-orange);" onclick="openEditBulkModal()">🔧 Edit Bulk Weight</button>
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label>Select Batch to Process</label>
                     <select id="extractionBatchSelect" required>
@@ -989,6 +1016,35 @@
                                 <option value="BHO">BHO (Butane Hash Oil)</option>
                                 <option value="RSO">RSO</option>
                             </select>
+                        </div>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Extraction Machine</label>
+                                <select id="extractionMachine" required>
+                                    <option value="">Select Machine</option>
+                                    <option value="Machine 1 (Left)">Machine 1 (Left)</option>
+                                    <option value="Machine 2 (Right)">Machine 2 (Right)</option>
+                                </select>
+                                <div class="help-text">Track which machine is processing this batch</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Supply Usage Tracking -->
+                        <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--accent-orange); padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <h4 style="color: var(--accent-orange); margin-bottom: 15px;">📊 Supply Usage</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Butane Used (lbs)</label>
+                                    <input type="number" id="butaneUsed" step="0.1" min="0" placeholder="0.0">
+                                    <div class="help-text">Track butane consumption for this run</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Nitrogen Tanks Used</label>
+                                    <input type="number" id="nitrogenTanksUsed" step="0.5" min="0" placeholder="0">
+                                    <div class="help-text">Full or partial tanks consumed</div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- BHO Product Selection (shown when BHO selected) -->
@@ -1631,6 +1687,31 @@
 
         <!-- Dashboard -->
         <div class="station-content" id="dashboard">
+            <!-- Supply Inventory Tracking -->
+            <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-orange);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="color: var(--accent-orange); margin: 0; display: flex; align-items: center; gap: 10px;">
+                        <span>🛢️</span>
+                        <span>Butane Gas Inventory</span>
+                    </h2>
+                    <button class="btn" style="background: var(--accent-green); padding: 10px 20px;" onclick="openInventoryModal()">
+                        📊 Log Gas Activity
+                    </button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-blue);">
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">🛢️ Bulk Tank Remaining</div>
+                        <div id="butaneInventory" style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">0 lbs</div>
+                        <div id="butaneUsageRate" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">Avg: 0 lbs/batch</div>
+                    </div>
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-green);">
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">📊 Total Usage</div>
+                        <div id="totalButaneUsed" style="font-size: 1.5rem; font-weight: 600; color: var(--text-primary);">0 lbs</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">Consumed from bulk tank</div>
+                    </div>
+                </div>
+            </div>
+        
             <!-- Personal Quick Stats -->
             <div id="personalStats" style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(59, 130, 246, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-purple);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -2103,6 +2184,92 @@
         </div>
     </div>
     
+    <!-- Inventory Management Modal -->
+    <div id="inventoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; overflow-y: auto;">
+        <div style="max-width: 600px; margin: 50px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-red)); padding: 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 2rem;">
+                            📦 Update Supply Inventory
+                        </h2>
+                        <p style="color: rgba(255,255,255,0.9); margin: 0;">Track butane and nitrogen levels</p>
+                    </div>
+                    <button onclick="closeInventoryModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px; transition: all 0.3s ease;">&times;</button>
+                </div>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 30px;">
+                <p style="text-align: center; color: var(--text-secondary);">Use the Gas Logging button in the Extraction tab to manage butane.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Shipment Modal -->
+    <div id="addShipmentModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10002; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 100px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(16, 185, 129, 0.4);">
+            <div style="background: linear-gradient(135deg, var(--accent-green), var(--accent-blue)); padding: 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="color: white; margin: 0; font-size: 1.8rem;">➕ Add Gas Shipment</h2>
+                    <button onclick="closeAddShipmentModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px;">&times;</button>
+                </div>
+            </div>
+            <div style="padding: 30px;">
+                <form onsubmit="event.preventDefault(); addShipment();">
+                    <div class="form-group">
+                        <label>Gas Received (lbs)</label>
+                        <input type="number" id="shipmentAmount" step="0.1" min="0" placeholder="110" required autofocus style="font-size: 1.2rem; padding: 15px;">
+                        <div class="help-text">Typically 110 lbs per tank</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes (Optional)</label>
+                        <textarea id="shipmentNotes" placeholder="Delivery info, vendor, etc..."></textarea>
+                    </div>
+                    <button type="submit" class="btn" style="background: var(--accent-green); width: 100%; font-size: 1.1rem;">
+                        ✅ Add to Bulk Tank
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Bulk Weight Modal -->
+    <div id="editBulkModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10002; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 100px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);">
+            <div style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-red)); padding: 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="color: white; margin: 0; font-size: 1.8rem;">🔧 Edit Bulk Tank Weight</h2>
+                    <button onclick="closeEditBulkModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px;">&times;</button>
+                </div>
+            </div>
+            <div style="padding: 30px;">
+                <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent-red);">
+                    <strong>⚠️ Use with caution</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Only use this to correct errors or set initial inventory</p>
+                </div>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 0.9rem; color: var(--text-secondary);">Current Bulk Tank</div>
+                    <div id="editBulkCurrentDisplay" style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">0 lbs</div>
+                </div>
+                <form onsubmit="event.preventDefault(); setBulkWeight();">
+                    <div class="form-group">
+                        <label>Set Bulk Tank To (lbs)</label>
+                        <input type="number" id="bulkSetAmount" step="0.1" min="0" placeholder="Enter exact amount" required autofocus style="font-size: 1.2rem; padding: 15px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Reason for Change</label>
+                        <textarea id="bulkSetNotes" placeholder="Why are you manually changing this?" required></textarea>
+                    </div>
+                    <button type="submit" class="btn" style="background: var(--accent-orange); width: 100%; font-size: 1.1rem;">
+                        ✅ Update Bulk Tank
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
     <style>
         .personal-time-btn {
             padding: 10px 20px;
@@ -2370,6 +2537,9 @@ CREATE TABLE wm_batches (
     -- Extraction fields
     extraction_date DATE,
     extraction_method TEXT,
+    extraction_machine TEXT,
+    butane_used DECIMAL(10,2),
+    nitrogen_tanks_used DECIMAL(5,2),
     product_made TEXT,
     crude_weight DECIMAL(10,2),
     extraction_notes TEXT,
@@ -2522,6 +2692,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             batches = data || [];
             updateDashboard();
             renderBatches();
+            updateGasDisplayInExtraction(); // Update gas display in extraction tab
             
             // Initialize dropdown search filters (only once)
             if (!window.searchFiltersInitialized) {
@@ -3497,18 +3668,31 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const bulkJarsCount = parseInt(document.getElementById('bulkJarsCount')?.value) || null;
             const shatterSlabsCount = parseInt(document.getElementById('shatterSlabsCount')?.value) || null;
             
+            // Get machine and supply usage
+            const extractionMachine = document.getElementById('extractionMachine').value;
+            const butaneUsed = parseFloat(document.getElementById('butaneUsed').value) || 0;
+            const nitrogenTanksUsed = parseFloat(document.getElementById('nitrogenTanksUsed').value) || 0;
+            
+            if (!extractionMachine) {
+                alert('Please select which extraction machine you are using');
+                return;
+            }
+            
             const timeline = batch.timeline || [];
             
             timeline.push({
                 stage: 'extraction',
                 timestamp: new Date().toISOString(),
                 user: currentRole ? currentRole.name : "Unknown",
-                action: `Extraction completed - ${extractionMethod} - ${productMade}`
+                action: `Extraction completed - ${extractionMethod} - ${productMade} on ${extractionMachine}${butaneUsed > 0 ? ` - ${butaneUsed}lbs butane used` : ''}${nitrogenTanksUsed > 0 ? ` - ${nitrogenTanksUsed} N2 tanks used` : ''}`
             });
             
             const updateData = {
                 status: 'extraction',
                 extraction_method: extractionMethod,
+                extraction_machine: extractionMachine,
+                butane_used: butaneUsed > 0 ? butaneUsed : null,
+                nitrogen_tanks_used: nitrogenTanksUsed > 0 ? nitrogenTanksUsed : null,
                 product_made: productMade,
                 extraction_notes: document.getElementById('extractionNotes').value,
                 extraction_user: currentRole ? currentRole.name : "Unknown",
@@ -3543,6 +3727,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             document.getElementById('rsoWeight').value = '';
             document.getElementById('bulkJarsCount').value = '';
             document.getElementById('shatterSlabsCount').value = '';
+            document.getElementById('extractionMachine').value = '';
+            document.getElementById('butaneUsed').value = '';
+            document.getElementById('nitrogenTanksUsed').value = '';
             
             // Uncheck BHO product checkboxes
             document.querySelectorAll('input[name="bho_products"]').forEach(cb => cb.checked = false);
@@ -4397,6 +4584,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             // Update badge counts on navigation tabs
             updateBadgeCounts();
+            
+            // Update inventory display
+            updateInventoryDisplay();
         }
 
         // Update badge counts on navigation tabs
@@ -4632,6 +4822,249 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         
         function closePersonalStatsModal() {
             document.getElementById('personalStatsModal').style.display = 'none';
+        }
+        
+        // Inventory Management Functions
+        // Simplified Gas Logging Functions
+        function quickWithdrawGas() {
+            const withdrawAmount = parseFloat(document.getElementById('quickWithdraw').value);
+            
+            if (!withdrawAmount || withdrawAmount <= 0) {
+                alert('Please enter an amount to withdraw');
+                return;
+            }
+            
+            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
+            const currentButane = parseFloat(inventory.butane) || 0;
+            
+            // Warning if withdrawing more than available
+            if (withdrawAmount > currentButane) {
+                if (!confirm(`⚠️ Warning: You're withdrawing ${withdrawAmount.toFixed(1)} lbs but only ${currentButane.toFixed(1)} lbs are in the bulk tank.\n\nContinue anyway?`)) {
+                    return;
+                }
+            }
+            
+            const newButane = currentButane - withdrawAmount;
+            const action = `Withdrew ${withdrawAmount.toFixed(1)} lbs from bulk tank (${currentButane.toFixed(1)} → ${newButane.toFixed(1)} lbs)`;
+            
+            // Save transaction
+            const transactions = JSON.parse(localStorage.getItem('wm_gas_transactions') || '[]');
+            transactions.push({
+                timestamp: new Date().toISOString(),
+                user: currentRole ? currentRole.name : 'Unknown',
+                action: action,
+                previousAmount: currentButane,
+                newAmount: newButane,
+                withdraw: withdrawAmount,
+                add: 0,
+                notes: ''
+            });
+            localStorage.setItem('wm_gas_transactions', JSON.stringify(transactions));
+            
+            // Update inventory
+            inventory.butane = newButane;
+            inventory.lastUpdated = new Date().toISOString();
+            inventory.lastAction = action;
+            localStorage.setItem('wm_inventory', JSON.stringify(inventory));
+            
+            // Clear input and update displays
+            document.getElementById('quickWithdraw').value = '';
+            updateInventoryDisplay();
+            updateGasDisplayInExtraction();
+            
+            alert(`✅ Withdrawn!\n\n${withdrawAmount.toFixed(1)} lbs removed\nRemaining: ${newButane.toFixed(1)} lbs`);
+        }
+        
+        function openAddShipmentModal() {
+            document.getElementById('shipmentAmount').value = '';
+            document.getElementById('shipmentNotes').value = '';
+            document.getElementById('addShipmentModal').style.display = 'block';
+        }
+        
+        function closeAddShipmentModal() {
+            document.getElementById('addShipmentModal').style.display = 'none';
+        }
+        
+        function addShipment() {
+            const addAmount = parseFloat(document.getElementById('shipmentAmount').value);
+            const notes = document.getElementById('shipmentNotes').value;
+            
+            if (!addAmount || addAmount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            
+            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
+            const currentButane = parseFloat(inventory.butane) || 0;
+            const newButane = currentButane + addAmount;
+            const action = `Added ${addAmount.toFixed(1)} lbs new shipment (${currentButane.toFixed(1)} → ${newButane.toFixed(1)} lbs)`;
+            
+            // Save transaction
+            const transactions = JSON.parse(localStorage.getItem('wm_gas_transactions') || '[]');
+            transactions.push({
+                timestamp: new Date().toISOString(),
+                user: currentRole ? currentRole.name : 'Unknown',
+                action: action,
+                previousAmount: currentButane,
+                newAmount: newButane,
+                withdraw: 0,
+                add: addAmount,
+                notes: notes
+            });
+            localStorage.setItem('wm_gas_transactions', JSON.stringify(transactions));
+            
+            // Update inventory
+            inventory.butane = newButane;
+            inventory.lastUpdated = new Date().toISOString();
+            inventory.lastAction = action;
+            localStorage.setItem('wm_inventory', JSON.stringify(inventory));
+            
+            // Update displays and close
+            updateInventoryDisplay();
+            updateGasDisplayInExtraction();
+            closeAddShipmentModal();
+            
+            alert(`✅ Shipment Added!\n\n${addAmount.toFixed(1)} lbs added\nNew Total: ${newButane.toFixed(1)} lbs`);
+        }
+        
+        function openEditBulkModal() {
+            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
+            document.getElementById('editBulkCurrentDisplay').textContent = `${inventory.butane.toFixed(1)} lbs`;
+            document.getElementById('bulkSetAmount').value = '';
+            document.getElementById('bulkSetNotes').value = '';
+            document.getElementById('editBulkModal').style.display = 'block';
+        }
+        
+        function closeEditBulkModal() {
+            document.getElementById('editBulkModal').style.display = 'none';
+        }
+        
+        function setBulkWeight() {
+            const setAmount = parseFloat(document.getElementById('bulkSetAmount').value);
+            const notes = document.getElementById('bulkSetNotes').value;
+            
+            if (!setAmount && setAmount !== 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            
+            if (!notes.trim()) {
+                alert('Please provide a reason for this manual change');
+                return;
+            }
+            
+            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
+            const currentButane = parseFloat(inventory.butane) || 0;
+            const action = `Manually set to ${setAmount.toFixed(1)} lbs (was ${currentButane.toFixed(1)} lbs)`;
+            
+            // Save transaction
+            const transactions = JSON.parse(localStorage.getItem('wm_gas_transactions') || '[]');
+            transactions.push({
+                timestamp: new Date().toISOString(),
+                user: currentRole ? currentRole.name : 'Unknown',
+                action: action,
+                previousAmount: currentButane,
+                newAmount: setAmount,
+                withdraw: 0,
+                add: 0,
+                notes: notes
+            });
+            localStorage.setItem('wm_gas_transactions', JSON.stringify(transactions));
+            
+            // Update inventory
+            inventory.butane = setAmount;
+            inventory.lastUpdated = new Date().toISOString();
+            inventory.lastAction = action;
+            localStorage.setItem('wm_inventory', JSON.stringify(inventory));
+            
+            // Update displays and close
+            updateInventoryDisplay();
+            updateGasDisplayInExtraction();
+            closeEditBulkModal();
+            
+            alert(`✅ Bulk Weight Updated!\n\n${action}\n\nReason: ${notes}`);
+        }
+        
+        function updateGasDisplayInExtraction() {
+            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
+            const display = document.getElementById('extractionButaneDisplay');
+            if (display) {
+                display.textContent = `${inventory.butane.toFixed(1)} lbs`;
+                
+                // Color code based on level
+                if (inventory.butane < 50) {
+                    display.style.color = 'var(--accent-red)';
+                } else if (inventory.butane < 100) {
+                    display.style.color = 'var(--accent-orange)';
+                } else {
+                    display.style.color = 'var(--accent-blue)';
+                }
+            }
+        }
+        
+        // Old functions - redirect to new ones
+        function openGasModal() {
+            // No longer used - interface is now inline
+        }
+        
+        function closeGasModal() {
+            // No longer used
+        }
+        
+        // Inventory Management Functions (Redirect to gas modal)
+        function openInventoryModal() {
+            openGasModal();
+        }
+        
+        function closeInventoryModal() {
+            document.getElementById('inventoryModal').style.display = 'none';
+        }
+        
+        function updateInventoryDisplay() {
+            // Load inventory
+            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
+            
+            // Load transaction history to calculate total withdrawn
+            const transactions = JSON.parse(localStorage.getItem('wm_gas_transactions') || '[]');
+            let totalWithdrawn = 0;
+            
+            transactions.forEach(tx => {
+                if (tx.withdraw) {
+                    totalWithdrawn += tx.withdraw;
+                }
+            });
+            
+            // Calculate average from batches that logged butane usage
+            let totalButaneUsed = 0;
+            let batchesWithSupplies = 0;
+            
+            batches.forEach(batch => {
+                if (batch.butane_used) {
+                    totalButaneUsed += parseFloat(batch.butane_used);
+                    batchesWithSupplies++;
+                }
+            });
+            
+            const avgButanePerBatch = batchesWithSupplies > 0 ? totalButaneUsed / batchesWithSupplies : 0;
+            
+            // Update display
+            document.getElementById('butaneInventory').textContent = `${inventory.butane.toFixed(1)} lbs`;
+            document.getElementById('butaneUsageRate').textContent = `Avg: ${avgButanePerBatch.toFixed(1)} lbs/batch`;
+            document.getElementById('totalButaneUsed').textContent = `${totalWithdrawn.toFixed(1)} lbs`;
+            
+            // Add low inventory warnings
+            const butaneElement = document.getElementById('butaneInventory');
+            
+            if (inventory.butane < 50) {
+                butaneElement.style.color = 'var(--accent-red)';
+                butaneElement.parentElement.style.borderLeftColor = 'var(--accent-red)';
+            } else if (inventory.butane < 100) {
+                butaneElement.style.color = 'var(--accent-orange)';
+                butaneElement.parentElement.style.borderLeftColor = 'var(--accent-orange)';
+            } else {
+                butaneElement.style.color = 'var(--accent-blue)';
+                butaneElement.parentElement.style.borderLeftColor = 'var(--accent-blue)';
+            }
         }
         
         function displayPersonalRecords(userName) {
