@@ -7912,7 +7912,14 @@ ${employeeReport || 'No activity recorded today'}
                         <div style="background: var(--bg-tertiary); padding: 25px; border-radius: 15px; border: 2px solid var(--border); margin-bottom: 25px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                                 <div>
-                                    <h3 style="font-size: 1.8rem; margin-bottom: 5px; color: var(--accent-purple);">${emp.name}</h3>
+                                    <h3 style="font-size: 1.8rem; margin-bottom: 5px; color: var(--accent-purple);">
+                                        ${emp.name}
+                                        ${(() => {
+                                            // Find PIN for this employee
+                                            const roleEntry = Object.entries(ROLES).find(([key, role]) => role.name === emp.name);
+                                            return roleEntry ? `<span style="font-size: 1.2rem; color: var(--text-secondary); font-weight: 400; margin-left: 15px;">PIN: ${roleEntry[1].pin}</span>` : '';
+                                        })()}
+                                    </h3>
                                     <p style="color: var(--text-secondary); font-size: 0.95rem;">Active ${emp.daysActiveCount} of ${timeRange} days</p>
                                 </div>
                                 <div style="text-align: right;">
