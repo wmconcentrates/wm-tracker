@@ -5404,17 +5404,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         });
                 });
         }
-            
-            // Update all displays
-            if (document.getElementById('modalNitrogenDisplay')) {
-                document.getElementById('modalNitrogenDisplay').textContent = `${setAmount.toFixed(1)}`;
-            }
-            updateInventoryDisplay();
-            updateSuppliesButton();
-            closeEditNitrogenModal();
-            
-            alert(`✅ Nitrogen Updated!\n\n${action}\n\nReason: ${notes}`);
-        }
         
         // Update button display on extraction page
         function updateSuppliesButton() {
