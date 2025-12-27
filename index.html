@@ -7620,7 +7620,7 @@ ${employeeReport || 'No activity recorded today'}
                                 name: user,
                                 packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
                                 labeling: { units: 0, batches: 0, dates: [] },
-                                extraction: { batches: 0, grams: 0, dates: [] },
+                                extraction: { batches: 0, runs: 0, trimWeight: 0, dates: [] },
                                 daysActive: new Set()
                             };
                         }
@@ -7662,7 +7662,7 @@ ${employeeReport || 'No activity recorded today'}
                                     name: user,
                                     packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
                                     labeling: { units: 0, batches: 0, dates: [] },
-                                    extraction: { batches: 0, grams: 0, dates: [] },
+                                    extraction: { batches: 0, runs: 0, trimWeight: 0, dates: [] },
                                     daysActive: new Set()
                                 };
                             }
@@ -7689,14 +7689,19 @@ ${employeeReport || 'No activity recorded today'}
                                     name: user,
                                     packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
                                     labeling: { units: 0, batches: 0, dates: [] },
-                                    extraction: { batches: 0, grams: 0, dates: [] },
+                                    extraction: { batches: 0, runs: 0, trimWeight: 0, dates: [] },
                                     daysActive: new Set()
                                 };
                             }
                             
                             employeeData[user].extraction.batches += 1;
-                            if (batch.crude_weight) {
-                                employeeData[user].extraction.grams += parseFloat(batch.crude_weight);
+                            // Track runs from extraction_runs field
+                            if (batch.extraction_runs) {
+                                employeeData[user].extraction.runs += parseInt(batch.extraction_runs);
+                            }
+                            // Track trim weight processed
+                            if (batch.trim_weight) {
+                                employeeData[user].extraction.trimWeight += parseFloat(batch.trim_weight);
                             }
                             employeeData[user].extraction.dates.push(eventDate);
                             employeeData[user].daysActive.add(eventDate.toDateString());
@@ -7884,12 +7889,12 @@ ${employeeReport || 'No activity recorded today'}
                                         <div style="font-size: 2rem; font-weight: 700; color: var(--accent-orange);">${emp.extraction.batches}</div>
                                     </div>
                                     <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
-                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Per Day</div>
-                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${emp.extraction.perDay}</div>
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Runs</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${emp.extraction.runs}</div>
                                     </div>
                                     <div style="text-align: center; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
-                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Grams</div>
-                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);">${emp.extraction.grams.toFixed(0)}</div>
+                                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Trim (g)</div>
+                                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);">${emp.extraction.trimWeight.toFixed(0)}</div>
                                     </div>
                                 </div>
                                 
