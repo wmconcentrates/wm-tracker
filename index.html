@@ -942,9 +942,9 @@
                 
                 <!-- Gas Tracking Button -->
                 <div style="margin-bottom: 25px;">
-                    <button class="btn" style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-red)); padding: 20px; width: 100%; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center;" onclick="openSuppliesModal()">
-                        <span style="font-weight: 700;">🛢️ Extraction Supplies</span>
-                        <div style="display: flex; gap: 30px; font-size: 0.95rem;">
+                    <button class="btn" style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-red)); padding: 20px; width: 100%; font-size: 1.1rem;" onclick="openSuppliesModal()">
+                        <div style="font-weight: 700; margin-bottom: 10px;">🛢️ Extraction Supplies</div>
+                        <div style="display: flex; justify-content: center; gap: 30px; font-size: 0.95rem;">
                             <span>Butane: <strong id="btnButaneDisplay">0 lbs</strong></span>
                             <span>Nitrogen: <strong id="btnNitrogenDisplay">0 tanks</strong></span>
                         </div>
@@ -2232,11 +2232,11 @@
                 </div>
                 
                 <!-- Action Buttons -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                    <button class="btn" style="background: var(--accent-green);" onclick="openAddButaneModal()">➕ Add Butane</button>
-                    <button class="btn" style="background: var(--accent-orange);" onclick="openEditButaneModal()">🔧 Edit Butane</button>
-                    <button class="btn" style="background: var(--accent-green);" onclick="openAddNitrogenModal()">➕ Add N₂</button>
-                    <button class="btn" style="background: var(--accent-orange);" onclick="openEditNitrogenModal()">🔧 Edit N₂</button>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <button class="btn" style="background: var(--accent-green); padding: 12px 10px; font-size: 0.9rem;" onclick="openAddButaneModal()">➕ Add Butane</button>
+                    <button class="btn" style="background: var(--accent-green); padding: 12px 10px; font-size: 0.9rem;" onclick="openAddNitrogenModal()">➕ Add N₂</button>
+                    <button class="btn" style="background: var(--accent-orange); padding: 12px 10px; font-size: 0.9rem;" onclick="openEditButaneModal()">🔧 Edit Butane</button>
+                    <button class="btn" style="background: var(--accent-orange); padding: 12px 10px; font-size: 0.9rem;" onclick="openEditNitrogenModal()">🔧 Edit N₂</button>
                 </div>
             </div>
         </div>
