@@ -956,7 +956,8 @@
                     <button class="btn" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); padding: 20px; text-align: left;" onclick="openMachineModal('left')">
                         <div style="font-weight: 700; margin-bottom: 8px;">⚗️ Left Machine</div>
                         <div id="leftMachineStatus" style="font-size: 0.85rem; opacity: 0.9;">
-                            <div>Column: <span id="leftColumnBatch">Empty</span></div>
+                            <div>Col A: <span id="leftColumnBatch">Empty</span></div>
+                            <div>Col B: <span id="leftColumnBBatch">Empty</span></div>
                             <div>Pot: <span id="leftPotBatch">Empty</span></div>
                             <div>Filter: <span id="leftFilterStatus">Not loaded</span></div>
                         </div>
@@ -964,7 +965,8 @@
                     <button class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 20px; text-align: left;" onclick="openMachineModal('right')">
                         <div style="font-weight: 700; margin-bottom: 8px;">⚗️ Right Machine</div>
                         <div id="rightMachineStatus" style="font-size: 0.85rem; opacity: 0.9;">
-                            <div>Column: <span id="rightColumnBatch">Empty</span></div>
+                            <div>Col A: <span id="rightColumnBatch">Empty</span></div>
+                            <div>Col B: <span id="rightColumnBBatch">Empty</span></div>
                             <div>Pot: <span id="rightPotBatch">Empty</span></div>
                             <div>Filter: <span id="rightFilterStatus">Not loaded</span></div>
                         </div>
@@ -2248,15 +2250,22 @@
             </div>
             <div style="padding: 30px;">
                 <form id="machineForm" onsubmit="event.preventDefault(); saveMachineStatus();">
-                    <!-- Column Status -->
+                    <!-- Columns Status -->
                     <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                        <h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">📦 Column</h3>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label>Batch in Column</label>
+                        <h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">📦 Columns</h3>
+                        <div class="form-group">
+                            <label>Column A Batch</label>
                             <select id="machineColumnBatch">
                                 <option value="">Empty / Not Loaded</option>
                             </select>
-                            <div class="help-text">Which batch of trim is packed in the column? (Large batches can be in both machines)</div>
+                            <div class="help-text">Batch packed in Column A</div>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Column B Batch</label>
+                            <select id="machineColumnBBatch">
+                                <option value="">Empty / Not Loaded</option>
+                            </select>
+                            <div class="help-text">Batch packed in Column B (can be same or different)</div>
                         </div>
                     </div>
                     
@@ -5006,7 +5015,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         machine: currentPullMachine,
                         pot_batch: null,
                         pot_runs: 0,
-                        column_batch: machineStatus.column_batch, // Keep column
+                        column_batch: machineStatus.column_batch, // Keep column A
+                        column_b_batch: machineStatus.column_b_batch, // Keep column B
                         filter_clay: machineStatus.filter_clay, // Keep filter
                         filter_silica: machineStatus.filter_silica,
                         filter_runs: machineStatus.filter_runs,
@@ -5049,22 +5059,26 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     
                     // Populate batch dropdowns with current batches in intake status
                     const columnSelect = document.getElementById('machineColumnBatch');
+                    const columnBSelect = document.getElementById('machineColumnBBatch');
                     const potSelect = document.getElementById('machinePotBatch');
                     
                     // Clear and repopulate
                     columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+                    columnBSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
                     potSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
                     
                     batches.forEach(batch => {
                         if (batch.status === 'intake') {
                             const option = `<option value="${batch.id}">${batch.id} - ${batch.cultivation_license} - ${batch.strain}</option>`;
                             columnSelect.innerHTML += option;
+                            columnBSelect.innerHTML += option;
                             potSelect.innerHTML += option;
                         }
                     });
                     
                     // Set current values
                     columnSelect.value = machineStatus.column_batch || '';
+                    columnBSelect.value = machineStatus.column_b_batch || '';
                     potSelect.value = machineStatus.pot_batch || '';
                     document.getElementById('machinePotRuns').value = machineStatus.pot_runs || '';
                     document.getElementById('machineFilterClay').value = machineStatus.filter_clay || '';
@@ -5084,6 +5098,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             if (!currentMachine) return;
             
             const columnBatch = document.getElementById('machineColumnBatch').value;
+            const columnBBatch = document.getElementById('machineColumnBBatch').value;
             const potBatch = document.getElementById('machinePotBatch').value;
             const potRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
             const filterClay = parseFloat(document.getElementById('machineFilterClay').value) || 0;
@@ -5093,6 +5108,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const machineStatus = {
                 machine: currentMachine,
                 column_batch: columnBatch,
+                column_b_batch: columnBBatch,
                 pot_batch: potBatch,
                 pot_runs: potRuns,
                 filter_clay: filterClay,
@@ -5130,6 +5146,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const emptyStatus = {
                 machine: currentMachine,
                 column_batch: null,
+                column_b_batch: null,
                 pot_batch: null,
                 pot_runs: 0,
                 filter_clay: 0,
@@ -5150,6 +5167,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     
                     // Clear form
                     document.getElementById('machineColumnBatch').value = '';
+                    document.getElementById('machineColumnBBatch').value = '';
                     document.getElementById('machinePotBatch').value = '';
                     document.getElementById('machinePotRuns').value = '';
                     document.getElementById('machineFilterClay').value = '';
@@ -5175,13 +5193,19 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     ['left', 'right'].forEach(machine => {
                         const machineStatus = machineStatuses.find(m => m.machine === machine) || {};
                         
-                        // Get batch info
+                        // Get batch info for Column A
                         let columnText = 'Empty';
+                        let columnBText = 'Empty';
                         let potText = 'Empty';
                         
                         if (machineStatus.column_batch) {
                             const batch = batches.find(b => b.id == machineStatus.column_batch);
-                            columnText = batch ? `${batch.id}` : 'Unknown batch';
+                            columnText = batch ? `${batch.id}` : 'Unknown';
+                        }
+                        
+                        if (machineStatus.column_b_batch) {
+                            const batch = batches.find(b => b.id == machineStatus.column_b_batch);
+                            columnBText = batch ? `${batch.id}` : 'Unknown';
                         }
                         
                         if (machineStatus.pot_batch) {
@@ -5192,7 +5216,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                                     potText += ` (${machineStatus.pot_runs} runs)`;
                                 }
                             } else {
-                                potText = 'Unknown batch';
+                                potText = 'Unknown';
                             }
                         }
                         
@@ -5208,6 +5232,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         
                         // Update display
                         document.getElementById(`${machine}ColumnBatch`).textContent = columnText;
+                        document.getElementById(`${machine}ColumnBBatch`).textContent = columnBText;
                         document.getElementById(`${machine}PotBatch`).textContent = potText;
                         document.getElementById(`${machine}FilterStatus`).textContent = filterText;
                     });
