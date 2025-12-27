@@ -2601,6 +2601,8 @@
                 // Load batches
                 try {
                     await loadBatches();
+                    updateMachineDisplays(); // Load machine status
+                    updateSuppliesButton(); // Load inventory levels
                 } catch (loadError) {
                     console.error('Load batches error:', loadError);
                     throw new Error('Failed to load batches: ' + loadError.message);
@@ -5085,34 +5087,80 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            const currentButane = parseFloat(inventory.butane) || 0;
-            const newButane = currentButane + addAmount;
-            const action = `Added ${addAmount.toFixed(1)} lbs butane shipment (${currentButane.toFixed(1)} → ${newButane.toFixed(1)} lbs)`;
-            
-            saveTransaction('butane', action, currentButane, newButane, 0, addAmount, notes);
-            
-            inventory.butane = newButane;
-            inventory.lastUpdated = new Date().toISOString();
-            localStorage.setItem('wm_inventory', JSON.stringify(inventory));
-            
-            // Update all displays
-            if (document.getElementById('modalButaneDisplay')) {
-                document.getElementById('modalButaneDisplay').textContent = `${newButane.toFixed(1)} lbs`;
-            }
-            updateInventoryDisplay();
-            updateSuppliesButton();
-            closeAddButaneModal();
-            
-            alert(`✅ Shipment Added!\n\n${addAmount.toFixed(1)} lbs butane added\nNew Total: ${newButane.toFixed(1)} lbs`);
+            supabaseClient
+                .from('wm_inventory')
+                .select('*')
+                .eq('supply_type', 'butane')
+                .single()
+                .then(({ data: butaneRecord, error }) => {
+                    if (error) {
+                        console.error('Error loading butane inventory:', error);
+                        return;
+                    }
+                    
+                    const currentButane = parseFloat(butaneRecord.current_level) || 0;
+                    const newButane = currentButane + addAmount;
+                    
+                    // Update inventory in Supabase
+                    supabaseClient
+                        .from('wm_inventory')
+                        .update({
+                            current_level: newButane,
+                            last_updated: new Date().toISOString(),
+                            updated_by: currentRole ? currentRole.name : 'Unknown'
+                        })
+                        .eq('supply_type', 'butane')
+                        .then(({ error: updateError }) => {
+                            if (updateError) {
+                                console.error('Error updating butane:', updateError);
+                                return;
+                            }
+                            
+                            // Save transaction
+                            supabaseClient
+                                .from('wm_inventory_transactions')
+                                .insert({
+                                    supply_type: 'butane',
+                                    transaction_type: 'add',
+                                    amount: addAmount,
+                                    previous_level: currentButane,
+                                    new_level: newButane,
+                                    notes: notes || `Added ${addAmount.toFixed(1)} lbs shipment`,
+                                    timestamp: new Date().toISOString(),
+                                    user_name: currentRole ? currentRole.name : 'Unknown'
+                                })
+                                .then(() => {
+                                    // Update all displays
+                                    if (document.getElementById('modalButaneDisplay')) {
+                                        document.getElementById('modalButaneDisplay').textContent = `${newButane.toFixed(1)} lbs`;
+                                    }
+                                    updateSuppliesButton();
+                                    closeAddButaneModal();
+                                    
+                                    alert(`✅ Shipment Added!\n\n${addAmount.toFixed(1)} lbs butane added\nNew Total: ${newButane.toFixed(1)} lbs`);
+                                });
+                        });
+                });
         }
         
         function openEditButaneModal() {
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            document.getElementById('editButaneCurrentDisplay').textContent = `${inventory.butane.toFixed(1)} lbs`;
-            document.getElementById('butaneSetAmount').value = '';
-            document.getElementById('butaneSetNotes').value = '';
-            document.getElementById('editBulkModal').style.display = 'block';
+            supabaseClient
+                .from('wm_inventory')
+                .select('*')
+                .eq('supply_type', 'butane')
+                .single()
+                .then(({ data: butaneRecord, error }) => {
+                    if (error) {
+                        console.error('Error loading butane inventory:', error);
+                        return;
+                    }
+                    
+                    const currentButane = parseFloat(butaneRecord.current_level) || 0;
+                    document.getElementById('editButaneCurrentDisplay').textContent = `${currentButane.toFixed(1)} lbs`;
+                    document.getElementById('butaneSetAmount').value = '';
+                    document.getElementById('butaneSetNotes').value = '';
+                    document.getElementById('editBulkModal').style.display = 'block';
+                });
         }
         
         function closeEditButaneModal() {
@@ -5133,25 +5181,59 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            const currentButane = parseFloat(inventory.butane) || 0;
-            const action = `Manually set butane to ${setAmount.toFixed(1)} lbs (was ${currentButane.toFixed(1)} lbs)`;
-            
-            saveTransaction('butane', action, currentButane, setAmount, 0, 0, notes);
-            
-            inventory.butane = setAmount;
-            inventory.lastUpdated = new Date().toISOString();
-            localStorage.setItem('wm_inventory', JSON.stringify(inventory));
-            
-            // Update all displays
-            if (document.getElementById('modalButaneDisplay')) {
-                document.getElementById('modalButaneDisplay').textContent = `${setAmount.toFixed(1)} lbs`;
-            }
-            updateInventoryDisplay();
-            updateSuppliesButton();
-            closeEditButaneModal();
-            
-            alert(`✅ Butane Updated!\n\n${action}\n\nReason: ${notes}`);
+            supabaseClient
+                .from('wm_inventory')
+                .select('*')
+                .eq('supply_type', 'butane')
+                .single()
+                .then(({ data: butaneRecord, error }) => {
+                    if (error) {
+                        console.error('Error loading butane inventory:', error);
+                        return;
+                    }
+                    
+                    const currentButane = parseFloat(butaneRecord.current_level) || 0;
+                    
+                    // Update inventory in Supabase
+                    supabaseClient
+                        .from('wm_inventory')
+                        .update({
+                            current_level: setAmount,
+                            last_updated: new Date().toISOString(),
+                            updated_by: currentRole ? currentRole.name : 'Unknown'
+                        })
+                        .eq('supply_type', 'butane')
+                        .then(({ error: updateError }) => {
+                            if (updateError) {
+                                console.error('Error updating butane:', updateError);
+                                return;
+                            }
+                            
+                            // Save transaction
+                            supabaseClient
+                                .from('wm_inventory_transactions')
+                                .insert({
+                                    supply_type: 'butane',
+                                    transaction_type: 'edit',
+                                    amount: setAmount - currentButane,
+                                    previous_level: currentButane,
+                                    new_level: setAmount,
+                                    notes: `Manual adjustment: ${notes}`,
+                                    timestamp: new Date().toISOString(),
+                                    user_name: currentRole ? currentRole.name : 'Unknown'
+                                })
+                                .then(() => {
+                                    // Update all displays
+                                    if (document.getElementById('modalButaneDisplay')) {
+                                        document.getElementById('modalButaneDisplay').textContent = `${setAmount.toFixed(1)} lbs`;
+                                    }
+                                    updateSuppliesButton();
+                                    closeEditButaneModal();
+                                    
+                                    alert(`✅ Butane Updated!\n\nManually set to ${setAmount.toFixed(1)} lbs (was ${currentButane.toFixed(1)} lbs)\n\nReason: ${notes}`);
+                                });
+                        });
+                });
         }
         
         // Nitrogen Modals
@@ -5174,34 +5256,80 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            const currentNitrogen = parseFloat(inventory.nitrogen) || 0;
-            const newNitrogen = currentNitrogen + addAmount;
-            const action = `Added ${addAmount.toFixed(1)} nitrogen tank(s) (${currentNitrogen.toFixed(1)} → ${newNitrogen.toFixed(1)})`;
-            
-            saveTransaction('nitrogen', action, currentNitrogen, newNitrogen, 0, addAmount, notes);
-            
-            inventory.nitrogen = newNitrogen;
-            inventory.lastUpdated = new Date().toISOString();
-            localStorage.setItem('wm_inventory', JSON.stringify(inventory));
-            
-            // Update all displays
-            if (document.getElementById('modalNitrogenDisplay')) {
-                document.getElementById('modalNitrogenDisplay').textContent = `${newNitrogen.toFixed(1)}`;
-            }
-            updateInventoryDisplay();
-            updateSuppliesButton();
-            closeAddNitrogenModal();
-            
-            alert(`✅ Tanks Added!\n\n${addAmount.toFixed(1)} nitrogen tank(s) added\nNew Total: ${newNitrogen.toFixed(1)} tanks`);
+            supabaseClient
+                .from('wm_inventory')
+                .select('*')
+                .eq('supply_type', 'nitrogen')
+                .single()
+                .then(({ data: nitrogenRecord, error }) => {
+                    if (error) {
+                        console.error('Error loading nitrogen inventory:', error);
+                        return;
+                    }
+                    
+                    const currentNitrogen = parseFloat(nitrogenRecord.current_level) || 0;
+                    const newNitrogen = currentNitrogen + addAmount;
+                    
+                    // Update inventory in Supabase
+                    supabaseClient
+                        .from('wm_inventory')
+                        .update({
+                            current_level: newNitrogen,
+                            last_updated: new Date().toISOString(),
+                            updated_by: currentRole ? currentRole.name : 'Unknown'
+                        })
+                        .eq('supply_type', 'nitrogen')
+                        .then(({ error: updateError }) => {
+                            if (updateError) {
+                                console.error('Error updating nitrogen:', updateError);
+                                return;
+                            }
+                            
+                            // Save transaction
+                            supabaseClient
+                                .from('wm_inventory_transactions')
+                                .insert({
+                                    supply_type: 'nitrogen',
+                                    transaction_type: 'add',
+                                    amount: addAmount,
+                                    previous_level: currentNitrogen,
+                                    new_level: newNitrogen,
+                                    notes: notes || `Added ${addAmount.toFixed(1)} tank(s)`,
+                                    timestamp: new Date().toISOString(),
+                                    user_name: currentRole ? currentRole.name : 'Unknown'
+                                })
+                                .then(() => {
+                                    // Update all displays
+                                    if (document.getElementById('modalNitrogenDisplay')) {
+                                        document.getElementById('modalNitrogenDisplay').textContent = `${newNitrogen.toFixed(1)}`;
+                                    }
+                                    updateSuppliesButton();
+                                    closeAddNitrogenModal();
+                                    
+                                    alert(`✅ Tanks Added!\n\n${addAmount.toFixed(1)} nitrogen tank(s) added\nNew Total: ${newNitrogen.toFixed(1)} tanks`);
+                                });
+                        });
+                });
         }
         
         function openEditNitrogenModal() {
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            document.getElementById('editNitrogenCurrentDisplay').textContent = `${inventory.nitrogen.toFixed(1)} tanks`;
-            document.getElementById('nitrogenSetAmount').value = '';
-            document.getElementById('nitrogenSetNotes').value = '';
-            document.getElementById('editNitrogenModal').style.display = 'block';
+            supabaseClient
+                .from('wm_inventory')
+                .select('*')
+                .eq('supply_type', 'nitrogen')
+                .single()
+                .then(({ data: nitrogenRecord, error }) => {
+                    if (error) {
+                        console.error('Error loading nitrogen inventory:', error);
+                        return;
+                    }
+                    
+                    const currentNitrogen = parseFloat(nitrogenRecord.current_level) || 0;
+                    document.getElementById('editNitrogenCurrentDisplay').textContent = `${currentNitrogen.toFixed(1)} tanks`;
+                    document.getElementById('nitrogenSetAmount').value = '';
+                    document.getElementById('nitrogenSetNotes').value = '';
+                    document.getElementById('editNitrogenModal').style.display = 'block';
+                });
         }
         
         function closeEditNitrogenModal() {
@@ -5222,15 +5350,60 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            const inventory = JSON.parse(localStorage.getItem('wm_inventory') || '{"butane": 0, "nitrogen": 0}');
-            const currentNitrogen = parseFloat(inventory.nitrogen) || 0;
-            const action = `Manually set nitrogen to ${setAmount.toFixed(1)} tanks (was ${currentNitrogen.toFixed(1)})`;
-            
-            saveTransaction('nitrogen', action, currentNitrogen, setAmount, 0, 0, notes);
-            
-            inventory.nitrogen = setAmount;
-            inventory.lastUpdated = new Date().toISOString();
-            localStorage.setItem('wm_inventory', JSON.stringify(inventory));
+            supabaseClient
+                .from('wm_inventory')
+                .select('*')
+                .eq('supply_type', 'nitrogen')
+                .single()
+                .then(({ data: nitrogenRecord, error }) => {
+                    if (error) {
+                        console.error('Error loading nitrogen inventory:', error);
+                        return;
+                    }
+                    
+                    const currentNitrogen = parseFloat(nitrogenRecord.current_level) || 0;
+                    
+                    // Update inventory in Supabase
+                    supabaseClient
+                        .from('wm_inventory')
+                        .update({
+                            current_level: setAmount,
+                            last_updated: new Date().toISOString(),
+                            updated_by: currentRole ? currentRole.name : 'Unknown'
+                        })
+                        .eq('supply_type', 'nitrogen')
+                        .then(({ error: updateError }) => {
+                            if (updateError) {
+                                console.error('Error updating nitrogen:', updateError);
+                                return;
+                            }
+                            
+                            // Save transaction
+                            supabaseClient
+                                .from('wm_inventory_transactions')
+                                .insert({
+                                    supply_type: 'nitrogen',
+                                    transaction_type: 'edit',
+                                    amount: setAmount - currentNitrogen,
+                                    previous_level: currentNitrogen,
+                                    new_level: setAmount,
+                                    notes: `Manual adjustment: ${notes}`,
+                                    timestamp: new Date().toISOString(),
+                                    user_name: currentRole ? currentRole.name : 'Unknown'
+                                })
+                                .then(() => {
+                                    // Update all displays
+                                    if (document.getElementById('modalNitrogenDisplay')) {
+                                        document.getElementById('modalNitrogenDisplay').textContent = `${setAmount.toFixed(1)}`;
+                                    }
+                                    updateSuppliesButton();
+                                    closeEditNitrogenModal();
+                                    
+                                    alert(`✅ Nitrogen Updated!\n\nManually set to ${setAmount.toFixed(1)} tanks (was ${currentNitrogen.toFixed(1)})\n\nReason: ${notes}`);
+                                });
+                        });
+                });
+        }
             
             // Update all displays
             if (document.getElementById('modalNitrogenDisplay')) {
