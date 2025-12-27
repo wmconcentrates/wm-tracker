@@ -1482,6 +1482,37 @@
                 <h2>👥 Employee Performance Analytics</h2>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">Production tracking • Real-time staffing insights</p>
                 
+                <!-- Today's Production Summary -->
+                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2)); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-green);">
+                    <h3 style="color: var(--accent-green); margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px; font-size: 1.5rem;">
+                        <span>📊</span>
+                        <span>Today's Production Summary</span>
+                        <span id="todayDate" style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 400; margin-left: auto;"></span>
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-orange);">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">⚗️ Trim Extracted</div>
+                            <div id="todayTrimExtracted" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-orange); font-family: 'Space Mono', monospace;">0g</div>
+                            <div id="todayTrimBatches" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0 batches</div>
+                        </div>
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-blue);">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">🔥 Post-Processing Finished</div>
+                            <div id="todayFinished" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-blue); font-family: 'Space Mono', monospace;">0g</div>
+                            <div id="todayFinishedBatches" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0 batches</div>
+                        </div>
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-purple);">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">📦 Units Packaged</div>
+                            <div id="todayPackaged" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-purple); font-family: 'Space Mono', monospace;">0</div>
+                            <div id="todayPackagedWeight" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0g total</div>
+                        </div>
+                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-green);">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">🏷️ Units Labeled</div>
+                            <div id="todayLabeled" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-green); font-family: 'Space Mono', monospace;">0</div>
+                            <div id="todayLabeledWeight" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0g total</div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Login Activity Tracker -->
                 <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-blue);">
                     <h3 style="color: var(--accent-blue); margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
@@ -5467,6 +5498,95 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
         
         // Login Activity Tracker
+        function updateTodayProduction() {
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+            
+            // Display today's date
+            const dateEl = document.getElementById('todayDate');
+            if (dateEl) {
+                dateEl.textContent = new Date().toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+            }
+            
+            let trimExtracted = 0;
+            let trimBatches = 0;
+            let finishedWeight = 0;
+            let finishedBatches = 0;
+            let packaged = 0;
+            let packagedWeight = 0;
+            let labeled = 0;
+            let labeledWeight = 0;
+            
+            batches.forEach(batch => {
+                // Check extraction completed today
+                if (batch.timeline && batch.timeline.length > 0) {
+                    batch.timeline.forEach(event => {
+                        const eventDate = new Date(event.timestamp || event.date).toISOString().split('T')[0];
+                        
+                        // Extraction completed today
+                        if (eventDate === today && 
+                            event.status === 'extraction' && 
+                            event.action && 
+                            event.action.toLowerCase().includes('completed')) {
+                            trimExtracted += parseFloat(batch.trim_weight) || 0;
+                            trimBatches++;
+                        }
+                        
+                        // Finishing completed today
+                        if (eventDate === today && 
+                            event.status === 'finishing' && 
+                            event.action && 
+                            event.action.toLowerCase().includes('completed')) {
+                            finishedWeight += parseFloat(batch.final_weight) || 0;
+                            finishedBatches++;
+                        }
+                    });
+                }
+                
+                // Check packaging done today
+                if (batch.packaging_date) {
+                    const packagingDate = new Date(batch.packaging_date).toISOString().split('T')[0];
+                    if (packagingDate === today && batch.units_packaged) {
+                        packaged += parseInt(batch.units_packaged) || 0;
+                        packagedWeight += parseFloat(batch.net_weight) || 0;
+                    }
+                }
+                
+                // Check labeling done today
+                if (batch.timeline && batch.timeline.length > 0) {
+                    batch.timeline.forEach(event => {
+                        const eventDate = new Date(event.timestamp || event.date).toISOString().split('T')[0];
+                        
+                        if (eventDate === today && 
+                            event.stage === 'labeling' && 
+                            event.action && 
+                            (event.action.toLowerCase().includes('completed') || 
+                             event.action.toLowerCase().includes('labeled'))) {
+                            labeled += parseInt(batch.units_packaged) || 0;
+                            labeledWeight += parseFloat(batch.grams_labeled) || 0;
+                        }
+                    });
+                }
+            });
+            
+            // Update displays
+            document.getElementById('todayTrimExtracted').textContent = `${trimExtracted.toFixed(0)}g`;
+            document.getElementById('todayTrimBatches').textContent = `${trimBatches} batch${trimBatches !== 1 ? 'es' : ''}`;
+            
+            document.getElementById('todayFinished').textContent = `${finishedWeight.toFixed(0)}g`;
+            document.getElementById('todayFinishedBatches').textContent = `${finishedBatches} batch${finishedBatches !== 1 ? 'es' : ''}`;
+            
+            document.getElementById('todayPackaged').textContent = packaged.toLocaleString();
+            document.getElementById('todayPackagedWeight').textContent = `${packagedWeight.toFixed(0)}g total`;
+            
+            document.getElementById('todayLabeled').textContent = labeled.toLocaleString();
+            document.getElementById('todayLabeledWeight').textContent = `${labeledWeight.toFixed(0)}g total`;
+        }
+        
+        // Login Activity Tracker
         function updateLoginTracker() {
             const now = new Date();
             const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
@@ -8069,6 +8189,9 @@ ${employeeReport || 'No activity recorded today'}
             const logContainer = document.getElementById('activityLog');
             
             if (!statsContainer) return;
+            
+            // Update today's production summary
+            updateTodayProduction();
             
             // Update login tracker
             updateLoginTracker();
