@@ -4635,10 +4635,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 .from('wm_batches')
                 .update(updatedBatch)
                 .eq('id', batch.id)
-                .then(({ error }) => {
+                .then(({ error, data }) => {
                     if (error) {
                         console.error('Error updating batch:', error);
-                        alert('Error completing extraction. Please try again.');
+                        console.error('Error details:', JSON.stringify(error, null, 2));
+                        console.error('Batch data being sent:', updatedBatch);
+                        alert(`Error completing extraction:\n\n${error.message || JSON.stringify(error)}\n\nCheck console for details.`);
                         return;
                     }
                     
