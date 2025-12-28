@@ -3230,16 +3230,33 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
                 // Welcome celebration with random messages
                 const welcomeMessages = [
+                    // Original messages
                     "Ready to crush it today? Let's get to work!",
                     "Time to make some magic happen! ✨",
-                    "Let's get this bread... I mean, concentrate! 🍞",
                     "Another day, another dab! 💨",
-                    "You're about to do amazing things!",
-                    "The extraction station awaits your greatness!",
-                    "Warning: Excellence detected! 🚨",
-                    "Plot twist: You're awesome. Let's go!",
                     "May your yields be high and your temps be low! 🌡️",
-                    "Time to turn trim into triumph! 🏆"
+                    "Time to turn trim into triumph! 🏆",
+                    // Movie quotes
+                    "I'm kind of a big deal. — Anchorman",
+                    "That's what she said. — The Office",
+                    "I'm not even supposed to be here today! — Clerks",
+                    "Alright, alright, alright. — Dazed and Confused",
+                    "I'm gonna need you to come in on Saturday. — Office Space",
+                    "So you're telling me there's a chance? — Dumb and Dumber",
+                    "The Dude abides. — The Big Lebowski",
+                    "Did we just become best friends?! — Step Brothers",
+                    "Life moves pretty fast. If you don't stop and look around once in a while, you could miss it. — Ferris Bueller",
+                    "I've got a fever, and the only prescription is more cowbell! — SNL",
+                    "It's showtime! — Beetlejuice",
+                    "Be excellent to each other. — Bill & Ted",
+                    "You're gonna need a bigger boat. — Jaws",
+                    "I ain't afraid of no ghosts! — Ghostbusters",
+                    "Cinderella story, outta nowhere! — Caddyshack",
+                    "How do you like them apples? — Good Will Hunting",
+                    "I'm walkin' here! — Midnight Cowboy",
+                    "You had me at hello. — Jerry Maguire",
+                    "Just keep swimming. — Finding Nemo",
+                    "To infinity and beyond! — Toy Story"
                 ];
                 const welcomeButtons = [
                     "Hell yes!",
@@ -3250,8 +3267,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     "Born ready!",
                     "LFG! 🚀",
                     "Oh yeahhh!",
-                    "Time to shine!",
-                    "Let's roll!"
+                    "Groovy!",
+                    "Excellent!",
+                    "Alrighty then!",
+                    "I'm on it!",
+                    "Let's do this!",
+                    "Party on!",
+                    "Cowabunga!"
                 ];
                 const randomMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
                 const randomButton = welcomeButtons[Math.floor(Math.random() * welcomeButtons.length)];
