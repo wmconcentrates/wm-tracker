@@ -924,11 +924,11 @@
         </div>
     </main>
 
-    <!-- Owner Login Modal -->
+    <!-- Login Modal -->
     <div class="login-modal" id="loginModal">
         <div class="login-box">
-            <h2>🔐 Owner Access</h2>
-            <p>Enter your PIN to access the content dashboard</p>
+            <h2>🔐 Team Access</h2>
+            <p>Enter your PIN to access the dashboard</p>
             <input type="password" id="ownerPin" placeholder="••••" maxlength="4" pattern="[0-9]*" inputmode="numeric">
             <button class="btn btn-primary" style="width: 100%;" onclick="ownerLogin()">Enter Dashboard</button>
             <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;" onclick="closeLoginModal()">Cancel</button>
@@ -963,12 +963,15 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYndqcGZhY3VhbXd4cXR3aG12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU5NDA4ODAsImV4cCI6MjA2MTUxNjg4MH0.eAPPS2PzVERVXO7c8hdeSeyxLOOKCzlbJg1Nm95L6-E';
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Owner PIN - change this to your preferred PIN
-        const OWNER_PIN = '0420';
+        // Access PINs
+        const OWNER_PIN = '1827';
+        const SALES_PIN = '1991'; // Drew - Sales Rep
 
         let allPosts = [];
         let currentCategory = 'all';
         let isOwnerLoggedIn = false;
+        let isSalesLoggedIn = false;
+        let currentUserRole = null;
         let generatedPost = null;
         let currentEditPost = null;
 
@@ -1184,11 +1187,33 @@
             const pin = document.getElementById('ownerPin').value;
             if (pin === OWNER_PIN) {
                 isOwnerLoggedIn = true;
+                currentUserRole = 'owner';
                 closeLoginModal();
                 showOwnerDashboard();
+            } else if (pin === SALES_PIN) {
+                isSalesLoggedIn = true;
+                currentUserRole = 'sales';
+                closeLoginModal();
+                showSalesDashboard();
             } else {
                 alert('Invalid PIN');
             }
+        }
+
+        async function showSalesDashboard() {
+            document.getElementById('blogListView').style.display = 'none';
+            document.getElementById('heroSection').style.display = 'none';
+            document.getElementById('singlePostView').classList.remove('active');
+            document.getElementById('ownerDashboard').classList.add('active');
+
+            // Update dashboard title for sales
+            document.querySelector('.dashboard-header h1').textContent = '📊 Sales Dashboard';
+            document.querySelector('.dashboard-header p').textContent = 'Hey Drew! Create posts to share with customers.';
+
+            // Hide owner-only features (delete buttons, etc.)
+            document.querySelectorAll('.owner-only').forEach(el => el.style.display = 'none');
+
+            await loadPosts();
         }
 
         async function showOwnerDashboard() {
@@ -1473,7 +1498,7 @@ ${template.cta}`;
                         </div>
                         <div style="display: flex; gap: 10px;">
                             <button class="btn btn-success btn-small" onclick="approvePost('${post.id}')">Approve</button>
-                            <button class="btn btn-secondary btn-small" onclick="deletePost('${post.id}')">Delete</button>
+                            ${currentUserRole === 'owner' ? `<button class="btn btn-secondary btn-small" onclick="deletePost('${post.id}')">Delete</button>` : ''}
                         </div>
                     </div>`).join('');
             } catch (error) {
