@@ -1625,8 +1625,10 @@ ${hashtags}`;
             if (!generatedPost) return;
 
             try {
+                // Extract only the fields that exist in the database (exclude partners)
+                const { partners, ...postData } = generatedPost;
                 const { error } = await db.from('wm_blog_posts').insert([{
-                    ...generatedPost,
+                    ...postData,
                     status: 'published',
                     created_at: new Date().toISOString()
                 }]);
