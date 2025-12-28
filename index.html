@@ -2091,6 +2091,88 @@
                     </div>
                 </div>
 
+<!-- Sales Dashboard -->
+                <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(147, 51, 234, 0.1)); border: 2px solid #FFD700; border-radius: 16px; padding: 25px; margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; color: #FFD700;">
+                                <span>💰</span> Sales Dashboard
+                            </h3>
+                            <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 0.9rem;">Sales performance, commissions, and rep tracking</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="salesRepFilter" onchange="updateSalesDashboard()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px; min-width: 180px;">
+                                <option value="all">All Sales Reps</option>
+                            </select>
+                            <button onclick="loadSalesDashboard()" class="btn" style="background: #FFD700; color: #000; padding: 10px 20px; font-weight: 600;">Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Sales Stats Grid -->
+                    <div id="salesDashboardStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid var(--accent-blue);">
+                            <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-blue);" id="salesStatTotalOrders">--</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Orders</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid #FFD700;">
+                            <div style="font-size: 2.2rem; font-weight: 700; color: #FFD700;" id="salesStatTotalRevenue">--</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Revenue</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid var(--accent-green);">
+                            <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-green);" id="salesStatPaidOrders">--</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Paid Orders</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid var(--accent-orange);">
+                            <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-orange);" id="salesStatUnpaidOrders">--</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Unpaid Orders</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid var(--accent-purple);">
+                            <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-purple);" id="salesStatNewCustomers">--</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">New Customers</div>
+                        </div>
+                    </div>
+
+                    <!-- Commission Calculator Section -->
+                    <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(147, 51, 234, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--accent-purple); display: flex; align-items: center; gap: 10px;">
+                            <span>💵</span> Commission Calculator (8% on Paid Invoices)
+                        </h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Current Month Commission</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);" id="commissionCurrentMonth">$0.00</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionCurrentMonthLabel">January 2025</div>
+                            </div>
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Previous Month Commission</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);" id="commissionPrevMonth">$0.00</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionPrevMonthLabel">December 2024</div>
+                            </div>
+                            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(147, 51, 234, 0.2)); padding: 20px; border-radius: 10px; text-align: center; border: 2px solid var(--accent-green);">
+                                <div style="font-size: 0.8rem; color: var(--accent-green); margin-bottom: 5px; font-weight: 600;">Next Paycheck</div>
+                                <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);" id="commissionNextPaycheck">$0.00</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionPaydayDate">January 9, 2025</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary);">
+                            <strong style="color: var(--accent-purple);">Pay Schedule:</strong> Commission paid every 2 weeks on Friday. First pay period of each month includes previous month's commission.
+                            <span id="commissionPayScheduleNote" style="display: block; margin-top: 5px;"></span>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Breakdown -->
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                            <span>📊</span> Monthly Sales Breakdown
+                        </h4>
+                        <div id="salesMonthlyBreakdown" style="max-height: 300px; overflow-y: auto;">
+                            <div style="text-align: center; padding: 30px; color: var(--text-secondary);">
+                                Loading sales data...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Published Posts -->
                 <div style="background: var(--bg-secondary); border-radius: 16px; padding: 25px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -3772,6 +3854,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 } else if (station === 'frontofhouse') {
                     loadFOHRecentBatches();
                     loadFOHPosts();
+                loadSalesDashboard();
                 }
             });
         });
@@ -11091,6 +11174,7 @@ ${employeeReport || 'No activity recorded today'}
                 document.getElementById('fohGeneratedPreview').style.display = 'none';
                 fohGeneratedPost = null;
                 loadFOHPosts();
+                loadSalesDashboard();
             } catch (error) {
                 console.error('Publish error:', error);
                 alert('Error publishing: ' + error.message);
@@ -11770,7 +11854,302 @@ ${employeeReport || 'No activity recorded today'}
                 loadFOHRecentBatches();
                 loadDropCalendar();
                 loadFOHPosts();
+                loadSalesDashboard();
             }
+        }
+
+
+        // ==================== SALES DASHBOARD ====================
+
+        const COMMISSION_RATE = 0.08; // 8% commission
+
+        // Extract unique sales reps from orders
+        function extractSalesReps(orders) {
+            const repsMap = new Map();
+            orders.forEach(order => {
+                if (order.sales_reps && Array.isArray(order.sales_reps)) {
+                    order.sales_reps.forEach(rep => {
+                        if (rep.user) {
+                            // Handle both string and object user formats
+                            const userName = typeof rep.user === 'string' ? rep.user : (rep.user.name || rep.user.first_name || `Rep ${rep.id}`);
+                            if (!repsMap.has(rep.id)) {
+                                repsMap.set(rep.id, { id: rep.id, name: userName });
+                            }
+                        }
+                    });
+                }
+            });
+            return Array.from(repsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        // Filter orders by sales rep
+        function filterOrdersBySalesRep(orders, repIdOrName) {
+            if (repIdOrName === 'all') return orders;
+            return orders.filter(order => {
+                if (!order.sales_reps || !Array.isArray(order.sales_reps)) return false;
+                return order.sales_reps.some(rep => {
+                    if (rep.id == repIdOrName) return true;
+                    const userName = typeof rep.user === 'string' ? rep.user : (rep.user?.name || rep.user?.first_name || '');
+                    return userName.toLowerCase().includes(repIdOrName.toLowerCase());
+                });
+            });
+        }
+
+        // Calculate commission for a set of orders
+        function calculateCommission(orders, salesRepFilter = 'all') {
+            const filteredOrders = filterOrdersBySalesRep(orders, salesRepFilter);
+            const paidOrders = filteredOrders.filter(o => o.paid === true);
+            const paidTotal = paidOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+            return paidTotal * COMMISSION_RATE;
+        }
+
+        // Get orders for a specific month
+        function getOrdersForMonth(orders, year, month) {
+            return orders.filter(order => {
+                // Use paid_date for commission calculations (when invoice was paid)
+                const dateField = order.paid ? (order.paid_date || order.created_on) : order.created_on;
+                if (!dateField) return false;
+                const orderDate = new Date(dateField);
+                return orderDate.getFullYear() === year && orderDate.getMonth() === month;
+            });
+        }
+
+        // Get paid orders for a specific month (for commission)
+        function getPaidOrdersForMonth(orders, year, month) {
+            return orders.filter(order => {
+                if (order.paid !== true) return false;
+                // Use paid_date if available, otherwise created_on
+                const dateField = order.paid_date || order.created_on;
+                if (!dateField) return false;
+                const paidDate = new Date(dateField);
+                return paidDate.getFullYear() === year && paidDate.getMonth() === month;
+            });
+        }
+
+        // Determine next payday and what commission period it covers
+        function getNextPaydayInfo() {
+            const now = new Date();
+            // Starting reference: January 9, 2025 (Friday) - first payday of the year
+            const referencePayday = new Date(2025, 0, 9); // Jan 9, 2025
+
+            // Find next payday (every 2 weeks from reference)
+            let nextPayday = new Date(referencePayday);
+            while (nextPayday <= now) {
+                nextPayday.setDate(nextPayday.getDate() + 14);
+            }
+
+            // Determine if this is the first pay period of the month
+            const payMonth = nextPayday.getMonth();
+            const payYear = nextPayday.getFullYear();
+            const dayOfMonth = nextPayday.getDate();
+
+            // First pay period = payday falls on or before the 14th of the month
+            const isFirstPayPeriod = dayOfMonth <= 14;
+
+            // Previous month for commission calculation
+            let commissionMonth, commissionYear;
+            if (isFirstPayPeriod) {
+                // First pay period pays out previous month's commission
+                if (payMonth === 0) {
+                    commissionMonth = 11; // December
+                    commissionYear = payYear - 1;
+                } else {
+                    commissionMonth = payMonth - 1;
+                    commissionYear = payYear;
+                }
+            } else {
+                // Second pay period - no commission (or could be current month partial)
+                commissionMonth = null;
+                commissionYear = null;
+            }
+
+            return {
+                nextPayday,
+                isFirstPayPeriod,
+                commissionMonth,
+                commissionYear,
+                payMonth,
+                payYear
+            };
+        }
+
+        // Format month name
+        function getMonthName(month) {
+            const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+            return months[month];
+        }
+
+        // Load and display sales dashboard
+        async function loadSalesDashboard() {
+            try {
+                await ensureLeafLinkData();
+
+                // Populate sales rep dropdown
+                const salesReps = extractSalesReps(allLeafLinkOrders);
+                const dropdown = document.getElementById('salesRepFilter');
+                if (dropdown) {
+                    dropdown.innerHTML = '<option value="all">All Sales Reps</option>';
+                    salesReps.forEach(rep => {
+                        const option = document.createElement('option');
+                        option.value = rep.id;
+                        option.textContent = rep.name;
+                        dropdown.appendChild(option);
+                    });
+                }
+
+                updateSalesDashboard();
+            } catch (error) {
+                console.error('Error loading sales dashboard:', error);
+            }
+        }
+
+        // Update dashboard with current filter
+        function updateSalesDashboard() {
+            const salesRepFilter = document.getElementById('salesRepFilter')?.value || 'all';
+            const filteredOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
+
+            // Calculate stats
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+            // Current month orders (by created_on)
+            const currentMonthOrders = filteredOrders.filter(o => {
+                const d = new Date(o.created_on);
+                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            });
+
+            // All-time stats
+            const totalOrders = filteredOrders.length;
+            const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+            const paidOrders = filteredOrders.filter(o => o.paid === true);
+            const unpaidOrders = filteredOrders.filter(o => o.paid === false);
+
+            // Count unique new customers this month
+            const currentMonthCustomers = new Set();
+            currentMonthOrders.forEach(o => {
+                if (o.customer?.id) currentMonthCustomers.add(o.customer.id);
+            });
+
+            // Check which are truly new (first order ever)
+            let newCustomersCount = 0;
+            currentMonthCustomers.forEach(customerId => {
+                const firstOrderInfo = customerFirstOrderDates[customerId];
+                if (firstOrderInfo) {
+                    const firstOrderDate = new Date(firstOrderInfo.date);
+                    if (firstOrderDate.getMonth() === currentMonth && firstOrderDate.getFullYear() === currentYear) {
+                        newCustomersCount++;
+                    }
+                }
+            });
+
+            // Update stats display
+            document.getElementById('salesStatTotalOrders').textContent = totalOrders.toLocaleString();
+            document.getElementById('salesStatTotalRevenue').textContent = '$' + totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            document.getElementById('salesStatPaidOrders').textContent = paidOrders.length.toLocaleString();
+            document.getElementById('salesStatUnpaidOrders').textContent = unpaidOrders.length.toLocaleString();
+            document.getElementById('salesStatNewCustomers').textContent = newCustomersCount.toLocaleString();
+
+            // Commission calculations
+            const currentMonthPaid = getPaidOrdersForMonth(filteredOrders, currentYear, currentMonth);
+            const prevMonthPaid = getPaidOrdersForMonth(filteredOrders, prevYear, prevMonth);
+
+            const currentMonthCommission = currentMonthPaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
+            const prevMonthCommission = prevMonthPaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
+
+            // Next paycheck calculation
+            const paydayInfo = getNextPaydayInfo();
+            let nextPaycheckCommission = 0;
+            let paycheckNote = '';
+
+            if (paydayInfo.isFirstPayPeriod && paydayInfo.commissionMonth !== null) {
+                // First pay period - pays out previous month's commission
+                const commissionOrders = getPaidOrdersForMonth(filteredOrders, paydayInfo.commissionYear, paydayInfo.commissionMonth);
+                nextPaycheckCommission = commissionOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
+                paycheckNote = `Includes ${getMonthName(paydayInfo.commissionMonth)} ${paydayInfo.commissionYear} commission (first pay period of ${getMonthName(paydayInfo.payMonth)})`;
+            } else {
+                paycheckNote = 'No commission this pay period (second pay period of month)';
+            }
+
+            // Update commission display
+            document.getElementById('commissionCurrentMonth').textContent = '$' + currentMonthCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('commissionCurrentMonthLabel').textContent = `${getMonthName(currentMonth)} ${currentYear}`;
+
+            document.getElementById('commissionPrevMonth').textContent = '$' + prevMonthCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('commissionPrevMonthLabel').textContent = `${getMonthName(prevMonth)} ${prevYear}`;
+
+            document.getElementById('commissionNextPaycheck').textContent = '$' + nextPaycheckCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('commissionPaydayDate').textContent = paydayInfo.nextPayday.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('commissionPayScheduleNote').textContent = paycheckNote;
+
+            // Build monthly breakdown
+            renderMonthlyBreakdown(filteredOrders);
+        }
+
+        // Render monthly sales breakdown
+        function renderMonthlyBreakdown(orders) {
+            const container = document.getElementById('salesMonthlyBreakdown');
+            if (!container) return;
+
+            // Group orders by month
+            const monthlyData = {};
+            orders.forEach(order => {
+                const date = new Date(order.created_on);
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                if (!monthlyData[key]) {
+                    monthlyData[key] = {
+                        year: date.getFullYear(),
+                        month: date.getMonth(),
+                        orders: [],
+                        paidOrders: [],
+                        revenue: 0,
+                        paidRevenue: 0
+                    };
+                }
+                monthlyData[key].orders.push(order);
+                monthlyData[key].revenue += order.total?.amount || 0;
+                if (order.paid === true) {
+                    monthlyData[key].paidOrders.push(order);
+                    monthlyData[key].paidRevenue += order.total?.amount || 0;
+                }
+            });
+
+            // Sort by date descending
+            const sortedMonths = Object.keys(monthlyData).sort().reverse();
+
+            if (sortedMonths.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-secondary);">No sales data available</div>';
+                return;
+            }
+
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<thead><tr style="border-bottom: 2px solid var(--border-color);">';
+            html += '<th style="text-align: left; padding: 10px; color: var(--text-secondary);">Month</th>';
+            html += '<th style="text-align: right; padding: 10px; color: var(--text-secondary);">Orders</th>';
+            html += '<th style="text-align: right; padding: 10px; color: var(--text-secondary);">Revenue</th>';
+            html += '<th style="text-align: right; padding: 10px; color: var(--text-secondary);">Paid</th>';
+            html += '<th style="text-align: right; padding: 10px; color: var(--text-secondary);">Commission</th>';
+            html += '</tr></thead><tbody>';
+
+            sortedMonths.forEach(key => {
+                const data = monthlyData[key];
+                const commission = data.paidRevenue * COMMISSION_RATE;
+                const monthName = getMonthName(data.month);
+
+                html += `<tr style="border-bottom: 1px solid var(--border-color);">`;
+                html += `<td style="padding: 12px 10px; font-weight: 600;">${monthName} ${data.year}</td>`;
+                html += `<td style="padding: 12px 10px; text-align: right; color: var(--accent-blue);">${data.orders.length}</td>`;
+                html += `<td style="padding: 12px 10px; text-align: right; color: #FFD700;">$${data.revenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>`;
+                html += `<td style="padding: 12px 10px; text-align: right; color: var(--accent-green);">$${data.paidRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>`;
+                html += `<td style="padding: 12px 10px; text-align: right; color: var(--accent-purple); font-weight: 600;">$${commission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
         }
 
     </script>
