@@ -90,6 +90,23 @@
             box-shadow: 0 10px 40px rgba(147, 51, 234, 0.3);
         }
         
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .header-logo {
+            width: 80px;
+            height: 60px;
+            flex-shrink: 0;
+        }
+
+        .header-logo svg {
+            width: 100%;
+            height: 100%;
+        }
+
         .header h1 {
             font-family: 'Space Mono', monospace;
             font-size: 2.5rem;
@@ -98,7 +115,7 @@
             text-transform: uppercase;
             letter-spacing: 2px;
         }
-        
+
         .header p {
             font-size: 1rem;
             opacity: 0.9;
@@ -736,8 +753,21 @@
     <!-- Main App -->
     <div class="app-container" id="appContainer">
         <div class="header">
-            <h1>🔬 White Mousse Production Tracker</h1>
-            <p>Complete trim-to-product workflow tracking • Cloud synced across all stations</p>
+            <div class="header-content">
+                <div class="header-logo">
+                    <svg viewBox="0 0 100 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M 5 5 L 27 65 L 42 15 L 57 65 L 72 15 L 95 65"
+                              stroke="white"
+                              stroke-width="7"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>White Mousse Production Tracker</h1>
+                    <p>Complete trim-to-product workflow tracking • Cloud synced across all stations</p>
+                </div>
+            </div>
         </div>
 
         <div class="user-login" id="userLogin">
