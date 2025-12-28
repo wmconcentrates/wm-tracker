@@ -6,20 +6,26 @@
     <title>White Mousse Production Tracker - Cloud Sync</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@300;400;600;700&display=swap');
-        
+
         :root {
-            --bg-primary: #0a0e1a;
-            --bg-secondary: #151b2e;
-            --bg-tertiary: #1f2937;
-            --accent-purple: #9333ea;
-            --accent-green: #10b981;
-            --accent-blue: #3b82f6;
-            --accent-orange: #f59e0b;
-            --accent-red: #ef4444;
-            --text-primary: #f9fafb;
-            --text-secondary: #9ca3af;
-            --border: #374151;
-            font-size: 18px; /* Increased from default 16px */
+            /* Electric Forest - Laser show vibes */
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --bg-tertiary: #141414;
+            --accent-purple: #bf00ff;
+            --accent-green: #39ff14;
+            --accent-blue: #00f0ff;
+            --accent-orange: #ff6b00;
+            --accent-red: #ff0055;
+            --accent-pink: #ff10f0;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --border: #222222;
+            --glow-green: 0 0 20px rgba(57, 255, 20, 0.5);
+            --glow-pink: 0 0 20px rgba(255, 16, 240, 0.5);
+            --glow-blue: 0 0 20px rgba(0, 240, 255, 0.5);
+            --glow-purple: 0 0 20px rgba(191, 0, 255, 0.5);
+            font-size: 18px;
         }
         
         * {
@@ -137,11 +143,12 @@
             font-size: 2.5rem;
             font-weight: 700;
             margin-bottom: 15px;
-            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue), var(--accent-purple), var(--accent-green));
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue), var(--accent-pink), var(--accent-green));
             background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             animation: shimmer 2s linear infinite;
+            text-shadow: 0 0 30px rgba(57, 255, 20, 0.3);
         }
 
         .celebration-message {
@@ -163,12 +170,14 @@
             padding: 20px 30px;
             border-radius: 15px;
             border: 2px solid var(--accent-green);
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.3), inset 0 0 20px rgba(57, 255, 20, 0.05);
         }
 
         .celebration-stat-value {
             font-size: 2rem;
             font-weight: 700;
             color: var(--accent-green);
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
         }
 
         .celebration-stat-label {
@@ -177,8 +186,8 @@
         }
 
         .celebration-btn {
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
-            border: none;
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+            border: 2px solid var(--accent-pink);
             padding: 15px 40px;
             border-radius: 12px;
             color: white;
@@ -186,11 +195,13 @@
             font-weight: 700;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 20px rgba(255, 16, 240, 0.4);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
 
         .celebration-btn:hover {
             transform: scale(1.05);
-            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 30px rgba(255, 16, 240, 0.6), 0 0 60px rgba(191, 0, 255, 0.4);
         }
 
         .confetti-piece {
@@ -203,11 +214,12 @@
         }
 
         .header {
-            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple), var(--accent-blue));
             padding: 30px;
             border-radius: 20px;
             margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(147, 51, 234, 0.3);
+            box-shadow: 0 0 40px rgba(255, 16, 240, 0.4), 0 0 80px rgba(0, 240, 255, 0.2);
+            border: 1px solid rgba(255, 16, 240, 0.3);
         }
         
         .header-content {
@@ -3111,15 +3123,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 buttonText = 'Awesome!'
             } = options;
 
-            // Create confetti
-            const colors = ['#10b981', '#3b82f6', '#9333ea', '#f59e0b', '#ef4444', '#ec4899'];
+            // Create confetti - neon laser colors
+            const colors = ['#39ff14', '#00f0ff', '#ff10f0', '#bf00ff', '#ff0055', '#ff6b00'];
             const shapes = ['square', 'circle'];
 
             for (let i = 0; i < confettiCount; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti-piece';
+                const color = colors[Math.floor(Math.random() * colors.length)];
                 confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.background = color;
+                confetti.style.boxShadow = `0 0 6px ${color}, 0 0 10px ${color}`;
                 confetti.style.borderRadius = shapes[Math.floor(Math.random() * shapes.length)] === 'circle' ? '50%' : '2px';
                 confetti.style.width = (Math.random() * 10 + 5) + 'px';
                 confetti.style.height = (Math.random() * 10 + 5) + 'px';
