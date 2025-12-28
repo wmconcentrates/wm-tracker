@@ -13,6 +13,14 @@ app.use(express.json());
 // Serve static files from parent directory (the main app)
 app.use(express.static(path.join(__dirname, '..')));
 
+// Helper to get proxy base URL
+function getProxyBaseUrl(req) {
+    const host = req.get('host');
+    // Use https for production (Railway), http for localhost
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    return `${protocol}://${host}/api`;
+}
+
 // Proxy endpoint for LeafLink orders
 app.get('/api/orders', async (req, res) => {
     try {
@@ -33,13 +41,14 @@ app.get('/api/orders', async (req, res) => {
         }
 
         const data = await response.json();
+        const proxyBase = getProxyBaseUrl(req);
 
         // Rewrite next/previous URLs to go through proxy
         if (data.next) {
-            data.next = data.next.replace(LEAFLINK_API_URL, 'http://localhost:3001/api');
+            data.next = data.next.replace(LEAFLINK_API_URL, proxyBase);
         }
         if (data.previous) {
-            data.previous = data.previous.replace(LEAFLINK_API_URL, 'http://localhost:3001/api');
+            data.previous = data.previous.replace(LEAFLINK_API_URL, proxyBase);
         }
 
         res.json(data);
@@ -70,13 +79,14 @@ app.get('/api/*', async (req, res) => {
         }
 
         const data = await response.json();
+        const proxyBase = getProxyBaseUrl(req);
 
         // Rewrite next/previous URLs to go through proxy
         if (data.next) {
-            data.next = data.next.replace(LEAFLINK_API_URL, 'http://localhost:3001/api');
+            data.next = data.next.replace(LEAFLINK_API_URL, proxyBase);
         }
         if (data.previous) {
-            data.previous = data.previous.replace(LEAFLINK_API_URL, 'http://localhost:3001/api');
+            data.previous = data.previous.replace(LEAFLINK_API_URL, proxyBase);
         }
 
         res.json(data);
@@ -86,8 +96,8 @@ app.get('/api/*', async (req, res) => {
     }
 });
 
-const PORT = 3001;
-app.listen(PORT, () => {
-    console.log(`LeafLink proxy server running on http://localhost:${PORT}`);
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`LeafLink proxy server running on port ${PORT}`);
     console.log('Ready to handle requests from your app!');
 });

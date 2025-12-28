@@ -11034,8 +11034,8 @@ ${employeeReport || 'No activity recorded today'}
 
         // ==================== LEAFLINK DROP CALENDAR ====================
 
-        // Use local proxy to avoid CORS issues
-        const LEAFLINK_PROXY_URL = 'http://localhost:3001/api';
+        // Use hosted Railway proxy to avoid CORS issues
+        const LEAFLINK_PROXY_URL = 'https://leaflink-proxy-production.up.railway.app/api';
 
         let dropCalendarData = [];
         let currentCalendarView = 'calendar';
