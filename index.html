@@ -2782,16 +2782,6 @@
                 pinInput.addEventListener('input', function() {
                     this.value = this.value.replace(/[^0-9]/g, '');
                 });
-
-                pinInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter' && this.value.length === 4) {
-                        login();
-                    }
-                });
-            }
-
-            if (loginBtn) {
-                loginBtn.addEventListener('click', login);
             }
             
             // Check for existing session
