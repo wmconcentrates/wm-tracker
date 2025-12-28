@@ -961,7 +961,7 @@
     <script>
         const SUPABASE_URL = 'https://rcbwjpfacuamwxqtwhmv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjYndqcGZhY3VhbXd4cXR3aG12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU5NDA4ODAsImV4cCI6MjA2MTUxNjg4MH0.eAPPS2PzVERVXO7c8hdeSeyxLOOKCzlbJg1Nm95L6-E';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Owner PIN - change this to your preferred PIN
         const OWNER_PIN = '0420';
@@ -1042,7 +1042,7 @@
 
         async function loadPosts() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await db
                     .from('wm_blog_posts')
                     .select('*')
                     .eq('status', 'published')
@@ -1210,7 +1210,7 @@
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                const { data: batches, error } = await supabase
+                const { data: batches, error } = await db
                     .from('wm_batches')
                     .select('*')
                     .eq('status', 'complete')
@@ -1274,10 +1274,10 @@
 
         async function publishBatchPost(batchId) {
             try {
-                const { data: batch } = await supabase.from('wm_batches').select('*').eq('id', batchId).single();
+                const { data: batch } = await db.from('wm_batches').select('*').eq('id', batchId).single();
                 const post = generateBatchPost(batch);
 
-                const { error } = await supabase.from('wm_blog_posts').insert([{
+                const { error } = await db.from('wm_blog_posts').insert([{
                     ...post,
                     status: 'published',
                     created_at: new Date().toISOString()
@@ -1296,7 +1296,7 @@
         }
 
         async function editBatchPost(batchId) {
-            const { data: batch } = await supabase.from('wm_batches').select('*').eq('id', batchId).single();
+            const { data: batch } = await db.from('wm_batches').select('*').eq('id', batchId).single();
             const post = generateBatchPost(batch);
 
             currentEditPost = { ...post, batch_id: batchId };
@@ -1317,7 +1317,7 @@
                 const title = document.getElementById('editTitle').value;
                 const content = document.getElementById('editContent').value;
 
-                const { error } = await supabase.from('wm_blog_posts').insert([{
+                const { error } = await db.from('wm_blog_posts').insert([{
                     title,
                     content,
                     excerpt: content.split('\n')[0].slice(0, 150) + '...',
@@ -1424,7 +1424,7 @@ ${template.cta}`;
             if (!generatedPost) return;
 
             try {
-                const { error } = await supabase.from('wm_blog_posts').insert([{
+                const { error } = await db.from('wm_blog_posts').insert([{
                     ...generatedPost,
                     status: 'published',
                     created_at: new Date().toISOString()
@@ -1450,7 +1450,7 @@ ${template.cta}`;
             const countEl = document.getElementById('pendingCount');
 
             try {
-                const { data, error } = await supabase
+                const { data, error } = await db
                     .from('wm_blog_posts')
                     .select('*')
                     .eq('status', 'pending')
@@ -1489,7 +1489,7 @@ ${template.cta}`;
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                const { data, error } = await supabase
+                const { data, error } = await db
                     .from('wm_blog_posts')
                     .select('*')
                     .eq('status', 'published')
@@ -1520,7 +1520,7 @@ ${template.cta}`;
 
         async function approvePost(postId) {
             try {
-                const { error } = await supabase.from('wm_blog_posts').update({ status: 'published' }).eq('id', postId);
+                const { error } = await db.from('wm_blog_posts').update({ status: 'published' }).eq('id', postId);
                 if (error) throw error;
                 await loadPosts();
                 await loadPendingPosts();
@@ -1533,7 +1533,7 @@ ${template.cta}`;
         async function deletePost(postId) {
             if (!confirm('Delete this post?')) return;
             try {
-                const { error } = await supabase.from('wm_blog_posts').delete().eq('id', postId);
+                const { error } = await db.from('wm_blog_posts').delete().eq('id', postId);
                 if (error) throw error;
                 await loadPendingPosts();
             } catch (error) {
