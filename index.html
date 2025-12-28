@@ -112,6 +112,91 @@
             100% { background-position: 200% center; }
         }
 
+        /* Laser show animations */
+        @keyframes laser-sweep {
+            0% { transform: rotate(-45deg) translateX(-100vw); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: rotate(45deg) translateX(100vw); opacity: 0; }
+        }
+
+        @keyframes laser-pulse {
+            0%, 100% { opacity: 0.3; box-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
+            50% { opacity: 1; box-shadow: 0 0 40px currentColor, 0 0 80px currentColor, 0 0 120px currentColor; }
+        }
+
+        @keyframes laser-rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .laser-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 99998;
+            overflow: hidden;
+        }
+
+        .laser-beam {
+            position: absolute;
+            width: 3px;
+            height: 200vh;
+            transform-origin: center center;
+            animation: laser-pulse 0.3s ease-in-out infinite;
+        }
+
+        /* Fire cannon animations */
+        @keyframes fire-shoot {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) scale(0.3);
+                opacity: 0;
+            }
+        }
+
+        @keyframes fire-flicker {
+            0%, 100% { transform: scaleX(1); }
+            50% { transform: scaleX(1.2); }
+        }
+
+        .fire-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 99998;
+            overflow: hidden;
+        }
+
+        .fire-particle {
+            position: absolute;
+            bottom: -20px;
+            border-radius: 50%;
+            animation: fire-shoot ease-out forwards;
+        }
+
+        .fire-cannon {
+            position: absolute;
+            bottom: 0;
+            width: 60px;
+            height: 80px;
+            background: linear-gradient(to top, #ff6b00, #ff0055, #ff10f0);
+            filter: blur(20px);
+            animation: fire-flicker 0.1s ease-in-out infinite;
+        }
+
         .celebration-overlay {
             position: fixed;
             top: 0;
@@ -3113,6 +3198,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Remove any existing celebrations first
             document.querySelectorAll('.celebration-overlay').forEach(el => el.remove());
             document.querySelectorAll('.confetti-piece').forEach(el => el.remove());
+            document.querySelectorAll('.laser-container').forEach(el => el.remove());
+            document.querySelectorAll('.fire-container').forEach(el => el.remove());
 
             const {
                 emoji = '🎉',
@@ -3144,6 +3231,97 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 // Remove confetti after animation
                 setTimeout(() => confetti.remove(), 4500);
             }
+
+            // Create laser show
+            const laserContainer = document.createElement('div');
+            laserContainer.className = 'laser-container';
+            document.body.appendChild(laserContainer);
+
+            const laserColors = ['#39ff14', '#00f0ff', '#ff10f0', '#bf00ff'];
+            const numLasers = 8;
+
+            for (let i = 0; i < numLasers; i++) {
+                const laser = document.createElement('div');
+                laser.className = 'laser-beam';
+                const color = laserColors[i % laserColors.length];
+                laser.style.background = `linear-gradient(to bottom, transparent, ${color}, transparent)`;
+                laser.style.color = color;
+                laser.style.left = `${(i / numLasers) * 100}%`;
+                laser.style.top = '50%';
+                laser.style.transform = `rotate(${(i * 45) - 90}deg)`;
+
+                // Animate rotation
+                const duration = 3 + Math.random() * 2;
+                const direction = i % 2 === 0 ? 1 : -1;
+                laser.style.animation = `laser-pulse 0.3s ease-in-out infinite`;
+
+                // Rotate over time
+                let angle = (i * 45) - 90;
+                const rotateInterval = setInterval(() => {
+                    angle += direction * 2;
+                    laser.style.transform = `rotate(${angle}deg)`;
+                }, 50);
+
+                laserContainer.appendChild(laser);
+
+                // Clean up interval when laser is removed
+                setTimeout(() => {
+                    clearInterval(rotateInterval);
+                }, 5000);
+            }
+
+            // Remove laser container after animation
+            setTimeout(() => laserContainer.remove(), 5000);
+
+            // Create fire cannons
+            const fireContainer = document.createElement('div');
+            fireContainer.className = 'fire-container';
+            document.body.appendChild(fireContainer);
+
+            // Fire cannon positions (left and right corners, and center)
+            const cannonPositions = [10, 50, 90];
+            const fireColors = ['#ff6b00', '#ff0055', '#ffff00', '#ff10f0'];
+
+            // Create base cannon glow
+            cannonPositions.forEach(pos => {
+                const cannon = document.createElement('div');
+                cannon.className = 'fire-cannon';
+                cannon.style.left = `${pos - 3}%`;
+                fireContainer.appendChild(cannon);
+                setTimeout(() => cannon.remove(), 3000);
+            });
+
+            // Shoot fire particles
+            const shootParticles = () => {
+                cannonPositions.forEach(pos => {
+                    for (let i = 0; i < 5; i++) {
+                        const particle = document.createElement('div');
+                        particle.className = 'fire-particle';
+                        const color = fireColors[Math.floor(Math.random() * fireColors.length)];
+                        const size = 10 + Math.random() * 20;
+                        particle.style.width = size + 'px';
+                        particle.style.height = size + 'px';
+                        particle.style.left = `${pos + (Math.random() - 0.5) * 10}%`;
+                        particle.style.background = `radial-gradient(circle, ${color}, transparent)`;
+                        particle.style.boxShadow = `0 0 ${size}px ${color}, 0 0 ${size * 2}px ${color}`;
+                        particle.style.animationDuration = (0.8 + Math.random() * 0.5) + 's';
+                        particle.style.animationDelay = (Math.random() * 0.1) + 's';
+                        fireContainer.appendChild(particle);
+
+                        setTimeout(() => particle.remove(), 1500);
+                    }
+                });
+            };
+
+            // Shoot multiple bursts
+            shootParticles();
+            setTimeout(shootParticles, 300);
+            setTimeout(shootParticles, 600);
+            setTimeout(shootParticles, 900);
+            setTimeout(shootParticles, 1200);
+
+            // Remove fire container after animation
+            setTimeout(() => fireContainer.remove(), 3000);
 
             // Build stats HTML
             let statsHtml = '';
