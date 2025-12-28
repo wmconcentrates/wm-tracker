@@ -2977,10 +2977,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             realtimeChannel = supabaseClient
                 .channel('wm_batches_changes')
-                .on('postgres_changes', 
+                .on('postgres_changes',
                     { event: '*', schema: 'public', table: 'wm_batches' },
-                    (payload) => {
-                        console.log('Realtime update:', payload);
+                    () => {
                         loadBatches(); // Reload on any change
                     }
                 )
@@ -3053,12 +3052,26 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         function logout() {
+            // Cleanup realtime subscription
+            if (realtimeChannel) {
+                realtimeChannel.unsubscribe();
+                realtimeChannel = null;
+            }
+
             const loginRecordId = localStorage.getItem('wmLoginRecordId');
             const sessionStart = parseInt(localStorage.getItem('wmSession'));
-            
+
+            const clearAndReload = () => {
+                localStorage.removeItem('wmRole');
+                localStorage.removeItem('wmSession');
+                localStorage.removeItem('wmSessionId');
+                localStorage.removeItem('wmLoginRecordId');
+                location.reload();
+            };
+
             if (loginRecordId && sessionStart) {
                 const sessionDuration = Math.floor((Date.now() - sessionStart) / 1000 / 60); // minutes
-                
+
                 // Update logout time and duration
                 supabaseClient
                     .from('wm_login_history')
@@ -3067,19 +3080,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         session_duration: sessionDuration
                     })
                     .eq('id', loginRecordId)
-                    .then(() => {
-                        localStorage.removeItem('wmRole');
-                        localStorage.removeItem('wmSession');
-                        localStorage.removeItem('wmSessionId');
-                        localStorage.removeItem('wmLoginRecordId');
-                        location.reload();
+                    .then(clearAndReload)
+                    .catch(err => {
+                        console.error('Logout update failed:', err);
+                        clearAndReload();
                     });
             } else {
-                localStorage.removeItem('wmRole');
-                localStorage.removeItem('wmSession');
-                localStorage.removeItem('wmSessionId');
-                localStorage.removeItem('wmLoginRecordId');
-                location.reload();
+                clearAndReload();
             }
         }
 
@@ -3140,11 +3147,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         document.getElementById('intakeForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            if (!currentUser) {
+            if (!currentRole) {
                 alert('Please select a user first!');
                 return;
             }
-            
+
             const products = Array.from(document.querySelectorAll('input[name="products"]:checked'))
                 .map(cb => cb.value);
             
@@ -3311,9 +3318,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Get planned products as string
             let plannedProducts = 'See notes';
             if (batch.planned_products && batch.planned_products.length > 0) {
-                plannedProducts = batch.planned_products.map(p => p.type).join(', ');
+                plannedProducts = batch.planned_products.join(', ');
             }
-            
+
             // Truncate products if too long
             if (plannedProducts.length > 20) {
                 plannedProducts = plannedProducts.substring(0, 17) + '...';
@@ -3515,9 +3522,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Get planned products as string
             let plannedProducts = 'See notes';
             if (batch.planned_products && batch.planned_products.length > 0) {
-                plannedProducts = batch.planned_products.map(p => p.type).join(', ');
+                plannedProducts = batch.planned_products.join(', ');
             }
-            
+
             // Truncate if too long
             if (plannedProducts.length > 20) {
                 plannedProducts = plannedProducts.substring(0, 17) + '...';
@@ -3781,11 +3788,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         });
 
         async function submitSplitBatch() {
-            if (!currentUser) {
+            if (!currentRole) {
                 alert('Please select a user first!');
                 return;
             }
-            
+
             const batchId = document.getElementById('finishingBatchSelect').value;
             const batch = batches.find(b => b.id === batchId);
             
@@ -3912,11 +3919,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         async function submitFinishing() {
-            if (!currentUser) {
+            if (!currentRole) {
                 alert('Please select a user first!');
                 return;
             }
-            
+
             const batchId = document.getElementById('finishingBatchSelect').value;
             const batch = batches.find(b => b.id === batchId);
             
@@ -4097,11 +4104,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
         // Start packaging (marks batch as in-progress)
         async function startPackaging() {
-            if (!currentUser) {
+            if (!currentRole) {
                 alert('Please select a user first!');
                 return;
             }
-            
+
             const batchId = document.getElementById('packagingBatchSelect').value;
             const batch = batches.find(b => b.id === batchId);
             
@@ -4166,11 +4173,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
         // Toggle pause/resume for packaging
         async function togglePausePackaging() {
-            if (!currentUser) {
+            if (!currentRole) {
                 alert('Please select a user first!');
                 return;
             }
-            
+
             const batchId = document.getElementById('packagingBatchSelect').value;
             const batch = batches.find(b => b.id === batchId);
             
@@ -4227,42 +4234,30 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         async function submitPackaging() {
-            console.log('=== submitPackaging START ===');
-            
-            if (!currentUser) {
-                console.log('ERROR: No current user');
+            if (!currentRole) {
                 alert('Please select a user first!');
                 return;
             }
             
-            console.log('Current user:', currentUser);
-            
             const batchId = document.getElementById('packagingBatchSelect').value;
-            console.log('Batch ID from select:', batchId);
-            
             const batch = batches.find(b => b.id === batchId);
-            console.log('Found batch:', batch);
-            
+
             if (!batch) {
-                console.log('ERROR: Batch not found');
                 alert('Batch not found. Please select a batch.');
                 return;
             }
-            
+
             const packagedProductType = document.getElementById('packagedProductType').value;
-            console.log('Product type:', packagedProductType);
-            
+
             if (!packagedProductType) {
-                console.log('ERROR: No product type selected');
                 alert('Please select a product type');
                 return;
             }
-            
+
             let unitsPackaged, totalGrams, packagingDetails;
-            
+
             // Wholesale price set to 0 (staff doesn't know this info)
             const wholesalePrice = 0;
-            console.log('Wholesale price per unit:', wholesalePrice);
             
             // Handle multi-size packaging
             if (packagedProductType === 'Wax/Sugar' || packagedProductType === 'Brick Hash' || packagedProductType === 'Hash Hits') {
@@ -4542,9 +4537,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
         
         function calculatePersonalStats(userName, startDate) {
-            console.log('=== PERSONAL STATS (Using Performance Method) ===');
-            console.log('User:', userName, 'From:', startDate);
-            
             const stats = {
                 unitsPackaged: 0,
                 unitsLabeled: 0,
@@ -4560,7 +4552,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     const packagingDate = new Date(batch.packaging_date);
                     if (packagingDate >= startDate) {
                         stats.unitsPackaged += parseInt(batch.units_packaged) || 0;
-                        console.log('✓ Packaged:', batch.units_packaged, 'units in batch', batch.id);
                     }
                 }
                 
@@ -4581,7 +4572,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     if (extractionDate && extractionDate >= startDate) {
                         const grams = parseFloat(batch.trim_weight) || 0;
                         stats.gramsExtracted += grams;
-                        console.log('✓ Extracted:', grams, 'grams in batch', batch.id);
                     }
                 }
                 
@@ -4601,7 +4591,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     // If we found a finishing event in the date range, count it
                     if (finishingDate && finishingDate >= startDate) {
                         stats.batchesFinished++;
-                        console.log('✓ Finished batch', batch.id);
                     }
                 }
                 
@@ -4619,14 +4608,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                             (event.action.toLowerCase().includes('completed') || event.action.toLowerCase().includes('labeled')) &&
                             batch.units_packaged) {
                             stats.unitsLabeled += parseInt(batch.units_packaged) || 0;
-                            console.log('✓ Labeled:', batch.units_packaged, 'units in batch', batch.id);
                         }
                     });
                 }
             });
-            
-            console.log('Final stats:', stats);
-            console.log('=== END ===');
+
             return stats;
         }
         
@@ -7070,11 +7056,11 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         async function submitTestResults() {
-            if (!currentUser) {
+            if (!currentRole) {
                 alert('Please select a user first!');
                 return;
             }
-            
+
             const batchId = document.getElementById('testingBatchSelect').value;
             const batch = batches.find(b => b.id === batchId);
             
@@ -7717,30 +7703,19 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         async function printLabels() {
-            console.log('=== printLabels called ===');
-            
             const batchId = document.getElementById('labelingBatchSelect').value;
-            console.log('Selected batch ID:', batchId);
-            
             const batch = batches.find(b => b.id === batchId);
-            console.log('Found batch:', batch);
-            
+
             if (!batch) {
-                console.log('ERROR: No batch found');
                 alert('Please select a batch first');
                 return;
             }
-            
+
             const quantity = parseInt(document.getElementById('labelQuantity').value) || 1;
             const labelsPerUnit = parseInt(document.getElementById('labelsPerUnit').value) || 1;
             const totalLabels = quantity * labelsPerUnit;
-            
-            console.log('Quantity:', quantity);
-            console.log('Labels per unit:', labelsPerUnit);
-            console.log('Total labels to print:', totalLabels);
-            
+
             const zpl = generateZPL(batch);
-            console.log('Generated ZPL length:', zpl.length);
             
             // Generate ZPL with multiple copies
             let fullZPL = '';
@@ -7750,41 +7725,32 @@ ${employeeReport || 'No activity recorded today'}
             
             // Try print server first (works from mobile!)
             const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
-            console.log('Attempting print server:', printServerURL);
-            
+
             try {
                 const response = await fetch(printServerURL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ zpl: fullZPL })
                 });
-                
+
                 if (response.ok) {
-                    const result = await response.json();
-                    console.log('Print server response:', result);
                     alert(`✓ Sent ${totalLabels} labels to printer!`);
                     return;
                 }
-                
-                console.log('Print server failed, trying Browser Print...');
             } catch (error) {
-                console.log('Print server not available:', error.message);
+                // Print server not available, try Browser Print
             }
-            
+
             // Fallback to Browser Print
             if (window.BrowserPrint) {
-                console.log('Attempting to use Browser Print...');
                 try {
-                    console.log('Getting default device...');
                     const printer = await window.BrowserPrint.getDefaultDevice('printer');
-                    console.log('Printer found:', printer);
-                    
+
                     printer.send(fullZPL, undefined, (error) => {
                         if (error) {
                             console.error('Print error:', error);
                             alert('Print failed. Use "Download ZPL" button instead.');
                         } else {
-                            console.log('Labels sent successfully');
                             alert(`✓ Sent ${totalLabels} labels to printer!`);
                         }
                     });
@@ -7793,43 +7759,31 @@ ${employeeReport || 'No activity recorded today'}
                     alert('Printing not available.\n\nOptions:\n1. Start print server (see setup docs)\n2. Use "Download ZPL" button');
                 }
             } else {
-                console.log('Browser Print not detected');
                 alert('Print server not running and Browser Print not installed.\n\nUse "Download ZPL" button to print manually.');
             }
         }
 
         function downloadZPL() {
-            console.log('=== downloadZPL called ===');
-            
             const batchId = document.getElementById('labelingBatchSelect').value;
-            console.log('Batch ID:', batchId);
-            
             const batch = batches.find(b => b.id === batchId);
-            console.log('Found batch:', batch);
-            
+
             if (!batch) {
-                console.log('ERROR: No batch selected');
                 alert('Please select a batch first');
                 return;
             }
-            
+
             const quantity = parseInt(document.getElementById('labelQuantity').value) || 1;
             const labelsPerUnit = parseInt(document.getElementById('labelsPerUnit').value) || 1;
             const totalLabels = quantity * labelsPerUnit;
-            
-            console.log('Total labels:', totalLabels);
-            
+
             const zpl = generateZPL(batch);
-            console.log('Generated ZPL, length:', zpl.length);
-            
+
             // Generate ZPL file with multiple copies
             let fullZPL = '';
             for (let i = 0; i < totalLabels; i++) {
                 fullZPL += zpl + '\n';
             }
-            
-            console.log('Full ZPL length:', fullZPL.length);
-            
+
             try {
                 // Create download
                 const blob = new Blob([fullZPL], { type: 'text/plain' });
@@ -7837,13 +7791,12 @@ ${employeeReport || 'No activity recorded today'}
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = `${batch.id}_labels_${totalLabels}x.zpl`;
-                console.log('Triggering download:', link.download);
                 link.click();
-                
+
                 alert(`Downloaded ZPL file for ${totalLabels} labels!\n\nSend this file to your Zebra printer using:\n- Zebra Setup Utilities → Send File\n- Or drag file to printer in Setup Utilities`);
             } catch (error) {
                 console.error('Download error:', error);
-                alert('Error creating download. Check console.');
+                alert('Error creating download.');
             }
         }
 
@@ -7921,11 +7874,11 @@ ${employeeReport || 'No activity recorded today'}
 
         // Toggle pause/resume for labeling
         async function togglePauseLabeling() {
-            if (!currentUser) {
+            if (!currentRole) {
                 alert('Please select a user first!');
                 return;
             }
-            
+
             const batchId = document.getElementById('labelingBatchSelect').value;
             const batch = batches.find(b => b.id === batchId);
             
@@ -8270,8 +8223,6 @@ ${employeeReport || 'No activity recorded today'}
             let labelingTime = null;
             
             if (batch.timeline && batch.timeline.length > 0) {
-                console.log('Timeline for', batch.id, ':', batch.timeline);
-                
                 // Find extraction start and complete
                 const extractionStart = batch.timeline.find(t => 
                     t.action && (t.action.includes('Processing started') || t.action.includes('Extraction started'))
@@ -8286,7 +8237,6 @@ ${employeeReport || 'No activity recorded today'}
                     const startTime = new Date(extractionStart.date || extractionStart.timestamp);
                     const endTime = new Date(extractionComplete.date || extractionComplete.timestamp);
                     extractionTime = (endTime - startTime) / (1000 * 60); // minutes
-                    console.log('Extraction time:', extractionTime, 'minutes');
                 }
                 
                 // Find finishing/post-extraction start and complete (if exists)
@@ -8303,7 +8253,6 @@ ${employeeReport || 'No activity recorded today'}
                     const startTime = new Date(finishingStart.date || finishingStart.timestamp);
                     const endTime = new Date(finishingComplete.date || finishingComplete.timestamp);
                     finishingTime = (endTime - startTime) / (1000 * 60); // minutes
-                    console.log('Finishing time:', finishingTime, 'minutes');
                 }
                 
                 // Find packaging start and complete
@@ -8320,7 +8269,6 @@ ${employeeReport || 'No activity recorded today'}
                     const startTime = new Date(packagingStart.date || packagingStart.timestamp);
                     const endTime = new Date(packagingComplete.date || packagingComplete.timestamp);
                     packagingTime = (endTime - startTime) / (1000 * 60); // minutes
-                    console.log('Packaging time:', packagingTime, 'minutes');
                 }
                 
                 // Find testing start and complete (test submitted to results received)
@@ -8335,7 +8283,6 @@ ${employeeReport || 'No activity recorded today'}
                     const startTime = new Date(testSubmitted.date || testSubmitted.timestamp);
                     const endTime = new Date(testComplete.date || testComplete.timestamp);
                     testingTime = (endTime - startTime) / (1000 * 60); // minutes
-                    console.log('Testing time:', testingTime, 'minutes');
                 }
                 
                 // Find labeling start and complete
@@ -8351,7 +8298,6 @@ ${employeeReport || 'No activity recorded today'}
                     const startTime = new Date(labelingStart.date || labelingStart.timestamp);
                     const endTime = new Date(labelingComplete.date || labelingComplete.timestamp);
                     labelingTime = (endTime - startTime) / (1000 * 60); // minutes
-                    console.log('Labeling time:', labelingTime, 'minutes');
                 }
             }
             
@@ -9200,12 +9146,8 @@ ${employeeReport || 'No activity recorded today'}
         // ==============================================
 
         function openCreateSubBatch(batchId) {
-            console.log('openCreateSubBatch called with batchId:', batchId);
-            console.log('Current batches:', batches);
-            
             const batch = batches.find(b => b.id === batchId);
-            console.log('Found batch:', batch);
-            
+
             if (!batch) {
                 alert('Batch not found: ' + batchId);
                 return;
@@ -9216,7 +9158,6 @@ ${employeeReport || 'No activity recorded today'}
             
             // Generate next available sub-batch ID
             const existingSubBatches = batches.filter(b => b.parent_batch_id === batchId || b.id.startsWith(batchId + '-'));
-            console.log('Existing sub-batches:', existingSubBatches);
             
             const subBatchLetters = existingSubBatches.map(b => {
                 const match = b.id.match(/-([A-Z]|SIFT)$/);
@@ -9230,7 +9171,6 @@ ${employeeReport || 'No activity recorded today'}
             }
             
             const newSubBatchId = `${batchId}-${nextLetter}`;
-            console.log('New sub-batch ID:', newSubBatchId);
             document.getElementById('newSubBatchId').value = newSubBatchId;
             
             // Show parent batch info
@@ -9249,9 +9189,7 @@ ${employeeReport || 'No activity recorded today'}
             document.getElementById('subBatchNotes').value = '';
             
             // Show modal
-            console.log('Attempting to show modal...');
             const modal = document.getElementById('createSubBatchModal');
-            console.log('Modal element:', modal);
             if (modal) {
                 // Force hide first to ensure clean state
                 modal.style.display = 'none';
@@ -9261,10 +9199,7 @@ ${employeeReport || 'No activity recorded today'}
                 modal.style.display = 'block';
                 modal.style.visibility = 'visible';
                 modal.style.opacity = '1';
-                console.log('Modal display set to block');
-                console.log('Modal computed style:', window.getComputedStyle(modal).display);
-                console.log('Modal computed z-index:', window.getComputedStyle(modal).zIndex);
-                
+
                 // Scroll to top in case modal is below fold
                 window.scrollTo(0, 0);
             } else {
@@ -9375,9 +9310,7 @@ ${employeeReport || 'No activity recorded today'}
                 ],
                 created_at: new Date().toISOString()
             };
-            
-            console.log('Creating retroactive sub-batch:', subBatch);
-            
+
             // Insert sub-batch
             const { error: insertError } = await supabaseClient
                 .from('wm_batches')
