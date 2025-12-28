@@ -81,7 +81,127 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-        
+
+        /* Celebration animations */
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        @keyframes celebration-pop {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes bounce-in {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .celebration-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .celebration-content {
+            text-align: center;
+            animation: celebration-pop 0.5s ease-out;
+            max-width: 500px;
+            padding: 40px;
+        }
+
+        .celebration-emoji {
+            font-size: 5rem;
+            animation: bounce-in 0.6s ease-out;
+            margin-bottom: 20px;
+        }
+
+        .celebration-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue), var(--accent-purple), var(--accent-green));
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 2s linear infinite;
+        }
+
+        .celebration-message {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .celebration-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .celebration-stat {
+            background: var(--bg-secondary);
+            padding: 20px 30px;
+            border-radius: 15px;
+            border: 2px solid var(--accent-green);
+        }
+
+        .celebration-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .celebration-stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .celebration-btn {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            border: none;
+            padding: 15px 40px;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .celebration-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .confetti-piece {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -20px;
+            animation: confetti-fall linear forwards;
+            z-index: 999999;
+        }
+
         .header {
             background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
             padding: 30px;
@@ -2986,6 +3106,76 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 .subscribe();
         }
 
+        // Celebration function for completed tasks
+        function showCelebration(options = {}) {
+            const {
+                emoji = '🎉',
+                title = 'Great Job!',
+                message = 'Task completed successfully!',
+                stats = [],
+                confettiCount = 50
+            } = options;
+
+            // Create confetti
+            const colors = ['#10b981', '#3b82f6', '#9333ea', '#f59e0b', '#ef4444', '#ec4899'];
+            const shapes = ['square', 'circle'];
+
+            for (let i = 0; i < confettiCount; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti-piece';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.borderRadius = shapes[Math.floor(Math.random() * shapes.length)] === 'circle' ? '50%' : '2px';
+                confetti.style.width = (Math.random() * 10 + 5) + 'px';
+                confetti.style.height = (Math.random() * 10 + 5) + 'px';
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                confetti.style.animationDelay = (Math.random() * 0.5) + 's';
+                document.body.appendChild(confetti);
+
+                // Remove confetti after animation
+                setTimeout(() => confetti.remove(), 4500);
+            }
+
+            // Build stats HTML
+            let statsHtml = '';
+            if (stats.length > 0) {
+                statsHtml = `<div class="celebration-stats">
+                    ${stats.map(s => `
+                        <div class="celebration-stat">
+                            <div class="celebration-stat-value">${s.value}</div>
+                            <div class="celebration-stat-label">${s.label}</div>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }
+
+            // Create celebration overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'celebration-overlay';
+            overlay.innerHTML = `
+                <div class="celebration-content">
+                    <div class="celebration-emoji">${emoji}</div>
+                    <div class="celebration-title">${title}</div>
+                    <div class="celebration-message">${message}</div>
+                    ${statsHtml}
+                    <button class="celebration-btn" onclick="this.closest('.celebration-overlay').remove()">
+                        Awesome!
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            // Auto-close after 10 seconds
+            setTimeout(() => {
+                if (overlay.parentNode) overlay.remove();
+            }, 10000);
+
+            // Close on overlay click (not content)
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.remove();
+            });
+        }
+
         function updateConnectionStatus(status, text) {
             const statusEl = document.getElementById('connectionStatus');
             const textEl = document.getElementById('statusText');
@@ -3909,8 +4099,16 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 console.error('Error updating parent batch:', updateError);
             }
             
-            alert(`Successfully created ${splits.length} sub-batches!\n\nOverall Yield: ${overallYieldPercent.toFixed(2)}%\n\n${subBatches.map(b => `${b.id}: ${b.trim_weight.toFixed(1)}g trim → ${b.final_weight.toFixed(1)}g product`).join('\n')}\n\nEach sub-batch now has accurate trim allocation for yield tracking.`);
-            
+            showCelebration({
+                emoji: '🔥',
+                title: 'Batch Split Complete!',
+                message: `Created ${splits.length} sub-batches from ${batchId}`,
+                stats: [
+                    { value: splits.length, label: 'Sub-Batches' },
+                    { value: `${overallYieldPercent.toFixed(1)}%`, label: 'Overall Yield' }
+                ]
+            });
+
             document.getElementById('finishingForm').style.display = 'none';
             document.getElementById('finishingBatchSelect').value = '';
             
@@ -3961,8 +4159,16 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
-            alert(`Finishing completed for ${batchId}!`);
-            
+            showCelebration({
+                emoji: '✨',
+                title: 'Finishing Complete!',
+                message: `${batchId} has been processed and is ready for packaging.`,
+                stats: [
+                    { value: `${finalWeight}g`, label: 'Final Weight' },
+                    { value: `${((netWeight / batch.trim_weight) * 100).toFixed(1)}%`, label: 'Yield' }
+                ]
+            });
+
             document.getElementById('finishingForm').style.display = 'none';
             document.getElementById('finishingBatchSelect').value = '';
             document.getElementById('finishingNotes').value = '';
@@ -4388,11 +4594,27 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
             
             if (isBulkSale) {
-                alert(`✅ Bulk sale completed for ${batchId}!\n\nThis batch is now marked as complete and will not require labeling.`);
+                showCelebration({
+                    emoji: '💰',
+                    title: 'Bulk Sale Complete!',
+                    message: `${batchId} has been packaged for bulk sale!`,
+                    stats: [
+                        { value: `${totalGrams}g`, label: 'Total Weight' },
+                        { value: packagedProductType, label: 'Product' }
+                    ]
+                });
             } else {
-                alert(`Packaging completed for ${batchId}!`);
+                showCelebration({
+                    emoji: '📦',
+                    title: 'Packaging Complete!',
+                    message: `${batchId} is packed and ready for labeling!`,
+                    stats: [
+                        { value: unitsPackaged, label: 'Units Packed' },
+                        { value: packagedProductType, label: 'Product' }
+                    ]
+                });
             }
-            
+
             document.getElementById('packagingForm').style.display = 'none';
             document.getElementById('packagingBatchSelect').value = '';
             document.getElementById('packagingNotes').value = '';
@@ -8025,11 +8247,17 @@ ${employeeReport || 'No activity recorded today'}
                 return;
             }
             
-            const successMsg = gramsLabeled
-                ? `${batchId} marked as labeled!\n${gramsLabeled.toFixed(1)}g labeled by ${currentRole.name}`
-                : `${batchId} marked as labeled!\n${quantity} labels applied by ${currentRole.name}`;
-            alert(successMsg);
-            
+            showCelebration({
+                emoji: '🏆',
+                title: 'Batch Complete!',
+                message: `${batchId} is fully labeled and ready for sale!`,
+                stats: [
+                    { value: quantity, label: 'Labels Applied' },
+                    { value: gramsLabeled ? `${gramsLabeled.toFixed(1)}g` : batch.product_made || 'N/A', label: gramsLabeled ? 'Total Weight' : 'Product' }
+                ],
+                confettiCount: 80
+            });
+
             document.getElementById('labelingForm').style.display = 'none';
             document.getElementById('labelingBatchSelect').value = '';
             document.getElementById('labelingNotes').value = '';
