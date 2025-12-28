@@ -3232,6 +3232,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     });
                 
                 applyRolePermissions();
+
+                // Welcome celebration
+                showCelebration({
+                    emoji: '👋',
+                    title: `Welcome, ${currentRole.name}!`,
+                    message: "Ready to crush it today? Let's get to work!",
+                    stats: [],
+                    confettiCount: 30
+                });
             } else {
                 // Failed login
                 errorMsg.textContent = 'Invalid PIN. Please try again.';
