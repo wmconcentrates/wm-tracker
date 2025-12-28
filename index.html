@@ -5412,27 +5412,57 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 </div>
             `;
 
-            // Today's Progress - This Week's Stats
-            todayProgressContent.parentElement.querySelector('h3').innerHTML = '📈 This Week';
+            // Calculate payment stats
+            const paymentStats = calculatePaymentStats(allLeafLinkOrders);
+
+            // Today's Progress - Payment Status
+            todayProgressContent.parentElement.querySelector('h3').innerHTML = '💰 Payment Status';
             todayProgressContent.innerHTML = `
-                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">${weekStats.totalOrders}</div>
-                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Orders</div>
+                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; text-align: center; border-left: 3px solid var(--accent-green);">
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);">${paymentStats.paidCount}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Paid</div>
+                    <div style="color: var(--accent-green); font-size: 0.8rem;">$${paymentStats.paidTotal.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
                 </div>
-                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);">$${weekStats.totalDollars.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
-                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Revenue</div>
+                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; text-align: center; border-left: 3px solid var(--accent-orange);">
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-orange);">${paymentStats.unpaidCount}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Unpaid</div>
+                    <div style="color: var(--accent-orange); font-size: 0.8rem;">$${paymentStats.unpaidTotal.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
                 </div>
-                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">${weekStats.uniqueCustomers}</div>
-                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Customers</div>
+                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; text-align: center; border-left: 3px solid ${paymentStats.overdueCount > 0 ? 'var(--accent-red)' : 'var(--text-secondary)'};">
+                    <div style="font-size: 2rem; font-weight: 700; color: ${paymentStats.overdueCount > 0 ? 'var(--accent-red)' : 'var(--text-secondary)'};">${paymentStats.overdueCount}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Overdue</div>
+                    <div style="color: ${paymentStats.overdueCount > 0 ? 'var(--accent-red)' : 'var(--text-secondary)'}; font-size: 0.8rem;">$${paymentStats.overdueTotal.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
                 </div>
             `;
 
             // Hide production-specific sections
             document.querySelectorAll('.personal-time-btn').forEach(btn => btn.style.display = 'none');
             personalStatsContent.style.display = 'none';
-            myBatchesSection.style.display = 'none';
+
+            // Show overdue orders in myBatchesSection
+            if (paymentStats.overdueCount > 0) {
+                myBatchesSection.style.display = 'block';
+                myBatchesSection.innerHTML = `
+                    <h3 style="color: var(--accent-red); margin-bottom: 20px; font-size: 1.3rem;">⚠️ Overdue Payments</h3>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        ${paymentStats.overdueOrders.slice(0, 5).map(order => `
+                            <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05)); border: 1px solid rgba(239, 68, 68, 0.3); padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: 600; color: var(--text-primary);">${order.customer}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Order #${order.orderNumber}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: 700; color: var(--accent-red);">$${order.amount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
+                                    <div style="font-size: 0.8rem; color: var(--accent-red);">Due: ${new Date(order.dueDate).toLocaleDateString()}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${paymentStats.overdueCount > 5 ? `<div style="text-align: center; color: var(--text-secondary); padding: 10px;">+${paymentStats.overdueCount - 5} more overdue</div>` : ''}
+                    </div>
+                `;
+            } else {
+                myBatchesSection.style.display = 'none';
+            }
 
             // Show new shops celebration instead of personal records
             if (monthStats.newShops.length > 0) {
@@ -11492,15 +11522,113 @@ ${employeeReport || 'No activity recorded today'}
         let allLeafLinkOrders = [];
         let customerFirstOrderDates = {};
         let leafLinkDataLoaded = false;
+        const LEAFLINK_CACHE_KEY = 'leaflink_orders_cache';
+        const LEAFLINK_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
-        // Shared function to load LeafLink data once for both Drop Calendar and Sales stats
-        async function ensureLeafLinkData() {
-            if (leafLinkDataLoaded && allLeafLinkOrders.length > 0) {
+        // Load cached data from localStorage
+        function loadCachedLeafLinkData() {
+            try {
+                const cached = localStorage.getItem(LEAFLINK_CACHE_KEY);
+                if (!cached) return null;
+
+                const { orders, timestamp, customerDates } = JSON.parse(cached);
+                const age = Date.now() - timestamp;
+
+                // Return cached data if less than 15 minutes old
+                if (age < LEAFLINK_CACHE_DURATION) {
+                    console.log(`Using cached LeafLink data (${Math.round(age/1000)}s old, ${orders.length} orders)`);
+                    return { orders, customerDates, isFresh: false };
+                }
+
+                // Return stale data but flag for refresh
+                console.log(`Cached data is stale (${Math.round(age/60000)}min old), will refresh`);
+                return { orders, customerDates, isFresh: false, needsRefresh: true };
+            } catch (e) {
+                console.error('Error loading cache:', e);
+                return null;
+            }
+        }
+
+        // Save data to localStorage cache
+        function saveLeafLinkCache(orders, customerDates) {
+            try {
+                const cacheData = {
+                    orders,
+                    customerDates,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(LEAFLINK_CACHE_KEY, JSON.stringify(cacheData));
+                console.log(`Cached ${orders.length} LeafLink orders`);
+            } catch (e) {
+                console.error('Error saving cache:', e);
+            }
+        }
+
+        // Build customer first order dates from orders
+        function buildCustomerFirstOrderDates(orders) {
+            const dates = {};
+            orders.forEach(order => {
+                if (!order.customer) return;
+                const customerId = order.customer.id;
+                const orderDate = new Date(order.created_on);
+                if (!dates[customerId] || orderDate < dates[customerId].date) {
+                    dates[customerId] = {
+                        date: orderDate,
+                        name: order.customer.display_name
+                    };
+                }
+            });
+            return dates;
+        }
+
+        // Shared function to load LeafLink data with caching
+        async function ensureLeafLinkData(forceRefresh = false) {
+            // Check if already loaded in memory
+            if (!forceRefresh && leafLinkDataLoaded && allLeafLinkOrders.length > 0) {
                 return allLeafLinkOrders;
             }
 
+            // Try to load from cache first
+            if (!forceRefresh) {
+                const cached = loadCachedLeafLinkData();
+                if (cached && !cached.needsRefresh) {
+                    allLeafLinkOrders = cached.orders;
+                    customerFirstOrderDates = cached.customerDates || buildCustomerFirstOrderDates(cached.orders);
+                    leafLinkDataLoaded = true;
+                    return allLeafLinkOrders;
+                }
+
+                // Use stale cache immediately, refresh in background
+                if (cached && cached.needsRefresh) {
+                    allLeafLinkOrders = cached.orders;
+                    customerFirstOrderDates = cached.customerDates || buildCustomerFirstOrderDates(cached.orders);
+                    leafLinkDataLoaded = true;
+                    // Refresh in background
+                    fetchLeafLinkOrders().then(orders => {
+                        if (orders.length > 0) {
+                            allLeafLinkOrders = orders;
+                            customerFirstOrderDates = buildCustomerFirstOrderDates(orders);
+                            saveLeafLinkCache(orders, customerFirstOrderDates);
+                        }
+                    });
+                    return allLeafLinkOrders;
+                }
+            }
+
+            // No cache or force refresh - fetch fresh data
+            const orders = await fetchLeafLinkOrders();
+            if (orders.length > 0) {
+                allLeafLinkOrders = orders;
+                customerFirstOrderDates = buildCustomerFirstOrderDates(orders);
+                leafLinkDataLoaded = true;
+                saveLeafLinkCache(orders, customerFirstOrderDates);
+            }
+            return allLeafLinkOrders;
+        }
+
+        // Fetch orders from LeafLink API
+        async function fetchLeafLinkOrders() {
             try {
-                // Use 2 months for faster loading (matches drop calendar)
                 const twoMonthsAgo = new Date();
                 twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
                 const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
@@ -11516,28 +11644,43 @@ ${employeeReport || 'No activity recorded today'}
                     nextUrl = data.next;
                 }
 
-                allLeafLinkOrders = allOrders;
-                leafLinkDataLoaded = true;
-
-                // Build customer first order dates
-                customerFirstOrderDates = {};
-                allOrders.forEach(order => {
-                    if (!order.customer) return;
-                    const customerId = order.customer.id;
-                    const orderDate = new Date(order.created_on);
-                    if (!customerFirstOrderDates[customerId] || orderDate < customerFirstOrderDates[customerId].date) {
-                        customerFirstOrderDates[customerId] = {
-                            date: orderDate,
-                            name: order.customer.display_name
-                        };
-                    }
-                });
-
+                console.log(`Fetched ${allOrders.length} orders from LeafLink`);
                 return allOrders;
             } catch (error) {
-                console.error('Error loading LeafLink data:', error);
+                console.error('Error fetching LeafLink data:', error);
                 return [];
             }
+        }
+
+        // Calculate payment stats from orders
+        function calculatePaymentStats(orders) {
+            const paid = orders.filter(o => o.paid === true);
+            const unpaid = orders.filter(o => o.paid === false);
+            const paidTotal = paid.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+            const unpaidTotal = unpaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+
+            // Find overdue payments (unpaid and past due date)
+            const now = new Date();
+            const overdue = unpaid.filter(o => {
+                if (!o.payment_due_date) return false;
+                return new Date(o.payment_due_date) < now;
+            });
+            const overdueTotal = overdue.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+
+            return {
+                paidCount: paid.length,
+                unpaidCount: unpaid.length,
+                paidTotal,
+                unpaidTotal,
+                overdueCount: overdue.length,
+                overdueTotal,
+                overdueOrders: overdue.map(o => ({
+                    orderNumber: o.number || o.id,
+                    customer: o.customer?.display_name || 'Unknown',
+                    amount: o.total?.amount || 0,
+                    dueDate: o.payment_due_date
+                }))
+            };
         }
 
         // Calculate sales stats from loaded data
