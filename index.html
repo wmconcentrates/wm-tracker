@@ -1602,6 +1602,18 @@
                     </div>
                 </div>
 
+                <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
+                    <div class="form-group" style="flex: 1; min-width: 200px;">
+                        <label>View Mode:</label>
+                        <select id="performanceViewMode" onchange="renderPerformanceAnalytics()">
+                            <option value="overview">Production Overview</option>
+                            <option value="packaging">Packaging Detail</option>
+                            <option value="labeling">Labeling Detail</option>
+                            <option value="extraction">Extraction Detail</option>
+                        </select>
+                    </div>
+                </div>
+
                 <!-- Individual Performance Cards -->
                 <div id="performanceStats" style="margin-top: 30px;"></div>
                 
@@ -5825,7 +5837,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         
         // Today's Production Summary
         function updateTodayProduction() {
-            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+            // Use local Colorado time instead of UTC
+            const now = new Date();
+            const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+            const today = localDate.toISOString().split('T')[0]; // YYYY-MM-DD format in local time
             
             // Display today's date
             const dateEl = document.getElementById('todayDate');
@@ -5851,7 +5866,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 if (batch.timeline && batch.timeline.length > 0) {
                     const extractionEvent = batch.timeline.find(event => {
                         if (event.status === 'extraction' && event.timestamp) {
-                            const eventDate = new Date(event.timestamp).toISOString().split('T')[0];
+                            const eventTime = new Date(event.timestamp);
+                            const localEventDate = new Date(eventTime.getTime() - (eventTime.getTimezoneOffset() * 60000));
+                            const eventDate = localEventDate.toISOString().split('T')[0];
                             return eventDate === today;
                         }
                         return false;
@@ -5865,7 +5882,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 
                 // Check finishing completed today
                 if (batch.finishing_date) {
-                    const finishingDate = new Date(batch.finishing_date).toISOString().split('T')[0];
+                    const finishTime = new Date(batch.finishing_date);
+                    const localFinishDate = new Date(finishTime.getTime() - (finishTime.getTimezoneOffset() * 60000));
+                    const finishingDate = localFinishDate.toISOString().split('T')[0];
                     if (finishingDate === today) {
                         finishedWeight += parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                         finishedBatches++;
@@ -5874,7 +5893,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 
                 // Check packaging done today
                 if (batch.packaging_date) {
-                    const packagingDate = new Date(batch.packaging_date).toISOString().split('T')[0];
+                    const packTime = new Date(batch.packaging_date);
+                    const localPackDate = new Date(packTime.getTime() - (packTime.getTimezoneOffset() * 60000));
+                    const packagingDate = localPackDate.toISOString().split('T')[0];
                     if (packagingDate === today && batch.units_packaged) {
                         packaged += parseInt(batch.units_packaged) || 0;
                         packagedWeight += parseFloat(batch.net_weight) || 0;
@@ -5885,7 +5906,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 if (batch.timeline && batch.timeline.length > 0) {
                     const labelingEvent = batch.timeline.find(event => {
                         if ((event.stage === 'labeling' || event.status === 'complete') && event.timestamp) {
-                            const eventDate = new Date(event.timestamp).toISOString().split('T')[0];
+                            const eventTime = new Date(event.timestamp);
+                            const localEventDate = new Date(eventTime.getTime() - (eventTime.getTimezoneOffset() * 60000));
+                            const eventDate = localEventDate.toISOString().split('T')[0];
                             if (eventDate === today) {
                                 const action = (event.action || event.note || '').toLowerCase();
                                 return action.includes('label') || action.includes('complet');
