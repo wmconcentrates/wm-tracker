@@ -1053,6 +1053,11 @@
                 <h3>Dashboard</h3>
                 <p>View all batches</p>
             </div>
+            <div class="station-tab" data-station="frontofhouse">
+                <div class="icon">📣</div>
+                <h3>Front of House</h3>
+                <p>Blog & Social</p>
+            </div>
         </div>
 
         <!-- Intake Station -->
@@ -1969,6 +1974,87 @@
                 <div id="batchesList"></div>
             </div>
         </div>
+
+        <!-- Front of House Station -->
+        <div class="station-content" id="frontofhouse">
+            <div class="form-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <div>
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <span>📣</span> Front of House
+                        </h2>
+                        <p style="color: var(--text-secondary); margin: 5px 0 0 0;">Create blog posts & social content from production data</p>
+                    </div>
+                    <a href="/blog" target="_blank" class="btn" style="background: var(--accent-blue);">
+                        🌐 View Live Blog
+                    </a>
+                </div>
+
+                <!-- Quick Update Section -->
+                <div style="background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(191, 0, 255, 0.1)); border: 2px solid var(--accent-blue); border-radius: 16px; padding: 25px; margin-bottom: 30px;">
+                    <h3 style="color: var(--accent-blue); margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;">
+                        <span>⚡</span> Quick Update
+                    </h3>
+                    <p style="color: var(--text-secondary); margin: 0 0 15px 0;">Type a quick note and I'll turn it into an engaging post. Mention partners and they'll be auto-tagged!</p>
+
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <input type="text" id="fohQuickInput" placeholder="e.g., Grabbed some fire GMO trim from In The Flow..." style="flex: 1; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+                        <button onclick="generateBlogPost()" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem;">
+                            ✨ Generate Post
+                        </button>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <span style="color: var(--text-secondary); font-size: 0.9rem;">Quick tags:</span>
+                        <button onclick="addQuickTag('new hardware')" class="quick-tag-btn">🔧 Equipment</button>
+                        <button onclick="addQuickTag('fresh batch')" class="quick-tag-btn">🧪 New Batch</button>
+                        <button onclick="addQuickTag('new strain')" class="quick-tag-btn">🌿 New Strain</button>
+                        <button onclick="addQuickTag('lab update')" class="quick-tag-btn">⚗️ Lab Update</button>
+                    </div>
+                </div>
+
+                <!-- Generated Preview -->
+                <div id="fohGeneratedPreview" style="display: none; background: var(--bg-secondary); border-radius: 16px; padding: 25px; margin-bottom: 30px; border: 2px solid var(--accent-green);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="color: var(--accent-green); margin: 0;">✅ Generated Post Preview</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="regenerateBlogPost()" class="btn" style="background: var(--bg-tertiary);">🔄 Regenerate</button>
+                            <button onclick="editBlogPost()" class="btn" style="background: var(--accent-orange);">✏️ Edit</button>
+                            <button onclick="publishBlogPost()" class="btn" style="background: var(--accent-green);">🚀 Publish</button>
+                        </div>
+                    </div>
+                    <div id="fohPartnerInfo"></div>
+                    <h4 id="fohPreviewTitle" style="font-size: 1.4rem; margin: 0 0 15px 0;"></h4>
+                    <div id="fohPreviewContent" style="color: var(--text-secondary); line-height: 1.6;"></div>
+                </div>
+
+                <!-- Recent Completed Batches for Blog -->
+                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 25px; margin-bottom: 30px;">
+                    <h3 style="margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px;">
+                        <span>🔥</span> Recent Completed Batches
+                        <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: normal;">Click to create post</span>
+                    </h3>
+                    <div id="fohRecentBatches" style="display: grid; gap: 15px;">
+                        <!-- Populated dynamically -->
+                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading batches...</div>
+                    </div>
+                </div>
+
+                <!-- Published Posts -->
+                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <span>📝</span> Recent Blog Posts
+                        </h3>
+                        <button onclick="loadFOHPosts()" class="btn" style="background: var(--bg-tertiary); padding: 8px 15px;">🔄 Refresh</button>
+                    </div>
+                    <div id="fohPostsList">
+                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading posts...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         </div><!-- end appContent -->
     </div>
 
@@ -2803,6 +2889,57 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(147, 51, 234, 0.5);
         }
+
+        /* Front of House Styles */
+        .quick-tag-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .quick-tag-btn:hover {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+        .foh-batch-card {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .foh-batch-card:hover {
+            border-color: var(--accent-purple);
+            transform: translateY(-2px);
+        }
+        .foh-post-card {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .foh-post-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .foh-post-status.published {
+            background: rgba(57, 255, 20, 0.2);
+            color: var(--accent-green);
+        }
+        .foh-post-status.draft {
+            background: rgba(255, 107, 0, 0.2);
+            color: var(--accent-orange);
+        }
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2812,9 +2949,16 @@
             ryan: {
                 name: 'Ryan (Admin)',
                 pin: '1827',
-                tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance'],
-                access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance'],
+                tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
+                access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
                 readOnly: false
+            },
+            drew: {
+                name: 'Drew (Sales)',
+                pin: '6699',
+                tabs: ['frontofhouse', 'dashboard'],
+                access: ['frontofhouse', 'dashboard'],
+                readOnly: true
             },
             paige: {
                 name: 'Paige',
@@ -3574,6 +3718,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     checkRTAStatus();
                 } else if (station === 'labeling') {
                     populateLabelingSelect();
+                } else if (station === 'frontofhouse') {
+                    loadFOHRecentBatches();
+                    loadFOHPosts();
                 }
             });
         });
@@ -10598,10 +10745,251 @@ ${employeeReport || 'No activity recorded today'}
                     input.addEventListener('input', updateManualSummary);
                 });
             }
-            
+
             // Load production targets
             loadTargets();
         });
+
+        // ==================== FRONT OF HOUSE ====================
+
+        // Partner database for auto-tagging
+        const fohPartners = {
+            'in the flow': { name: 'In The Flow', instagram: '@intheflow_farms', website: 'https://intheflowfarms.com', type: 'farm', hashtags: ['#InTheFlowFarms', '#ColoradoGrown'] },
+            'veritas': { name: 'Veritas Fine Cannabis', instagram: '@veritasfinecannabis', website: 'https://veritasfinecannabis.com', type: 'farm', hashtags: ['#VeritasCannabis'] },
+            'locol love': { name: 'Locol Love', instagram: '@locollove', website: 'https://locol-love.com', type: 'farm', hashtags: ['#LocolLove', '#DenverGrown'] },
+            'snaxland': { name: 'Snaxland', instagram: '@snaxland', website: null, type: 'farm', hashtags: ['#Snaxland'] },
+            'cherry': { name: 'Cherry', instagram: '@cherry.co', website: 'https://cherry.co', type: 'farm', hashtags: ['#CherryCannabis'] },
+            'native roots': { name: 'Native Roots', instagram: '@nativerootsdispensary', website: 'https://nativerootsdispensary.com', type: 'dispensary', hashtags: ['#NativeRoots'] },
+            'the green solution': { name: 'The Green Solution', instagram: '@thegreensolution', website: 'https://tgscolorado.com', type: 'dispensary', hashtags: ['#TGS'] },
+            'lightshade': { name: 'Lightshade', instagram: '@lightshadeco', website: 'https://lightshade.com', type: 'dispensary', hashtags: ['#Lightshade'] }
+        };
+
+        const fohTemplates = {
+            equipment: [
+                { title: "🔧 Gear Upgrade Alert", intro: "The lab just got a serious upgrade, fam!", body: "We're always pushing our extraction game to the next level.", cta: "Stay tuned for even better concentrates! 🚀" },
+                { title: "⚡ New Tech in the Lab", intro: "When you're obsessed with quality, you never stop upgrading.", body: "Just added some new firepower to our arsenal.", cta: "Better equipment = better terps. 💯" }
+            ],
+            newStrain: [
+                { title: "🔥 Fresh Heat Incoming", intro: "The terp hunters have spoken!", body: "Just got our hands on some absolutely incredible material. The nose on this one is INSANE.", cta: "Keep your eyes peeled at your local dispensary! 👀" },
+                { title: "🌟 Strain Alert", intro: "Sometimes a strain walks in and you just KNOW it's gonna be special.", body: "The terpene profile on this one is chef's kiss.", cta: "Coming soon to a dispo near you! 🏃‍♂️" }
+            ],
+            batch: [
+                { title: "🧪 Fresh Batch Alert", intro: "The extractors have been BUSY!", body: "Just wrapped up a beautiful run and the results speak for themselves.", cta: "Ask your budtender about White Mousse! 🔥" },
+                { title: "💎 Quality Check: PASSED", intro: "Another batch, another banger.", body: "When you prioritize terps and quality, the results are always fire.", cta: "Keep an eye out at your local spot! 👀" }
+            ],
+            general: [
+                { title: "📣 What's Good, Fam", intro: "Just had to hop on and share what's happening at the lab!", body: "You know we're always cooking up something special.", cta: "More updates coming soon. Stay lifted! ✌️" },
+                { title: "🎯 Lab Update", intro: "Another day, another chance to serve the terps!", body: "Things are moving fast over here.", cta: "Thanks for rocking with White Mousse! 💚" }
+            ]
+        };
+
+        const fohExcitingWords = ['absolutely fire', 'incredible', 'next level', 'game-changing', 'beautiful', 'insane', 'chef\'s kiss', 'dialed in', 'premium', 'top shelf'];
+        const fohEmojis = ['🔥', '💎', '✨', '🚀', '💯', '⚡', '🌟', '🎯', '💚', '🧪'];
+
+        let fohGeneratedPost = null;
+
+        function detectFOHPartners(input) {
+            const lowerInput = input.toLowerCase();
+            return Object.entries(fohPartners)
+                .filter(([key]) => lowerInput.includes(key))
+                .map(([, partner]) => partner);
+        }
+
+        function formatPartnerShoutout(partner) {
+            const webLink = partner.website ? `[${partner.name}](${partner.website})` : partner.name;
+            const igLink = partner.instagram || '';
+            const phrases = {
+                farm: [`Huge shoutout to ${webLink} for this incredible material! ${igLink}`, `This fire came straight from ${webLink}! ${igLink}`],
+                dispensary: [`Available at ${webLink}! ${igLink}`, `Find this at ${webLink} - tell them WM sent you! ${igLink}`],
+                equipment: [`Thanks to ${webLink} for keeping our lab running smooth! ${igLink}`]
+            };
+            const typePhrs = phrases[partner.type] || [`${webLink} ${igLink}`];
+            return typePhrs[Math.floor(Math.random() * typePhrs.length)];
+        }
+
+        function generateFOHHashtags(partners) {
+            const base = ['#WhiteMousse', '#ColoradoConcentrates', '#LiveResin', '#Terps', '#CannabisCommunity'];
+            const partnerTags = partners.flatMap(p => p.hashtags || []);
+            return [...new Set([...base, ...partnerTags])].slice(0, 10).join(' ');
+        }
+
+        function addQuickTag(tag) {
+            const input = document.getElementById('fohQuickInput');
+            input.value = input.value ? `${input.value} ${tag}` : tag;
+            input.focus();
+        }
+
+        function generateBlogPost() {
+            const input = document.getElementById('fohQuickInput').value.trim();
+            if (!input) { alert('Type something first!'); return; }
+
+            const lowerInput = input.toLowerCase();
+            const partners = detectFOHPartners(input);
+
+            let templateType = 'general';
+            if (lowerInput.match(/hardware|equipment|machine|tech/)) templateType = 'equipment';
+            else if (lowerInput.match(/strain|flower|material|trim|grabbed|picked up|gmo|cookies|og/)) templateType = 'newStrain';
+            else if (lowerInput.match(/batch|run|extract/)) templateType = 'batch';
+
+            const templates = fohTemplates[templateType];
+            const template = templates[Math.floor(Math.random() * templates.length)];
+            const word = fohExcitingWords[Math.floor(Math.random() * fohExcitingWords.length)];
+            const emoji = fohEmojis[Math.floor(Math.random() * fohEmojis.length)];
+
+            const expansions = [
+                `So here's the deal: ${input}. And let me tell you, it's ${word}!`,
+                `Big news from the lab: ${input}. We're honestly so hyped about this one.`,
+                `Had to share this with y'all: ${input}. The quality is ${word}.`
+            ];
+            const expanded = expansions[Math.floor(Math.random() * expansions.length)];
+
+            let partnerSection = '';
+            if (partners.length > 0) {
+                partnerSection = `\n\n---\n\n**🤝 Shoutouts**\n\n${partners.map(p => formatPartnerShoutout(p)).join('\n\n')}`;
+            }
+
+            const hashtags = generateFOHHashtags(partners);
+            const title = template.title + ': ' + input.split(' ').slice(0, 4).join(' ') + '...';
+            const content = `${template.intro}\n\n${expanded}\n\n${template.body}${partnerSection}\n\n${template.cta}\n\n---\n${hashtags}`;
+
+            fohGeneratedPost = {
+                title,
+                content,
+                excerpt: `${template.intro} ${expanded.slice(0, 100)}...`,
+                category: templateType === 'equipment' ? 'update' : templateType === 'newStrain' ? 'strains' : 'update',
+                emoji
+            };
+
+            const partnerInfo = partners.length > 0
+                ? `<div style="background: rgba(57,255,20,0.1); border: 1px solid var(--accent-green); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                     <strong>🔗 Auto-detected:</strong> ${partners.map(p => `${p.name} ${p.instagram || ''}`).join(', ')}
+                   </div>` : '';
+
+            document.getElementById('fohPartnerInfo').innerHTML = partnerInfo;
+            document.getElementById('fohPreviewTitle').textContent = title;
+            document.getElementById('fohPreviewContent').innerHTML = content.replace(/\n/g, '<br>');
+            document.getElementById('fohGeneratedPreview').style.display = 'block';
+        }
+
+        function regenerateBlogPost() {
+            generateBlogPost();
+        }
+
+        function editBlogPost() {
+            if (!fohGeneratedPost) return;
+            const newTitle = prompt('Edit title:', fohGeneratedPost.title);
+            if (newTitle) fohGeneratedPost.title = newTitle;
+            const newContent = prompt('Edit content (basic):', fohGeneratedPost.content.slice(0, 200));
+            if (newContent) fohGeneratedPost.content = newContent;
+            document.getElementById('fohPreviewTitle').textContent = fohGeneratedPost.title;
+            document.getElementById('fohPreviewContent').innerHTML = fohGeneratedPost.content.replace(/\n/g, '<br>');
+        }
+
+        async function publishBlogPost() {
+            if (!fohGeneratedPost || !supabaseClient) { alert('Not connected or no post generated'); return; }
+
+            try {
+                const { error } = await supabaseClient.from('wm_blog_posts').insert([{
+                    title: fohGeneratedPost.title,
+                    content: fohGeneratedPost.content,
+                    excerpt: fohGeneratedPost.excerpt,
+                    category: fohGeneratedPost.category,
+                    emoji: fohGeneratedPost.emoji,
+                    status: 'published',
+                    created_at: new Date().toISOString()
+                }]);
+
+                if (error) throw error;
+
+                alert('Post published! 🚀');
+                document.getElementById('fohQuickInput').value = '';
+                document.getElementById('fohGeneratedPreview').style.display = 'none';
+                fohGeneratedPost = null;
+                loadFOHPosts();
+            } catch (error) {
+                console.error('Publish error:', error);
+                alert('Error publishing: ' + error.message);
+            }
+        }
+
+        async function loadFOHRecentBatches() {
+            const container = document.getElementById('fohRecentBatches');
+            if (!container) return;
+
+            const completedBatches = batches.filter(b => b.stage === 'complete').slice(0, 5);
+
+            if (completedBatches.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No completed batches yet</div>';
+                return;
+            }
+
+            container.innerHTML = completedBatches.map(batch => `
+                <div class="foh-batch-card" onclick="createPostFromBatch('${batch.id}')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 700; font-size: 1.1rem; color: var(--accent-green);">${batch.id}</div>
+                            <div style="color: var(--text-secondary);">${batch.strain || 'Unknown Strain'} • ${batch.material_type || 'Trim'}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Final: ${batch.final_weight || batch.bulk_weight || '?'}g</div>
+                            <button class="btn" style="background: var(--accent-purple); padding: 6px 12px; font-size: 0.85rem; margin-top: 5px;">📝 Create Post</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function createPostFromBatch(batchId) {
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) return;
+
+            const input = `Fresh batch of ${batch.strain || 'premium material'} just finished! ${batch.final_weight || batch.bulk_weight || ''}g of pure fire.`;
+            document.getElementById('fohQuickInput').value = input;
+            generateBlogPost();
+        }
+
+        async function loadFOHPosts() {
+            const container = document.getElementById('fohPostsList');
+            if (!container || !supabaseClient) return;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('wm_blog_posts')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No posts yet. Create your first one above!</div>';
+                    return;
+                }
+
+                container.innerHTML = data.map(post => `
+                    <div class="foh-post-card">
+                        <div>
+                            <div style="font-weight: 600;">${post.emoji || '📝'} ${post.title}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">${new Date(post.created_at).toLocaleDateString()}</div>
+                        </div>
+                        <span class="foh-post-status ${post.status}">${post.status}</span>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading posts:', error);
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Error loading posts</div>';
+            }
+        }
+
+        // Load FOH data when switching to that tab
+        const origShowStation = typeof showStation === 'function' ? showStation : null;
+        function showStationWithFOH(stationId) {
+            if (origShowStation) origShowStation(stationId);
+            if (stationId === 'frontofhouse') {
+                loadFOHRecentBatches();
+                loadFOHPosts();
+            }
+        }
 
     </script>
 </body>
