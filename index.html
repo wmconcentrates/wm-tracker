@@ -2782,16 +2782,6 @@
                 pinInput.addEventListener('input', function() {
                     this.value = this.value.replace(/[^0-9]/g, '');
                 });
-
-                pinInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter' && this.value.length === 4) {
-                        login();
-                    }
-                });
-            }
-
-            if (loginBtn) {
-                loginBtn.addEventListener('click', login);
             }
             
             // Check for existing session
@@ -3108,12 +3098,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
         // Celebration function for completed tasks
         function showCelebration(options = {}) {
+            // Remove any existing celebrations first
+            document.querySelectorAll('.celebration-overlay').forEach(el => el.remove());
+            document.querySelectorAll('.confetti-piece').forEach(el => el.remove());
+
             const {
                 emoji = '🎉',
                 title = 'Great Job!',
                 message = 'Task completed successfully!',
                 stats = [],
-                confettiCount = 50
+                confettiCount = 50,
+                buttonText = 'Awesome!'
             } = options;
 
             // Create confetti
@@ -3159,7 +3154,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     <div class="celebration-message">${message}</div>
                     ${statsHtml}
                     <button class="celebration-btn" onclick="this.closest('.celebration-overlay').remove()">
-                        Awesome!
+                        ${buttonText}
                     </button>
                 </div>
             `;
@@ -3233,13 +3228,41 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 
                 applyRolePermissions();
 
-                // Welcome celebration
+                // Welcome celebration with random messages
+                const welcomeMessages = [
+                    "Ready to crush it today? Let's get to work!",
+                    "Time to make some magic happen! ✨",
+                    "Let's get this bread... I mean, concentrate! 🍞",
+                    "Another day, another dab! 💨",
+                    "You're about to do amazing things!",
+                    "The extraction station awaits your greatness!",
+                    "Warning: Excellence detected! 🚨",
+                    "Plot twist: You're awesome. Let's go!",
+                    "May your yields be high and your temps be low! 🌡️",
+                    "Time to turn trim into triumph! 🏆"
+                ];
+                const welcomeButtons = [
+                    "Hell yes!",
+                    "Let's gooo!",
+                    "I'm ready!",
+                    "Heck yeah!",
+                    "Let's crush it!",
+                    "Born ready!",
+                    "LFG! 🚀",
+                    "Oh yeahhh!",
+                    "Time to shine!",
+                    "Let's roll!"
+                ];
+                const randomMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+                const randomButton = welcomeButtons[Math.floor(Math.random() * welcomeButtons.length)];
+
                 showCelebration({
                     emoji: '👋',
                     title: `Welcome, ${currentRole.name}!`,
-                    message: "Ready to crush it today? Let's get to work!",
+                    message: randomMessage,
                     stats: [],
-                    confettiCount: 30
+                    confettiCount: 30,
+                    buttonText: randomButton
                 });
             } else {
                 // Failed login
