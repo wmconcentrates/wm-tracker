@@ -1038,6 +1038,156 @@
         const excitingWords = ['absolutely fire', 'incredible', 'next level', 'game-changing', 'beautiful', 'insane', 'chef\'s kiss', 'dialed in', 'premium', 'top shelf'];
         const emojis = ['🔥', '💎', '✨', '🚀', '💯', '⚡', '🌟', '🎯', '💚', '🧪'];
 
+        // Partner database - add your suppliers, farms, dispensaries, equipment vendors here
+        // The system will auto-detect these names and tag them in posts
+        const partners = {
+            // Farms & Cultivators
+            'in the flow': {
+                name: 'In The Flow',
+                type: 'farm',
+                instagram: '@intheflow_farms',
+                website: 'https://intheflowfarms.com',
+                hashtags: ['#InTheFlowFarms', '#ColoradoGrown']
+            },
+            'veritas': {
+                name: 'Veritas Fine Cannabis',
+                type: 'farm',
+                instagram: '@veritasfinecannabis',
+                website: 'https://veritasfinecannabis.com',
+                hashtags: ['#VeritasCannabis', '#ColoradoCraft']
+            },
+            'locol love': {
+                name: 'Locol Love',
+                type: 'farm',
+                instagram: '@locaborelove',
+                website: 'https://locol-love.com',
+                hashtags: ['#LocolLove', '#DenverGrown']
+            },
+            'snaxland': {
+                name: 'Snaxland',
+                type: 'farm',
+                instagram: '@snaxland',
+                website: null,
+                hashtags: ['#Snaxland', '#ColoradoCannabis']
+            },
+            'cherry': {
+                name: 'Cherry',
+                type: 'farm',
+                instagram: '@cherry.co',
+                website: 'https://cherry.co',
+                hashtags: ['#CherryCannabis']
+            },
+            'green dot': {
+                name: 'Green Dot Labs',
+                type: 'competitor',
+                instagram: '@greendotlabs',
+                website: 'https://greendotlabs.com',
+                hashtags: ['#GreenDotLabs']
+            },
+            '710 labs': {
+                name: '710 Labs',
+                type: 'competitor',
+                instagram: '@710labs',
+                website: 'https://710labs.com',
+                hashtags: ['#710Labs']
+            },
+            'olio': {
+                name: 'Olio',
+                type: 'competitor',
+                instagram: '@oaborelabs',
+                website: null,
+                hashtags: ['#Olio']
+            },
+            // Dispensaries
+            'native roots': {
+                name: 'Native Roots',
+                type: 'dispensary',
+                instagram: '@nativerootsdispensary',
+                website: 'https://nativerootsdispensary.com',
+                hashtags: ['#NativeRoots']
+            },
+            'the green solution': {
+                name: 'The Green Solution',
+                type: 'dispensary',
+                instagram: '@thegreensolution',
+                website: 'https://tgscolorado.com',
+                hashtags: ['#TGS', '#TheGreenSolution']
+            },
+            'lightshade': {
+                name: 'Lightshade',
+                type: 'dispensary',
+                instagram: '@lightshadeco',
+                website: 'https://lightshade.com',
+                hashtags: ['#Lightshade']
+            },
+            // Equipment vendors
+            'across international': {
+                name: 'Across International',
+                type: 'equipment',
+                instagram: '@acaborelessintl',
+                website: 'https://acrossinternational.com',
+                hashtags: ['#AcrossInternational', '#LabEquipment']
+            },
+            'bizzybee': {
+                name: 'BizzyBee',
+                type: 'equipment',
+                instagram: '@bizzybee_extraction',
+                website: 'https://bizzybee.com',
+                hashtags: ['#BizzyBee', '#Extraction']
+            }
+        };
+
+        // Function to detect partners mentioned in input
+        function detectPartners(input) {
+            const lowerInput = input.toLowerCase();
+            const found = [];
+
+            for (const [key, partner] of Object.entries(partners)) {
+                if (lowerInput.includes(key)) {
+                    found.push(partner);
+                }
+            }
+            return found;
+        }
+
+        // Format partner mention for post - natural style
+        function formatPartnerMention(partner, context) {
+            const igLink = partner.instagram ? `[${partner.instagram}](https://instagram.com/${partner.instagram.replace('@', '')})` : '';
+            const webLink = partner.website ? `[${partner.name}](${partner.website})` : partner.name;
+
+            if (partner.type === 'farm') {
+                const phrases = [
+                    `Huge shoutout to the crew at ${webLink} for this incredible material! ${igLink ? `Give them a follow: ${igLink}` : ''}`,
+                    `Working with ${webLink} has been amazing - they really know how to grow! ${igLink || ''}`,
+                    `This fire came straight from ${webLink}. Quality genetics = quality extracts! ${igLink || ''}`,
+                    `Big love to ${webLink} for keeping us stocked with premium flower! ${igLink || ''}`
+                ];
+                return phrases[Math.floor(Math.random() * phrases.length)];
+            } else if (partner.type === 'dispensary') {
+                const phrases = [
+                    `You can find this at ${webLink}! Go show them some love. ${igLink || ''}`,
+                    `Available now at ${webLink} - tell your budtender White Mousse sent you! ${igLink || ''}`,
+                    `Dropping at ${webLink} soon! ${igLink || ''}`
+                ];
+                return phrases[Math.floor(Math.random() * phrases.length)];
+            } else if (partner.type === 'equipment') {
+                const phrases = [
+                    `Major thanks to ${webLink} for keeping our lab running smooth! ${igLink || ''}`,
+                    `Powered by ${webLink}. Invest in good equipment, get good results! ${igLink || ''}`
+                ];
+                return phrases[Math.floor(Math.random() * phrases.length)];
+            }
+            return `${webLink} ${igLink || ''}`;
+        }
+
+        // Generate hashtag string from partners
+        function generateHashtags(detectedPartners) {
+            const baseHashtags = ['#WhiteMousse', '#ColoradoConcentrates', '#LiveResin', '#Terps', '#CannabisCommunity'];
+            const partnerTags = detectedPartners.flatMap(p => p.hashtags || []);
+            const allTags = [...new Set([...baseHashtags, ...partnerTags])];
+            return allTags.slice(0, 10).join(' ');
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             await loadPosts();
             document.getElementById('dashboardDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -1366,7 +1516,7 @@
             }
         }
 
-        // Quick Update Generator
+        // Quick Update Generator - Enhanced with partner detection
         function generatePost() {
             const input = document.getElementById('quickInput').value.trim();
             if (!input) {
@@ -1374,13 +1524,17 @@
                 return;
             }
 
+            // Detect partners mentioned in input
+            const detectedPartners = detectPartners(input);
+            const hasPartners = detectedPartners.length > 0;
+
             // Detect what type of update this is
             let templateType = 'general';
             const lowerInput = input.toLowerCase();
 
             if (lowerInput.includes('hardware') || lowerInput.includes('equipment') || lowerInput.includes('new') && (lowerInput.includes('machine') || lowerInput.includes('tech'))) {
                 templateType = 'equipment';
-            } else if (lowerInput.includes('strain') || lowerInput.includes('flower') || lowerInput.includes('material') || lowerInput.includes('gmo') || lowerInput.includes('cookies') || lowerInput.includes('og')) {
+            } else if (lowerInput.includes('strain') || lowerInput.includes('flower') || lowerInput.includes('material') || lowerInput.includes('trim') || lowerInput.includes('gmo') || lowerInput.includes('cookies') || lowerInput.includes('og') || lowerInput.includes('grabbed') || lowerInput.includes('picked up')) {
                 templateType = 'newStrain';
             } else if (lowerInput.includes('batch') || lowerInput.includes('run') || lowerInput.includes('extract')) {
                 templateType = 'batch';
@@ -1391,6 +1545,16 @@
             const word = excitingWords[Math.floor(Math.random() * excitingWords.length)];
             const emoji = emojis[Math.floor(Math.random() * emojis.length)];
 
+            // Build partner shoutouts section
+            let partnerSection = '';
+            if (hasPartners) {
+                const shoutouts = detectedPartners.map(p => formatPartnerMention(p)).join('\n\n');
+                partnerSection = `\n\n---\n\n**🤝 Shoutouts**\n\n${shoutouts}`;
+            }
+
+            // Generate hashtags
+            const hashtags = generateHashtags(detectedPartners);
+
             // Generate engaging post from brief input
             const title = template.title.replace('!', `: ${capitalizeFirst(extractKeywords(input))}!`);
             const content = `${template.intro}
@@ -1398,19 +1562,31 @@
 ${expandInput(input, word)}
 
 ${template.body}
+${partnerSection}
 
-${template.cta}`;
+${template.cta}
+
+---
+${hashtags}`;
 
             generatedPost = {
                 title,
                 content,
                 excerpt: `${template.intro} ${expandInput(input, word).slice(0, 100)}...`,
                 category: templateType === 'equipment' ? 'update' : templateType === 'newStrain' ? 'strains' : 'update',
-                emoji
+                emoji,
+                partners: detectedPartners.map(p => p.name)
             };
 
+            // Show partner detection feedback
+            const partnerInfo = hasPartners
+                ? `<div style="background: rgba(57,255,20,0.1); border: 1px solid var(--accent-green); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                     <strong>🔗 Auto-detected partners:</strong> ${detectedPartners.map(p => `${p.name} ${p.instagram || ''}`).join(', ')}
+                   </div>`
+                : '';
+
             document.getElementById('generatedTitle').textContent = title;
-            document.getElementById('generatedContent').innerHTML = formatContent(content);
+            document.getElementById('generatedContent').innerHTML = partnerInfo + formatContent(content);
             document.getElementById('generatedPreview').classList.add('active');
         }
 
