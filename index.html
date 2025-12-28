@@ -7,7 +7,7 @@
     <title>White Mousse Production Tracker - Cloud Sync</title>
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#bf00ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2038,6 +2038,56 @@
                     <div id="fohRecentBatches" style="display: grid; gap: 15px;">
                         <!-- Populated dynamically -->
                         <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading batches...</div>
+                    </div>
+                </div>
+
+                <!-- LeafLink Drop Calendar -->
+                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); border: 2px solid var(--accent-green); border-radius: 16px; padding: 25px; margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; color: var(--accent-green);">
+                                <span>📅</span> Drop Calendar
+                            </h3>
+                            <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 0.9rem;">Customer deliveries from LeafLink (last 2 months)</p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="loadDropCalendar()" class="btn" style="background: var(--accent-green); padding: 10px 20px;">🔄 Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Calendar Stats -->
+                    <div id="dropCalendarStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);" id="statTotalDrops">--</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Drops</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);" id="statUniqueCustomers">--</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Customers</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);" id="statThisWeek">--</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">This Week</div>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--accent-orange);" id="statTotalProducts">--</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Products Moved</div>
+                        </div>
+                    </div>
+
+                    <!-- Calendar View Toggle -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button onclick="setCalendarView('calendar')" id="viewCalendarBtn" class="btn" style="background: var(--accent-blue); padding: 8px 16px;">📅 Calendar</button>
+                        <button onclick="setCalendarView('list')" id="viewListBtn" class="btn" style="background: var(--bg-tertiary); padding: 8px 16px;">📋 Customer List</button>
+                        <button onclick="setCalendarView('frequency')" id="viewFreqBtn" class="btn" style="background: var(--bg-tertiary); padding: 8px 16px;">📊 Frequency</button>
+                    </div>
+
+                    <!-- Calendar Content -->
+                    <div id="dropCalendarContent" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; min-height: 300px;">
+                        <div style="text-align: center; padding: 60px; color: var(--text-secondary);">
+                            <div style="font-size: 3rem; margin-bottom: 10px;">📅</div>
+                            Click "Refresh" to load drop data from LeafLink
+                        </div>
                     </div>
                 </div>
 
@@ -10980,6 +11030,357 @@ ${employeeReport || 'No activity recorded today'}
                 console.error('Error loading posts:', error);
                 container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">Error loading posts</div>';
             }
+        }
+
+        // ==================== LEAFLINK DROP CALENDAR ====================
+
+        // Use local proxy to avoid CORS issues
+        const LEAFLINK_PROXY_URL = 'http://localhost:3001/api';
+
+        let dropCalendarData = [];
+        let currentCalendarView = 'calendar';
+
+        async function loadDropCalendar() {
+            const content = document.getElementById('dropCalendarContent');
+            content.innerHTML = '<div style="text-align: center; padding: 60px; color: var(--text-secondary);"><div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>Loading drop data from LeafLink...</div>';
+
+            try {
+                // Calculate date 2 months ago
+                const twoMonthsAgo = new Date();
+                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
+
+                // Fetch shipped and complete orders via proxy
+                let allOrders = [];
+                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+
+                while (nextUrl) {
+                    const response = await fetch(nextUrl);
+
+                    if (!response.ok) throw new Error('API request failed - is the proxy server running?');
+
+                    const data = await response.json();
+                    allOrders = allOrders.concat(data.results);
+                    nextUrl = data.next;
+
+                    // Safety limit
+                    if (allOrders.length > 500) break;
+                }
+
+                // Process orders into drop calendar data
+                dropCalendarData = processDropData(allOrders);
+                updateDropStats();
+                renderCalendarView();
+
+            } catch (error) {
+                console.error('Error loading drop calendar:', error);
+                content.innerHTML = `<div style="text-align: center; padding: 60px; color: var(--accent-red);">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">❌</div>
+                    Error loading data: ${error.message}<br>
+                    <small style="color: var(--text-secondary);">Make sure the proxy server is running:<br><code>cd proxy && npm install && npm start</code></small>
+                </div>`;
+            }
+        }
+
+        function processDropData(orders) {
+            const customerDrops = {};
+
+            orders.forEach(order => {
+                if (!order.customer || !order.ship_date) return;
+
+                const customerId = order.customer.id;
+                const customerName = order.customer.display_name;
+                const shipDate = order.ship_date.split('T')[0];
+
+                // Extract products from line_items
+                const products = (order.line_items || []).map(item => ({
+                    name: item.frozen_data?.product?.name || 'Unknown Product',
+                    quantity: Math.round(parseFloat(item.quantity) || 1),
+                    sku: item.frozen_data?.product?.sku || ''
+                }));
+
+                // Aggregate products by name for cleaner display
+                const productSummary = {};
+                products.forEach(p => {
+                    if (productSummary[p.name]) {
+                        productSummary[p.name] += p.quantity;
+                    } else {
+                        productSummary[p.name] = p.quantity;
+                    }
+                });
+
+                if (!customerDrops[customerId]) {
+                    customerDrops[customerId] = {
+                        id: customerId,
+                        name: customerName,
+                        deliveryPrefs: order.delivery_preferences || '',
+                        drops: [],
+                        totalOrders: 0,
+                        totalProducts: 0
+                    };
+                }
+
+                const totalProductCount = products.reduce((sum, p) => sum + p.quantity, 0);
+
+                customerDrops[customerId].drops.push({
+                    date: shipDate,
+                    orderId: order.short_id,
+                    products: productSummary,
+                    productCount: totalProductCount,
+                    status: order.status,
+                    notes: order.notes || ''
+                });
+                customerDrops[customerId].totalOrders++;
+                customerDrops[customerId].totalProducts += totalProductCount;
+            });
+
+            // Sort drops by date for each customer
+            Object.values(customerDrops).forEach(customer => {
+                customer.drops.sort((a, b) => new Date(b.date) - new Date(a.date));
+                customer.lastDrop = customer.drops[0]?.date;
+                customer.avgDaysBetween = calculateAvgDaysBetween(customer.drops);
+            });
+
+            return Object.values(customerDrops).sort((a, b) =>
+                new Date(b.lastDrop) - new Date(a.lastDrop)
+            );
+        }
+
+        function calculateAvgDaysBetween(drops) {
+            if (drops.length < 2) return null;
+            let totalDays = 0;
+            for (let i = 1; i < drops.length; i++) {
+                const diff = new Date(drops[i-1].date) - new Date(drops[i].date);
+                totalDays += diff / (1000 * 60 * 60 * 24);
+            }
+            return Math.round(totalDays / (drops.length - 1));
+        }
+
+        function updateDropStats() {
+            const totalDrops = dropCalendarData.reduce((sum, c) => sum + c.totalOrders, 0);
+            const uniqueCustomers = dropCalendarData.length;
+            const totalProducts = dropCalendarData.reduce((sum, c) => sum + c.totalProducts, 0);
+
+            // This week
+            const now = new Date();
+            const weekStart = new Date(now);
+            weekStart.setDate(now.getDate() - now.getDay());
+            const thisWeek = dropCalendarData.reduce((sum, c) => {
+                return sum + c.drops.filter(d => new Date(d.date) >= weekStart).length;
+            }, 0);
+
+            // Avg per week (over 2 months = ~8 weeks)
+            const avgPerWeek = Math.round(totalDrops / 8);
+
+            document.getElementById('statTotalDrops').textContent = totalDrops;
+            document.getElementById('statUniqueCustomers').textContent = uniqueCustomers;
+            document.getElementById('statThisWeek').textContent = thisWeek;
+            document.getElementById('statTotalProducts').textContent = totalProducts;
+        }
+
+        function setCalendarView(view) {
+            currentCalendarView = view;
+
+            // Update button styles
+            document.getElementById('viewCalendarBtn').style.background = view === 'calendar' ? 'var(--accent-blue)' : 'var(--bg-tertiary)';
+            document.getElementById('viewListBtn').style.background = view === 'list' ? 'var(--accent-blue)' : 'var(--bg-tertiary)';
+            document.getElementById('viewFreqBtn').style.background = view === 'frequency' ? 'var(--accent-blue)' : 'var(--bg-tertiary)';
+
+            renderCalendarView();
+        }
+
+        function renderCalendarView() {
+            const content = document.getElementById('dropCalendarContent');
+
+            if (dropCalendarData.length === 0) {
+                content.innerHTML = '<div style="text-align: center; padding: 60px; color: var(--text-secondary);">No drop data loaded yet</div>';
+                return;
+            }
+
+            switch (currentCalendarView) {
+                case 'calendar':
+                    renderMonthCalendar(content);
+                    break;
+                case 'list':
+                    renderCustomerList(content);
+                    break;
+                case 'frequency':
+                    renderFrequencyView(content);
+                    break;
+            }
+        }
+
+        function renderMonthCalendar(container) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+
+            // Build calendar grid
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startPad = firstDay.getDay();
+
+            // Get all drops for this month
+            const monthDrops = {};
+            dropCalendarData.forEach(customer => {
+                customer.drops.forEach(drop => {
+                    const dropDate = new Date(drop.date);
+                    if (dropDate.getMonth() === month && dropDate.getFullYear() === year) {
+                        const day = dropDate.getDate();
+                        if (!monthDrops[day]) monthDrops[day] = [];
+                        monthDrops[day].push({ customer: customer.name, ...drop });
+                    }
+                });
+            });
+
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+
+            let html = `
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">${monthNames[month]} ${year}</h3>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">
+                    <div style="text-align: center; font-weight: 700; color: var(--text-secondary); padding: 10px;">Sun</div>
+                    <div style="text-align: center; font-weight: 700; color: var(--text-secondary); padding: 10px;">Mon</div>
+                    <div style="text-align: center; font-weight: 700; color: var(--text-secondary); padding: 10px;">Tue</div>
+                    <div style="text-align: center; font-weight: 700; color: var(--text-secondary); padding: 10px;">Wed</div>
+                    <div style="text-align: center; font-weight: 700; color: var(--text-secondary); padding: 10px;">Thu</div>
+                    <div style="text-align: center; font-weight: 700; color: var(--text-secondary); padding: 10px;">Fri</div>
+                    <div style="text-align: center; font-weight: 700; color: var(--text-secondary); padding: 10px;">Sat</div>
+            `;
+
+            // Empty cells for start padding
+            for (let i = 0; i < startPad; i++) {
+                html += '<div></div>';
+            }
+
+            // Calendar days
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const drops = monthDrops[day] || [];
+                const isToday = day === now.getDate();
+                const hasDrops = drops.length > 0;
+
+                html += `
+                    <div style="background: ${hasDrops ? 'var(--accent-green)' : 'var(--bg-secondary)'};
+                                ${isToday ? 'border: 2px solid var(--accent-blue);' : ''}
+                                border-radius: 8px; padding: 8px; min-height: 60px; cursor: ${hasDrops ? 'pointer' : 'default'};"
+                         ${hasDrops ? `onclick="showDayDrops(${day}, ${month}, ${year})"` : ''}>
+                        <div style="font-weight: 700; ${hasDrops ? 'color: white;' : ''}">${day}</div>
+                        ${hasDrops ? `<div style="font-size: 0.75rem; color: rgba(255,255,255,0.9); margin-top: 3px;">${drops.length} drop${drops.length > 1 ? 's' : ''}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function showDayDrops(day, month, year) {
+            const drops = [];
+            dropCalendarData.forEach(customer => {
+                customer.drops.forEach(drop => {
+                    const dropDate = new Date(drop.date);
+                    if (dropDate.getDate() === day && dropDate.getMonth() === month && dropDate.getFullYear() === year) {
+                        drops.push({ customer: customer.name, ...drop });
+                    }
+                });
+            });
+
+            // Build a nice modal instead of alert
+            const dateStr = new Date(year, month, day).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+            let modalHtml = `
+                <div id="dropDayModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;" onclick="if(event.target.id==='dropDayModal')this.remove()">
+                    <div style="background: var(--bg-secondary); border-radius: 16px; padding: 25px; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="margin: 0; color: var(--accent-green);">📅 ${dateStr}</h3>
+                            <button onclick="this.closest('#dropDayModal').remove()" style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+                        </div>
+                        <div style="display: grid; gap: 15px;">
+                            ${drops.map(d => `
+                                <div style="background: var(--bg-primary); border-radius: 12px; padding: 15px; border-left: 4px solid var(--accent-green);">
+                                    <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 10px;">${d.customer}</div>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                        ${Object.entries(d.products || {}).map(([name, qty]) => `
+                                            <div style="background: var(--bg-tertiary); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem;">
+                                                <span style="color: var(--accent-blue); font-weight: 700;">${qty}x</span> ${name.length > 40 ? name.substring(0, 40) + '...' : name}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-secondary);">
+                                        ${d.productCount} items total
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function renderCustomerList(container) {
+            let html = `
+                <div style="display: grid; gap: 10px;">
+                    ${dropCalendarData.map(customer => `
+                        <div style="background: var(--bg-secondary); padding: 15px; border-radius: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                                <div>
+                                    <div style="font-weight: 700; font-size: 1.1rem;">${customer.name}</div>
+                                    <div style="color: var(--text-secondary); font-size: 0.85rem;">
+                                        Last drop: ${customer.lastDrop || 'N/A'} • ${customer.totalOrders} orders • ${customer.totalProducts} products
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    ${customer.avgDaysBetween ? `<div style="background: var(--accent-purple); color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.85rem;">Every ~${customer.avgDaysBetween} days</div>` : ''}
+                                </div>
+                            </div>
+                            ${customer.drops.length > 0 && customer.drops[0].products ? `
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                                    ${Object.entries(customer.drops[0].products).slice(0, 5).map(([name, qty]) => `
+                                        <div style="background: var(--bg-tertiary); padding: 4px 10px; border-radius: 15px; font-size: 0.8rem;">
+                                            <span style="color: var(--accent-green); font-weight: 600;">${qty}x</span> ${name.length > 30 ? name.substring(0, 30) + '...' : name}
+                                        </div>
+                                    `).join('')}
+                                    ${Object.keys(customer.drops[0].products).length > 5 ? `<div style="color: var(--text-secondary); font-size: 0.8rem; padding: 4px;">+${Object.keys(customer.drops[0].products).length - 5} more</div>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.innerHTML = html;
+        }
+
+        function renderFrequencyView(container) {
+            // Group by frequency
+            const weekly = dropCalendarData.filter(c => c.avgDaysBetween && c.avgDaysBetween <= 10);
+            const biweekly = dropCalendarData.filter(c => c.avgDaysBetween && c.avgDaysBetween > 10 && c.avgDaysBetween <= 20);
+            const monthly = dropCalendarData.filter(c => c.avgDaysBetween && c.avgDaysBetween > 20);
+            const oneTime = dropCalendarData.filter(c => !c.avgDaysBetween);
+
+            const renderGroup = (title, customers, color) => `
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: ${color}; margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;">
+                        ${title} <span style="background: ${color}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">${customers.length}</span>
+                    </h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${customers.map(c => `
+                            <div style="background: var(--bg-secondary); padding: 8px 12px; border-radius: 20px; font-size: 0.9rem; border-left: 3px solid ${color};">
+                                ${c.name}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = `
+                ${renderGroup('🔥 Weekly (1-10 days)', weekly, 'var(--accent-green)')}
+                ${renderGroup('📅 Bi-Weekly (11-20 days)', biweekly, 'var(--accent-blue)')}
+                ${renderGroup('📆 Monthly (21+ days)', monthly, 'var(--accent-purple)')}
+                ${renderGroup('🆕 One-Time / New', oneTime, 'var(--accent-orange)')}
+            `;
         }
 
         // Load FOH data when switching to that tab
