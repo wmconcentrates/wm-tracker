@@ -3152,13 +3152,6 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // Role configuration with PINs and permissions
-        const ROLES = {
-            ryan: {
-                name: 'Ryan (Admin)',
-                pin: '1827',
-
     <!-- Time Clock Modal -->
     <div id="timeClockModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; overflow-y: auto;">
         <div style="max-width: 500px; margin: 50px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(57, 255, 20, 0.4);">
@@ -3320,6 +3313,12 @@
         </div>
     </div>
 
+    <script>
+        // Role configuration with PINs and permissions
+        const ROLES = {
+            ryan: {
+                name: 'Ryan (Admin)',
+                pin: '1827',
                 tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
                 access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
                 readOnly: false
