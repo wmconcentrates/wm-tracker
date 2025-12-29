@@ -11927,50 +11927,89 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         // Determine next payday and what commission period it covers
+        // Commission is paid on the FIRST pay period of each month
+        // Commission covers all payments received SINCE the last commission payout
         function getNextPaydayInfo() {
             const now = new Date();
             // Starting reference: January 9, 2025 (Friday) - first payday of the year
             const referencePayday = new Date(2025, 0, 9); // Jan 9, 2025
 
-            // Find next payday (every 2 weeks from reference)
-            let nextPayday = new Date(referencePayday);
-            while (nextPayday <= now) {
-                nextPayday.setDate(nextPayday.getDate() + 14);
+            // Build list of all paydays from reference
+            const allPaydays = [];
+            let payday = new Date(referencePayday);
+            // Go back to find earlier paydays (for historical commission dates)
+            while (payday.getFullYear() >= 2024) {
+                payday.setDate(payday.getDate() - 14);
+            }
+            payday.setDate(payday.getDate() + 14); // Move forward to first valid payday
+
+            // Build list of paydays through 2026
+            while (payday.getFullYear() <= 2026) {
+                allPaydays.push(new Date(payday));
+                payday.setDate(payday.getDate() + 14);
             }
 
-            // Determine if this is the first pay period of the month
+            // Find which paydays are "first pay periods" (on or before 14th of month)
+            // These are the commission paydays
+            const commissionPaydays = allPaydays.filter(pd => pd.getDate() <= 14);
+
+            // Find next payday (any payday, not just commission)
+            let nextPayday = allPaydays.find(pd => pd > now);
+            if (!nextPayday) {
+                nextPayday = allPaydays[allPaydays.length - 1];
+            }
+
+            // Determine if next payday is a commission payday (first pay period)
             const payMonth = nextPayday.getMonth();
             const payYear = nextPayday.getFullYear();
             const dayOfMonth = nextPayday.getDate();
-
-            // First pay period = payday falls on or before the 14th of the month
             const isFirstPayPeriod = dayOfMonth <= 14;
 
-            // Previous month for commission calculation
-            let commissionMonth, commissionYear;
-            if (isFirstPayPeriod) {
-                // First pay period pays out previous month's commission
-                if (payMonth === 0) {
-                    commissionMonth = 11; // December
-                    commissionYear = payYear - 1;
-                } else {
-                    commissionMonth = payMonth - 1;
-                    commissionYear = payYear;
+            // Find last commission payout date (most recent commission payday before now)
+            let lastCommissionPayday = null;
+            for (let i = commissionPaydays.length - 1; i >= 0; i--) {
+                if (commissionPaydays[i] <= now) {
+                    lastCommissionPayday = commissionPaydays[i];
+                    break;
                 }
-            } else {
-                // Second pay period - no commission (or could be current month partial)
-                commissionMonth = null;
-                commissionYear = null;
+            }
+            // Fallback: Dec 6, 2024 was a known commission payday
+            if (!lastCommissionPayday) {
+                lastCommissionPayday = new Date(2024, 11, 6); // Dec 6, 2024
+            }
+
+            // Find next commission payday (for calculating commission period end)
+            let nextCommissionPayday = null;
+            for (let i = 0; i < commissionPaydays.length; i++) {
+                if (commissionPaydays[i] > now) {
+                    nextCommissionPayday = commissionPaydays[i];
+                    break;
+                }
             }
 
             return {
                 nextPayday,
                 isFirstPayPeriod,
-                commissionMonth,
-                commissionYear,
                 payMonth,
-                payYear
+                payYear,
+                lastCommissionPayday,
+                nextCommissionPayday,
+                // Legacy fields for backward compatibility
+                commissionMonth: isFirstPayPeriod ? (payMonth === 0 ? 11 : payMonth - 1) : null,
+                commissionYear: isFirstPayPeriod ? (payMonth === 0 ? payYear - 1 : payYear) : null
             };
+        }
+
+        // Get paid orders between two dates (for commission calculation)
+        // Uses paid_date field to determine when payment was received
+        function getPaidOrdersBetweenDates(orders, startDate, endDate) {
+            return orders.filter(order => {
+                if (order.paid !== true) return false;
+                if (!order.paid_date) return false;
+                const paidDate = new Date(order.paid_date);
+                // Include orders with paid_date > startDate and <= endDate
+                return paidDate > startDate && paidDate <= endDate;
+            });
         }
 
         // Format month name
@@ -12053,33 +12092,44 @@ ${employeeReport || 'No activity recorded today'}
             document.getElementById('salesStatUnpaidOrders').textContent = unpaidOrders.length.toLocaleString();
             document.getElementById('salesStatNewCustomers').textContent = newCustomersCount.toLocaleString();
 
-            // Commission calculations
+            // Commission calculations - based on PAYMENT DATE, not order date
+            // Get payday info including last commission payout date
+            const paydayInfo = getNextPaydayInfo();
+
+            // Get payments since last commission payout (for next paycheck)
+            const paymentsSinceLastPayout = getPaidOrdersBetweenDates(filteredOrders, paydayInfo.lastCommissionPayday, now);
+            const paymentsSinceLastPayoutTotal = paymentsSinceLastPayout.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+            const pendingCommission = paymentsSinceLastPayoutTotal * COMMISSION_RATE;
+
+            // For display purposes, also show current and previous month payments
             const currentMonthPaid = getPaidOrdersForMonth(filteredOrders, currentYear, currentMonth);
             const prevMonthPaid = getPaidOrdersForMonth(filteredOrders, prevYear, prevMonth);
-
             const currentMonthCommission = currentMonthPaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
             const prevMonthCommission = prevMonthPaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
 
             // Next paycheck calculation
-            const paydayInfo = getNextPaydayInfo();
             let nextPaycheckCommission = 0;
             let paycheckNote = '';
 
-            if (paydayInfo.isFirstPayPeriod && paydayInfo.commissionMonth !== null) {
-                // First pay period - pays out previous month's commission
-                const commissionOrders = getPaidOrdersForMonth(filteredOrders, paydayInfo.commissionYear, paydayInfo.commissionMonth);
-                nextPaycheckCommission = commissionOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
-                paycheckNote = `Includes ${getMonthName(paydayInfo.commissionMonth)} ${paydayInfo.commissionYear} commission (first pay period of ${getMonthName(paydayInfo.payMonth)})`;
+            if (paydayInfo.isFirstPayPeriod) {
+                // First pay period - pays out commission for payments since last commission payout
+                nextPaycheckCommission = pendingCommission;
+                const lastPayoutFormatted = paydayInfo.lastCommissionPayday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                paycheckNote = `Payments since ${lastPayoutFormatted} (${paymentsSinceLastPayout.length} orders, $${paymentsSinceLastPayoutTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})} total)`;
             } else {
-                paycheckNote = 'No commission this pay period (second pay period of month)';
+                // Second pay period - show what will be paid on next commission payday
+                const nextCommissionFormatted = paydayInfo.nextCommissionPayday ?
+                    paydayInfo.nextCommissionPayday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'next month';
+                nextPaycheckCommission = 0; // No commission this pay period
+                paycheckNote = `No commission this pay period. Next commission on ${nextCommissionFormatted}.`;
             }
 
             // Update commission display
             document.getElementById('commissionCurrentMonth').textContent = '$' + currentMonthCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('commissionCurrentMonthLabel').textContent = `${getMonthName(currentMonth)} ${currentYear}`;
+            document.getElementById('commissionCurrentMonthLabel').textContent = `${getMonthName(currentMonth)} ${currentYear} (by paid_date)`;
 
             document.getElementById('commissionPrevMonth').textContent = '$' + prevMonthCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('commissionPrevMonthLabel').textContent = `${getMonthName(prevMonth)} ${prevYear}`;
+            document.getElementById('commissionPrevMonthLabel').textContent = `${getMonthName(prevMonth)} ${prevYear} (by paid_date)`;
 
             document.getElementById('commissionNextPaycheck').textContent = '$' + nextPaycheckCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             document.getElementById('commissionPaydayDate').textContent = paydayInfo.nextPayday.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
