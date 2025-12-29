@@ -8404,13 +8404,20 @@ ${employeeReport || 'No activity recorded today'}
 
         // Mark batch as extraction complete / ready for testing
         async function markReadyForTesting() {
+            try {
+            console.log('markReadyForTesting called');
+
             if (!currentRole) {
                 alert('Please select a user first!');
                 return;
             }
+            console.log('currentRole:', currentRole.name);
 
             const batchId = document.getElementById('testingBatchSelect').value;
+            console.log('batchId:', batchId);
+
             const batch = batches.find(b => b.id === batchId);
+            console.log('batch found:', batch ? 'yes' : 'no');
 
             if (!batch) {
                 alert('Please select a batch first!');
@@ -8427,15 +8434,18 @@ ${employeeReport || 'No activity recorded today'}
             const hasExtractionComplete = batch.timeline?.some(t => t.stage === 'ready_for_testing' || t.stage === 'product_update');
             const isUpdate = hasExtractionComplete || batch.test_submitted_date;
 
+            console.log('Form values:', { finalProductName, finalConsistency, finalStrainType, newBatchId });
+
             // Validate required fields
             if (!finalProductName) {
                 alert('Please enter a product name.');
                 return;
             }
             if (!finalConsistency) {
-                alert('Please select a consistency.');
+                alert('Please select a product type.');
                 return;
             }
+            console.log('Validation passed');
 
             // Check if batch ID is changing
             let batchIdChanged = false;
@@ -8563,6 +8573,11 @@ ${employeeReport || 'No activity recorded today'}
                 ? `Product info updated for ${batchIdChanged ? newBatchId : batchId}!\n\n${finalProductName} (${finalConsistency})`
                 : `Batch ${batchIdChanged ? newBatchId : batchId} finalized!\n\n${finalProductName} (${finalConsistency})\nReady for lab submission.`;
             alert(successMsg);
+
+            } catch (err) {
+                console.error('Exception in markReadyForTesting:', err);
+                alert('Error: ' + err.message);
+            }
         }
 
         // Update the ready for testing UI based on batch status
