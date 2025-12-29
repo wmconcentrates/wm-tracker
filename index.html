@@ -3874,6 +3874,30 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
         }
 
+        // Admin helper to fix batch status (call from console: fixBatchStatus('9.30.5622', 'finishing'))
+        window.fixBatchStatus = async function(batchId, newStatus) {
+            if (!supabaseClient) {
+                console.error('Supabase not connected');
+                return;
+            }
+            const validStatuses = ['intake', 'extraction', 'finishing', 'packaging', 'complete'];
+            if (!validStatuses.includes(newStatus)) {
+                console.error('Invalid status. Use one of:', validStatuses);
+                return;
+            }
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .update({ status: newStatus })
+                .eq('id', batchId);
+            if (error) {
+                console.error('Error updating batch:', error);
+            } else {
+                console.log(`Batch ${batchId} status updated to "${newStatus}". Refreshing...`);
+                await loadBatches();
+                alert(`Batch ${batchId} status reset to "${newStatus}"`);
+            }
+        };
+
         async function loadBatches() {
             const { data, error } = await supabaseClient
                 .from('wm_batches')
