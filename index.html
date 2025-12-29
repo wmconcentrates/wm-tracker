@@ -1636,6 +1636,15 @@
                                 <div class="help-text">Format: M.D.XXXX (e.g., 3.21.1234)</div>
                             </div>
                         </div>
+
+                        <!-- Ready for Testing Button -->
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(245, 158, 11, 0.3);">
+                            <div id="readyForTestingStatus" style="margin-bottom: 10px;"></div>
+                            <button type="button" id="markReadyForTestingBtn" onclick="markReadyForTesting()" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; width: 100%;">
+                                <span>✓</span> Mark as Extraction Complete (Ready for Testing)
+                            </button>
+                            <div class="help-text" style="margin-top: 8px;">Use this when extraction is done but batch hasn't been submitted to the lab yet</div>
+                        </div>
                     </div>
 
                     <!-- Product Name Section -->
@@ -8142,14 +8151,21 @@ ${employeeReport || 'No activity recorded today'}
         function populateTestingSelect() {
             const select = document.getElementById('testingBatchSelect');
             // Show batches that are finishing or complete, but NOT yet labeled
-            const testableBatches = batches.filter(b => 
+            const testableBatches = batches.filter(b =>
                 (b.status === 'finishing' || b.status === 'complete') && !b.labeling_date
             );
-            
+
             select.innerHTML = '<option value="">Select a batch...</option>';
             testableBatches.forEach(batch => {
-                const hasResults = batch.test_results_received_date ? '✓ ' : '';
-                select.innerHTML += `<option value="${batch.id}">${hasResults}${batch.id} - ${batch.strain} - ${batch.product_made}</option>`;
+                let statusIcon = '';
+                if (batch.test_results_received_date) {
+                    statusIcon = '✓ '; // Has results
+                } else if (batch.test_submitted_date) {
+                    statusIcon = '📤 '; // Submitted to lab
+                } else if (batch.ready_for_testing_date) {
+                    statusIcon = '✅ '; // Ready for testing
+                }
+                select.innerHTML += `<option value="${batch.id}">${statusIcon}${batch.id} - ${batch.strain} - ${batch.product_made}</option>`;
             });
         }
 
@@ -8268,8 +8284,11 @@ ${employeeReport || 'No activity recorded today'}
                     document.getElementById('isRTA').value = 'no';
                     document.getElementById('testResultsNotes').value = '';
                 }
+
+                // Update ready for testing status UI
+                updateReadyForTestingUI(batch);
             }
-            
+
             // Check RTA status after loading
             checkRTAStatus();
         });
@@ -8368,6 +8387,105 @@ ${employeeReport || 'No activity recorded today'}
                         <p style="color: var(--text-primary);">Next due: ${nextRTADue.toLocaleDateString()} (${daysUntilDue} days)</p>
                     </div>
                 `;
+            }
+        }
+
+        // Mark batch as extraction complete / ready for testing
+        async function markReadyForTesting() {
+            if (!currentRole) {
+                alert('Please select a user first!');
+                return;
+            }
+
+            const batchId = document.getElementById('testingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+
+            if (!batch) {
+                alert('Please select a batch first!');
+                return;
+            }
+
+            // Check if already marked
+            if (batch.ready_for_testing_date) {
+                alert('This batch is already marked as ready for testing.');
+                return;
+            }
+
+            const confirmMark = confirm(
+                `Mark batch ${batchId} as Extraction Complete?\n\n` +
+                `Strain: ${batch.strain}\n` +
+                `Product: ${batch.product_made}\n\n` +
+                `This indicates the batch is done but not yet submitted to the lab.`
+            );
+
+            if (!confirmMark) return;
+
+            const now = new Date().toISOString();
+
+            // Add timeline entry
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'ready_for_testing',
+                user: currentRole.name,
+                date: now,
+                action: 'Marked as Extraction Complete - Ready for Testing'
+            });
+
+            // Update batch in database
+            const { error } = await supabase
+                .from('batches')
+                .update({
+                    ready_for_testing_date: now,
+                    ready_for_testing_user: currentRole.name,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+
+            if (error) {
+                console.error('Error marking ready for testing:', error);
+                alert('Error updating batch. Please try again.');
+                return;
+            }
+
+            // Update local batch
+            batch.ready_for_testing_date = now;
+            batch.ready_for_testing_user = currentRole.name;
+            batch.timeline = timeline;
+
+            // Update UI
+            updateReadyForTestingUI(batch);
+            alert(`Batch ${batchId} marked as Extraction Complete!`);
+        }
+
+        // Update the ready for testing UI based on batch status
+        function updateReadyForTestingUI(batch) {
+            const statusDiv = document.getElementById('readyForTestingStatus');
+            const btn = document.getElementById('markReadyForTestingBtn');
+
+            if (batch.ready_for_testing_date) {
+                const readyDate = new Date(batch.ready_for_testing_date);
+                statusDiv.innerHTML = `
+                    <div style="background: rgba(34, 197, 94, 0.2); border: 2px solid #22c55e; padding: 12px; border-radius: 8px;">
+                        <strong style="color: #22c55e;">✓ Extraction Complete</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">
+                            Marked by ${batch.ready_for_testing_user || 'Unknown'} on ${readyDate.toLocaleDateString()} at ${readyDate.toLocaleTimeString()}
+                        </p>
+                    </div>
+                `;
+                btn.style.display = 'none';
+            } else if (batch.test_submitted_date) {
+                statusDiv.innerHTML = `
+                    <div style="background: rgba(59, 130, 246, 0.2); border: 2px solid #3b82f6; padding: 12px; border-radius: 8px;">
+                        <strong style="color: #3b82f6;">📤 Already Submitted to Lab</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">
+                            Submitted on ${new Date(batch.test_submitted_date).toLocaleDateString()}
+                        </p>
+                    </div>
+                `;
+                btn.style.display = 'none';
+            } else {
+                statusDiv.innerHTML = '';
+                btn.style.display = 'flex';
             }
         }
 
