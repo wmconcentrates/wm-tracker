@@ -1261,12 +1261,12 @@
                     <div class="featured-label">✨ LATEST</div>
                     <h2 class="featured-post-title">${featured.title}</h2>
                     <p class="featured-post-excerpt">${featured.excerpt}</p>
-                    <a href="#" class="read-more-btn" onclick="showPost(${featured.id}); return false;">Read More →</a>
+                    <a href="#" class="read-more-btn" onclick="showPost('${featured.id}'); return false;">Read More →</a>
                 </div>`;
 
             const rest = filtered.slice(1);
             grid.innerHTML = rest.length === 0 ? '' : rest.map(post => `
-                <article class="blog-card" onclick="showPost(${post.id})">
+                <article class="blog-card" onclick="showPost('${post.id}')">
                     <div class="blog-card-image">
                         ${post.emoji || '📝'}
                         <span class="blog-card-category ${post.category}">${formatCategory(post.category)}</span>
@@ -1714,7 +1714,7 @@ ${hashtags}`;
                             <h4>${post.emoji || '📝'} ${post.title}</h4>
                             <p>Published ${formatTime(post.created_at)}</p>
                         </div>
-                        <button class="btn btn-secondary btn-small" onclick="showPost(${post.id})">View</button>
+                        <button class="btn btn-secondary btn-small" onclick="showPost('${post.id}')">View</button>
                     </div>`).join('');
             } catch (error) {
                 container.innerHTML = `<div class="empty-state"><p>Could not load posts</p></div>`;
