@@ -11,7 +11,21 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static files from current directory (the main app)
-app.use(express.static(__dirname));
+const staticDir = process.cwd();
+console.log('Static files directory:', staticDir);
+console.log('__dirname:', __dirname);
+app.use(express.static(staticDir));
+
+// Debug endpoint to check directory
+app.get('/debug', (req, res) => {
+    const fs = require('fs');
+    const files = fs.readdirSync(staticDir);
+    res.json({
+        cwd: staticDir,
+        dirname: __dirname,
+        files: files
+    });
+});
 
 // Helper to get proxy base URL
 function getProxyBaseUrl(req) {
