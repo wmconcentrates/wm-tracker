@@ -14390,9 +14390,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 let grandTotalOvertime = 0;
 
                 for (const [employeeName, punches] of Object.entries(employeeData)) {
-                    csv += '='.repeat(50) + '\n';
-                    csv += 'EMPLOYEE: ' + employeeName + '\n';
-                    csv += '='.repeat(50) + '\n';
+                    csv += '\n';
+                    csv += '"EMPLOYEE: ' + employeeName + '"\n';
                     csv += 'Date,Clock In,Clock Out,Hours\n';
 
                     // Group by date
@@ -14426,7 +14425,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                                 }
 
                                 dayHours += pairHours;
-                                csv += date + ',' + inTimeStr + ',' + outTimeStr + ',' + pairHours.toFixed(2) + '\n';
+                                csv += '"' + date + '",' + inTimeStr + ',' + outTimeStr + ',' + pairHours.toFixed(2) + '\n';
                             }
                         }
 
@@ -14437,21 +14436,20 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     const overtimeHours = Math.max(employeeTotalHours - 40, 0);
 
                     csv += '\n';
-                    csv += 'TOTAL HOURS:,' + employeeTotalHours.toFixed(2) + '\n';
-                    csv += 'Regular (up to 40):,' + regularHours.toFixed(2) + '\n';
-                    csv += 'Overtime (over 40):,' + overtimeHours.toFixed(2) + '\n\n';
+                    csv += 'TOTAL HOURS,' + employeeTotalHours.toFixed(2) + '\n';
+                    csv += 'Regular (up to 40),' + regularHours.toFixed(2) + '\n';
+                    csv += 'Overtime (over 40),' + overtimeHours.toFixed(2) + '\n';
 
                     grandTotalRegular += regularHours;
                     grandTotalOvertime += overtimeHours;
                 }
 
                 // Grand totals
-                csv += '\n' + '='.repeat(50) + '\n';
-                csv += 'GRAND TOTALS\n';
-                csv += '='.repeat(50) + '\n';
-                csv += 'Total Regular Hours:,' + grandTotalRegular.toFixed(2) + '\n';
-                csv += 'Total Overtime Hours:,' + grandTotalOvertime.toFixed(2) + '\n';
-                csv += 'Total All Hours:,' + (grandTotalRegular + grandTotalOvertime).toFixed(2) + '\n';
+                csv += '\n';
+                csv += '"GRAND TOTALS"\n';
+                csv += 'Total Regular Hours,' + grandTotalRegular.toFixed(2) + '\n';
+                csv += 'Total Overtime Hours,' + grandTotalOvertime.toFixed(2) + '\n';
+                csv += 'Total All Hours,' + (grandTotalRegular + grandTotalOvertime).toFixed(2) + '\n';
 
                 // Download the file
                 const blob = new Blob([csv], { type: 'text/csv' });
