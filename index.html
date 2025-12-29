@@ -8484,8 +8484,8 @@ ${employeeReport || 'No activity recorded today'}
                 strain: finalProductName,        // Save product name to strain column
                 product_made: finalConsistency,  // Use existing product_made column
                 strain_type: finalStrainType,    // Use existing strain_type column
-                timeline: timeline,
-                status: 'complete'               // Mark as complete
+                timeline: timeline
+                // Don't change status - batch stays in its current workflow stage
             };
 
 
