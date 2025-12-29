@@ -2312,6 +2312,28 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Sales Bar Chart -->
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; margin-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h4 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                                Sales Trends (Last 6 Months)
+                            </h4>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="setSalesChartType('revenue')" id="chartTypeRevenue" class="btn" style="background: var(--accent-blue); padding: 6px 12px; font-size: 0.8rem;">Revenue</button>
+                                <button onclick="setSalesChartType('orders')" id="chartTypeOrders" class="btn" style="background: var(--bg-tertiary); padding: 6px 12px; font-size: 0.8rem;">Orders</button>
+                                <button onclick="setSalesChartType('commission')" id="chartTypeCommission" class="btn" style="background: var(--bg-tertiary); padding: 6px 12px; font-size: 0.8rem;">Commission</button>
+                            </div>
+                        </div>
+                        <div id="salesBarChart" style="min-height: 200px;">
+                            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading chart...</div>
+                        </div>
+                        <!-- Data cache status -->
+                        <div id="salesCacheStatus" style="margin-top: 15px; padding: 10px; background: var(--bg-tertiary); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;">
+                            <span id="cacheStatusText">Data not cached</span>
+                            <button onclick="forceSyncSalesData()" class="btn" style="background: var(--accent-purple); padding: 5px 10px; font-size: 0.75rem;">Sync to Cloud</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Published Posts -->
@@ -3359,6 +3381,23 @@
 
             <!-- Content -->
             <div style="padding: 30px;">
+                <!-- Currently Clocked In Section -->
+                <div style="background: linear-gradient(135deg, rgba(57, 255, 20, 0.15), rgba(0, 200, 150, 0.15)); padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 2px solid var(--accent-green);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="color: var(--accent-green); margin: 0; font-size: 1.3rem;">
+                            Currently Clocked In
+                        </h3>
+                        <button onclick="renderCurrentlyClockedIn()" style="background: var(--bg-tertiary); border: 1px solid var(--border); padding: 8px 15px; border-radius: 6px; color: var(--text-secondary); cursor: pointer; font-size: 0.85rem;">
+                            Refresh
+                        </button>
+                    </div>
+                    <div id="currentlyClockedInContainer">
+                        <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                            Loading...
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Employee Selector -->
                 <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
                     <select id="timecardEmployeeSelect" onchange="loadEmployeeTimecard()" style="flex: 1; min-width: 200px; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
@@ -12811,6 +12850,696 @@ ${employeeReport || 'No activity recorded today'}
 
 
         // ============================================
+        // SUPABASE DATA CACHING FOR FOH
+        // ============================================
+
+        /*
+         * SUPABASE TABLE SCHEMAS - Run these in Supabase SQL Editor:
+         *
+         * -- Drop Calendar Cache Table
+         * CREATE TABLE IF NOT EXISTS drop_calendar_cache (
+         *     id SERIAL PRIMARY KEY,
+         *     customer_id TEXT NOT NULL,
+         *     customer_name TEXT NOT NULL,
+         *     delivery_prefs TEXT,
+         *     last_drop_date DATE,
+         *     total_orders INTEGER DEFAULT 0,
+         *     total_products INTEGER DEFAULT 0,
+         *     avg_days_between INTEGER,
+         *     drops_json JSONB,
+         *     synced_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+         *     UNIQUE(customer_id)
+         * );
+         *
+         * -- Sales Data Cache Table
+         * CREATE TABLE IF NOT EXISTS sales_data_cache (
+         *     id SERIAL PRIMARY KEY,
+         *     order_id TEXT NOT NULL,
+         *     short_id TEXT,
+         *     customer_id TEXT,
+         *     customer_name TEXT,
+         *     sales_rep_id TEXT,
+         *     sales_rep_name TEXT,
+         *     total_amount DECIMAL(10,2),
+         *     paid BOOLEAN DEFAULT FALSE,
+         *     paid_date TIMESTAMP WITH TIME ZONE,
+         *     created_on TIMESTAMP WITH TIME ZONE,
+         *     status TEXT,
+         *     order_json JSONB,
+         *     synced_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+         *     UNIQUE(order_id)
+         * );
+         *
+         * -- Monthly Sales Summary Table (for quick chart data)
+         * CREATE TABLE IF NOT EXISTS sales_monthly_summary (
+         *     id SERIAL PRIMARY KEY,
+         *     year INTEGER NOT NULL,
+         *     month INTEGER NOT NULL,
+         *     sales_rep_id TEXT DEFAULT 'all',
+         *     total_orders INTEGER DEFAULT 0,
+         *     total_revenue DECIMAL(12,2) DEFAULT 0,
+         *     paid_revenue DECIMAL(12,2) DEFAULT 0,
+         *     commission DECIMAL(10,2) DEFAULT 0,
+         *     new_customers INTEGER DEFAULT 0,
+         *     synced_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+         *     UNIQUE(year, month, sales_rep_id)
+         * );
+         *
+         * -- Cache metadata table
+         * CREATE TABLE IF NOT EXISTS cache_metadata (
+         *     id SERIAL PRIMARY KEY,
+         *     cache_key TEXT NOT NULL UNIQUE,
+         *     last_sync TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+         *     record_count INTEGER DEFAULT 0
+         * );
+         */
+
+        const SUPABASE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes for Supabase cache
+        let salesChartType = 'revenue';
+        let cachedMonthlyData = null;
+        let lastSupabaseSync = null;
+
+        // ==================== DROP CALENDAR SUPABASE CACHING ====================
+
+        // Save drop calendar data to Supabase
+        async function saveDropCalendarToSupabase(data) {
+            if (!supabaseClient || !data || data.length === 0) return false;
+
+            try {
+                // Prepare records for upsert
+                const records = data.map(customer => ({
+                    customer_id: String(customer.id),
+                    customer_name: customer.name,
+                    delivery_prefs: customer.deliveryPrefs || '',
+                    last_drop_date: customer.lastDrop || null,
+                    total_orders: customer.totalOrders || 0,
+                    total_products: customer.totalProducts || 0,
+                    avg_days_between: customer.avgDaysBetween || null,
+                    drops_json: JSON.stringify(customer.drops || []),
+                    synced_at: new Date().toISOString()
+                }));
+
+                // Upsert in batches
+                const batchSize = 50;
+                for (let i = 0; i < records.length; i += batchSize) {
+                    const batch = records.slice(i, i + batchSize);
+                    const { error } = await supabaseClient
+                        .from('drop_calendar_cache')
+                        .upsert(batch, { onConflict: 'customer_id' });
+
+                    if (error) {
+                        console.error('Error saving drop calendar batch:', error);
+                    }
+                }
+
+                // Update cache metadata
+                await supabaseClient
+                    .from('cache_metadata')
+                    .upsert({
+                        cache_key: 'drop_calendar',
+                        last_sync: new Date().toISOString(),
+                        record_count: records.length
+                    }, { onConflict: 'cache_key' });
+
+                console.log(`Saved ${records.length} drop calendar records to Supabase`);
+                return true;
+            } catch (error) {
+                console.error('Error saving drop calendar to Supabase:', error);
+                return false;
+            }
+        }
+
+        // Load drop calendar data from Supabase
+        async function loadDropCalendarFromSupabase() {
+            if (!supabaseClient) return null;
+
+            try {
+                // Check cache freshness
+                const { data: metadata } = await supabaseClient
+                    .from('cache_metadata')
+                    .select('last_sync, record_count')
+                    .eq('cache_key', 'drop_calendar')
+                    .single();
+
+                if (!metadata || !metadata.last_sync) return null;
+
+                const cacheAge = Date.now() - new Date(metadata.last_sync).getTime();
+                if (cacheAge > SUPABASE_CACHE_DURATION) {
+                    console.log('Supabase drop calendar cache is stale');
+                    return { stale: true };
+                }
+
+                // Load cached data
+                const { data, error } = await supabaseClient
+                    .from('drop_calendar_cache')
+                    .select('*')
+                    .order('last_drop_date', { ascending: false });
+
+                if (error || !data) return null;
+
+                // Transform back to original format
+                const calendarData = data.map(record => ({
+                    id: record.customer_id,
+                    name: record.customer_name,
+                    deliveryPrefs: record.delivery_prefs,
+                    lastDrop: record.last_drop_date,
+                    totalOrders: record.total_orders,
+                    totalProducts: record.total_products,
+                    avgDaysBetween: record.avg_days_between,
+                    drops: JSON.parse(record.drops_json || '[]')
+                }));
+
+                console.log(`Loaded ${calendarData.length} drop calendar records from Supabase`);
+                return { data: calendarData, lastSync: metadata.last_sync };
+            } catch (error) {
+                console.error('Error loading drop calendar from Supabase:', error);
+                return null;
+            }
+        }
+
+        // ==================== SALES DATA SUPABASE CACHING ====================
+
+        // Save sales data to Supabase
+        async function saveSalesDataToSupabase(orders) {
+            if (!supabaseClient || !orders || orders.length === 0) return false;
+
+            try {
+                // Prepare order records
+                const orderRecords = orders.map(order => ({
+                    order_id: String(order.id),
+                    short_id: order.short_id || order.number || '',
+                    customer_id: order.customer?.id ? String(order.customer.id) : '',
+                    customer_name: order.customer?.display_name || order.customer?.name || '',
+                    sales_rep_id: order.sales_reps?.[0]?.id ? String(order.sales_reps[0].id) : '',
+                    sales_rep_name: getSalesRepName(order),
+                    total_amount: order.total?.amount || 0,
+                    paid: order.paid === true,
+                    paid_date: order.paid_date || null,
+                    created_on: order.created_on,
+                    status: order.status || '',
+                    order_json: JSON.stringify(order),
+                    synced_at: new Date().toISOString()
+                }));
+
+                // Upsert orders in batches
+                const batchSize = 50;
+                for (let i = 0; i < orderRecords.length; i += batchSize) {
+                    const batch = orderRecords.slice(i, i + batchSize);
+                    const { error } = await supabaseClient
+                        .from('sales_data_cache')
+                        .upsert(batch, { onConflict: 'order_id' });
+
+                    if (error) {
+                        console.error('Error saving sales data batch:', error);
+                    }
+                }
+
+                // Calculate and save monthly summaries
+                await saveMonthlySummariesToSupabase(orders);
+
+                // Update cache metadata
+                await supabaseClient
+                    .from('cache_metadata')
+                    .upsert({
+                        cache_key: 'sales_data',
+                        last_sync: new Date().toISOString(),
+                        record_count: orderRecords.length
+                    }, { onConflict: 'cache_key' });
+
+                lastSupabaseSync = new Date();
+                updateCacheStatusDisplay();
+                console.log(`Saved ${orderRecords.length} sales records to Supabase`);
+                return true;
+            } catch (error) {
+                console.error('Error saving sales data to Supabase:', error);
+                return false;
+            }
+        }
+
+        // Get sales rep name from order
+        function getSalesRepName(order) {
+            if (!order.sales_reps || !Array.isArray(order.sales_reps) || order.sales_reps.length === 0) {
+                return '';
+            }
+            const rep = order.sales_reps[0];
+            if (rep.user) {
+                return typeof rep.user === 'string' ? rep.user : (rep.user.name || rep.user.first_name || '');
+            }
+            return '';
+        }
+
+        // Save monthly summaries to Supabase
+        async function saveMonthlySummariesToSupabase(orders) {
+            if (!supabaseClient) return;
+
+            try {
+                // Group by month
+                const monthlyData = {};
+                orders.forEach(order => {
+                    const date = new Date(order.created_on);
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+                    const key = `${year}-${month}`;
+
+                    if (!monthlyData[key]) {
+                        monthlyData[key] = {
+                            year,
+                            month,
+                            sales_rep_id: 'all',
+                            total_orders: 0,
+                            total_revenue: 0,
+                            paid_revenue: 0,
+                            new_customers: 0
+                        };
+                    }
+
+                    monthlyData[key].total_orders++;
+                    monthlyData[key].total_revenue += order.total?.amount || 0;
+                    if (order.paid === true) {
+                        monthlyData[key].paid_revenue += order.total?.amount || 0;
+                    }
+                });
+
+                // Calculate commission
+                const summaries = Object.values(monthlyData).map(data => ({
+                    ...data,
+                    commission: data.paid_revenue * COMMISSION_RATE,
+                    synced_at: new Date().toISOString()
+                }));
+
+                // Upsert summaries
+                if (summaries.length > 0) {
+                    const { error } = await supabaseClient
+                        .from('sales_monthly_summary')
+                        .upsert(summaries, { onConflict: 'year,month,sales_rep_id' });
+
+                    if (error) {
+                        console.error('Error saving monthly summaries:', error);
+                    }
+                }
+
+                cachedMonthlyData = summaries;
+            } catch (error) {
+                console.error('Error saving monthly summaries:', error);
+            }
+        }
+
+        // Load sales data from Supabase
+        async function loadSalesDataFromSupabase() {
+            if (!supabaseClient) return null;
+
+            try {
+                // Check cache freshness
+                const { data: metadata } = await supabaseClient
+                    .from('cache_metadata')
+                    .select('last_sync, record_count')
+                    .eq('cache_key', 'sales_data')
+                    .single();
+
+                if (!metadata || !metadata.last_sync) return null;
+
+                const cacheAge = Date.now() - new Date(metadata.last_sync).getTime();
+                if (cacheAge > SUPABASE_CACHE_DURATION) {
+                    console.log('Supabase sales cache is stale');
+                    return { stale: true };
+                }
+
+                // Load cached orders
+                const { data, error } = await supabaseClient
+                    .from('sales_data_cache')
+                    .select('order_json')
+                    .order('created_on', { ascending: false });
+
+                if (error || !data) return null;
+
+                // Parse order JSON
+                const orders = data.map(record => JSON.parse(record.order_json));
+
+                lastSupabaseSync = new Date(metadata.last_sync);
+                console.log(`Loaded ${orders.length} sales records from Supabase`);
+                return { data: orders, lastSync: metadata.last_sync };
+            } catch (error) {
+                console.error('Error loading sales data from Supabase:', error);
+                return null;
+            }
+        }
+
+        // Load monthly summaries from Supabase (faster for charts)
+        async function loadMonthlySummariesFromSupabase() {
+            if (!supabaseClient) return null;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('sales_monthly_summary')
+                    .select('*')
+                    .eq('sales_rep_id', 'all')
+                    .order('year', { ascending: false })
+                    .order('month', { ascending: false })
+                    .limit(12);
+
+                if (error || !data) return null;
+
+                return data;
+            } catch (error) {
+                console.error('Error loading monthly summaries:', error);
+                return null;
+            }
+        }
+
+        // Force sync to Supabase
+        async function forceSyncSalesData() {
+            const statusEl = document.getElementById('cacheStatusText');
+            if (statusEl) statusEl.textContent = 'Syncing...';
+
+            try {
+                // Sync drop calendar
+                if (dropCalendarData && dropCalendarData.length > 0) {
+                    await saveDropCalendarToSupabase(dropCalendarData);
+                }
+
+                // Sync sales data
+                if (allLeafLinkOrders && allLeafLinkOrders.length > 0) {
+                    await saveSalesDataToSupabase(allLeafLinkOrders);
+                }
+
+                updateCacheStatusDisplay();
+            } catch (error) {
+                console.error('Error during force sync:', error);
+                if (statusEl) statusEl.textContent = 'Sync failed';
+            }
+        }
+
+        // Update cache status display
+        function updateCacheStatusDisplay() {
+            const statusEl = document.getElementById('cacheStatusText');
+            if (!statusEl) return;
+
+            if (lastSupabaseSync) {
+                const age = Math.round((Date.now() - lastSupabaseSync.getTime()) / 60000);
+                statusEl.textContent = `Last synced: ${age} min ago (${allLeafLinkOrders?.length || 0} orders)`;
+                statusEl.style.color = age < 30 ? 'var(--accent-green)' : 'var(--accent-orange)';
+            } else {
+                statusEl.textContent = 'Not synced to cloud yet';
+                statusEl.style.color = 'var(--text-secondary)';
+            }
+        }
+
+        // ==================== BAR CHART RENDERING ====================
+
+        // Set chart type
+        function setSalesChartType(type) {
+            salesChartType = type;
+
+            // Update button styles
+            document.getElementById('chartTypeRevenue').style.background = type === 'revenue' ? 'var(--accent-blue)' : 'var(--bg-tertiary)';
+            document.getElementById('chartTypeOrders').style.background = type === 'orders' ? 'var(--accent-blue)' : 'var(--bg-tertiary)';
+            document.getElementById('chartTypeCommission').style.background = type === 'commission' ? 'var(--accent-blue)' : 'var(--bg-tertiary)';
+
+            renderSalesBarChart();
+        }
+
+        // Render sales bar chart (CSS-based, no external dependencies)
+        function renderSalesBarChart() {
+            const container = document.getElementById('salesBarChart');
+            if (!container) return;
+
+            // Group orders by month (last 6 months)
+            const monthlyData = {};
+            const now = new Date();
+
+            // Initialize last 6 months
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                monthlyData[key] = {
+                    year: date.getFullYear(),
+                    month: date.getMonth(),
+                    orders: 0,
+                    revenue: 0,
+                    paidRevenue: 0,
+                    commission: 0
+                };
+            }
+
+            // Populate with actual data
+            if (allLeafLinkOrders && allLeafLinkOrders.length > 0) {
+                allLeafLinkOrders.forEach(order => {
+                    const date = new Date(order.created_on);
+                    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+                    if (monthlyData[key]) {
+                        monthlyData[key].orders++;
+                        monthlyData[key].revenue += order.total?.amount || 0;
+                        if (order.paid === true) {
+                            monthlyData[key].paidRevenue += order.total?.amount || 0;
+                        }
+                    }
+                });
+            }
+
+            // Calculate commission
+            Object.values(monthlyData).forEach(data => {
+                data.commission = data.paidRevenue * COMMISSION_RATE;
+            });
+
+            // Get sorted months
+            const sortedMonths = Object.keys(monthlyData).sort();
+
+            // Determine max value based on chart type
+            let maxValue = 0;
+            let valueKey = 'revenue';
+            let valueLabel = 'Revenue';
+            let valueColor = '#FFD700';
+            let valuePrefix = '$';
+
+            switch (salesChartType) {
+                case 'orders':
+                    valueKey = 'orders';
+                    valueLabel = 'Orders';
+                    valueColor = 'var(--accent-blue)';
+                    valuePrefix = '';
+                    break;
+                case 'commission':
+                    valueKey = 'commission';
+                    valueLabel = 'Commission';
+                    valueColor = 'var(--accent-purple)';
+                    valuePrefix = '$';
+                    break;
+                default:
+                    valueKey = 'revenue';
+                    valueLabel = 'Revenue';
+                    valueColor = '#FFD700';
+                    valuePrefix = '$';
+            }
+
+            sortedMonths.forEach(key => {
+                const value = monthlyData[key][valueKey];
+                if (value > maxValue) maxValue = value;
+            });
+
+            if (maxValue === 0) maxValue = 1; // Prevent division by zero
+
+            // Build chart HTML
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            let html = `
+                <div style="display: flex; align-items: flex-end; justify-content: space-between; height: 180px; padding: 10px 0; gap: 8px;">
+            `;
+
+            sortedMonths.forEach(key => {
+                const data = monthlyData[key];
+                const value = data[valueKey];
+                const heightPercent = Math.max((value / maxValue) * 100, 2);
+                const monthLabel = monthNames[data.month];
+
+                const displayValue = valuePrefix + (valueKey === 'orders'
+                    ? value
+                    : value.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
+
+                html += `
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%;">
+                        <div style="flex: 1; display: flex; align-items: flex-end; width: 100%;">
+                            <div style="
+                                width: 100%;
+                                height: ${heightPercent}%;
+                                background: linear-gradient(to top, ${valueColor}, ${valueColor}aa);
+                                border-radius: 6px 6px 0 0;
+                                position: relative;
+                                min-height: 4px;
+                                transition: all 0.3s ease;
+                                cursor: pointer;
+                            "
+                            onmouseover="this.style.transform='scaleY(1.02)'; this.style.boxShadow='0 -4px 12px ${valueColor}40';"
+                            onmouseout="this.style.transform='scaleY(1)'; this.style.boxShadow='none';"
+                            title="${monthLabel} ${data.year}: ${displayValue}">
+                                <div style="
+                                    position: absolute;
+                                    top: -25px;
+                                    left: 50%;
+                                    transform: translateX(-50%);
+                                    font-size: 0.7rem;
+                                    font-weight: 600;
+                                    color: ${valueColor};
+                                    white-space: nowrap;
+                                ">${displayValue}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">
+                            ${monthLabel}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+
+            // Add total summary
+            const totalValue = sortedMonths.reduce((sum, key) => sum + monthlyData[key][valueKey], 0);
+            const avgValue = totalValue / sortedMonths.length;
+
+            html += `
+                <div style="display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid var(--border-color); margin-top: 10px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">6-Month Total</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: ${valueColor};">
+                            ${valuePrefix}${valueKey === 'orders' ? totalValue : totalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Monthly Avg</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: ${valueColor};">
+                            ${valuePrefix}${valueKey === 'orders' ? Math.round(avgValue) : avgValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // ==================== ENHANCED DATA LOADING WITH SUPABASE ====================
+
+        // Enhanced loadDropCalendar with Supabase caching
+        const originalLoadDropCalendar = loadDropCalendar;
+        loadDropCalendar = async function() {
+            const content = document.getElementById('dropCalendarContent');
+
+            // Try to load from Supabase first
+            const cached = await loadDropCalendarFromSupabase();
+            if (cached && cached.data && !cached.stale) {
+                dropCalendarData = cached.data;
+                updateDropStats();
+                renderCalendarView();
+                console.log('Using Supabase cached drop calendar data');
+                return;
+            }
+
+            // Show loading state
+            content.innerHTML = '<div style="text-align: center; padding: 60px; color: var(--text-secondary);"><div style="font-size: 2rem; margin-bottom: 10px;">...</div>Loading drop data from LeafLink...</div>';
+
+            try {
+                const twoMonthsAgo = new Date();
+                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
+
+                let allOrders = [];
+                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+
+                while (nextUrl) {
+                    const response = await fetch(nextUrl);
+                    if (!response.ok) throw new Error('API request failed');
+                    const data = await response.json();
+                    allOrders = allOrders.concat(data.results);
+                    nextUrl = data.next;
+                    if (allOrders.length > 500) break;
+                }
+
+                dropCalendarData = processDropData(allOrders);
+                updateDropStats();
+                renderCalendarView();
+
+                // Save to Supabase in background
+                saveDropCalendarToSupabase(dropCalendarData);
+
+            } catch (error) {
+                console.error('Error loading drop calendar:', error);
+
+                // Try to use stale Supabase data as fallback
+                if (cached && cached.stale) {
+                    const staleData = await loadDropCalendarFromSupabase();
+                    if (staleData && staleData.data) {
+                        dropCalendarData = staleData.data;
+                        updateDropStats();
+                        renderCalendarView();
+                        content.insertAdjacentHTML('afterbegin',
+                            '<div style="background: var(--accent-orange); color: #000; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center;">Using cached data (API unavailable)</div>');
+                        return;
+                    }
+                }
+
+                content.innerHTML = `<div style="text-align: center; padding: 60px; color: var(--accent-red);">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">X</div>
+                    Error loading data: ${error.message}
+                </div>`;
+            }
+        };
+
+        // Enhanced loadSalesDashboard with Supabase caching
+        const originalLoadSalesDashboard = loadSalesDashboard;
+        loadSalesDashboard = async function() {
+            try {
+                // Try Supabase cache first
+                const cached = await loadSalesDataFromSupabase();
+                if (cached && cached.data && !cached.stale && cached.data.length > 0) {
+                    allLeafLinkOrders = cached.data;
+                    customerFirstOrderDates = buildCustomerFirstOrderDates(cached.data);
+                    leafLinkDataLoaded = true;
+                    console.log('Using Supabase cached sales data');
+                } else {
+                    // Fetch fresh data
+                    await ensureLeafLinkData();
+
+                    // Save to Supabase in background
+                    if (allLeafLinkOrders && allLeafLinkOrders.length > 0) {
+                        saveSalesDataToSupabase(allLeafLinkOrders);
+                    }
+                }
+
+                // Populate sales rep dropdown
+                const salesReps = extractSalesReps(allLeafLinkOrders);
+                const dropdown = document.getElementById('salesRepFilter');
+                if (dropdown) {
+                    dropdown.innerHTML = '<option value="all">All Sales Reps</option>';
+                    salesReps.forEach(rep => {
+                        const option = document.createElement('option');
+                        option.value = rep.id;
+                        option.textContent = rep.name;
+                        dropdown.appendChild(option);
+                    });
+                }
+
+                updateSalesDashboard();
+                renderSalesBarChart();
+                updateCacheStatusDisplay();
+
+            } catch (error) {
+                console.error('Error loading sales dashboard:', error);
+            }
+        };
+
+        // Periodic sync (every 30 minutes)
+        setInterval(async () => {
+            if (supabaseClient && allLeafLinkOrders && allLeafLinkOrders.length > 0) {
+                console.log('Running periodic Supabase sync...');
+                await saveSalesDataToSupabase(allLeafLinkOrders);
+                if (dropCalendarData && dropCalendarData.length > 0) {
+                    await saveDropCalendarToSupabase(dropCalendarData);
+                }
+            }
+        }, 30 * 60 * 1000);
+
+
+        // ============================================
         // TIME CLOCK SYSTEM
         // ============================================
 
@@ -13068,6 +13797,137 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
         }
 
+        // ============================================
+        // CURRENTLY CLOCKED IN TRACKING
+        // ============================================
+
+        let clockedInRefreshInterval = null;
+
+        // Get all employees currently clocked in
+        async function getCurrentlyClockedIn() {
+            if (!supabaseClient) return [];
+
+            try {
+                // Get all unique users with their most recent punch
+                const { data: allPunches, error } = await supabaseClient
+                    .from('timeclock')
+                    .select('*')
+                    .order('punch_time', { ascending: false });
+
+                if (error) throw error;
+
+                // Group by user and get their latest punch
+                const userLatestPunch = {};
+                (allPunches || []).forEach(punch => {
+                    if (!userLatestPunch[punch.user_name]) {
+                        userLatestPunch[punch.user_name] = punch;
+                    }
+                });
+
+                // Filter to only those clocked in
+                const clockedIn = [];
+                for (const [userName, punch] of Object.entries(userLatestPunch)) {
+                    if (punch.punch_type === 'in') {
+                        // Get today's punches to calculate hours worked today
+                        const todayPunches = await getTodayPunches(userName);
+                        const todayHours = calculateTotalHours(todayPunches);
+
+                        clockedIn.push({
+                            userName: userName,
+                            clockInTime: punch.punch_time,
+                            todayHours: todayHours
+                        });
+                    }
+                }
+
+                return clockedIn;
+            } catch (error) {
+                console.error('Error getting currently clocked in:', error);
+                return [];
+            }
+        }
+
+        // Render currently clocked in section
+        async function renderCurrentlyClockedIn() {
+            const container = document.getElementById('currentlyClockedInContainer');
+            if (!container) return;
+
+            const clockedIn = await getCurrentlyClockedIn();
+
+            if (clockedIn.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: var(--text-secondary);">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">No one currently clocked in</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div style="display: grid; gap: 15px;">';
+
+            clockedIn.forEach(employee => {
+                const clockInTime = new Date(employee.clockInTime);
+                const now = new Date();
+                const hoursWorking = calculateHours(employee.clockInTime, now);
+
+                const clockInStr = clockInTime.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+
+                // Format hours and minutes working
+                const hours = Math.floor(hoursWorking);
+                const minutes = Math.floor((hoursWorking - hours) * 60);
+                const workingStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-tertiary); padding: 15px 20px; border-radius: 10px; border-left: 4px solid var(--accent-green);">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-primary); font-size: 1.1rem;">${employee.userName}</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Clocked in at ${clockInStr}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-green);">${workingStr}</div>
+                            <div style="color: var(--text-secondary); font-size: 0.8rem;">Today: ${employee.todayHours.toFixed(2)} hrs</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            // Add last updated timestamp
+            const updateTime = new Date().toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+            html += `<div style="text-align: center; margin-top: 15px; color: var(--text-secondary); font-size: 0.8rem;">Last updated: ${updateTime}</div>`;
+
+            container.innerHTML = html;
+        }
+
+        // Start auto-refresh for clocked in data
+        function startClockedInRefresh() {
+            // Initial load
+            renderCurrentlyClockedIn();
+
+            // Refresh every 45 seconds
+            clockedInRefreshInterval = setInterval(() => {
+                renderCurrentlyClockedIn();
+            }, 45000);
+        }
+
+        // Stop auto-refresh
+        function stopClockedInRefresh() {
+            if (clockedInRefreshInterval) {
+                clearInterval(clockedInRefreshInterval);
+                clockedInRefreshInterval = null;
+            }
+        }
+
         // Open Time Clock Modal
         async function openTimeClockModal() {
             if (!currentRole) {
@@ -13312,11 +14172,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             // Update pay period display
             updatePayPeriodDisplay();
+
+            // Start auto-refresh for currently clocked in section
+            startClockedInRefresh();
         }
 
         // Close Timecards Modal
         function closeTimecardsModal() {
             document.getElementById('timecardsModal').style.display = 'none';
+            // Stop auto-refresh when modal closes
+            stopClockedInRefresh();
         }
 
         // Update pay period display
