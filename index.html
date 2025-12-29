@@ -8270,16 +8270,12 @@ ${employeeReport || 'No activity recorded today'}
                     document.getElementById('testCbdPercent').value = batch.test_cbd_percent || '';
                     document.getElementById('isRTA').value = batch.is_rta || 'no';
                     document.getElementById('testResultsNotes').value = batch.test_results_notes || '';
-                    // Load saved product name, consistency, and strain type if exists
-                    if (batch.final_product_name) {
-                        document.getElementById('finalProductName').value = batch.final_product_name;
+                    // Load saved product name, consistency, and strain type
+                    document.getElementById('finalProductName').value = batch.strain || '';
+                    if (batch.product_made) {
+                        document.getElementById('finalConsistency').value = batch.product_made;
                     }
-                    if (batch.final_consistency) {
-                        document.getElementById('finalConsistency').value = batch.final_consistency;
-                    }
-                    if (batch.final_strain_type) {
-                        document.getElementById('finalStrainType').value = batch.final_strain_type;
-                    }
+                    document.getElementById('finalStrainType').value = batch.strain_type || 'Hybrid';
                     // Trigger batch ID generation in case user wants to reassign
                     generateBatchId();
                 } else {
@@ -8293,9 +8289,10 @@ ${employeeReport || 'No activity recorded today'}
                     document.getElementById('testCbdPercent').value = '';
                     document.getElementById('isRTA').value = 'no';
                     document.getElementById('testResultsNotes').value = '';
-                    // Clear finalize fields too
+                    // Pre-populate finalize fields from batch data
                     document.getElementById('finalProductName').value = batch.strain || '';
-                    document.getElementById('finalConsistency').value = '';
+                    document.getElementById('finalConsistency').value = batch.product_made || '';
+                    document.getElementById('finalStrainType').value = batch.strain_type || 'Hybrid';
                     // Reset button text
                     document.getElementById('markReadyForTestingBtn').innerHTML = '<span>✓</span> Mark as Extraction Complete (Ready for Testing)';
                 }
@@ -8425,7 +8422,10 @@ ${employeeReport || 'No activity recorded today'}
             const finalConsistency = document.getElementById('finalConsistency').value;
             const finalStrainType = document.getElementById('finalStrainType').value;
             const newBatchId = document.getElementById('newBatchId').value.trim();
-            const isUpdate = batch.ready_for_testing_date || batch.test_submitted_date;
+
+            // Check if already marked by looking at timeline
+            const hasExtractionComplete = batch.timeline?.some(t => t.stage === 'ready_for_testing' || t.stage === 'product_update');
+            const isUpdate = hasExtractionComplete || batch.test_submitted_date;
 
             // Validate required fields
             if (!finalProductName) {
@@ -8483,19 +8483,17 @@ ${employeeReport || 'No activity recorded today'}
                 action: timelineAction
             });
 
-            // Build update object
+            // Build update object - use existing columns that we know exist
             const updates = {
-                final_product_name: finalProductName,
-                final_consistency: finalConsistency,
-                final_strain_type: finalStrainType,
-                timeline: timeline
+                product_made: finalConsistency,  // Use existing product_made column
+                strain_type: finalStrainType,    // Use existing strain_type column
+                timeline: timeline,
+                status: 'complete'               // Mark as complete
             };
 
-            // Only set ready_for_testing fields if not already set
-            if (!batch.ready_for_testing_date) {
-                updates.ready_for_testing_date = now;
-                updates.ready_for_testing_user = currentRole.name;
-            }
+            // Store additional info in notes or a json field
+            // Add extraction complete marker to timeline
+            console.log('Updating batch with:', updates);
 
             // Handle batch ID change
             if (batchIdChanged) {
@@ -8538,16 +8536,20 @@ ${employeeReport || 'No activity recorded today'}
 
             } else {
                 // Simple update
-                const { error } = await supabase
+                console.log('Attempting to update batch:', batchId, 'with:', updates);
+                const { data, error } = await supabase
                     .from('batches')
                     .update(updates)
-                    .eq('id', batchId);
+                    .eq('id', batchId)
+                    .select();
 
                 if (error) {
                     console.error('Error marking ready for testing:', error);
-                    alert('Error updating batch. Please try again.');
+                    alert(`Error updating batch: ${error.message}\n\nCheck console for details.`);
                     return;
                 }
+
+                console.log('Update successful:', data);
 
                 // Update local batch
                 Object.assign(batch, updates);
@@ -8568,16 +8570,18 @@ ${employeeReport || 'No activity recorded today'}
             const statusDiv = document.getElementById('readyForTestingStatus');
             const btn = document.getElementById('markReadyForTestingBtn');
 
-            if (batch.ready_for_testing_date) {
-                const readyDate = new Date(batch.ready_for_testing_date);
+            // Check timeline for extraction complete entry
+            const extractionCompleteEntry = batch.timeline?.find(t => t.stage === 'ready_for_testing' || t.stage === 'product_update');
+
+            if (extractionCompleteEntry) {
+                const readyDate = new Date(extractionCompleteEntry.date);
                 statusDiv.innerHTML = `
                     <div style="background: rgba(34, 197, 94, 0.2); border: 2px solid #22c55e; padding: 15px; border-radius: 8px;">
                         <strong style="color: #22c55e; font-size: 1.1rem;">✓ Extraction Complete - Ready for Testing</strong>
                         <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-                            <p style="margin: 0; color: var(--text-primary);"><strong>Product:</strong> ${batch.final_product_name || 'N/A'}</p>
-                            <p style="margin: 0; color: var(--text-primary);"><strong>Consistency:</strong> ${batch.final_consistency || 'N/A'}</p>
-                            <p style="margin: 0; color: var(--text-primary);"><strong>Strain Type:</strong> ${batch.final_strain_type || batch.strain_type}</p>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">By ${batch.ready_for_testing_user || 'Unknown'} on ${readyDate.toLocaleDateString()}</p>
+                            <p style="margin: 0; color: var(--text-primary);"><strong>Product Type:</strong> ${batch.product_made || 'N/A'}</p>
+                            <p style="margin: 0; color: var(--text-primary);"><strong>Strain Type:</strong> ${batch.strain_type}</p>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">By ${extractionCompleteEntry.user || 'Unknown'} on ${readyDate.toLocaleDateString()}</p>
                         </div>
                         <button type="button" onclick="editFinalizeInfo()" style="margin-top: 12px; background: rgba(245, 158, 11, 0.3); color: var(--accent-orange); border: 1px solid var(--accent-orange); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
                             Edit Product Info
@@ -8590,8 +8594,7 @@ ${employeeReport || 'No activity recorded today'}
                     <div style="background: rgba(59, 130, 246, 0.2); border: 2px solid #3b82f6; padding: 15px; border-radius: 8px;">
                         <strong style="color: #3b82f6; font-size: 1.1rem;">📤 Submitted to Lab</strong>
                         <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-                            <p style="margin: 0; color: var(--text-primary);"><strong>Product:</strong> ${batch.final_product_name || 'N/A'}</p>
-                            <p style="margin: 0; color: var(--text-primary);"><strong>Consistency:</strong> ${batch.final_consistency || 'N/A'}</p>
+                            <p style="margin: 0; color: var(--text-primary);"><strong>Product Type:</strong> ${batch.product_made || 'N/A'}</p>
                             <p style="margin: 0; color: var(--text-primary);"><strong>Submitted:</strong> ${new Date(batch.test_submitted_date).toLocaleDateString()}</p>
                         </div>
                         <button type="button" onclick="editFinalizeInfo()" style="margin-top: 12px; background: rgba(245, 158, 11, 0.3); color: var(--accent-orange); border: 1px solid var(--accent-orange); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
