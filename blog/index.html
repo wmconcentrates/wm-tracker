@@ -1311,7 +1311,7 @@
                         <span>${formatDate(post.created_at)}</span>
                     </div>
                 </header>
-                <div class="single-post-body">${formatContent(post.content)}</div>`;
+                <div class="single-post-body">${formatContent(post.content || post.excerpt || 'No content available.')}</div>`;
             window.scrollTo(0, 0);
         }
 
