@@ -14765,13 +14765,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Update the punch record
             const { error } = await supabaseClient
                 .from('timeclock')
-                .update({
-                    punch_time: newTime,
-                    adjustment_reason: reason,
-                    original_punch_time: originalTime,
-                    adjusted_by: currentRole ? currentRole.name : 'Admin',
-                    adjusted_at: new Date().toISOString()
-                })
+                .update({ punch_time: newTime })
                 .eq('id', punchId);
             
             if (error) {
