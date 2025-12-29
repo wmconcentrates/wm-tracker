@@ -8553,6 +8553,9 @@ ${employeeReport || 'No activity recorded today'}
             const updatedBatch = batches.find(b => b.id === (batchIdChanged ? newBatchId : batchId));
             updateReadyForTestingUI(updatedBatch);
 
+            // Refresh the batch details display
+            refreshBatchDetails(updatedBatch);
+
             const successMsg = isUpdate
                 ? `Product info updated for ${batchIdChanged ? newBatchId : batchId}!\n\n${finalProductName} (${finalConsistency})`
                 : `Batch ${batchIdChanged ? newBatchId : batchId} finalized!\n\n${finalProductName} (${finalConsistency})\nReady for lab submission.`;
@@ -8613,6 +8616,45 @@ ${employeeReport || 'No activity recorded today'}
             const btn = document.getElementById('markReadyForTestingBtn');
             btn.style.display = 'flex';
             btn.innerHTML = '<span>💾</span> Update Product Info';
+        }
+
+        // Refresh the batch details display after update
+        function refreshBatchDetails(batch) {
+            // Calculate trim info
+            let trimUsedInfo = '';
+            if (batch.is_sub_batch && batch.parent_batch_id) {
+                const parentBatch = batches.find(b => b.id === batch.parent_batch_id);
+                if (parentBatch) {
+                    const parentTrimWeight = parseFloat(parentBatch.adjusted_trim_weight || parentBatch.trim_weight || 0);
+                    const parentTotalOutput = parseFloat(parentBatch.final_weight || parentBatch.net_weight || 0);
+                    const thisBatchWeight = parseFloat(batch.final_weight || batch.net_weight || 0);
+                    if (parentTotalOutput > 0) {
+                        const trimUsed = (thisBatchWeight / parentTotalOutput) * parentTrimWeight;
+                        const yieldPercent = (thisBatchWeight / trimUsed) * 100;
+                        trimUsedInfo = `<p><strong>Trim Used:</strong> ${trimUsed.toFixed(1)}g</p><p><strong>Yield %:</strong> ${yieldPercent.toFixed(2)}%</p>`;
+                    }
+                }
+            } else {
+                const trimWeight = parseFloat(batch.adjusted_trim_weight || batch.trim_weight || 0);
+                const finalWeight = parseFloat(batch.final_weight || batch.net_weight || 0);
+                const yieldPercent = trimWeight > 0 ? (finalWeight / trimWeight) * 100 : 0;
+                trimUsedInfo = `<p><strong>Trim Used:</strong> ${trimWeight.toFixed(1)}g</p><p><strong>Yield %:</strong> ${yieldPercent.toFixed(2)}%</p>`;
+            }
+
+            const details = `
+                <p><strong>Strain:</strong> ${batch.strain} (${batch.strain_type})</p>
+                <p><strong>Product:</strong> ${batch.product_made || 'N/A'}</p>
+                <p><strong>Net Weight:</strong> ${batch.net_weight || batch.final_weight || 'N/A'}g</p>
+                ${trimUsedInfo}
+                <div style="background: rgba(245, 158, 11, 0.2); padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid var(--accent-orange);">
+                    <p style="margin: 0;"><strong style="color: var(--accent-orange);">📋 METRC Tags:</strong> <span style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">${batch.metrc_tags && batch.metrc_tags.trim() !== '' ? batch.metrc_tags : 'Not entered at intake'}</span></p>
+                </div>
+                <p><strong>Cultivation License:</strong> ${batch.cultivation_license}</p>
+                <p><strong>Grower:</strong> ${batch.grower_name || 'N/A'}</p>
+                <p><strong>Status:</strong> ${batch.status}</p>
+                ${batch.test_submitted_date ? `<p><strong>Previously Submitted:</strong> ${batch.test_submitted_date}</p>` : ''}
+            `;
+            document.getElementById('testBatchDetails').innerHTML = details;
         }
 
         async function submitTestResults() {
