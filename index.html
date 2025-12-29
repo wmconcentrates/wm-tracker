@@ -3410,7 +3410,10 @@
                         Print/Export
                     </button>
                     <button onclick="exportAllTimecards()" style="padding: 12px 24px; background: var(--accent-green); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
-                        📥 Export All for Payroll
+                        📥 Export Summary
+                    </button>
+                    <button onclick="exportForQuickBooks()" style="padding: 12px 24px; background: linear-gradient(135deg, #2CA01C, #1a6b12); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
+                        📊 Export for QuickBooks
                     </button>
                 </div>
 
@@ -14466,6 +14469,118 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             } catch (error) {
                 console.error('Export error:', error);
                 alert('Error exporting timecards: ' + error.message);
+            }
+        }
+
+        // Export timecards in QuickBooks-compatible CSV format
+        async function exportForQuickBooks() {
+            if (!supabaseClient) {
+                alert('Database not connected');
+                return;
+            }
+
+            const periodType = document.getElementById('timecardPayPeriodSelect').value;
+            const period = getPayPeriodDates(periodType);
+
+            try {
+                // Get all punches for the pay period
+                const { data: allPunches, error } = await supabaseClient
+                    .from('timeclock')
+                    .select('*')
+                    .gte('punch_time', period.start.toISOString())
+                    .lte('punch_time', period.end.toISOString())
+                    .order('user_name', { ascending: true })
+                    .order('punch_time', { ascending: true });
+
+                if (error) throw error;
+
+                if (!allPunches || allPunches.length === 0) {
+                    alert('No timecard data found for this pay period.');
+                    return;
+                }
+
+                // QuickBooks Time Import CSV Header
+                // Format: Employee, Date, Hours, Payroll Item, Customer:Job, Notes
+                let csv = 'Employee,Date,Hours,Payroll Item,Service Item,Notes\n';
+
+                // Group by employee
+                const employeeData = {};
+                allPunches.forEach(punch => {
+                    if (!employeeData[punch.user_name]) {
+                        employeeData[punch.user_name] = [];
+                    }
+                    employeeData[punch.user_name].push(punch);
+                });
+
+                let totalRows = 0;
+
+                for (const [employeeName, punches] of Object.entries(employeeData)) {
+                    // Remove role suffix for cleaner QB import (e.g., "Ryan (Admin)" -> "Ryan")
+                    const cleanName = employeeName.replace(/\s*\([^)]*\)\s*/g, '').trim();
+
+                    // Group by date
+                    const punchesByDate = {};
+                    punches.forEach(punch => {
+                        const date = new Date(punch.punch_time).toLocaleDateString('en-US');
+                        if (!punchesByDate[date]) punchesByDate[date] = [];
+                        punchesByDate[date].push(punch);
+                    });
+
+                    for (const [date, dayPunches] of Object.entries(punchesByDate)) {
+                        let dayHours = 0;
+
+                        // Calculate total hours for the day
+                        for (let i = 0; i < dayPunches.length; i++) {
+                            const punch = dayPunches[i];
+                            if (punch.punch_type === 'in') {
+                                const inTime = new Date(punch.punch_time);
+                                const nextPunch = dayPunches[i + 1];
+
+                                if (nextPunch && nextPunch.punch_type === 'out') {
+                                    const outTime = new Date(nextPunch.punch_time);
+                                    dayHours += (outTime - inTime) / (1000 * 60 * 60);
+                                    i++; // Skip out punch
+                                }
+                            }
+                        }
+
+                        if (dayHours > 0) {
+                            // Determine if regular or overtime
+                            // QuickBooks uses Payroll Items to distinguish
+                            const regularHours = Math.min(dayHours, 8);
+                            const overtimeHours = Math.max(dayHours - 8, 0);
+
+                            // Add regular hours row
+                            if (regularHours > 0) {
+                                csv += `"${cleanName}",${date},${regularHours.toFixed(2)},Regular Pay,,Auto-imported from WM Tracker\n`;
+                                totalRows++;
+                            }
+
+                            // Add overtime hours row (if any)
+                            if (overtimeHours > 0) {
+                                csv += `"${cleanName}",${date},${overtimeHours.toFixed(2)},Overtime,,Auto-imported from WM Tracker\n`;
+                                totalRows++;
+                            }
+                        }
+                    }
+                }
+
+                // Download the file
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'QuickBooks_TimeImport_' + period.start.toISOString().split('T')[0] + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                alert('QuickBooks import file downloaded!\n\n' + totalRows + ' time entries ready to import.\n\nTo import in QuickBooks:\n1. Go to Employees → Enter Time → Use Weekly Timesheet\n2. Or use File → Utilities → Import → Timer Activities');
+
+            } catch (error) {
+                console.error('QB Export error:', error);
+                alert('Error exporting for QuickBooks: ' + error.message);
             }
         }
 
