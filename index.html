@@ -1664,13 +1664,18 @@
                                 <div class="help-text">Redesignate if needed</div>
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
-                                <label>Last 4 of METRC Tag (Optional)</label>
-                                <input type="text" id="metrcLast4" maxlength="4" placeholder="e.g., 5678" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">
-                                <div class="help-text">For new batch ID</div>
+                                <label>Expiration Date</label>
+                                <input type="date" id="testExpirationDate" required>
+                                <div class="help-text">For batch ID generation</div>
                             </div>
                         </div>
 
                         <div class="form-grid" style="margin-bottom: 15px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Last 4 of METRC Tag (Optional)</label>
+                                <input type="text" id="metrcLast4" maxlength="4" placeholder="e.g., 5678" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">
+                                <div class="help-text">For new batch ID</div>
+                            </div>
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label>Generated Batch ID</label>
                                 <input type="text" id="newBatchId" readonly placeholder="Enter expiration date & METRC tag" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700; background: var(--bg-primary); color: var(--accent-green);">
@@ -1688,14 +1693,6 @@
                         <div class="form-group">
                             <label>Date Submitted to Lab</label>
                             <input type="date" id="testSubmittedDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Expiration Date</label>
-                            <input type="date" id="testExpirationDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Test Results Received Date</label>
-                            <input type="date" id="testResultsReceivedDate" required>
                         </div>
                         <div class="form-group">
                             <label>RTA (Full Panel)?</label>
@@ -8260,12 +8257,11 @@ ${employeeReport || 'No activity recorded today'}
                 }
                 
                 // Pre-fill if test results already exist
-                if (batch.test_results_received_date) {
+                if (batch.test_submitted_date) {
                     document.getElementById('testSubmittedDate').value = batch.test_submitted_date || '';
                     document.getElementById('testExpirationDate').value = batch.test_expiration_date || '';
                     document.getElementById('metrcLast4').value = ''; // Clear - batch ID already set
                     document.getElementById('newBatchId').value = ''; // Always clear - this is for reassignment
-                    document.getElementById('testResultsReceivedDate').value = batch.test_results_received_date;
                     document.getElementById('testThcPercent').value = batch.test_thc_percent || '';
                     document.getElementById('testCbdPercent').value = batch.test_cbd_percent || '';
                     document.getElementById('isRTA').value = batch.is_rta || 'no';
@@ -8284,7 +8280,6 @@ ${employeeReport || 'No activity recorded today'}
                     document.getElementById('testExpirationDate').value = '';
                     document.getElementById('metrcLast4').value = '';
                     document.getElementById('newBatchId').value = '';
-                    document.getElementById('testResultsReceivedDate').value = new Date().toISOString().split('T')[0];
                     document.getElementById('testThcPercent').value = '';
                     document.getElementById('testCbdPercent').value = '';
                     document.getElementById('isRTA').value = 'no';
@@ -8723,7 +8718,6 @@ ${employeeReport || 'No activity recorded today'}
             const updates = {
                 test_submitted_date: submittedDate,
                 test_expiration_date: expirationDate,
-                test_results_received_date: document.getElementById('testResultsReceivedDate').value,
                 test_thc_percent: thcPercent,
                 test_cbd_percent: cbdPercent,
                 is_rta: isRTA,
