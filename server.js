@@ -10,8 +10,8 @@ const LEAFLINK_API_URL = 'https://www.leaflink.com/api/v2';
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from parent directory (the main app)
-app.use(express.static(path.join(__dirname, '..')));
+// Serve static files from current directory (the main app)
+app.use(express.static(__dirname));
 
 // Helper to get proxy base URL
 function getProxyBaseUrl(req) {
@@ -98,6 +98,6 @@ app.get('/api/*', async (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`LeafLink proxy server running on port ${PORT}`);
-    console.log('Ready to handle requests from your app!');
+    console.log(`White Mousse server running on port ${PORT}`);
+    console.log('Serving app and LeafLink proxy!');
 });

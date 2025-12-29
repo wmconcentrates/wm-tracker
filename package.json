@@ -1,11 +1,10 @@
 {
-  "name": "leaflink-proxy",
+  "name": "wm-tracker",
   "version": "1.0.0",
-  "description": "CORS proxy for LeafLink API",
+  "description": "White Mousse Production Tracker with LeafLink API proxy",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "vercel-build": "echo 'No build needed'"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
