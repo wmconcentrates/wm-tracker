@@ -13974,9 +13974,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Update clock status display
         async function updateClockStatus() {
-            if (!currentRole) return;
+            if (!currentRole) {
+                console.log('updateClockStatus: No currentRole');
+                return;
+            }
 
+            console.log('updateClockStatus: Fetching for', currentRole.name);
             const lastPunch = await getUserClockStatus();
+            console.log('updateClockStatus: lastPunch', lastPunch);
             const statusTextEl = document.getElementById('clockStatusText');
             const lastPunchEl = document.getElementById('clockLastPunch');
             const actionBtn = document.getElementById('clockActionBtn');
@@ -14024,12 +14029,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             // Today's hours
             const todayPunches = await getTodayPunches(currentRole.name);
+            console.log('updateClockStatus: todayPunches', todayPunches);
             const todayHours = calculateTotalHours(todayPunches);
+            console.log('updateClockStatus: todayHours', todayHours);
             document.getElementById('todayHours').textContent = todayHours.toFixed(2);
 
             // Pay period hours
             const periodPunches = await getPayPeriodPunches(currentRole.name);
+            console.log('updateClockStatus: periodPunches', periodPunches);
             const periodHours = calculateTotalHours(periodPunches);
+            console.log('updateClockStatus: periodHours', periodHours);
             document.getElementById('payPeriodHours').textContent = periodHours.toFixed(2);
         }
 
@@ -14063,16 +14072,20 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
 
             try {
+                const insertData = {
+                    user_name: currentRole.name,
+                    user_role: roleKey,
+                    punch_type: newPunchType,
+                    punch_time: new Date().toISOString(),
+                    ip_address: currentUserIP || 'unknown'
+                };
+                console.log('performClockAction: Inserting', insertData);
+
                 const { data, error } = await supabaseClient
                     .from('timeclock')
-                    .insert([{
-                        user_name: currentRole.name,
-                        user_role: roleKey,
-                        punch_type: newPunchType,
-                        punch_time: new Date().toISOString(),
-                        ip_address: currentUserIP || 'unknown'
-                    }]);
+                    .insert([insertData]);
 
+                console.log('performClockAction: Result', { data, error });
                 if (error) throw error;
 
                 // Update display
