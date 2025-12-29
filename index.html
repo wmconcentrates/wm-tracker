@@ -2320,9 +2320,8 @@
                                 Sales Trends (Last 6 Months)
                             </h4>
                             <div style="display: flex; gap: 8px;">
-                                <button onclick="setSalesChartType('revenue')" id="chartTypeRevenue" class="btn" style="background: var(--accent-blue); padding: 6px 12px; font-size: 0.8rem;">Revenue</button>
+                                <button onclick="setSalesChartType('revenue')" id="chartTypeRevenue" class="btn" style="background: var(--accent-orange); padding: 6px 12px; font-size: 0.8rem;">Revenue</button>
                                 <button onclick="setSalesChartType('orders')" id="chartTypeOrders" class="btn" style="background: var(--bg-tertiary); padding: 6px 12px; font-size: 0.8rem;">Orders</button>
-                                <button onclick="setSalesChartType('commission')" id="chartTypeCommission" class="btn" style="background: var(--bg-tertiary); padding: 6px 12px; font-size: 0.8rem;">Commission</button>
                             </div>
                         </div>
                         <div id="salesBarChart" style="min-height: 200px;">
@@ -13251,9 +13250,8 @@ ${employeeReport || 'No activity recorded today'}
             salesChartType = type;
 
             // Update button styles
-            document.getElementById('chartTypeRevenue').style.background = type === 'revenue' ? 'var(--accent-blue)' : 'var(--bg-tertiary)';
-            document.getElementById('chartTypeOrders').style.background = type === 'orders' ? 'var(--accent-blue)' : 'var(--bg-tertiary)';
-            document.getElementById('chartTypeCommission').style.background = type === 'commission' ? 'var(--accent-blue)' : 'var(--bg-tertiary)';
+            document.getElementById('chartTypeRevenue').style.background = type === 'revenue' ? 'var(--accent-orange)' : 'var(--bg-tertiary)';
+            document.getElementById('chartTypeOrders').style.background = type === 'orders' ? 'var(--accent-green)' : 'var(--bg-tertiary)';
 
             renderSalesBarChart();
         }
@@ -13316,19 +13314,13 @@ ${employeeReport || 'No activity recorded today'}
                 case 'orders':
                     valueKey = 'orders';
                     valueLabel = 'Orders';
-                    valueColor = 'var(--accent-blue)';
+                    valueColor = '#39ff14';
                     valuePrefix = '';
-                    break;
-                case 'commission':
-                    valueKey = 'commission';
-                    valueLabel = 'Commission';
-                    valueColor = 'var(--accent-purple)';
-                    valuePrefix = '$';
                     break;
                 default:
                     valueKey = 'revenue';
                     valueLabel = 'Revenue';
-                    valueColor = '#FFD700';
+                    valueColor = '#ff6b00';
                     valuePrefix = '$';
             }
 
