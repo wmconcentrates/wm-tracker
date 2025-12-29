@@ -8481,6 +8481,7 @@ ${employeeReport || 'No activity recorded today'}
 
             // Build update object - use existing columns that we know exist
             const updates = {
+                strain: finalProductName,        // Save product name to strain column
                 product_made: finalConsistency,  // Use existing product_made column
                 strain_type: finalStrainType,    // Use existing strain_type column
                 timeline: timeline,
