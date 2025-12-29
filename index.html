@@ -3515,14 +3515,16 @@
                 pin: '1827',
                 tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
                 access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
-                readOnly: false
+                readOnly: false,
+                salary: true
             },
             drew: {
                 name: 'Drew (Sales)',
                 pin: '6699',
                 tabs: ['frontofhouse', 'dashboard'],
                 access: ['frontofhouse', 'dashboard'],
-                readOnly: true
+                readOnly: true,
+                salary: true
             },
             paige: {
                 name: 'Paige',
@@ -3536,7 +3538,8 @@
                 pin: '1980',
                 tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics'],
                 access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics'],
-                readOnly: false
+                readOnly: false,
+                salary: true
             },
             donald: {
                 name: 'Donald',
@@ -3601,7 +3604,7 @@
                     document.getElementById('pinInput').style.display = 'none';
                     document.getElementById('loginBtn').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
-                    document.getElementById('myStatsBtn').style.display = 'block'; document.getElementById('timeClockBtn').style.display = 'block'; if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';}
+                    document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';}
                     applyRolePermissions();
                 }
             }
@@ -4106,7 +4109,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('pinInput').style.display = 'none';
                 document.getElementById('loginBtn').style.display = 'none';
                 document.getElementById('appContent').style.display = 'block';
-                document.getElementById('myStatsBtn').style.display = 'block'; document.getElementById('timeClockBtn').style.display = 'block'; if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';}
+                document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';}
                 errorMsg.style.display = 'none';
                 
                 // Log login to database
@@ -14163,7 +14166,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const select = document.getElementById('timecardEmployeeSelect');
             select.innerHTML = '<option value="">Select Employee...</option>';
 
+            // Only show hourly employees (not salaried)
             for (const [key, role] of Object.entries(ROLES)) {
+                if (role.salary) continue; // Skip salaried employees
                 const option = document.createElement('option');
                 option.value = role.name;
                 option.textContent = role.name;
