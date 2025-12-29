@@ -13593,10 +13593,10 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Calculate days since base payday
             const daysSinceBase = Math.floor((today - basePayday) / (1000 * 60 * 60 * 24));
 
-            // Find current period number
-            let periodNumber = Math.floor(daysSinceBase / periodDays);
+            // Find current period number (add 1 to get period containing today, not the one that ended)
+            let periodNumber = Math.floor(daysSinceBase / periodDays) + 1;
             if (daysSinceBase < 0) {
-                periodNumber = Math.ceil(daysSinceBase / periodDays) - 1;
+                periodNumber = Math.ceil(daysSinceBase / periodDays);
             }
 
             if (periodType === 'previous') {
