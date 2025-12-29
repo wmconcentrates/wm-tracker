@@ -1571,7 +1571,7 @@
                     <div id="bulkSaleAlert" style="display: none; background: rgba(16, 185, 129, 0.15); border-left: 4px solid var(--accent-green); padding: 15px; border-radius: 8px; margin: 20px 0;">
                         <strong>🎯 Bulk Sale Selected</strong>
                         <p style="margin: 8px 0 0 0; color: var(--text-secondary);">
-                            This batch will be marked as complete and will skip the labeling process. It will not appear in the labeling queue.
+                            This batch will go through testing but will skip the labeling process after test results are entered.
                         </p>
                     </div>
                     
@@ -3897,6 +3897,45 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 alert(`Batch ${batchId} status reset to "${newStatus}"`);
             }
         };
+        
+        // Admin helper to revert batch to testing status (call from console: revertToTesting('9.30.5622'))
+        window.revertToTesting = async function(batchId) {
+            if (!supabaseClient) {
+                console.error('Supabase not connected');
+                return;
+            }
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) {
+                console.error('Batch not found:', batchId);
+                return;
+            }
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'admin_revert',
+                user: currentRole ? currentRole.name : 'Admin',
+                date: new Date().toISOString(),
+                action: 'Batch reverted to testing queue'
+            });
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .update({
+                    status: 'packaging',
+                    labels_applied: false,
+                    labeling_date: null,
+                    labeling_user: null,
+                    labeling_notes: null,
+                    completed_at: null,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+            if (error) {
+                console.error('Error reverting batch:', error);
+            } else {
+                console.log('Batch ' + batchId + ' reverted to testing. Refreshing...');
+                await loadBatches();
+                alert('Batch ' + batchId + ' has been reverted to Testing queue');
+            }
+        };
 
         async function loadBatches() {
             const { data, error } = await supabaseClient
@@ -5532,7 +5571,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     stage: 'packaging',
                     user: currentRole ? currentRole.name : "Unknown",
                     date: new Date().toISOString(),
-                    action: `Bulk sale - ${unitsPackaged} unit(s) - Skipping labeling process`
+                    action: `Bulk sale - ${unitsPackaged} unit(s) - Proceeding to testing`
                 });
             } else {
                 timeline.push({
@@ -5558,23 +5597,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 timeline: timeline
             };
             
-            // If bulk sale, mark as fully complete and skip labeling
+            // If bulk sale, go to packaging status (testing queue) but will skip labeling after testing
             if (isBulkSale) {
-                updateData.status = 'complete';
-                updateData.labels_applied = true; // Mark as "labeled" to skip labeling queue
-                updateData.labeling_date = document.getElementById('packagingDate').value;
-                updateData.labeling_user = currentRole ? currentRole.name : "Unknown";
-                updateData.labeling_notes = 'Bulk sale - labeling not required';
-                updateData.completed_at = new Date().toISOString();
-                
-                // Add completion timeline entry
-                timeline.push({
-                    stage: 'complete',
-                    user: currentRole ? currentRole.name : "Unknown",
-                    date: new Date().toISOString(),
-                    action: 'Bulk sale completed - no labeling required'
-                });
-                updateData.timeline = timeline;
+                updateData.status = 'packaging'; // Goes to testing queue
+                // Note: labels_applied will be set to true after testing is complete
             } else {
                 // Normal packaging - goes to "complete" status waiting for labeling
                 updateData.status = 'complete';
@@ -5595,8 +5621,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             if (isBulkSale) {
                 showCelebration({
                     emoji: '💰',
-                    title: 'Bulk Sale Complete!',
-                    message: `${batchId} has been packaged for bulk sale!`,
+                    title: 'Bulk Sale Ready for Testing!',
+                    message: `${batchId} is packaged and ready for testing!`,
                     stats: [
                         { value: `${totalGrams}g`, label: 'Total Weight' },
                         { value: packagedProductType, label: 'Product' }
@@ -8760,6 +8786,23 @@ ${employeeReport || 'No activity recorded today'}
             // Store product info in notes for now until we add columns
             const productInfo = `\n\n[PRODUCT INFO]\nOriginal Strain: ${batch.strain}\nOriginal Type: ${batch.strain_type}\nFinal Name: ${finalProductName}\nFinal Type: ${finalStrainType}`;
             updates.test_results_notes = (updates.test_results_notes || '') + productInfo;
+            
+            // If this is a bulk sale, mark as complete and skip labeling
+            if (batch.packaged_product_type === 'Bulk Sale') {
+                updates.status = 'complete';
+                updates.labels_applied = true;
+                updates.labeling_date = new Date().toISOString().split('T')[0];
+                updates.labeling_user = currentRole ? currentRole.name : "Unknown";
+                updates.labeling_notes = 'Bulk sale - labeling not required';
+                updates.completed_at = new Date().toISOString();
+                timeline.push({
+                    stage: 'complete',
+                    user: currentRole ? currentRole.name : "Unknown",
+                    date: new Date().toISOString(),
+                    action: 'Bulk sale completed after testing - labeling skipped'
+                });
+                updates.timeline = timeline;
+            }
             
             // If batch ID is being changed, we need to handle it specially
             if (batchIdChanged) {
