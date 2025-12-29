@@ -13606,9 +13606,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Calculate period start and end
             const periodStart = new Date(basePayday);
             periodStart.setDate(basePayday.getDate() + (periodNumber * periodDays) - periodDays + 1);
+            periodStart.setHours(0, 0, 0, 0); // Start of day
 
             const periodEnd = new Date(periodStart);
             periodEnd.setDate(periodStart.getDate() + periodDays - 1);
+            periodEnd.setHours(23, 59, 59, 999); // End of day
+
+            console.log('getPayPeriodDates:', { periodType, periodStart: periodStart.toISOString(), periodEnd: periodEnd.toISOString() });
 
             return {
                 start: periodStart,
