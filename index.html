@@ -324,9 +324,16 @@
         }
 
         .header-logo {
-            width: 80px;
-            height: 60px;
+            width: 150px;
+            height: 100px;
             flex-shrink: 0;
+        }
+
+        .header-logo img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
         }
 
         .header-logo svg {
@@ -934,12 +941,133 @@
             font-weight: 600;
         }
 
-        /* METRC Manifest hover effects */
-        #manifestsContainer > div:hover {
-            background: rgba(147, 51, 234, 0.1) !important;
-            border-color: var(--accent-purple) !important;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(147, 51, 234, 0.3);
+                /* METRC Manifest hover effects */
+                #manifestsContainer > div:hover {
+                    background: rgba(147, 51, 234, 0.1) !important;
+                    border-color: var(--accent-purple) !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(147, 51, 234, 0.3);
+                }
+        
+                .actions-menu {
+                    position: fixed;
+                    top: 20px;
+                    left: 20px;
+                    z-index: 1000;
+                }
+        
+                .actions-toggle-btn {
+                    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    font-size: 1rem;
+                    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
+                    transition: all 0.3s ease;
+                }
+        
+                .actions-dropdown {
+                    display: none;
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    background: var(--bg-secondary);
+                    border-radius: 12px;
+                    padding: 10px;
+                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+                    margin-top: 10px;
+                    width: 200px;
+                }
+        
+                .actions-dropdown button {
+                    display: block;
+                    width: 100%;
+                    padding: 10px;
+                    margin-bottom: 5px;
+                    text-align: left;
+                    background: var(--bg-tertiary);
+                    color: var(--text-primary);
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    font-size: 0.9rem;
+                }
+        
+                .actions-dropdown button:hover {
+                    background: var(--accent-purple);
+                    border-color: var(--accent-purple);
+                }
+                
+                @media (max-width: 768px) {            body {
+                padding: 10px;
+                font-size: 1rem;
+            }
+
+            .header {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .form-section, .setup-section, .user-login, .batch-list {
+                padding: 20px;
+            }
+
+            .form-section h2, .batch-list h2, .setup-section h2, .user-login h2 {
+                font-size: 1.3rem;
+            }
+
+            .station-tabs {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 10px;
+            }
+
+            .station-tab {
+                padding: 15px;
+            }
+
+            .station-tab h3 {
+                font-size: 1rem;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+
+            #batchDetailsModal > div, #editBatchModal > div {
+                width: 95%;
+                margin: 20px auto;
+                padding: 20px;
+            }
+
+            #myStatsBtn, #timeClockBtn, #viewTimecardsBtn {
+                position: relative;
+                top: auto;
+                left: auto;
+                width: 100%;
+                margin-bottom: 10px;
+                display: block !important;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .filter-bar {
+                flex-direction: column;
+            }
+            
+            .search-box {
+                min-width: unset;
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -949,17 +1077,14 @@
         <span id="statusText">Connecting...</span>
     </div>
     
-    <button id="myStatsBtn" onclick="openPersonalStatsModal()" style="position: fixed; top: 20px; left: 20px; z-index: 999; background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3); transition: all 0.3s ease; display: none;">
-        👤 My Workload
-    </button>
-
-    <button id="timeClockBtn" onclick="openTimeClockModal()" style="position: fixed; top: 20px; left: 180px; z-index: 999; background: linear-gradient(135deg, var(--accent-green), #00aa00); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(57, 255, 20, 0.3); transition: all 0.3s ease; display: none;">
-        Time Clock
-    </button>
-
-    <button id="viewTimecardsBtn" onclick="openTimecardsModal()" style="position: fixed; top: 20px; left: 340px; z-index: 999; background: linear-gradient(135deg, var(--accent-orange), #cc5500); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3); transition: all 0.3s ease; display: none;">
-        Timecards
-    </button>
+    <div class="actions-menu">
+        <button class="actions-toggle-btn" onclick="toggleActionsMenu()">Actions</button>
+        <div class="actions-dropdown">
+            <button id="myStatsBtn" onclick="openPersonalStatsModal()" style="display: none;">👤 My Workload</button>
+            <button id="timeClockBtn" onclick="openTimeClockModal()" style="display: none;">Time Clock</button>
+            <button id="viewTimecardsBtn" onclick="openTimecardsModal()" style="display: none;">Timecards</button>
+        </div>
+    </div>
 
     <!-- Setup Section -->
     <div class="setup-section" id="setupSection">
@@ -990,7 +1115,7 @@
         <div class="header">
             <div class="header-content">
                 <div class="header-logo">
-                    <img src="https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w" alt="White Mousse" style="height: 70px; width: auto; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));">
+                    <img src="https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w" alt="White Mousse" style="filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));">
                 </div>
             </div>
         </div>
@@ -13282,6 +13407,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 </html>
             `);
             printWindow.document.close();
+        }
+
+        function toggleActionsMenu() {
+            const dropdown = document.querySelector('.actions-dropdown');
+            if (dropdown.style.display === 'block') {
+                dropdown.style.display = 'none';
+            } else {
+                dropdown.style.display = 'block';
+            }
         }
 
         // Initialize timeclock on page load
