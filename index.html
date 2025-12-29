@@ -11635,7 +11635,7 @@ ${employeeReport || 'No activity recorded today'}
                     const safeStatus = escapeHtml(post.status);
                     const dateStr = new Date(post.created_at).toLocaleDateString();
 
-                    return `<div class="foh-post-card" onclick="viewBlogPost(${post.id})" style="cursor: pointer;">
+                    return `<div class="foh-post-card" onclick="viewBlogPost('${post.id}')" style="cursor: pointer;">
                         <div style="flex: 1;">
                             <div style="font-weight: 600;">${safeEmoji} ${safeTitle}</div>
                             <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">${safeExcerpt}</div>
