@@ -3409,6 +3409,9 @@
                     <button onclick="printTimecard()" style="padding: 12px 24px; background: var(--accent-blue); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
                         Print/Export
                     </button>
+                    <button onclick="exportAllTimecards()" style="padding: 12px 24px; background: var(--accent-green); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
+                        📥 Export All for Payroll
+                    </button>
                 </div>
 
                 <!-- Pay Period Info -->
@@ -13612,8 +13615,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             periodEnd.setDate(periodStart.getDate() + periodDays - 1);
             periodEnd.setHours(23, 59, 59, 999); // End of day
 
-            console.log('getPayPeriodDates:', { periodType, periodStart: periodStart.toISOString(), periodEnd: periodEnd.toISOString() });
-
             return {
                 start: periodStart,
                 end: periodEnd,
@@ -13978,14 +13979,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Update clock status display
         async function updateClockStatus() {
-            if (!currentRole) {
-                console.log('updateClockStatus: No currentRole');
-                return;
-            }
+            if (!currentRole) return;
 
-            console.log('updateClockStatus: Fetching for', currentRole.name);
             const lastPunch = await getUserClockStatus();
-            console.log('updateClockStatus: lastPunch', lastPunch);
             const statusTextEl = document.getElementById('clockStatusText');
             const lastPunchEl = document.getElementById('clockLastPunch');
             const actionBtn = document.getElementById('clockActionBtn');
@@ -14033,16 +14029,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             // Today's hours
             const todayPunches = await getTodayPunches(currentRole.name);
-            console.log('updateClockStatus: todayPunches', todayPunches);
             const todayHours = calculateTotalHours(todayPunches);
-            console.log('updateClockStatus: todayHours', todayHours);
             document.getElementById('todayHours').textContent = todayHours.toFixed(2);
 
             // Pay period hours
             const periodPunches = await getPayPeriodPunches(currentRole.name);
-            console.log('updateClockStatus: periodPunches', periodPunches);
             const periodHours = calculateTotalHours(periodPunches);
-            console.log('updateClockStatus: periodHours', periodHours);
             document.getElementById('payPeriodHours').textContent = periodHours.toFixed(2);
         }
 
@@ -14076,20 +14068,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
 
             try {
-                const insertData = {
-                    user_name: currentRole.name,
-                    user_role: roleKey,
-                    punch_type: newPunchType,
-                    punch_time: new Date().toISOString(),
-                    ip_address: currentUserIP || 'unknown'
-                };
-                console.log('performClockAction: Inserting', insertData);
-
                 const { data, error } = await supabaseClient
                     .from('timeclock')
-                    .insert([insertData]);
+                    .insert([{
+                        user_name: currentRole.name,
+                        user_role: roleKey,
+                        punch_type: newPunchType,
+                        punch_time: new Date().toISOString(),
+                        ip_address: currentUserIP || 'unknown'
+                    }]);
 
-                console.log('performClockAction: Result', { data, error });
                 if (error) throw error;
 
                 // Update display
@@ -14350,6 +14338,135 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 </html>
             `);
             printWindow.document.close();
+        }
+
+        // Export all employee timecards as a single CSV file for payroll
+        async function exportAllTimecards() {
+            if (!supabaseClient) {
+                alert('Database not connected');
+                return;
+            }
+
+            const periodType = document.getElementById('timecardPayPeriodSelect').value;
+            const period = getPayPeriodDates(periodType);
+
+            const periodLabel = period.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+                ' - ' + period.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            try {
+                // Get all punches for the pay period
+                const { data: allPunches, error } = await supabaseClient
+                    .from('timeclock')
+                    .select('*')
+                    .gte('punch_time', period.start.toISOString())
+                    .lte('punch_time', period.end.toISOString())
+                    .order('user_name', { ascending: true })
+                    .order('punch_time', { ascending: true });
+
+                if (error) throw error;
+
+                if (!allPunches || allPunches.length === 0) {
+                    alert('No timecard data found for this pay period.');
+                    return;
+                }
+
+                // Group by employee
+                const employeeData = {};
+                allPunches.forEach(punch => {
+                    if (!employeeData[punch.user_name]) {
+                        employeeData[punch.user_name] = [];
+                    }
+                    employeeData[punch.user_name].push(punch);
+                });
+
+                // Build CSV content
+                let csv = 'PAYROLL EXPORT - ' + periodLabel + '\n';
+                csv += 'Generated: ' + new Date().toLocaleString() + '\n\n';
+
+                let grandTotalRegular = 0;
+                let grandTotalOvertime = 0;
+
+                for (const [employeeName, punches] of Object.entries(employeeData)) {
+                    csv += '='.repeat(50) + '\n';
+                    csv += 'EMPLOYEE: ' + employeeName + '\n';
+                    csv += '='.repeat(50) + '\n';
+                    csv += 'Date,Clock In,Clock Out,Hours\n';
+
+                    // Group by date
+                    const punchesByDate = {};
+                    punches.forEach(punch => {
+                        const date = new Date(punch.punch_time).toLocaleDateString('en-US');
+                        if (!punchesByDate[date]) punchesByDate[date] = [];
+                        punchesByDate[date].push(punch);
+                    });
+
+                    let employeeTotalHours = 0;
+
+                    for (const [date, dayPunches] of Object.entries(punchesByDate)) {
+                        let dayHours = 0;
+
+                        for (let i = 0; i < dayPunches.length; i++) {
+                            const punch = dayPunches[i];
+                            if (punch.punch_type === 'in') {
+                                const inTime = new Date(punch.punch_time);
+                                const inTimeStr = inTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+                                let outTimeStr = 'Still In';
+                                let pairHours = 0;
+
+                                const nextPunch = dayPunches[i + 1];
+                                if (nextPunch && nextPunch.punch_type === 'out') {
+                                    const outTime = new Date(nextPunch.punch_time);
+                                    outTimeStr = outTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                                    pairHours = (outTime - inTime) / (1000 * 60 * 60);
+                                    i++; // Skip out punch
+                                }
+
+                                dayHours += pairHours;
+                                csv += date + ',' + inTimeStr + ',' + outTimeStr + ',' + pairHours.toFixed(2) + '\n';
+                            }
+                        }
+
+                        employeeTotalHours += dayHours;
+                    }
+
+                    const regularHours = Math.min(employeeTotalHours, 40);
+                    const overtimeHours = Math.max(employeeTotalHours - 40, 0);
+
+                    csv += '\n';
+                    csv += 'TOTAL HOURS:,' + employeeTotalHours.toFixed(2) + '\n';
+                    csv += 'Regular (up to 40):,' + regularHours.toFixed(2) + '\n';
+                    csv += 'Overtime (over 40):,' + overtimeHours.toFixed(2) + '\n\n';
+
+                    grandTotalRegular += regularHours;
+                    grandTotalOvertime += overtimeHours;
+                }
+
+                // Grand totals
+                csv += '\n' + '='.repeat(50) + '\n';
+                csv += 'GRAND TOTALS\n';
+                csv += '='.repeat(50) + '\n';
+                csv += 'Total Regular Hours:,' + grandTotalRegular.toFixed(2) + '\n';
+                csv += 'Total Overtime Hours:,' + grandTotalOvertime.toFixed(2) + '\n';
+                csv += 'Total All Hours:,' + (grandTotalRegular + grandTotalOvertime).toFixed(2) + '\n';
+
+                // Download the file
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Payroll_' + period.start.toISOString().split('T')[0] + '_to_' + period.end.toISOString().split('T')[0] + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                alert('Payroll export downloaded!\n\nFile includes all ' + Object.keys(employeeData).length + ' employees for ' + periodLabel);
+
+            } catch (error) {
+                console.error('Export error:', error);
+                alert('Error exporting timecards: ' + error.message);
+            }
         }
 
         function toggleActionsMenu() {
