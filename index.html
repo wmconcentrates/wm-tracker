@@ -8496,7 +8496,7 @@ ${employeeReport || 'No activity recorded today'}
             // Handle batch ID change
             if (batchIdChanged) {
                 // Delete old record and insert new one with new ID
-                const { error: deleteError } = await supabase
+                const { error: deleteError } = await supabaseClient
                     .from('batches')
                     .delete()
                     .eq('id', oldBatchId);
@@ -8511,7 +8511,7 @@ ${employeeReport || 'No activity recorded today'}
                 const newBatchData = { ...batch, ...updates, id: newBatchId };
                 delete newBatchData.created_at; // Let Supabase handle this
 
-                const { error: insertError } = await supabase
+                const { error: insertError } = await supabaseClient
                     .from('batches')
                     .insert(newBatchData);
 
@@ -8534,7 +8534,7 @@ ${employeeReport || 'No activity recorded today'}
 
             } else {
                 // Simple update
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('batches')
                     .update(updates)
                     .eq('id', batchId);
