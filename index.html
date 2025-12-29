@@ -14780,11 +14780,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 return;
             }
             
-            alert('Punch time updated successfully!
-
-Original: ' + new Date(originalTime).toLocaleString() + '
-New: ' + new Date(newTime).toLocaleString() + '
-Reason: ' + reason);
+            alert('Punch time updated successfully!\n\nOriginal: ' + new Date(originalTime).toLocaleString() + '\nNew: ' + new Date(newTime).toLocaleString() + '\nReason: ' + reason);
             
             closeEditPunchModal();
             
