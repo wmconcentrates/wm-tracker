@@ -4827,8 +4827,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     const countText = counts.length > 0 ? counts.join(', ') : 'no counts';
                     label = `${batch.id} - ${batch.strain} - ${batch.product_made} (${countText})`;
                 }
-                
-                select.innerHTML += `<option value="${batch.id}">${label}</option>`;
+
+                const workerIndicator = batch.finishing_user ? ` ▶ ${batch.finishing_user.split(' ')[0]}` : '';
+                select.innerHTML += `<option value="${batch.id}">${label}${workerIndicator}</option>`;
             });
         }
 
@@ -5178,12 +5179,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         function populatePackagingSelect() {
             const select = document.getElementById('packagingBatchSelect');
             const finishingBatches = batches.filter(b => b.status === 'finishing');
-            
+
             select.innerHTML = '<option value="">Select a batch...</option>';
             finishingBatches.forEach(batch => {
                 const weight = batch.final_weight || batch.net_weight || 0;
                 const pauseIndicator = batch.packaging_paused ? ' ⏸️ PAUSED' : '';
-                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.product_made} (${weight}g)${pauseIndicator}</option>`;
+                const workerIndicator = batch.packaging_user ? ` ▶ ${batch.packaging_user.split(' ')[0]}` : '';
+                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.product_made} (${weight}g)${workerIndicator}${pauseIndicator}</option>`;
             });
         }
 
@@ -8838,16 +8840,17 @@ ${employeeReport || 'No activity recorded today'}
         function populateLabelingSelect() {
             const select = document.getElementById('labelingBatchSelect');
             // Show batches that are complete and have test results, but haven't been labeled yet
-            const labelableBatches = batches.filter(b => 
-                b.status === 'complete' && 
-                b.test_thc_percent && 
+            const labelableBatches = batches.filter(b =>
+                b.status === 'complete' &&
+                b.test_thc_percent &&
                 !b.labels_applied
             );
-            
+
             select.innerHTML = '<option value="">Select a batch...</option>';
             labelableBatches.forEach(batch => {
                 const pauseIndicator = batch.labeling_paused ? ' ⏸️ PAUSED' : '';
-                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.packaged_product_type} (${batch.units_packaged} units)${pauseIndicator}</option>`;
+                const workerIndicator = batch.labeling_user ? ` ▶ ${batch.labeling_user.split(' ')[0]}` : '';
+                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.packaged_product_type} (${batch.units_packaged} units)${workerIndicator}${pauseIndicator}</option>`;
             });
             
             // Load saved settings
