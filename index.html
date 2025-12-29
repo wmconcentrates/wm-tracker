@@ -2138,20 +2138,23 @@
                             <span>💵</span> Commission Calculator (8% on Paid Invoices)
                         </h4>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
-                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center;">
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('currentMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(147, 51, 234, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                                 <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Current Month Commission</div>
                                 <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);" id="commissionCurrentMonth">$0.00</div>
                                 <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionCurrentMonthLabel">January 2025</div>
+                                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.7;">Click for details</div>
                             </div>
-                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center;">
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('prevMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                                 <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Previous Month Commission</div>
                                 <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);" id="commissionPrevMonth">$0.00</div>
                                 <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionPrevMonthLabel">December 2024</div>
+                                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.7;">Click for details</div>
                             </div>
-                            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(147, 51, 234, 0.2)); padding: 20px; border-radius: 10px; text-align: center; border: 2px solid var(--accent-green);">
+                            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(147, 51, 234, 0.2)); padding: 20px; border-radius: 10px; text-align: center; border: 2px solid var(--accent-green); cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('nextPaycheck')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                                 <div style="font-size: 0.8rem; color: var(--accent-green); margin-bottom: 5px; font-weight: 600;">Next Paycheck</div>
                                 <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);" id="commissionNextPaycheck">$0.00</div>
                                 <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionPaydayDate">January 9, 2025</div>
+                                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.7;">Click for details</div>
                             </div>
                         </div>
                         <div style="margin-top: 15px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary);">
@@ -2620,7 +2623,72 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Commission Details Modal -->
+    <div id="commissionDetailsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10002; overflow-y: auto;">
+        <div style="max-width: 1100px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);">
+            <!-- Header -->
+            <div id="commissionModalHeader" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-green)); padding: 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 1.8rem;" id="commissionModalTitle">Commission Details</h2>
+                        <p style="color: rgba(255,255,255,0.9); margin: 0;" id="commissionModalSubtitle">Payments from Dec 6, 2024 to Jan 5, 2025</p>
+                    </div>
+                    <button onclick="closeCommissionDetailsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px; transition: all 0.3s ease;">&times;</button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 30px;">
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button onclick="copyCommissionToClipboard()" class="btn" style="background: var(--accent-blue); padding: 10px 20px; display: flex; align-items: center; gap: 8px;">
+                        <span>📋</span> Copy to Clipboard
+                    </button>
+                    <span id="commissionCopyStatus" style="color: var(--accent-green); display: none; align-self: center;">Copied!</span>
+                </div>
+
+                <!-- Table Container -->
+                <div style="background: var(--bg-primary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        <table id="commissionDetailsTable" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
+                                <tr>
+                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Invoice Number</th>
+                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Store</th>
+                                    <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Amount</th>
+                                    <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Pay Amount (8%)</th>
+                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Paid Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="commissionDetailsBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Totals Footer -->
+                <div id="commissionTotalsFooter" style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(16, 185, 129, 0.15)); border-radius: 12px; border: 2px solid var(--accent-purple);">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center;">
+                        <div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Orders</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);" id="commissionTotalOrders">0</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Amount</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-blue);" id="commissionTotalAmount">$0.00</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Commission (8%)</div>
+                            <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);" id="commissionTotalPay">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Inventory Management Modal -->
     <div id="inventoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; overflow-y: auto;">
         <div style="max-width: 600px; margin: 50px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);">
@@ -12138,6 +12206,182 @@ ${employeeReport || 'No activity recorded today'}
             // Build monthly breakdown
             renderMonthlyBreakdown(filteredOrders);
         }
+
+        // Store for commission details modal data
+        let currentCommissionOrders = [];
+
+        // Show commission details modal
+        function showCommissionDetails(period) {
+            const salesRepFilter = document.getElementById('salesRepFilter')?.value || 'all';
+            const filteredOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+            let orders = [];
+            let title = '';
+            let subtitle = '';
+            let startDate, endDate;
+
+            if (period === 'currentMonth') {
+                orders = getPaidOrdersForMonth(filteredOrders, currentYear, currentMonth);
+                title = `Commission Details - ${getMonthName(currentMonth)} ${currentYear}`;
+                startDate = new Date(currentYear, currentMonth, 1);
+                endDate = new Date(currentYear, currentMonth + 1, 0);
+                subtitle = `Payments from ${formatDateShort(startDate)} to ${formatDateShort(endDate)}`;
+            } else if (period === 'prevMonth') {
+                orders = getPaidOrdersForMonth(filteredOrders, prevYear, prevMonth);
+                title = `Commission Details - ${getMonthName(prevMonth)} ${prevYear}`;
+                startDate = new Date(prevYear, prevMonth, 1);
+                endDate = new Date(prevYear, prevMonth + 1, 0);
+                subtitle = `Payments from ${formatDateShort(startDate)} to ${formatDateShort(endDate)}`;
+            } else if (period === 'nextPaycheck') {
+                const paydayInfo = getNextPaydayInfo();
+                orders = getPaidOrdersBetweenDates(filteredOrders, paydayInfo.lastCommissionPayday, now);
+                const paydayFormatted = paydayInfo.nextPayday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                title = `Commission Details - Next Paycheck (${paydayFormatted})`;
+                subtitle = `Payments from ${formatDateShort(paydayInfo.lastCommissionPayday)} to ${formatDateShort(now)}`;
+            }
+
+            // Store for clipboard copy
+            currentCommissionOrders = orders;
+
+            // Update modal content
+            document.getElementById('commissionModalTitle').textContent = title;
+            document.getElementById('commissionModalSubtitle').textContent = subtitle;
+
+            // Build table rows
+            const tbody = document.getElementById('commissionDetailsBody');
+            let totalAmount = 0;
+            let totalCommission = 0;
+
+            if (orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="padding: 30px; text-align: center; color: var(--text-secondary);">No paid orders found for this period</td></tr>`;
+            } else {
+                // Sort orders by paid_date
+                const sortedOrders = [...orders].sort((a, b) => {
+                    const dateA = new Date(a.paid_date || a.created_on);
+                    const dateB = new Date(b.paid_date || b.created_on);
+                    return dateA - dateB;
+                });
+
+                tbody.innerHTML = sortedOrders.map((order, index) => {
+                    const invoiceNumber = order.short_id || order.number || 'N/A';
+                    const store = order.customer?.display_name || order.customer?.name || 'Unknown';
+                    const amount = order.total?.amount || 0;
+                    const payAmount = amount * COMMISSION_RATE;
+                    const paidDate = order.paid_date ? formatDateShort(new Date(order.paid_date)) : 'N/A';
+
+                    totalAmount += amount;
+                    totalCommission += payAmount;
+
+                    const rowBg = index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
+
+                    return `<tr style="background: ${rowBg}; border-bottom: 1px solid var(--border);">
+                        <td style="padding: 12px; color: var(--accent-blue); font-family: 'Space Mono', monospace;">${invoiceNumber}</td>
+                        <td style="padding: 12px; color: var(--text-primary);">${escapeHtml(store)}</td>
+                        <td style="padding: 12px; text-align: right; color: var(--text-primary);">$${amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td style="padding: 12px; text-align: right; color: var(--accent-green); font-weight: 600;">$${payAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td style="padding: 12px; color: var(--text-secondary);">${paidDate}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            // Update totals
+            document.getElementById('commissionTotalOrders').textContent = orders.length.toLocaleString();
+            document.getElementById('commissionTotalAmount').textContent = '$' + totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('commissionTotalPay').textContent = '$' + totalCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            // Show modal
+            document.getElementById('commissionDetailsModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close commission details modal
+        function closeCommissionDetailsModal() {
+            document.getElementById('commissionDetailsModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Format date in short format (e.g., "Dec 15, 2024")
+        function formatDateShort(date) {
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Copy commission details to clipboard
+        function copyCommissionToClipboard() {
+            if (currentCommissionOrders.length === 0) {
+                alert('No orders to copy');
+                return;
+            }
+
+            // Sort orders by paid_date
+            const sortedOrders = [...currentCommissionOrders].sort((a, b) => {
+                const dateA = new Date(a.paid_date || a.created_on);
+                const dateB = new Date(b.paid_date || b.created_on);
+                return dateA - dateB;
+            });
+
+            // Build tab-separated data (for pasting into spreadsheet)
+            let clipboardData = 'Invoice Number\tStore\tAmount\tPay Amount\tPaid Date\n';
+            let totalAmount = 0;
+            let totalCommission = 0;
+
+            sortedOrders.forEach(order => {
+                const invoiceNumber = order.short_id || order.number || 'N/A';
+                const store = order.customer?.display_name || order.customer?.name || 'Unknown';
+                const amount = order.total?.amount || 0;
+                const payAmount = amount * COMMISSION_RATE;
+                const paidDate = order.paid_date ? formatDateShort(new Date(order.paid_date)) : 'N/A';
+
+                totalAmount += amount;
+                totalCommission += payAmount;
+
+                clipboardData += `${invoiceNumber}\t${store}\t$${amount.toFixed(2)}\t$${payAmount.toFixed(2)}\t${paidDate}\n`;
+            });
+
+            // Add totals row
+            clipboardData += `\nTOTAL\t${sortedOrders.length} orders\t$${totalAmount.toFixed(2)}\t$${totalCommission.toFixed(2)}\t\n`;
+
+            navigator.clipboard.writeText(clipboardData).then(() => {
+                const statusEl = document.getElementById('commissionCopyStatus');
+                statusEl.style.display = 'inline';
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        // Close modal on backdrop click
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('commissionDetailsModal');
+            if (e.target === modal) {
+                closeCommissionDetailsModal();
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('commissionDetailsModal');
+                if (modal && modal.style.display === 'block') {
+                    closeCommissionDetailsModal();
+                }
+            }
+        });
 
         // Render monthly sales breakdown
         function renderMonthlyBreakdown(orders) {
