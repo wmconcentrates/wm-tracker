@@ -3447,11 +3447,12 @@
                                     <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Clock Out</th>
                                     <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Hours</th>
                                     <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Daily Total</th>
+                                    <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="timecardTableBody">
                                 <tr>
-                                    <td colspan="5" style="padding: 40px; text-align: center; color: var(--text-secondary);">Select an employee to view their timecard</td>
+                                    <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-secondary);">Select an employee to view their timecard</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -3484,6 +3485,50 @@
         </div>
     </div>
 
+    <!-- Edit Punch Time Modal -->
+    <div id="editPunchModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 80px auto; background: var(--bg-secondary); border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(255, 107, 0, 0.4); border: 2px solid var(--accent-orange);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="color: var(--accent-orange); margin: 0;">✏️ Edit Punch Time</h2>
+                <button onclick="closeEditPunchModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">×</button>
+            </div>
+            
+            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Employee</div>
+                        <div id="editPunchEmployee" style="font-weight: 600; color: var(--text-primary);"></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Punch Type</div>
+                        <div id="editPunchType" style="font-weight: 600;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Original Time</label>
+                <div id="editPunchOriginal" style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; color: var(--text-primary);"></div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">New Date & Time</label>
+                <input type="datetime-local" id="editPunchNewTime" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Reason for Adjustment <span style="color: var(--accent-red);">*</span></label>
+                <textarea id="editPunchReason" rows="3" placeholder="Explain why this time needs to be adjusted..." style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+            </div>
+            
+            <input type="hidden" id="editPunchId">
+            
+            <div style="display: flex; gap: 15px;">
+                <button onclick="saveEditedPunch()" style="flex: 1; padding: 15px; background: var(--accent-green); border: none; border-radius: 10px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">💾 Save Changes</button>
+                <button onclick="closeEditPunchModal()" style="flex: 1; padding: 15px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 1rem; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
     <!-- Overtime Alert Modal -->
     <div id="overtimeAlertModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10005; overflow-y: auto;">
         <div style="max-width: 400px; margin: 100px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(255, 107, 0, 0.6); border: 3px solid var(--accent-orange);">
@@ -13020,7 +13065,7 @@ ${employeeReport || 'No activity recorded today'}
             let totalCommission = 0;
 
             if (orders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="padding: 30px; text-align: center; color: var(--text-secondary);">No paid orders found for this period</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="padding: 30px; text-align: center; color: var(--text-secondary);">No paid orders found for this period</td></tr>`;
             } else {
                 // Sort orders by paid_date
                 const sortedOrders = [...orders].sort((a, b) => {
@@ -14558,7 +14603,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             if (!employeeName) {
                 document.getElementById('timecardTableBody').innerHTML =
-                    '<tr><td colspan="5" style="padding: 40px; text-align: center; color: var(--text-secondary);">Select an employee to view their timecard</td></tr>';
+                    '<tr><td colspan="6" style="padding: 40px; text-align: center; color: var(--text-secondary);">Select an employee to view their timecard</td></tr>';
                 document.getElementById('timecardSummary').style.display = 'none';
                 return;
             }
@@ -14573,7 +14618,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const summary = document.getElementById('timecardSummary');
 
             if (!punches || punches.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="padding: 40px; text-align: center; color: var(--text-secondary);">No time records found for this period</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="padding: 40px; text-align: center; color: var(--text-secondary);">No time records found for this period</td></tr>';
                 summary.style.display = 'none';
                 return;
             }
@@ -14630,6 +14675,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         html += '<td style="padding: 12px; text-align: center; color: var(--accent-orange);">' + outTime + '</td>';
                         html += '<td style="padding: 12px; text-align: right; color: var(--accent-blue);">' + pairHours.toFixed(2) + '</td>';
                         html += '<td style="padding: 12px; text-align: right; font-weight: 600; color: ' + (dayHours > 8 ? 'var(--accent-orange)' : 'var(--accent-green)') + ';">' + (isFirst ? dayHours.toFixed(2) : '') + '</td>';
+                        html += '<td style="padding: 12px; text-align: center;"><button onclick="openEditPunchModal(' + punch.id + ')" style="padding: 4px 8px; background: var(--accent-blue); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem; margin-right: 4px;" title="Edit Clock In">In</button>';
+                        if (nextPunch && nextPunch.punch_type === 'out') {
+                            html += '<button onclick="openEditPunchModal(' + nextPunch.id + ')" style="padding: 4px 8px; background: var(--accent-orange); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem;" title="Edit Clock Out">Out</button>';
+                        }
+                        html += '</td>';
                         html += '</tr>';
                     }
                 }
@@ -14650,6 +14700,99 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         // Print/Export timecard
+        // Edit punch time functions
+        let currentEditPunch = null;
+        
+        async function openEditPunchModal(punchId) {
+            // Fetch the punch record
+            const { data: punch, error } = await supabaseClient
+                .from('timeclock')
+                .select('*')
+                .eq('id', punchId)
+                .single();
+            
+            if (error || !punch) {
+                alert('Error loading punch record');
+                return;
+            }
+            
+            currentEditPunch = punch;
+            
+            // Populate modal
+            document.getElementById('editPunchEmployee').textContent = punch.user_name;
+            document.getElementById('editPunchType').innerHTML = punch.punch_type === 'in' 
+                ? '<span style="color: var(--accent-green);">Clock In</span>' 
+                : '<span style="color: var(--accent-orange);">Clock Out</span>';
+            
+            const punchTime = new Date(punch.punch_time);
+            document.getElementById('editPunchOriginal').textContent = punchTime.toLocaleString();
+            
+            // Set datetime-local input value
+            const localDateTime = new Date(punchTime.getTime() - punchTime.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 16);
+            document.getElementById('editPunchNewTime').value = localDateTime;
+            document.getElementById('editPunchReason').value = '';
+            document.getElementById('editPunchId').value = punchId;
+            
+            document.getElementById('editPunchModal').style.display = 'block';
+        }
+        
+        function closeEditPunchModal() {
+            document.getElementById('editPunchModal').style.display = 'none';
+            currentEditPunch = null;
+        }
+        
+        async function saveEditedPunch() {
+            const punchId = document.getElementById('editPunchId').value;
+            const newTimeInput = document.getElementById('editPunchNewTime').value;
+            const reason = document.getElementById('editPunchReason').value.trim();
+            
+            if (!newTimeInput) {
+                alert('Please select a new date and time');
+                return;
+            }
+            
+            if (!reason) {
+                alert('Please provide a reason for this adjustment');
+                return;
+            }
+            
+            const newTime = new Date(newTimeInput).toISOString();
+            const originalTime = currentEditPunch.punch_time;
+            
+            // Update the punch record
+            const { error } = await supabaseClient
+                .from('timeclock')
+                .update({
+                    punch_time: newTime,
+                    adjustment_reason: reason,
+                    original_punch_time: originalTime,
+                    adjusted_by: currentRole ? currentRole.name : 'Admin',
+                    adjusted_at: new Date().toISOString()
+                })
+                .eq('id', punchId);
+            
+            if (error) {
+                console.error('Error updating punch:', error);
+                alert('Error saving changes. The database may need additional columns. Please check console.');
+                return;
+            }
+            
+            alert('Punch time updated successfully!
+
+Original: ' + new Date(originalTime).toLocaleString() + '
+New: ' + new Date(newTime).toLocaleString() + '
+Reason: ' + reason);
+            
+            closeEditPunchModal();
+            
+            // Refresh the timecard
+            const selectedEmployee = document.getElementById('timecardEmployeeSelect').value;
+            if (selectedEmployee) {
+                loadEmployeeTimecard(selectedEmployee);
+            }
+        }
+
         function printTimecard() {
             const employeeName = document.getElementById('timecardEmployeeSelect').value;
             if (!employeeName) {
