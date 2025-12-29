@@ -1616,55 +1616,51 @@
                         <div id="testBatchDetails"></div>
                     </div>
 
-                    <!-- Batch ID Reassignment -->
+                    <!-- Finalize Batch for Testing -->
                     <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(147, 51, 234, 0.15)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-orange);">
                         <h3 style="color: var(--accent-orange); margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                            <span>📋</span> Assign New Batch Number
+                            <span>📋</span> Finalize Batch for Testing
                         </h3>
                         <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px; line-height: 1.5;">
-                            Protocol: M.D.XXXX (expiration month.day.last 4 of METRC tag)
+                            Complete this section when extraction is done. Batch ID protocol: M.D.XXXX (expiration month.day.last 4 of METRC tag)
                         </p>
-                        <div class="form-grid">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label>Last 4 Digits of New METRC Tag</label>
-                                <input type="text" id="metrcLast4" maxlength="4" placeholder="e.g., 5678" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">
-                                <div class="help-text">From the testing package tag</div>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label>Generated Batch ID</label>
-                                <input type="text" id="newBatchId" readonly placeholder="Auto-generated from expiration date" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700; background: var(--bg-primary); color: var(--accent-green);">
-                                <div class="help-text">Format: M.D.XXXX (e.g., 3.21.1234)</div>
-                            </div>
-                        </div>
 
-                        <!-- Ready for Testing Button -->
-                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(245, 158, 11, 0.3);">
-                            <div id="readyForTestingStatus" style="margin-bottom: 10px;"></div>
-                            <button type="button" id="markReadyForTestingBtn" onclick="markReadyForTesting()" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; width: 100%;">
-                                <span>✓</span> Mark as Extraction Complete (Ready for Testing)
-                            </button>
-                            <div class="help-text" style="margin-top: 8px;">Use this when extraction is done but batch hasn't been submitted to the lab yet</div>
-                        </div>
-                    </div>
+                        <div id="readyForTestingStatus" style="margin-bottom: 15px;"></div>
 
-                    <!-- Product Name Section -->
-                    <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(59, 130, 246, 0.15)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-purple);">
-                        <h3 style="color: var(--accent-purple); margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                            <span>🏷️</span> Final Product Name & Classification
-                        </h3>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px; line-height: 1.5;">
-                            This will become the batch's display name and lid color. The original strain info is preserved in notes for compliance.
-                        </p>
                         <div id="dealersChoiceAlert" style="display: none; background: rgba(245, 158, 11, 0.2); border: 2px solid var(--accent-orange); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
                             <strong style="color: var(--accent-orange);">🎲 Dealer's Choice Batch</strong>
                             <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">This batch was marked for dealer's choice at intake. Select the final strain type below.</p>
                         </div>
-                        <div class="form-grid">
+
+                        <div class="form-grid" style="margin-bottom: 15px;">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label>Product Name</label>
-                                <input type="text" id="finalProductName" placeholder="e.g., Blue Dream Live Resin, Gelato Sugar Wax" required>
-                                <div class="help-text">Becomes the batch name in all views</div>
+                                <input type="text" id="finalProductName" placeholder="e.g., Blue Dream Live Resin" required>
+                                <div class="help-text">Final name for this batch</div>
                             </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Consistency</label>
+                                <select id="finalConsistency" required>
+                                    <option value="">Select consistency...</option>
+                                    <option value="Live Resin">Live Resin</option>
+                                    <option value="Sugar Wax">Sugar Wax</option>
+                                    <option value="Budder">Budder</option>
+                                    <option value="Badder">Badder</option>
+                                    <option value="Crumble">Crumble</option>
+                                    <option value="Shatter">Shatter</option>
+                                    <option value="Diamonds">Diamonds</option>
+                                    <option value="Sauce">Sauce</option>
+                                    <option value="Live Rosin">Live Rosin</option>
+                                    <option value="Hash Rosin">Hash Rosin</option>
+                                    <option value="Dry Sift">Dry Sift</option>
+                                    <option value="Kief">Kief</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <div class="help-text">Final product consistency</div>
+                            </div>
+                        </div>
+
+                        <div class="form-grid" style="margin-bottom: 15px;">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label>Strain Type (Lid Color)</label>
                                 <select id="finalStrainType" required>
@@ -1672,9 +1668,27 @@
                                     <option value="Sativa">Sativa (Red Lid)</option>
                                     <option value="Hybrid">Hybrid (Green Lid)</option>
                                 </select>
-                                <div class="help-text">Redesignate if needed for wholesale variety</div>
+                                <div class="help-text">Redesignate if needed</div>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Last 4 of METRC Tag (Optional)</label>
+                                <input type="text" id="metrcLast4" maxlength="4" placeholder="e.g., 5678" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">
+                                <div class="help-text">For new batch ID</div>
                             </div>
                         </div>
+
+                        <div class="form-grid" style="margin-bottom: 15px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Generated Batch ID</label>
+                                <input type="text" id="newBatchId" readonly placeholder="Enter expiration date & METRC tag" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700; background: var(--bg-primary); color: var(--accent-green);">
+                                <div class="help-text">Format: M.D.XXXX</div>
+                            </div>
+                        </div>
+
+                        <button type="button" id="markReadyForTestingBtn" onclick="markReadyForTesting()" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font-size: 1.1rem;">
+                            <span>✓</span> Mark as Extraction Complete (Ready for Testing)
+                        </button>
+                        <div class="help-text" style="margin-top: 8px; text-align: center;">Saves product info and marks batch ready for lab submission</div>
                     </div>
 
                     <div class="form-grid">
@@ -8263,9 +8277,12 @@ ${employeeReport || 'No activity recorded today'}
                     document.getElementById('testCbdPercent').value = batch.test_cbd_percent || '';
                     document.getElementById('isRTA').value = batch.is_rta || 'no';
                     document.getElementById('testResultsNotes').value = batch.test_results_notes || '';
-                    // Load saved product name and strain type if exists
+                    // Load saved product name, consistency, and strain type if exists
                     if (batch.final_product_name) {
                         document.getElementById('finalProductName').value = batch.final_product_name;
+                    }
+                    if (batch.final_consistency) {
+                        document.getElementById('finalConsistency').value = batch.final_consistency;
                     }
                     if (batch.final_strain_type) {
                         document.getElementById('finalStrainType').value = batch.final_strain_type;
@@ -8283,6 +8300,11 @@ ${employeeReport || 'No activity recorded today'}
                     document.getElementById('testCbdPercent').value = '';
                     document.getElementById('isRTA').value = 'no';
                     document.getElementById('testResultsNotes').value = '';
+                    // Clear finalize fields too
+                    document.getElementById('finalProductName').value = batch.strain || '';
+                    document.getElementById('finalConsistency').value = '';
+                    // Reset button text
+                    document.getElementById('markReadyForTestingBtn').innerHTML = '<span>✓</span> Mark as Extraction Complete (Ready for Testing)';
                 }
 
                 // Update ready for testing status UI
@@ -8405,56 +8427,147 @@ ${employeeReport || 'No activity recorded today'}
                 return;
             }
 
-            // Check if already marked
-            if (batch.ready_for_testing_date) {
-                alert('This batch is already marked as ready for testing.');
+            // Get form values
+            const finalProductName = document.getElementById('finalProductName').value.trim();
+            const finalConsistency = document.getElementById('finalConsistency').value;
+            const finalStrainType = document.getElementById('finalStrainType').value;
+            const newBatchId = document.getElementById('newBatchId').value.trim();
+            const isUpdate = batch.ready_for_testing_date || batch.test_submitted_date;
+
+            // Validate required fields
+            if (!finalProductName) {
+                alert('Please enter a product name.');
+                return;
+            }
+            if (!finalConsistency) {
+                alert('Please select a consistency.');
                 return;
             }
 
-            const confirmMark = confirm(
-                `Mark batch ${batchId} as Extraction Complete?\n\n` +
-                `Strain: ${batch.strain}\n` +
-                `Product: ${batch.product_made}\n\n` +
-                `This indicates the batch is done but not yet submitted to the lab.`
-            );
+            // Check if batch ID is changing
+            let batchIdChanged = false;
+            let oldBatchId = batchId;
+            if (newBatchId && newBatchId !== batchId) {
+                const existingBatch = batches.find(b => b.id === newBatchId);
+                if (existingBatch) {
+                    alert(`Error: Batch ID "${newBatchId}" already exists. Please use a different ID.`);
+                    return;
+                }
+                batchIdChanged = true;
+            }
 
-            if (!confirmMark) return;
+            // Build confirmation message
+            let confirmMsg = isUpdate
+                ? `Update product info for batch ${batchId}?\n\n`
+                : `Finalize batch ${batchId} as Extraction Complete?\n\n`;
+            confirmMsg += `Product Name: ${finalProductName}\n`;
+            confirmMsg += `Consistency: ${finalConsistency}\n`;
+            confirmMsg += `Strain Type: ${finalStrainType}\n`;
+            if (batchIdChanged) {
+                confirmMsg += `\nNEW BATCH ID: ${newBatchId}\n`;
+            }
+            if (!isUpdate) {
+                confirmMsg += `\nThis marks the batch as ready for lab submission.`;
+            }
+
+            if (!confirm(confirmMsg)) return;
 
             const now = new Date().toISOString();
 
+            // Build timeline notes
+            const strainTypeNote = batch.strain_type !== finalStrainType ? ` | Redesignated: ${batch.strain_type} → ${finalStrainType}` : '';
+            const batchIdNote = batchIdChanged ? ` | Batch ID: ${oldBatchId} → ${newBatchId}` : '';
+
             // Add timeline entry
             const timeline = batch.timeline || [];
+            const timelineAction = isUpdate
+                ? `Updated product info - ${finalProductName} (${finalConsistency})${strainTypeNote}${batchIdNote}`
+                : `Extraction Complete - ${finalProductName} (${finalConsistency})${strainTypeNote}${batchIdNote}`;
             timeline.push({
-                stage: 'ready_for_testing',
+                stage: isUpdate ? 'product_update' : 'ready_for_testing',
                 user: currentRole.name,
                 date: now,
-                action: 'Marked as Extraction Complete - Ready for Testing'
+                action: timelineAction
             });
 
-            // Update batch in database
-            const { error } = await supabase
-                .from('batches')
-                .update({
-                    ready_for_testing_date: now,
-                    ready_for_testing_user: currentRole.name,
-                    timeline: timeline
-                })
-                .eq('id', batchId);
+            // Build update object
+            const updates = {
+                final_product_name: finalProductName,
+                final_consistency: finalConsistency,
+                final_strain_type: finalStrainType,
+                timeline: timeline
+            };
 
-            if (error) {
-                console.error('Error marking ready for testing:', error);
-                alert('Error updating batch. Please try again.');
-                return;
+            // Only set ready_for_testing fields if not already set
+            if (!batch.ready_for_testing_date) {
+                updates.ready_for_testing_date = now;
+                updates.ready_for_testing_user = currentRole.name;
             }
 
-            // Update local batch
-            batch.ready_for_testing_date = now;
-            batch.ready_for_testing_user = currentRole.name;
-            batch.timeline = timeline;
+            // Handle batch ID change
+            if (batchIdChanged) {
+                // Delete old record and insert new one with new ID
+                const { error: deleteError } = await supabase
+                    .from('batches')
+                    .delete()
+                    .eq('id', oldBatchId);
+
+                if (deleteError) {
+                    console.error('Error deleting old batch:', deleteError);
+                    alert('Error updating batch ID. Please try again.');
+                    return;
+                }
+
+                // Create new record with new ID
+                const newBatchData = { ...batch, ...updates, id: newBatchId };
+                delete newBatchData.created_at; // Let Supabase handle this
+
+                const { error: insertError } = await supabase
+                    .from('batches')
+                    .insert(newBatchData);
+
+                if (insertError) {
+                    console.error('Error creating new batch:', insertError);
+                    alert('Error creating batch with new ID. Please try again.');
+                    return;
+                }
+
+                // Update local array
+                const batchIndex = batches.findIndex(b => b.id === oldBatchId);
+                if (batchIndex !== -1) {
+                    batches[batchIndex] = { ...batch, ...updates, id: newBatchId };
+                }
+
+                // Update dropdown
+                populateTestingSelect();
+                document.getElementById('testingBatchSelect').value = newBatchId;
+                document.getElementById('currentBatchIdDisplay').textContent = newBatchId;
+
+            } else {
+                // Simple update
+                const { error } = await supabase
+                    .from('batches')
+                    .update(updates)
+                    .eq('id', batchId);
+
+                if (error) {
+                    console.error('Error marking ready for testing:', error);
+                    alert('Error updating batch. Please try again.');
+                    return;
+                }
+
+                // Update local batch
+                Object.assign(batch, updates);
+            }
 
             // Update UI
-            updateReadyForTestingUI(batch);
-            alert(`Batch ${batchId} marked as Extraction Complete!`);
+            const updatedBatch = batches.find(b => b.id === (batchIdChanged ? newBatchId : batchId));
+            updateReadyForTestingUI(updatedBatch);
+
+            const successMsg = isUpdate
+                ? `Product info updated for ${batchIdChanged ? newBatchId : batchId}!\n\n${finalProductName} (${finalConsistency})`
+                : `Batch ${batchIdChanged ? newBatchId : batchId} finalized!\n\n${finalProductName} (${finalConsistency})\nReady for lab submission.`;
+            alert(successMsg);
         }
 
         // Update the ready for testing UI based on batch status
@@ -8465,21 +8578,32 @@ ${employeeReport || 'No activity recorded today'}
             if (batch.ready_for_testing_date) {
                 const readyDate = new Date(batch.ready_for_testing_date);
                 statusDiv.innerHTML = `
-                    <div style="background: rgba(34, 197, 94, 0.2); border: 2px solid #22c55e; padding: 12px; border-radius: 8px;">
-                        <strong style="color: #22c55e;">✓ Extraction Complete</strong>
-                        <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">
-                            Marked by ${batch.ready_for_testing_user || 'Unknown'} on ${readyDate.toLocaleDateString()} at ${readyDate.toLocaleTimeString()}
-                        </p>
+                    <div style="background: rgba(34, 197, 94, 0.2); border: 2px solid #22c55e; padding: 15px; border-radius: 8px;">
+                        <strong style="color: #22c55e; font-size: 1.1rem;">✓ Extraction Complete - Ready for Testing</strong>
+                        <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                            <p style="margin: 0; color: var(--text-primary);"><strong>Product:</strong> ${batch.final_product_name || 'N/A'}</p>
+                            <p style="margin: 0; color: var(--text-primary);"><strong>Consistency:</strong> ${batch.final_consistency || 'N/A'}</p>
+                            <p style="margin: 0; color: var(--text-primary);"><strong>Strain Type:</strong> ${batch.final_strain_type || batch.strain_type}</p>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">By ${batch.ready_for_testing_user || 'Unknown'} on ${readyDate.toLocaleDateString()}</p>
+                        </div>
+                        <button type="button" onclick="editFinalizeInfo()" style="margin-top: 12px; background: rgba(245, 158, 11, 0.3); color: var(--accent-orange); border: 1px solid var(--accent-orange); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
+                            Edit Product Info
+                        </button>
                     </div>
                 `;
                 btn.style.display = 'none';
             } else if (batch.test_submitted_date) {
                 statusDiv.innerHTML = `
-                    <div style="background: rgba(59, 130, 246, 0.2); border: 2px solid #3b82f6; padding: 12px; border-radius: 8px;">
-                        <strong style="color: #3b82f6;">📤 Already Submitted to Lab</strong>
-                        <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">
-                            Submitted on ${new Date(batch.test_submitted_date).toLocaleDateString()}
-                        </p>
+                    <div style="background: rgba(59, 130, 246, 0.2); border: 2px solid #3b82f6; padding: 15px; border-radius: 8px;">
+                        <strong style="color: #3b82f6; font-size: 1.1rem;">📤 Submitted to Lab</strong>
+                        <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                            <p style="margin: 0; color: var(--text-primary);"><strong>Product:</strong> ${batch.final_product_name || 'N/A'}</p>
+                            <p style="margin: 0; color: var(--text-primary);"><strong>Consistency:</strong> ${batch.final_consistency || 'N/A'}</p>
+                            <p style="margin: 0; color: var(--text-primary);"><strong>Submitted:</strong> ${new Date(batch.test_submitted_date).toLocaleDateString()}</p>
+                        </div>
+                        <button type="button" onclick="editFinalizeInfo()" style="margin-top: 12px; background: rgba(245, 158, 11, 0.3); color: var(--accent-orange); border: 1px solid var(--accent-orange); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
+                            Edit Product Info
+                        </button>
                     </div>
                 `;
                 btn.style.display = 'none';
@@ -8487,6 +8611,13 @@ ${employeeReport || 'No activity recorded today'}
                 statusDiv.innerHTML = '';
                 btn.style.display = 'flex';
             }
+        }
+
+        // Allow editing finalize info even after marked
+        function editFinalizeInfo() {
+            const btn = document.getElementById('markReadyForTestingBtn');
+            btn.style.display = 'flex';
+            btn.innerHTML = '<span>💾</span> Update Product Info';
         }
 
         async function submitTestResults() {
