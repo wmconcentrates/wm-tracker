@@ -1179,11 +1179,6 @@
                 <h3>Labeling</h3>
                 <p>Print & apply labels</p>
             </div>
-            <div class="station-tab" data-station="wastelog">
-                <div class="icon">🗑️</div>
-                <h3>Waste Log</h3>
-                <p>Trim disposal tracking</p>
-            </div>
             <div class="station-tab" data-station="analytics">
                 <div class="icon">💰</div>
                 <h3>Analytics</h3>
@@ -1813,54 +1808,6 @@
         </div>
 
         <!-- Waste Log -->
-        <div class="station-content" id="wastelog">
-            <h2 style="margin-bottom: 30px;">🗑️ Trim Waste Log</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">Colorado MED compliant waste tracking. Disposal date is automatically set to the following Tuesday.</p>
-            
-            <!-- Summary Stats -->
-            <div class="stats-grid" style="margin-bottom: 30px;">
-                <div class="stat-card">
-                    <div class="stat-value" id="wastePendingCount">0</div>
-                    <div class="stat-label">Batches Pending Disposal</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="wasteTotalWeight">0g</div>
-                    <div class="stat-label">Total Waste Weight</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="wasteNextDisposal">--</div>
-                    <div class="stat-label">Next Disposal Date</div>
-                </div>
-            </div>
-            
-            <!-- Waste Log Table -->
-            <div style="background: var(--bg-primary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
-                <div style="max-height: 600px; overflow-y: auto;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-                        <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
-                            <tr>
-                                <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary);">Batch ID</th>
-                                <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary);">Strain</th>
-                                <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary);">Trim Weight</th>
-                                <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary);">Waste Weight</th>
-                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Type</th>
-                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Extraction Date</th>
-                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Disposal Date</th>
-                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">METRC Tag</th>
-                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Mixed With</th>
-                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Facility</th>
-                            </tr>
-                        </thead>
-                        <tbody id="wasteLogTableBody">
-                            <tr>
-                                <td colspan="10" style="padding: 40px; text-align: center; color: var(--text-secondary);">Loading waste log...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
         <!-- Analytics -->
         <div class="station-content" id="analytics">
             <h2 style="margin-bottom: 30px;">📊 Completed Batches Analytics</h2>
@@ -2161,6 +2108,50 @@
                 <div class="stat-card" id="weightDiscrepancyCard" style="display: none;">
                     <div class="stat-value" id="totalWeightLoss" style="color: var(--accent-orange);">0g</div>
                     <div class="stat-label">⚠️ Weight Loss (Bulk→Label)</div>
+                </div>
+            </div>
+
+            <!-- Waste Log Section -->
+            <div style="margin: 30px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">🗑️ Trim Waste Log</h2>
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <div style="background: var(--bg-tertiary); padding: 8px 15px; border-radius: 8px;">
+                            <span style="color: var(--text-secondary);">Pending:</span>
+                            <span id="wastePendingCount" style="color: var(--accent-orange); font-weight: 600;">0</span>
+                        </div>
+                        <div style="background: var(--bg-tertiary); padding: 8px 15px; border-radius: 8px;">
+                            <span style="color: var(--text-secondary);">Total:</span>
+                            <span id="wasteTotalWeight" style="color: var(--accent-green); font-weight: 600;">0g</span>
+                        </div>
+                        <div style="background: var(--bg-tertiary); padding: 8px 15px; border-radius: 8px;">
+                            <span style="color: var(--text-secondary);">Next Disposal:</span>
+                            <span id="wasteNextDisposal" style="color: var(--accent-blue); font-weight: 600;">--</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">Colorado MED compliant. Disposal = following Tuesday. Waste = Trim - Yield (90% estimate until yield entered).</p>
+                <div style="background: var(--bg-primary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
+                                <tr>
+                                    <th style="padding: 12px 8px; text-align: left; color: var(--text-secondary);">Batch</th>
+                                    <th style="padding: 12px 8px; text-align: left; color: var(--text-secondary);">Strain</th>
+                                    <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary);">Trim</th>
+                                    <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary);">Waste</th>
+                                    <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Extraction</th>
+                                    <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Disposal</th>
+                                    <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">METRC</th>
+                                    <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Mixed</th>
+                                    <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Facility</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wasteLogTableBody">
+                                <tr><td colspan="9" style="padding: 30px; text-align: center; color: var(--text-secondary);">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -4447,6 +4438,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 if (station === 'dashboard') {
                     updateDashboard();
                     renderBatches();
+                    renderWasteLog();
                 } else if (station === 'analytics') {
                     updateAnalytics();
                 } else if (station === 'performance') {
@@ -4462,8 +4454,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     checkRTAStatus();
                 } else if (station === 'labeling') {
                     populateLabelingSelect();
-                } else if (station === 'wastelog') {
-                    renderWasteLog();
                 } else if (station === 'frontofhouse') {
                     loadFOHRecentBatches();
                     loadFOHPosts();
@@ -9851,7 +9841,7 @@ ${employeeReport || 'No activity recorded today'}
             const wasteBatches = batches.filter(b => b.extraction_date && !b.is_sub_batch);
             
             if (wasteBatches.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="padding: 40px; text-align: center; color: var(--text-secondary);">No waste records found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="padding: 40px; text-align: center; color: var(--text-secondary);">No waste records found</td></tr>';
                 updateWasteStats([]);
                 return;
             }
@@ -9871,7 +9861,6 @@ ${employeeReport || 'No activity recorded today'}
                 html += '<td style="padding: 12px; color: var(--text-primary);">' + batch.strain + '</td>';
                 html += '<td style="padding: 12px; text-align: right; color: var(--text-secondary);">' + parseFloat(batch.trim_weight).toFixed(1) + 'g</td>';
                 html += '<td style="padding: 12px; text-align: right; font-weight: 600; color: ' + (isEstimate ? 'var(--accent-orange)' : 'var(--accent-green)') + ';">' + wasteWeight.toFixed(1) + 'g' + (isEstimate ? ' <span style="font-size: 0.75rem;">(est)</span>' : '') + '</td>';
-                html += '<td style="padding: 12px; text-align: center; color: var(--text-secondary);">' + (batch.product_made || '--') + '</td>';
                 html += '<td style="padding: 12px; text-align: center; color: var(--text-secondary);">' + new Date(batch.extraction_date).toLocaleDateString() + '</td>';
                 html += '<td style="padding: 12px; text-align: center; font-weight: 600; color: ' + (isPastDue ? 'var(--accent-red)' : 'var(--accent-blue)') + ';">' + disposalDate.toLocaleDateString() + '</td>';
                 html += '<td style="padding: 12px; text-align: center; color: var(--accent-purple);">' + (batch.metrc_tags || '--') + '</td>';
