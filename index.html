@@ -9900,32 +9900,14 @@ ${employeeReport || 'No activity recorded today'}
         
         function exportWasteLog() {
             const wasteBatches = batches.filter(b => b.extraction_date && !b.is_sub_batch);
-            if (wasteBatches.length === 0) {
-                alert('No waste records to export');
-                return;
-            }
-            
+            if (wasteBatches.length === 0) { alert('No waste records to export'); return; }
             wasteBatches.sort((a, b) => new Date(b.extraction_date) - new Date(a.extraction_date));
-            
-            let csv = 'Batch ID,Strain,Trim Weight (g),Waste Weight (g),Extraction Date,Disposal Date,METRC Tag,Mixed With,Disposal Facility
-';
-            
+            let csv = 'Batch ID,Strain,Trim Weight (g),Waste Weight (g),Extraction Date,Disposal Date,METRC Tag,Mixed With,Disposal Facility\n';
             wasteBatches.forEach(batch => {
                 const wasteWeight = calculateWasteWeight(batch);
                 const disposalDate = getNextTuesday(batch.extraction_date);
-                
-                csv += '"' + batch.id + '",';
-                csv += '"' + batch.strain + '",';
-                csv += parseFloat(batch.trim_weight).toFixed(1) + ',';
-                csv += wasteWeight.toFixed(1) + ',';
-                csv += '"' + new Date(batch.extraction_date).toLocaleDateString() + '",';
-                csv += '"' + disposalDate.toLocaleDateString() + '",';
-                csv += '"' + (batch.metrc_tags || '') + '",';
-                csv += '"Filter Media",';
-                csv += '"Waste Management"
-';
+                csv += '"' + batch.id + '","' + batch.strain + '",' + parseFloat(batch.trim_weight).toFixed(1) + ',' + wasteWeight.toFixed(1) + ',"' + new Date(batch.extraction_date).toLocaleDateString() + '","' + disposalDate.toLocaleDateString() + '","' + (batch.metrc_tags || '') + '","Filter Media","Waste Management"\n';
             });
-            
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -9934,6 +9916,7 @@ ${employeeReport || 'No activity recorded today'}
             a.click();
             URL.revokeObjectURL(url);
         }
+
 
 
         function updateAnalytics() {
