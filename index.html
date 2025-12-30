@@ -1846,11 +1846,14 @@
                                 <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Type</th>
                                 <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Extraction Date</th>
                                 <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Disposal Date</th>
+                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">METRC Tag</th>
+                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Mixed With</th>
+                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Facility</th>
                             </tr>
                         </thead>
                         <tbody id="wasteLogTableBody">
                             <tr>
-                                <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">Loading waste log...</td>
+                                <td colspan="10" style="padding: 40px; text-align: center; color: var(--text-secondary);">Loading waste log...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -9848,7 +9851,7 @@ ${employeeReport || 'No activity recorded today'}
             const wasteBatches = batches.filter(b => b.extraction_date && !b.is_sub_batch);
             
             if (wasteBatches.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">No waste records found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="padding: 40px; text-align: center; color: var(--text-secondary);">No waste records found</td></tr>';
                 updateWasteStats([]);
                 return;
             }
@@ -9871,6 +9874,9 @@ ${employeeReport || 'No activity recorded today'}
                 html += '<td style="padding: 12px; text-align: center; color: var(--text-secondary);">' + (batch.product_made || '--') + '</td>';
                 html += '<td style="padding: 12px; text-align: center; color: var(--text-secondary);">' + new Date(batch.extraction_date).toLocaleDateString() + '</td>';
                 html += '<td style="padding: 12px; text-align: center; font-weight: 600; color: ' + (isPastDue ? 'var(--accent-red)' : 'var(--accent-blue)') + ';">' + disposalDate.toLocaleDateString() + '</td>';
+                html += '<td style="padding: 12px; text-align: center; color: var(--accent-purple);">' + (batch.metrc_tags || '--') + '</td>';
+                html += '<td style="padding: 12px; text-align: center; color: var(--text-secondary);">Filter Media</td>';
+                html += '<td style="padding: 12px; text-align: center; color: var(--text-secondary);">Waste Management</td>';
                 html += '</tr>';
             });
             
