@@ -1419,7 +1419,25 @@
                                 <input type="number" id="sampleWeight" step="0.1" required>
                             </div>
                         </div>
-                        
+
+                        <!-- Output Containers Section -->
+                        <div id="outputContainersSection" style="display: none; background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                            <div id="bulkJarsOutput" style="display: none;">
+                                <div class="form-group">
+                                    <label style="color: var(--accent-purple);">📦 Number of Output Jars</label>
+                                    <input type="number" id="outputJarsCount" min="1" value="1" style="max-width: 150px;">
+                                    <div class="help-text">How many jars after merging/post-extraction?</div>
+                                </div>
+                            </div>
+                            <div id="shatterSlabsOutput" style="display: none;">
+                                <div class="form-group">
+                                    <label style="color: var(--accent-orange);">🔶 Number of Output Slabs</label>
+                                    <input type="number" id="outputSlabsCount" min="1" value="1" style="max-width: 150px;">
+                                    <div class="help-text">How many slabs after post-extraction?</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label>QC Notes</label>
                             <textarea id="finishingNotes" placeholder="Quality observations, color, consistency, issues..."></textarea>
@@ -5092,8 +5110,35 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     }
                     info += `<p style="color: var(--accent-orange);"><strong>Note:</strong> Actual weight will be entered below or when splitting</p>`;
                 }
-                
+
                 document.getElementById('batchInfoContent').innerHTML = info;
+
+                // Show/hide output containers section based on product type
+                const outputSection = document.getElementById('outputContainersSection');
+                const bulkJarsOutput = document.getElementById('bulkJarsOutput');
+                const shatterSlabsOutput = document.getElementById('shatterSlabsOutput');
+                const productMade = batch.product_made || '';
+
+                // Check if it's a bulk product (Wax, Sugar Wax) or Shatter
+                const isBulk = productMade === 'Wax' || productMade === 'Sugar Wax' ||
+                               batch.extraction_bowls > 0 || batch.bulk_jars_count > 0;
+                const isShatter = productMade === 'Shatter' ||
+                                  batch.extraction_slabs > 0 || batch.shatter_slabs_count > 0;
+
+                if (isBulk || isShatter) {
+                    outputSection.style.display = 'block';
+                    bulkJarsOutput.style.display = isBulk ? 'block' : 'none';
+                    shatterSlabsOutput.style.display = isShatter ? 'block' : 'none';
+
+                    // Set default values
+                    // Bulk (wax/sugar) defaults to 1 jar
+                    document.getElementById('outputJarsCount').value = 1;
+                    // Shatter defaults to same number of input slabs
+                    const inputSlabs = batch.extraction_slabs || batch.shatter_slabs_count || 1;
+                    document.getElementById('outputSlabsCount').value = inputSlabs;
+                } else {
+                    outputSection.style.display = 'none';
+                }
             }
         });
 
@@ -5336,27 +5381,57 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const finalWeight = parseFloat(document.getElementById('finalWeight').value);
             const sampleWeight = parseFloat(document.getElementById('sampleWeight').value);
             const netWeight = finalWeight - sampleWeight;
-            
+
+            // Get output container counts
+            const outputJarsCount = parseInt(document.getElementById('outputJarsCount').value) || 1;
+            const outputSlabsCount = parseInt(document.getElementById('outputSlabsCount').value) || 1;
+
+            // Determine if bulk or shatter based on product type
+            const productMade = batch.product_made || '';
+            const isBulk = productMade === 'Wax' || productMade === 'Sugar Wax' ||
+                           batch.extraction_bowls > 0 || batch.bulk_jars_count > 0;
+            const isShatter = productMade === 'Shatter' ||
+                              batch.extraction_slabs > 0 || batch.shatter_slabs_count > 0;
+
+            // Build container info for timeline
+            let containerInfo = '';
+            if (isBulk) {
+                containerInfo = `, ${outputJarsCount} output jar${outputJarsCount > 1 ? 's' : ''}`;
+            } else if (isShatter) {
+                containerInfo = `, ${outputSlabsCount} output slab${outputSlabsCount > 1 ? 's' : ''}`;
+            }
+
             const timeline = batch.timeline || [];
             timeline.push({
                 stage: 'finishing',
                 user: currentRole ? currentRole.name : "Unknown",
                 date: new Date().toISOString(),
-                action: `Finishing completed - QC: ${finalWeight}g bulk, ${sampleWeight}g sample pulled for testing`
+                action: `Finishing completed - QC: ${finalWeight}g bulk, ${sampleWeight}g sample pulled for testing${containerInfo}`
             });
-            
+
+            // Build update object
+            const updateData = {
+                status: 'finishing',
+                finishing_date: document.getElementById('finishingDate').value,
+                final_weight: finalWeight,
+                sample_weight: sampleWeight,
+                finishing_notes: document.getElementById('finishingNotes').value,
+                finishing_user: currentRole ? currentRole.name : "Unknown",
+                net_weight: netWeight,
+                timeline: timeline
+            };
+
+            // Add output container counts
+            if (isBulk) {
+                updateData.output_jars_count = outputJarsCount;
+            }
+            if (isShatter) {
+                updateData.output_slabs_count = outputSlabsCount;
+            }
+
             const { error } = await supabaseClient
                 .from('wm_batches')
-                .update({
-                    status: 'finishing',
-                    finishing_date: document.getElementById('finishingDate').value,
-                    final_weight: finalWeight,
-                    sample_weight: sampleWeight,
-                    finishing_notes: document.getElementById('finishingNotes').value,
-                    finishing_user: currentRole ? currentRole.name : "Unknown",
-                    net_weight: netWeight,
-                    timeline: timeline
-                })
+                .update(updateData)
                 .eq('id', batchId);
             
             if (error) {
@@ -5365,20 +5440,35 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
             
+            // Build stats array for celebration
+            const celebrationStats = [
+                { value: `${finalWeight}g`, label: 'Final Weight' },
+                { value: `${((netWeight / batch.trim_weight) * 100).toFixed(1)}%`, label: 'Yield' }
+            ];
+
+            // Add container count to stats if applicable
+            if (isBulk) {
+                celebrationStats.push({ value: `${outputJarsCount}`, label: outputJarsCount === 1 ? 'Output Jar' : 'Output Jars' });
+            } else if (isShatter) {
+                celebrationStats.push({ value: `${outputSlabsCount}`, label: outputSlabsCount === 1 ? 'Output Slab' : 'Output Slabs' });
+            }
+
             showCelebration({
                 emoji: '✨',
                 title: 'Finishing Complete!',
                 message: `${batchId} has been processed and is ready for packaging.`,
-                stats: [
-                    { value: `${finalWeight}g`, label: 'Final Weight' },
-                    { value: `${((netWeight / batch.trim_weight) * 100).toFixed(1)}%`, label: 'Yield' }
-                ]
+                stats: celebrationStats
             });
 
             document.getElementById('finishingForm').style.display = 'none';
             document.getElementById('finishingBatchSelect').value = '';
             document.getElementById('finishingNotes').value = '';
-            
+
+            // Reset output containers section
+            document.getElementById('outputContainersSection').style.display = 'none';
+            document.getElementById('outputJarsCount').value = 1;
+            document.getElementById('outputSlabsCount').value = 1;
+
             await loadBatches();
             populateFinishingSelect();
         }
@@ -5393,7 +5483,16 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 const weight = batch.final_weight || batch.net_weight || 0;
                 const pauseIndicator = batch.packaging_paused ? ' ⏸️ PAUSED' : '';
                 const workerIndicator = batch.packaging_user ? ` ▶ ${batch.packaging_user.split(' ')[0]}` : '';
-                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.product_made} (${weight}g)${workerIndicator}${pauseIndicator}</option>`;
+
+                // Show output container count if available
+                let containerIndicator = '';
+                if (batch.output_jars_count && batch.output_jars_count > 0) {
+                    containerIndicator = ` [${batch.output_jars_count} jar${batch.output_jars_count > 1 ? 's' : ''}]`;
+                } else if (batch.output_slabs_count && batch.output_slabs_count > 0) {
+                    containerIndicator = ` [${batch.output_slabs_count} slab${batch.output_slabs_count > 1 ? 's' : ''}]`;
+                }
+
+                select.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain} - ${batch.product_made} (${weight}g)${containerIndicator}${workerIndicator}${pauseIndicator}</option>`;
             });
         }
 
