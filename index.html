@@ -3577,6 +3577,47 @@
             </div>
         </div>
     </div>
+    <!-- Edit Shift Modal -->
+    <div id="editShiftModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 80px auto; background: var(--bg-secondary); border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(255, 107, 0, 0.4); border: 2px solid var(--accent-orange);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="color: var(--accent-orange); margin: 0;">✏️ Edit Shift</h2>
+                <button onclick="closeEditShiftModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">×</button>
+            </div>
+            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Employee</div>
+                        <div id="editShiftEmployee" style="font-weight: 600; color: var(--text-primary);"></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Date</div>
+                        <div id="editShiftDate" style="font-weight: 600; color: var(--text-primary);"></div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: var(--accent-green); font-size: 0.9rem; font-weight: 600;">Clock In</label>
+                    <input type="datetime-local" id="editShiftInTime" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--accent-green); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: var(--accent-orange); font-size: 0.9rem; font-weight: 600;">Clock Out</label>
+                    <input type="datetime-local" id="editShiftOutTime" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--accent-orange); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                </div>
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Reason for Adjustment <span style="color: var(--accent-red);">*</span></label>
+                <textarea id="editShiftReason" rows="2" placeholder="e.g., Forgot to clock out, incorrect time entry" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+            </div>
+            <input type="hidden" id="editShiftInPunchId">
+            <input type="hidden" id="editShiftOutPunchId">
+            <div style="display: flex; gap: 15px;">
+                <button onclick="saveEditedShift()" style="flex: 1; padding: 15px; background: var(--accent-green); border: none; border-radius: 10px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">💾 Save Changes</button>
+                <button onclick="closeEditShiftModal()" style="flex: 1; padding: 15px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 1rem; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
     <!-- Add Clock Out Modal -->
     <div id="addClockOutModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; overflow-y: auto;">
         <div style="max-width: 500px; margin: 80px auto; background: var(--bg-secondary); border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(255, 107, 0, 0.4); border: 2px solid var(--accent-orange);">
@@ -14869,13 +14910,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         html += '<td style="padding: 12px; text-align: center; color: var(--accent-orange);">' + outTime + '</td>';
                         html += '<td style="padding: 12px; text-align: right; color: var(--accent-blue);">' + pairHours.toFixed(2) + '</td>';
                         html += '<td style="padding: 12px; text-align: right; font-weight: 600; color: ' + (dayHours > 8 ? 'var(--accent-orange)' : 'var(--accent-green)') + ';">' + (isFirst ? dayHours.toFixed(2) : '') + '</td>';
-                        html += '<td style="padding: 12px; text-align: center;"><button onclick="openEditPunchModal(' + punch.id + ')" style="padding: 4px 8px; background: var(--accent-blue); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem; margin-right: 4px;" title="Edit Clock In">In</button>';
-                        if (nextPunch && nextPunch.punch_type === 'out') {
-                            html += '<button onclick="openEditPunchModal(' + nextPunch.id + ')" style="padding: 4px 8px; background: var(--accent-orange); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem;" title="Edit Clock Out">Out</button>';
-                        } else {
-                            html += '<button onclick="openAddClockOutModal(' + punch.id + ')" style="padding: 4px 8px; background: var(--accent-orange); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem;" title="Add Clock Out">+ Out</button>';
-                        }
-                        html += '</td>';
+                        const outPunchId = (nextPunch && nextPunch.punch_type === 'out') ? nextPunch.id : 'null';
+                        html += '<td style="padding: 12px; text-align: center;"><button onclick="openEditShiftModal(' + punch.id + ', ' + outPunchId + ')" style="padding: 6px 12px; background: var(--accent-blue); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem;" title="Edit Shift">Edit</button></td>';
                         html += '</tr>';
                     }
                 }
@@ -15024,6 +15060,101 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (error) { alert('Error adding clock out: ' + error.message); return; }
             alert('Clock out added for ' + clockInPunch.user_name + '!\n\nTime: ' + new Date(clockOutTime).toLocaleString() + '\nReason: ' + reason);
             closeAddClockOutModal();
+            const selectedEmployee = document.getElementById('timecardEmployeeSelect').value;
+            if (selectedEmployee) { loadEmployeeTimecard(selectedEmployee); }
+        }
+
+        // Edit Shift functions
+        async function openEditShiftModal(inPunchId, outPunchId) {
+            const { data: inPunch, error: inError } = await supabaseClient
+                .from('timeclock')
+                .select('*')
+                .eq('id', inPunchId)
+                .single();
+            if (inError || !inPunch) { alert('Error loading clock-in record'); return; }
+
+            document.getElementById('editShiftEmployee').textContent = inPunch.user_name;
+            document.getElementById('editShiftDate').textContent = new Date(inPunch.punch_time).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+            document.getElementById('editShiftInPunchId').value = inPunchId;
+            document.getElementById('editShiftOutPunchId').value = outPunchId || '';
+
+            const inTime = new Date(inPunch.punch_time);
+            const inTimeLocal = new Date(inTime.getTime() - inTime.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('editShiftInTime').value = inTimeLocal;
+
+            if (outPunchId && outPunchId !== 'null') {
+                const { data: outPunch, error: outError } = await supabaseClient
+                    .from('timeclock')
+                    .select('*')
+                    .eq('id', outPunchId)
+                    .single();
+                if (outPunch) {
+                    const outTime = new Date(outPunch.punch_time);
+                    const outTimeLocal = new Date(outTime.getTime() - outTime.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                    document.getElementById('editShiftOutTime').value = outTimeLocal;
+                }
+            } else {
+                document.getElementById('editShiftOutTime').value = '';
+            }
+
+            document.getElementById('editShiftReason').value = '';
+            document.getElementById('editShiftModal').style.display = 'block';
+        }
+
+        function closeEditShiftModal() {
+            document.getElementById('editShiftModal').style.display = 'none';
+        }
+
+        async function saveEditedShift() {
+            const inPunchId = document.getElementById('editShiftInPunchId').value;
+            const outPunchId = document.getElementById('editShiftOutPunchId').value;
+            const newInTime = document.getElementById('editShiftInTime').value;
+            const newOutTime = document.getElementById('editShiftOutTime').value;
+            const reason = document.getElementById('editShiftReason').value.trim();
+
+            if (!newInTime) { alert('Please enter a clock in time'); return; }
+            if (!reason) { alert('Please provide a reason for the adjustment'); return; }
+
+            // Update the clock in punch
+            const { error: inError } = await supabaseClient
+                .from('timeclock')
+                .update({ punch_time: new Date(newInTime).toISOString() })
+                .eq('id', inPunchId);
+            if (inError) { alert('Error updating clock in: ' + inError.message); return; }
+
+            // Handle clock out
+            if (newOutTime) {
+                if (outPunchId && outPunchId !== 'null' && outPunchId !== '') {
+                    // Update existing out punch
+                    const { error: outError } = await supabaseClient
+                        .from('timeclock')
+                        .update({ punch_time: new Date(newOutTime).toISOString() })
+                        .eq('id', outPunchId);
+                    if (outError) { alert('Error updating clock out: ' + outError.message); return; }
+                } else {
+                    // Create new out punch
+                    const { data: inPunch } = await supabaseClient
+                        .from('timeclock')
+                        .select('*')
+                        .eq('id', inPunchId)
+                        .single();
+                    if (inPunch) {
+                        const { error: insertError } = await supabaseClient
+                            .from('timeclock')
+                            .insert([{
+                                user_name: inPunch.user_name,
+                                user_role: inPunch.user_role,
+                                punch_type: 'out',
+                                punch_time: new Date(newOutTime).toISOString(),
+                                ip_address: 'admin-adjusted'
+                            }]);
+                        if (insertError) { alert('Error adding clock out: ' + insertError.message); return; }
+                    }
+                }
+            }
+
+            alert('Shift updated successfully!\n\nReason: ' + reason);
+            closeEditShiftModal();
             const selectedEmployee = document.getElementById('timecardEmployeeSelect').value;
             if (selectedEmployee) { loadEmployeeTimecard(selectedEmployee); }
         }
