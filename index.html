@@ -3577,6 +3577,40 @@
             </div>
         </div>
     </div>
+    <!-- Add Clock Out Modal -->
+    <div id="addClockOutModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 80px auto; background: var(--bg-secondary); border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(255, 107, 0, 0.4); border: 2px solid var(--accent-orange);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="color: var(--accent-orange); margin: 0;">⏱️ Add Clock Out</h2>
+                <button onclick="closeAddClockOutModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">×</button>
+            </div>
+            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Employee</div>
+                        <div id="addClockOutEmployee" style="font-weight: 600; color: var(--text-primary);"></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Clocked In At</div>
+                        <div id="addClockOutClockInTime" style="font-weight: 600; color: var(--accent-green);"></div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Clock Out Time</label>
+                <input type="datetime-local" id="addClockOutTime" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Reason <span style="color: var(--accent-red);">*</span></label>
+                <textarea id="addClockOutReason" rows="2" placeholder="e.g., Forgot to clock out" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+            </div>
+            <input type="hidden" id="addClockOutClockInId">
+            <div style="display: flex; gap: 15px;">
+                <button onclick="saveAddClockOut()" style="flex: 1; padding: 15px; background: var(--accent-green); border: none; border-radius: 10px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">💾 Add Clock Out</button>
+                <button onclick="closeAddClockOutModal()" style="flex: 1; padding: 15px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 1rem; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
     <!-- Overtime Alert Modal -->
     <div id="overtimeAlertModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10005; overflow-y: auto;">
         <div style="max-width: 400px; margin: 100px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(255, 107, 0, 0.6); border: 3px solid var(--accent-orange);">
@@ -14838,6 +14872,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         html += '<td style="padding: 12px; text-align: center;"><button onclick="openEditPunchModal(' + punch.id + ')" style="padding: 4px 8px; background: var(--accent-blue); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem; margin-right: 4px;" title="Edit Clock In">In</button>';
                         if (nextPunch && nextPunch.punch_type === 'out') {
                             html += '<button onclick="openEditPunchModal(' + nextPunch.id + ')" style="padding: 4px 8px; background: var(--accent-orange); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem;" title="Edit Clock Out">Out</button>';
+                        } else {
+                            html += '<button onclick="openAddClockOutModal(' + punch.id + ')" style="padding: 4px 8px; background: var(--accent-orange); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem;" title="Add Clock Out">+ Out</button>';
                         }
                         html += '</td>';
                         html += '</tr>';
@@ -14941,6 +14977,55 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (selectedEmployee) {
                 loadEmployeeTimecard(selectedEmployee);
             }
+        }
+
+        async function openAddClockOutModal(punchId) {
+            const { data: punch, error } = await supabaseClient
+                .from('timeclock')
+                .select('*')
+                .eq('id', punchId)
+                .single();
+            if (error || !punch) { alert('Error loading punch record'); return; }
+            document.getElementById('addClockOutEmployee').textContent = punch.user_name;
+            document.getElementById('addClockOutClockInTime').textContent = new Date(punch.punch_time).toLocaleString();
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('addClockOutTime').value = localDateTime;
+            document.getElementById('addClockOutClockInId').value = punchId;
+            document.getElementById('addClockOutReason').value = '';
+            document.getElementById('addClockOutModal').style.display = 'block';
+        }
+
+        function closeAddClockOutModal() {
+            document.getElementById('addClockOutModal').style.display = 'none';
+        }
+
+        async function saveAddClockOut() {
+            const clockInPunchId = document.getElementById('addClockOutClockInId').value;
+            const clockOutTime = document.getElementById('addClockOutTime').value;
+            const reason = document.getElementById('addClockOutReason').value.trim();
+            if (!clockOutTime) { alert('Please select a clock out time'); return; }
+            if (!reason) { alert('Please provide a reason'); return; }
+            const { data: clockInPunch, error: fetchError } = await supabaseClient
+                .from('timeclock')
+                .select('*')
+                .eq('id', clockInPunchId)
+                .single();
+            if (fetchError || !clockInPunch) { alert('Error loading clock-in record'); return; }
+            const { error } = await supabaseClient
+                .from('timeclock')
+                .insert([{
+                    user_name: clockInPunch.user_name,
+                    user_role: clockInPunch.user_role,
+                    punch_type: 'out',
+                    punch_time: new Date(clockOutTime).toISOString(),
+                    ip_address: 'admin-manual'
+                }]);
+            if (error) { alert('Error adding clock out: ' + error.message); return; }
+            alert('Clock out added for ' + clockInPunch.user_name + '!\n\nTime: ' + new Date(clockOutTime).toLocaleString() + '\nReason: ' + reason);
+            closeAddClockOutModal();
+            const selectedEmployee = document.getElementById('timecardEmployeeSelect').value;
+            if (selectedEmployee) { loadEmployeeTimecard(selectedEmployee); }
         }
 
         function printTimecard() {
