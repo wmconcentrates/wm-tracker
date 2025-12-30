@@ -1179,6 +1179,11 @@
                 <h3>Labeling</h3>
                 <p>Print & apply labels</p>
             </div>
+            <div class="station-tab" data-station="wastelog">
+                <div class="icon">🗑️</div>
+                <h3>Waste Log</h3>
+                <p>Trim disposal tracking</p>
+            </div>
             <div class="station-tab" data-station="analytics">
                 <div class="icon">💰</div>
                 <h3>Analytics</h3>
@@ -1803,6 +1808,52 @@
                         <button type="button" class="btn" id="pauseLabelingBtn" style="background: var(--accent-orange); flex: 1; min-width: 200px; display: none;" onclick="togglePauseLabeling()">⏸️ Pause</button>
                         <button type="button" class="btn" style="background: var(--accent-green); flex: 1; min-width: 200px;" onclick="markAsLabeled()">✅ Complete Labeling</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waste Log -->
+        <div class="station-content" id="wastelog">
+            <h2 style="margin-bottom: 30px;">🗑️ Trim Waste Log</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Colorado MED compliant waste tracking. Disposal date is automatically set to the following Tuesday.</p>
+            
+            <!-- Summary Stats -->
+            <div class="stats-grid" style="margin-bottom: 30px;">
+                <div class="stat-card">
+                    <div class="stat-value" id="wastePendingCount">0</div>
+                    <div class="stat-label">Batches Pending Disposal</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="wasteTotalWeight">0g</div>
+                    <div class="stat-label">Total Waste Weight</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="wasteNextDisposal">--</div>
+                    <div class="stat-label">Next Disposal Date</div>
+                </div>
+            </div>
+            
+            <!-- Waste Log Table -->
+            <div style="background: var(--bg-primary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                <div style="max-height: 600px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                        <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
+                            <tr>
+                                <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary);">Batch ID</th>
+                                <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary);">Strain</th>
+                                <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary);">Trim Weight</th>
+                                <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary);">Waste Weight</th>
+                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Type</th>
+                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Extraction Date</th>
+                                <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary);">Disposal Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wasteLogTableBody">
+                            <tr>
+                                <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">Loading waste log...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -4408,6 +4459,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     checkRTAStatus();
                 } else if (station === 'labeling') {
                     populateLabelingSelect();
+                } else if (station === 'wastelog') {
+                    renderWasteLog();
                 } else if (station === 'frontofhouse') {
                     loadFOHRecentBatches();
                     loadFOHPosts();
@@ -9760,6 +9813,94 @@ ${employeeReport || 'No activity recorded today'}
 
         // Analytics functions
         let currentAnalyticsFilter = 'all';
+
+        // Waste Log Functions
+        function getNextTuesday(fromDate) {
+            const date = new Date(fromDate);
+            const dayOfWeek = date.getDay();
+            const daysUntilTuesday = (2 - dayOfWeek + 7) % 7 || 7;
+            date.setDate(date.getDate() + daysUntilTuesday);
+            return date;
+        }
+        
+        function calculateWasteWeight(batch) {
+            const trimWeight = parseFloat(batch.trim_weight) || 0;
+            
+            // If we have actual yield data, calculate real waste
+            if (batch.crude_weight || batch.final_weight || batch.grams_labeled) {
+                const actualYield = parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.crude_weight) || 0;
+                return Math.max(0, trimWeight - actualYield);
+            }
+            
+            // Otherwise use 90% estimate
+            return trimWeight * 0.90;
+        }
+        
+        function isWasteEstimated(batch) {
+            return !(batch.crude_weight || batch.final_weight || batch.grams_labeled);
+        }
+        
+        function renderWasteLog() {
+            const tbody = document.getElementById('wasteLogTableBody');
+            if (!tbody) return;
+            
+            // Get batches that have been extracted (have extraction_date)
+            const wasteBatches = batches.filter(b => b.extraction_date && !b.is_sub_batch);
+            
+            if (wasteBatches.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">No waste records found</td></tr>';
+                updateWasteStats([]);
+                return;
+            }
+            
+            // Sort by extraction date descending
+            wasteBatches.sort((a, b) => new Date(b.extraction_date) - new Date(a.extraction_date));
+            
+            let html = '';
+            wasteBatches.forEach(batch => {
+                const wasteWeight = calculateWasteWeight(batch);
+                const isEstimate = isWasteEstimated(batch);
+                const disposalDate = getNextTuesday(batch.extraction_date);
+                const isPastDue = disposalDate < new Date();
+                
+                html += '<tr style="border-bottom: 1px solid var(--border);">';
+                html += '<td style="padding: 12px; color: var(--accent-purple); font-weight: 600;">' + batch.id + '</td>';
+                html += '<td style="padding: 12px; color: var(--text-primary);">' + batch.strain + '</td>';
+                html += '<td style="padding: 12px; text-align: right; color: var(--text-secondary);">' + parseFloat(batch.trim_weight).toFixed(1) + 'g</td>';
+                html += '<td style="padding: 12px; text-align: right; font-weight: 600; color: ' + (isEstimate ? 'var(--accent-orange)' : 'var(--accent-green)') + ';">' + wasteWeight.toFixed(1) + 'g' + (isEstimate ? ' <span style="font-size: 0.75rem;">(est)</span>' : '') + '</td>';
+                html += '<td style="padding: 12px; text-align: center; color: var(--text-secondary);">' + (batch.product_made || '--') + '</td>';
+                html += '<td style="padding: 12px; text-align: center; color: var(--text-secondary);">' + new Date(batch.extraction_date).toLocaleDateString() + '</td>';
+                html += '<td style="padding: 12px; text-align: center; font-weight: 600; color: ' + (isPastDue ? 'var(--accent-red)' : 'var(--accent-blue)') + ';">' + disposalDate.toLocaleDateString() + '</td>';
+                html += '</tr>';
+            });
+            
+            tbody.innerHTML = html;
+            updateWasteStats(wasteBatches);
+        }
+        
+        function updateWasteStats(wasteBatches) {
+            let totalWaste = 0;
+            let pendingCount = 0;
+            let nextDisposal = null;
+            const today = new Date();
+            
+            wasteBatches.forEach(batch => {
+                const wasteWeight = calculateWasteWeight(batch);
+                totalWaste += wasteWeight;
+                
+                const disposalDate = getNextTuesday(batch.extraction_date);
+                if (disposalDate >= today) {
+                    pendingCount++;
+                    if (!nextDisposal || disposalDate < nextDisposal) {
+                        nextDisposal = disposalDate;
+                    }
+                }
+            });
+            
+            document.getElementById('wastePendingCount').textContent = pendingCount;
+            document.getElementById('wasteTotalWeight').textContent = totalWaste.toFixed(1) + 'g';
+            document.getElementById('wasteNextDisposal').textContent = nextDisposal ? nextDisposal.toLocaleDateString() : '--';
+        }
 
         function updateAnalytics() {
             const completedBatches = batches.filter(b => b.status === 'complete');
