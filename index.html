@@ -1370,22 +1370,22 @@
                     </button>
                 </div>
                 
-                <!-- Extraction Queue with Sock Counts -->
-                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                    <h3 style="color: var(--accent-blue); margin-bottom: 15px;">📋 Extraction Queue</h3>
-                    <div id="extractionQueueList" style="max-height: 300px; overflow-y: auto;">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-
                 <!-- Pull Batch Buttons -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                     <button class="btn" style="background: var(--accent-green); padding: 15px; font-weight: 600;" onclick="openPullBatchModal('left')">
                         🫙 Pull Batch (Left)
                     </button>
                     <button class="btn" style="background: var(--accent-green); padding: 15px; font-weight: 600;" onclick="openPullBatchModal('right')">
                         🫙 Pull Batch (Right)
                     </button>
+                </div>
+
+                <!-- Extraction Queue with Sock Counts -->
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                    <h3 style="color: var(--accent-blue); margin-bottom: 15px;">📋 Extraction Queue</h3>
+                    <div id="extractionQueueList" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
             </div>
         </div>
