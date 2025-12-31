@@ -3080,20 +3080,17 @@
                             <!-- Populated by JS -->
                         </div>
                         <div class="form-group">
-                            <label>Primary Batch in Pot</label>
-                            <select id="machinePotBatch" disabled style="background: var(--bg-tertiary);">
+                            <label>Batch in Pot</label>
+                            <select id="machinePotBatch">
                                 <option value="">Empty / Not Loaded</option>
                             </select>
-                            <div class="help-text">Auto-set based on majority socks. Use "Run Column to Pot" to add.</div>
+                            <div class="help-text">Which batch is currently in the pot?</div>
                         </div>
-                        <div class="form-group" style="margin-bottom: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
                             <label>Runs in Pot</label>
-                            <input type="number" id="machinePotRuns" min="0" placeholder="0" readonly style="background: var(--bg-tertiary);">
-                            <div class="help-text">Auto-calculated from column runs</div>
+                            <input type="number" id="machinePotRuns" min="0" placeholder="0">
+                            <div class="help-text">How many runs have been collected in the pot?</div>
                         </div>
-                        <button type="button" class="btn" style="background: var(--accent-purple); width: 100%;" onclick="runColumnToPot()">
-                            ⚗️ Run Column to Pot
-                        </button>
                     </div>
                     
                     <!-- Filter Status -->
@@ -6982,167 +6979,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
         }
 
-        async function runColumnToPot() {
-            if (!currentMachine) return;
-
-            const columnABatch = document.getElementById('machineColumnBatch').value;
-            const columnASocks = parseInt(document.getElementById('machineColumnASocks').value) || 0;
-            const columnBBatch = document.getElementById('machineColumnBBatch').value;
-            const columnBSocks = parseInt(document.getElementById('machineColumnBSocks').value) || 0;
-
-            if (!columnABatch && !columnBBatch) {
-                alert('Please select at least one batch in a column');
-                return;
-            }
-
-            if (columnASocks + columnBSocks === 0) {
-                alert('Please select at least 1 sock to run');
-                return;
-            }
-
-            // Validate sock availability
-            if (columnABatch && columnASocks > 0) {
-                const batchA = batches.find(b => b.id === columnABatch);
-                const remainingA = batchA?.socks_remaining ?? batchA?.socks_total ?? 0;
-                if (columnASocks > remainingA) {
-                    alert(`${columnABatch} only has ${remainingA} socks remaining`);
-                    return;
-                }
-            }
-
-            if (columnBBatch && columnBSocks > 0) {
-                const batchB = batches.find(b => b.id === columnBBatch);
-                const remainingB = batchB?.socks_remaining ?? batchB?.socks_total ?? 0;
-                if (columnBSocks > remainingB) {
-                    alert(`${columnBBatch} only has ${remainingB} socks remaining`);
-                    return;
-                }
-            }
-
-            // Get current machine status
-            const machineStatus = window.currentMachineStatus || {};
-
-            // Initialize pot ledger
-            let potLedger = machineStatus.pot_ledger || [];
-            if (typeof potLedger === 'string') {
-                try { potLedger = JSON.parse(potLedger); } catch(e) { potLedger = []; }
-            }
-
-            // Add column A to pot
-            if (columnABatch && columnASocks > 0) {
-                const batchA = batches.find(b => b.id === columnABatch);
-                const existing = potLedger.find(p => p.batch_id === columnABatch);
-                if (existing) {
-                    existing.socks += columnASocks;
-                    existing.trim_weight += columnASocks * (batchA?.trim_per_sock || 0);
-                } else {
-                    potLedger.push({
-                        batch_id: columnABatch,
-                        metrc_tag: batchA?.metrc_tags,
-                        socks: columnASocks,
-                        trim_weight: columnASocks * (batchA?.trim_per_sock || 0),
-                        cultivation_license: batchA?.cultivation_license,
-                        material_agreement: batchA?.material_agreement,
-                        strain: batchA?.strain
-                    });
-                }
-
-                // Decrement socks remaining
-                const remainingA = (batchA?.socks_remaining ?? batchA?.socks_total ?? 0) - columnASocks;
-                await supabaseClient.from('wm_batches').update({ socks_remaining: remainingA }).eq('id', columnABatch);
-            }
-
-            // Add column B to pot
-            if (columnBBatch && columnBSocks > 0) {
-                const batchB = batches.find(b => b.id === columnBBatch);
-                const existing = potLedger.find(p => p.batch_id === columnBBatch);
-                if (existing) {
-                    existing.socks += columnBSocks;
-                    existing.trim_weight += columnBSocks * (batchB?.trim_per_sock || 0);
-                } else {
-                    potLedger.push({
-                        batch_id: columnBBatch,
-                        metrc_tag: batchB?.metrc_tags,
-                        socks: columnBSocks,
-                        trim_weight: columnBSocks * (batchB?.trim_per_sock || 0),
-                        cultivation_license: batchB?.cultivation_license,
-                        material_agreement: batchB?.material_agreement,
-                        strain: batchB?.strain
-                    });
-                }
-
-                // Decrement socks remaining
-                const remainingB = (batchB?.socks_remaining ?? batchB?.socks_total ?? 0) - columnBSocks;
-                await supabaseClient.from('wm_batches').update({ socks_remaining: remainingB }).eq('id', columnBBatch);
-            }
-
-            // Determine majority batch
-            const majorityBatch = potLedger.reduce((max, curr) => curr.socks > max.socks ? curr : max, potLedger[0]);
-            const totalRuns = (machineStatus.pot_runs || 0) + 1;
-
-            // Update machine status
-            const updateData = {
-                machine: currentMachine,
-                column_batch: columnABatch || null,
-                column_b_batch: columnBBatch || null,
-                column_a_socks: 0, // Reset after run
-                column_b_socks: 0,
-                pot_batch: majorityBatch?.batch_id || null,
-                pot_runs: totalRuns,
-                pot_ledger: potLedger,
-                filter_clay: machineStatus.filter_clay,
-                filter_silica: machineStatus.filter_silica,
-                filter_runs: machineStatus.filter_runs,
-                last_updated: new Date().toISOString(),
-                updated_by: currentRole?.name || 'Unknown'
-            };
-
-            const { error } = await supabaseClient
-                .from('wm_machine_status')
-                .upsert(updateData, { onConflict: 'machine' });
-
-            if (error) {
-                console.error('Error updating machine status:', error);
-                alert('Error running column to pot. Please try again.');
-                return;
-            }
-
-            // Refresh data
-            await loadBatches();
-            populateExtractionQueue();
-
-            // Update display
-            window.currentMachineStatus = updateData;
-            document.getElementById('machinePotBatch').value = majorityBatch?.batch_id || '';
-            document.getElementById('machinePotRuns').value = totalRuns;
-            document.getElementById('machineColumnASocks').value = '0';
-            document.getElementById('machineColumnBSocks').value = '0';
-            displayPotLedger(updateData);
-
-            // Refresh dropdowns to show updated sock counts
-            const columnSelect = document.getElementById('machineColumnBatch');
-            const columnBSelect = document.getElementById('machineColumnBBatch');
-            const currentA = columnSelect.value;
-            const currentB = columnBSelect.value;
-
-            columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
-            columnBSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
-            batches.forEach(batch => {
-                if (batch.status === 'intake') {
-                    const socksRemaining = batch.socks_remaining ?? batch.socks_total ?? '?';
-                    const socksTotal = batch.socks_total ?? '?';
-                    const sockDisplay = `(${socksRemaining}/${socksTotal} socks)`;
-                    const option = `<option value="${batch.id}">${batch.id} - ${batch.strain} ${sockDisplay}</option>`;
-                    columnSelect.innerHTML += option;
-                    columnBSelect.innerHTML += option;
-                }
-            });
-            columnSelect.value = currentA;
-            columnBSelect.value = currentB;
-
-            alert(`✅ Column run complete!\n\nPot now has ${totalRuns} run(s)`);
-        }
-        
         function closeMachineModal() {
             document.getElementById('machineModal').style.display = 'none';
             currentMachine = null;
