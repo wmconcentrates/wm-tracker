@@ -3071,6 +3071,9 @@
                                 </div>
                             </div>
                         </div>
+                        <button type="button" class="btn" style="background: var(--accent-orange); width: 100%; padding: 12px; margin-top: 15px;" onclick="runColumnToPot('A')">
+                            ⚗️ Run Column A to Pot
+                        </button>
                     </div>
 
                     <!-- Column B -->
@@ -3103,12 +3106,10 @@
                                 </div>
                             </div>
                         </div>
+                        <button type="button" class="btn" style="background: var(--accent-orange); width: 100%; padding: 12px; margin-top: 15px;" onclick="runColumnToPot('B')">
+                            ⚗️ Run Column B to Pot
+                        </button>
                     </div>
-
-                    <!-- Run Column Button -->
-                    <button type="button" class="btn" style="background: var(--accent-orange); width: 100%; padding: 15px; font-size: 1.1rem; margin-bottom: 20px;" onclick="runColumnToPot()">
-                        ⚗️ Run Column to Pot
-                    </button>
 
                     <!-- Pot Status -->
                     <div style="background: rgba(147, 51, 234, 0.1); border-left: 4px solid var(--accent-purple); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -7176,55 +7177,40 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             });
         }
 
-        function runColumnToPot() {
-            // Gather all socks from Column A and B
-            const columnABatch = document.getElementById('machineColumnBatch').value;
-            const columnASocks = parseInt(document.getElementById('machineColumnASocks').value) || 0;
-            const columnASecondBatch = document.getElementById('machineColumnASecondBatch').value;
+        function runColumnToPot(column) {
+            // Get socks from the specified column only
+            let columnBatch, columnSocks, columnSecondBatch;
 
-            const columnBBatch = document.getElementById('machineColumnBBatch').value;
-            const columnBSocks = parseInt(document.getElementById('machineColumnBSocks').value) || 0;
-            const columnBSecondBatch = document.getElementById('machineColumnBSecondBatch').value;
+            if (column === 'A') {
+                columnBatch = document.getElementById('machineColumnBatch').value;
+                columnSocks = parseInt(document.getElementById('machineColumnASocks').value) || 0;
+                columnSecondBatch = document.getElementById('machineColumnASecondBatch').value;
+            } else {
+                columnBatch = document.getElementById('machineColumnBBatch').value;
+                columnSocks = parseInt(document.getElementById('machineColumnBSocks').value) || 0;
+                columnSecondBatch = document.getElementById('machineColumnBSecondBatch').value;
+            }
 
-            // Build list of contributions
+            // Build list of contributions for this column
             let contributions = [];
 
-            // Column A primary
-            if (columnABatch && columnASocks > 0) {
-                const secondSockCount = (columnASocks === 1 && columnASecondBatch) ? 0 : columnASocks;
-                if (secondSockCount > 0 || columnASocks === 2) {
-                    contributions.push({ batchId: columnABatch, socks: columnASocks === 1 && columnASecondBatch ? 1 : columnASocks });
-                } else if (columnASocks === 1) {
-                    contributions.push({ batchId: columnABatch, socks: 1 });
-                }
+            // Primary batch
+            if (columnBatch && columnSocks > 0) {
+                contributions.push({ batchId: columnBatch, socks: columnSocks === 1 && columnSecondBatch ? 1 : columnSocks });
             }
 
-            // Column A second sock
-            if (columnASocks === 1 && columnASecondBatch) {
-                contributions.push({ batchId: columnASecondBatch, socks: 1 });
-            }
-
-            // Column B primary
-            if (columnBBatch && columnBSocks > 0) {
-                if (columnBSocks === 1 && columnBSecondBatch) {
-                    contributions.push({ batchId: columnBBatch, socks: 1 });
-                } else {
-                    contributions.push({ batchId: columnBBatch, socks: columnBSocks });
-                }
-            }
-
-            // Column B second sock
-            if (columnBSocks === 1 && columnBSecondBatch) {
-                contributions.push({ batchId: columnBSecondBatch, socks: 1 });
+            // Second sock from different batch
+            if (columnSocks === 1 && columnSecondBatch) {
+                contributions.push({ batchId: columnSecondBatch, socks: 1 });
             }
 
             if (contributions.length === 0) {
-                alert('No socks loaded in columns! Load batches first.');
+                alert(`No socks loaded in Column ${column}! Load a batch first.`);
                 return;
             }
 
             // Confirm run
-            let confirmMsg = '⚗️ Run Column to Pot?\n\nThis will process:\n';
+            let confirmMsg = `⚗️ Run Column ${column} to Pot?\n\nThis will process:\n`;
             contributions.forEach(c => {
                 const batch = batches.find(b => b.id === c.batchId);
                 confirmMsg += `• ${c.socks} sock(s) from ${c.batchId} - ${batch?.strain || 'Unknown'}\n`;
@@ -7298,15 +7284,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Update pot ledger display
             displayPotLedger({ pot_ledger: potLedger });
 
-            // Clear columns (they've been run)
-            document.getElementById('machineColumnBatch').value = '';
-            document.getElementById('machineColumnASocks').value = '0';
-            document.getElementById('machineColumnASecondBatch').value = '';
-            document.getElementById('columnASecondSock').style.display = 'none';
-            document.getElementById('machineColumnBBatch').value = '';
-            document.getElementById('machineColumnBSocks').value = '0';
-            document.getElementById('machineColumnBSecondBatch').value = '';
-            document.getElementById('columnBSecondSock').style.display = 'none';
+            // Clear only the column that was run
+            if (column === 'A') {
+                document.getElementById('machineColumnBatch').value = '';
+                document.getElementById('machineColumnASocks').value = '0';
+                document.getElementById('machineColumnASecondBatch').value = '';
+                document.getElementById('columnASecondSock').style.display = 'none';
+            } else {
+                document.getElementById('machineColumnBBatch').value = '';
+                document.getElementById('machineColumnBSocks').value = '0';
+                document.getElementById('machineColumnBSecondBatch').value = '';
+                document.getElementById('columnBSecondSock').style.display = 'none';
+            }
 
             // Decrement socks from batches in database
             const decrementPromises = Object.entries(socksToDecrement).map(([batchId, sockCount]) => {
@@ -7328,7 +7317,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             Promise.all(decrementPromises).then(() => {
                 // Refresh extraction queue to show updated sock counts
                 populateExtractionQueue();
-                alert('✅ Column run added to pot! Click "Save Status" to save machine state.');
+                alert(`✅ Column ${column} run added to pot! Click "Save Status" to save machine state.`);
             }).catch(err => {
                 console.error('Error updating sock counts:', err);
                 alert('⚠️ Run added to pot but error updating sock counts. Check console.');
