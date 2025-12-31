@@ -9115,11 +9115,35 @@ ${employeeReport || 'No activity recorded today'}
                     const parentBatch = batches.find(b => b.id === batch.parent_batch_id);
                     if (parentBatch) {
                         const parentTrimWeight = parseFloat(parentBatch.adjusted_trim_weight || parentBatch.trim_weight || 0);
-                        const parentTotalOutput = parseFloat(parentBatch.final_weight || parentBatch.net_weight || 0);
                         const thisBatchWeight = parseFloat(batch.final_weight || batch.net_weight || 0);
 
-                        if (parentTotalOutput > 0) {
-                            const trimUsed = (thisBatchWeight / parentTotalOutput) * parentTrimWeight;
+                        // Calculate total output from ALL batches sharing this parent's trim
+                        // This includes the parent (if it has output) and all sub-batches
+                        const allSiblings = batches.filter(b => b.parent_batch_id === batch.parent_batch_id);
+                        let totalFamilyOutput = allSiblings.reduce((sum, b) =>
+                            sum + parseFloat(b.final_weight || b.net_weight || 0), 0);
+
+                        // Also add parent's own output if it has one (some parents keep output)
+                        const parentOutput = parseFloat(parentBatch.final_weight || parentBatch.net_weight || 0);
+                        // Only add parent if it's not also a sub-batch (to avoid double counting)
+                        if (parentOutput > 0 && !parentBatch.is_sub_batch) {
+                            // Check if parent still has its own separate output
+                            const parentHasOwnProduct = parentBatch.product_made && allSiblings.length > 0;
+                            if (parentHasOwnProduct) {
+                                totalFamilyOutput += parentOutput;
+                            } else if (allSiblings.length === 0) {
+                                // No sub-batches, use parent output
+                                totalFamilyOutput = parentOutput;
+                            }
+                        }
+
+                        // If no family output calculated, fall back to parent output
+                        if (totalFamilyOutput === 0) {
+                            totalFamilyOutput = parentOutput;
+                        }
+
+                        if (totalFamilyOutput > 0) {
+                            const trimUsed = (thisBatchWeight / totalFamilyOutput) * parentTrimWeight;
                             const yieldPercent = trimUsed > 0 ? (thisBatchWeight / trimUsed) * 100 : 0;
                             trimUsedInfo = `
                                 <div style="background: rgba(59, 130, 246, 0.15); padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid var(--accent-blue);">
@@ -9135,7 +9159,7 @@ ${employeeReport || 'No activity recorded today'}
                                         </div>
                                     </div>
                                     <p style="margin: 10px 0 0 0; font-size: 0.85rem; color: var(--text-secondary);">
-                                        Sub-batch of <strong>${parentBatch.id}</strong> • Parent had ${parentTrimWeight.toFixed(1)}g total trim
+                                        Sub-batch of <strong>${parentBatch.id}</strong> • ${parentTrimWeight.toFixed(1)}g total trim ÷ ${totalFamilyOutput.toFixed(1)}g total output
                                     </p>
                                 </div>
                             `;
@@ -9149,23 +9173,54 @@ ${employeeReport || 'No activity recorded today'}
                         </div>
                     `;
                 } else {
-                    // Regular batch or post-sift BHO
+                    // Check if this batch has sub-batches (parent batch)
+                    const subBatches = batches.filter(b => b.parent_batch_id === batch.id);
                     const trimWeight = parseFloat(batch.adjusted_trim_weight || batch.trim_weight || 0);
                     const finalWeight = parseFloat(batch.final_weight || batch.net_weight || 0);
-                    const yieldPercent = trimWeight > 0 ? (finalWeight / trimWeight) * 100 : 0;
 
-                    trimUsedInfo = `
-                        <div style="background: rgba(16, 185, 129, 0.15); padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid var(--accent-green);">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong>Trim Used:</strong> <span style="font-size: 1.2rem; font-weight: 700; color: var(--accent-green);">${trimWeight.toFixed(1)}g</span>${batch.adjusted_trim_weight ? ' <span style="color: var(--text-secondary);">(after sift)</span>' : ''}
+                    if (subBatches.length > 0 && finalWeight > 0) {
+                        // Parent batch with sub-batches - calculate proportional trim
+                        const totalSubBatchOutput = subBatches.reduce((sum, b) =>
+                            sum + parseFloat(b.final_weight || b.net_weight || 0), 0);
+                        const totalFamilyOutput = finalWeight + totalSubBatchOutput;
+                        const trimUsed = totalFamilyOutput > 0 ? (finalWeight / totalFamilyOutput) * trimWeight : trimWeight;
+                        const yieldPercent = trimUsed > 0 ? (finalWeight / trimUsed) * 100 : 0;
+
+                        trimUsedInfo = `
+                            <div style="background: rgba(245, 158, 11, 0.15); padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid var(--accent-orange);">
+                                <p style="margin: 0 0 8px 0;"><strong style="color: var(--accent-orange);">📊 Calculated Trim (Has ${subBatches.length} Sub-Batch${subBatches.length > 1 ? 'es' : ''})</strong></p>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                    <div>
+                                        <span style="color: var(--text-secondary); font-size: 0.85rem;">Trim Used (this batch):</span><br>
+                                        <strong style="font-size: 1.3rem; color: var(--accent-green);">${trimUsed.toFixed(1)}g</strong>
+                                    </div>
+                                    <div>
+                                        <span style="color: var(--text-secondary); font-size: 0.85rem;">Yield:</span><br>
+                                        <strong style="font-size: 1.3rem; color: var(--accent-purple);">${yieldPercent.toFixed(2)}%</strong>
+                                    </div>
                                 </div>
-                                <div>
-                                    <strong>Yield:</strong> <span style="font-size: 1.2rem; font-weight: 700; color: var(--accent-purple);">${yieldPercent.toFixed(2)}%</span>
+                                <p style="margin: 10px 0 0 0; font-size: 0.85rem; color: var(--text-secondary);">
+                                    Total trim: ${trimWeight.toFixed(1)}g • Total output (all batches): ${totalFamilyOutput.toFixed(1)}g
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        // Regular batch without sub-batches
+                        const yieldPercent = trimWeight > 0 ? (finalWeight / trimWeight) * 100 : 0;
+
+                        trimUsedInfo = `
+                            <div style="background: rgba(16, 185, 129, 0.15); padding: 12px; border-radius: 8px; margin: 10px 0; border-left: 4px solid var(--accent-green);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong>Trim Used:</strong> <span style="font-size: 1.2rem; font-weight: 700; color: var(--accent-green);">${trimWeight.toFixed(1)}g</span>${batch.adjusted_trim_weight ? ' <span style="color: var(--text-secondary);">(after sift)</span>' : ''}
+                                    </div>
+                                    <div>
+                                        <strong>Yield:</strong> <span style="font-size: 1.2rem; font-weight: 700; color: var(--accent-purple);">${yieldPercent.toFixed(2)}%</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    }
                 }
                 
                 // Parse source contributions if they exist
@@ -11813,11 +11868,13 @@ ${employeeReport || 'No activity recorded today'}
             
             // Collect updated values
             const bulkWeight = document.getElementById('editBulkWeight').value;
+            const parsedBulkWeight = bulkWeight ? parseFloat(bulkWeight) : null;
             const updates = {
                 strain: document.getElementById('editStrainName').value,
                 strain_type: document.getElementById('editStrainType').value,
                 trim_weight: parseFloat(document.getElementById('editTrimWeight').value),
-                final_weight: bulkWeight ? parseFloat(bulkWeight) : null,
+                final_weight: parsedBulkWeight,
+                net_weight: parsedBulkWeight, // Keep net_weight in sync with final_weight
                 material_cost: parseFloat(document.getElementById('editMaterialCost').value),
                 cultivation_license: document.getElementById('editCultivationLicense').value,
                 grower_name: document.getElementById('editGrowerName').value,
