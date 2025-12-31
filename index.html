@@ -7131,8 +7131,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 socksSelect.value = Math.min(2, remaining).toString();
             }
 
+            // Re-read sock count after potential default setting
+            const actualSockCount = parseInt(socksSelect.value) || 0;
+
             // Show second sock selector when exactly 1 sock is selected
-            if (sockCount === 1 && batch) {
+            if (actualSockCount === 1 && batch) {
                 secondSockDiv.style.display = 'block';
                 populateCompatibleBatches(secondBatchSelect, batch, batchId);
             } else {
