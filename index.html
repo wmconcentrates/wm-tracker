@@ -3035,61 +3035,91 @@
             </div>
             <div style="padding: 30px;">
                 <form id="machineForm" onsubmit="event.preventDefault(); saveMachineStatus();">
-                    <!-- Columns Status -->
+                    <!-- Column A -->
                     <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                        <h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">📦 Columns</h3>
+                        <h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">📦 Column A</h3>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label>Column A Batch</label>
-                                <select id="machineColumnBatch" onchange="updateMachineSockOptions('A')">
+                                <label>Primary Batch</label>
+                                <select id="machineColumnBatch" onchange="updateColumnSockUI('A')">
                                     <option value="">Empty / Not Loaded</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>Socks (Col A)</label>
-                                <select id="machineColumnASocks">
+                                <label>Socks</label>
+                                <select id="machineColumnASocks" onchange="updateColumnSockUI('A')">
                                     <option value="0">0</option>
                                     <option value="1">1</option>
                                     <option value="2">2</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-grid" style="margin-bottom: 0;">
-                            <div class="form-group">
-                                <label>Column B Batch</label>
-                                <select id="machineColumnBBatch" onchange="updateMachineSockOptions('B')">
-                                    <option value="">Empty / Not Loaded</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Socks (Col B)</label>
-                                <select id="machineColumnBSocks">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                </select>
+                        <!-- Second sock from different batch (shows when 1 sock selected) -->
+                        <div id="columnASecondSock" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label style="color: var(--accent-orange);">+ Second Sock From</label>
+                                    <select id="machineColumnASecondBatch">
+                                        <option value="">None</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                        <div class="help-text" style="margin-top: 10px;">Select batch and number of socks for each column. Max 2 socks per column.</div>
                     </div>
-                    
+
+                    <!-- Column B -->
+                    <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">📦 Column B</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Primary Batch</label>
+                                <select id="machineColumnBBatch" onchange="updateColumnSockUI('B')">
+                                    <option value="">Empty / Not Loaded</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Socks</label>
+                                <select id="machineColumnBSocks" onchange="updateColumnSockUI('B')">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Second sock from different batch (shows when 1 sock selected) -->
+                        <div id="columnBSecondSock" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label style="color: var(--accent-orange);">+ Second Sock From</label>
+                                    <select id="machineColumnBSecondBatch">
+                                        <option value="">None</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Run Column Button -->
+                    <button type="button" class="btn" style="background: var(--accent-orange); width: 100%; padding: 15px; font-size: 1.1rem; margin-bottom: 20px;" onclick="runColumnToPot()">
+                        ⚗️ Run Column to Pot
+                    </button>
+
                     <!-- Pot Status -->
                     <div style="background: rgba(147, 51, 234, 0.1); border-left: 4px solid var(--accent-purple); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                         <h3 style="color: var(--accent-purple); margin: 0 0 15px 0;">🫙 Pot</h3>
                         <div id="potLedgerDisplay" style="display: none; background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem;">
                             <!-- Populated by JS -->
                         </div>
-                        <div class="form-group">
-                            <label>Batch in Pot</label>
-                            <select id="machinePotBatch">
-                                <option value="">Empty / Not Loaded</option>
-                            </select>
-                            <div class="help-text">Which batch is currently in the pot?</div>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label>Runs in Pot</label>
-                            <input type="number" id="machinePotRuns" min="0" placeholder="0">
-                            <div class="help-text">How many runs have been collected in the pot?</div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Batch in Pot</label>
+                                <input type="text" id="machinePotBatchDisplay" readonly style="background: var(--bg-tertiary);" placeholder="Empty">
+                                <input type="hidden" id="machinePotBatch" value="">
+                            </div>
+                            <div class="form-group">
+                                <label>Runs in Pot</label>
+                                <input type="number" id="machinePotRuns" min="0" placeholder="0" readonly style="background: var(--bg-tertiary);">
+                            </div>
                         </div>
                     </div>
                     
@@ -6891,12 +6921,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     // Populate batch dropdowns with sock counts
                     const columnSelect = document.getElementById('machineColumnBatch');
                     const columnBSelect = document.getElementById('machineColumnBBatch');
-                    const potSelect = document.getElementById('machinePotBatch');
 
                     // Clear and repopulate with sock counts
                     columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
                     columnBSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
-                    potSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
 
                     batches.forEach(batch => {
                         if (batch.status === 'intake') {
@@ -6909,17 +6937,21 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         }
                     });
 
-                    // Also add batches to pot dropdown (for display purposes)
-                    batches.forEach(batch => {
-                        if (batch.status === 'intake') {
-                            potSelect.innerHTML += `<option value="${batch.id}">${batch.id} - ${batch.strain}</option>`;
-                        }
-                    });
-
                     // Set current values
                     columnSelect.value = machineStatus.column_batch || '';
                     columnBSelect.value = machineStatus.column_b_batch || '';
-                    potSelect.value = machineStatus.pot_batch || '';
+
+                    // Set pot batch (hidden input and display)
+                    const potBatchId = machineStatus.pot_batch || '';
+                    document.getElementById('machinePotBatch').value = potBatchId;
+                    if (potBatchId) {
+                        const potBatch = batches.find(b => b.id === potBatchId);
+                        document.getElementById('machinePotBatchDisplay').value = potBatch ?
+                            `${potBatchId} - ${potBatch.strain}` : potBatchId;
+                    } else {
+                        document.getElementById('machinePotBatchDisplay').value = '';
+                    }
+
                     document.getElementById('machinePotRuns').value = machineStatus.pot_runs || 0;
                     document.getElementById('machineFilterClay').value = machineStatus.filter_clay || '';
                     document.getElementById('machineFilterSilica').value = machineStatus.filter_silica || '';
@@ -6928,6 +6960,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     // Set sock counts
                     document.getElementById('machineColumnASocks').value = machineStatus.column_a_socks || 0;
                     document.getElementById('machineColumnBSocks').value = machineStatus.column_b_socks || 0;
+
+                    // Handle secondary sock selectors visibility
+                    document.getElementById('columnASecondSock').style.display = 'none';
+                    document.getElementById('columnBSecondSock').style.display = 'none';
+                    document.getElementById('machineColumnASecondBatch').value = machineStatus.column_a_second_batch || '';
+                    document.getElementById('machineColumnBSecondBatch').value = machineStatus.column_b_second_batch || '';
+
+                    // Trigger UI update for each column if batch is set
+                    if (machineStatus.column_batch) {
+                        setTimeout(() => updateColumnSockUI('A'), 100);
+                    }
+                    if (machineStatus.column_b_batch) {
+                        setTimeout(() => updateColumnSockUI('B'), 100);
+                    }
 
                     // Display pot ledger
                     displayPotLedger(machineStatus);
@@ -6961,22 +7007,232 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             potLedgerDisplay.style.display = 'block';
         }
 
-        function updateMachineSockOptions(column) {
+        function updateColumnSockUI(column) {
             const batchSelect = column === 'A' ? document.getElementById('machineColumnBatch') : document.getElementById('machineColumnBBatch');
             const socksSelect = column === 'A' ? document.getElementById('machineColumnASocks') : document.getElementById('machineColumnBSocks');
+            const secondSockDiv = document.getElementById(`column${column}SecondSock`);
+            const secondBatchSelect = document.getElementById(`machineColumn${column}SecondBatch`);
 
             const batchId = batchSelect.value;
+            const sockCount = parseInt(socksSelect.value) || 0;
+
             if (!batchId) {
                 socksSelect.value = '0';
+                secondSockDiv.style.display = 'none';
                 return;
             }
 
             const batch = batches.find(b => b.id === batchId);
-            if (batch) {
+
+            // When batch is selected and socks not yet chosen, default to max available (up to 2)
+            if (batch && sockCount === 0) {
                 const remaining = batch.socks_remaining ?? batch.socks_total ?? 2;
-                // Default to max available (up to 2)
                 socksSelect.value = Math.min(2, remaining).toString();
             }
+
+            // Show second sock selector when exactly 1 sock is selected
+            if (sockCount === 1 && batch) {
+                secondSockDiv.style.display = 'block';
+                populateCompatibleBatches(secondBatchSelect, batch, batchId);
+            } else {
+                secondSockDiv.style.display = 'none';
+                secondBatchSelect.value = '';
+            }
+        }
+
+        function populateCompatibleBatches(selectElement, primaryBatch, excludeBatchId) {
+            // Mixing rules:
+            // - House Material (Wholesale) can mix with any Wholesale
+            // - Percentage Split can only mix with same partner (cultivation license)
+            // - Per Gram can only mix with same partner
+
+            selectElement.innerHTML = '<option value="">None (leave empty)</option>';
+
+            batches.forEach(b => {
+                if (b.id === excludeBatchId) return; // Skip primary batch
+                if (b.status !== 'intake') return; // Only intake batches
+
+                const socksRemaining = b.socks_remaining ?? b.socks_total ?? 0;
+                if (socksRemaining < 1) return; // Need at least 1 sock
+
+                let canMix = false;
+                const primaryAgreement = primaryBatch.material_agreement || '';
+                const batchAgreement = b.material_agreement || '';
+
+                // House Material / Wholesale can mix with any Wholesale
+                if (primaryAgreement === 'House Material' && batchAgreement === 'House Material') {
+                    canMix = true;
+                }
+                // Percentage Split and Per Gram can only mix with same partner
+                else if (primaryAgreement === batchAgreement &&
+                         primaryBatch.partner === b.partner) {
+                    canMix = true;
+                }
+
+                if (canMix) {
+                    const sockDisplay = `(${socksRemaining} socks left)`;
+                    selectElement.innerHTML += `<option value="${b.id}">${b.id} - ${b.strain} ${sockDisplay}</option>`;
+                }
+            });
+        }
+
+        function runColumnToPot() {
+            // Gather all socks from Column A and B
+            const columnABatch = document.getElementById('machineColumnBatch').value;
+            const columnASocks = parseInt(document.getElementById('machineColumnASocks').value) || 0;
+            const columnASecondBatch = document.getElementById('machineColumnASecondBatch').value;
+
+            const columnBBatch = document.getElementById('machineColumnBBatch').value;
+            const columnBSocks = parseInt(document.getElementById('machineColumnBSocks').value) || 0;
+            const columnBSecondBatch = document.getElementById('machineColumnBSecondBatch').value;
+
+            // Build list of contributions
+            let contributions = [];
+
+            // Column A primary
+            if (columnABatch && columnASocks > 0) {
+                const secondSockCount = (columnASocks === 1 && columnASecondBatch) ? 0 : columnASocks;
+                if (secondSockCount > 0 || columnASocks === 2) {
+                    contributions.push({ batchId: columnABatch, socks: columnASocks === 1 && columnASecondBatch ? 1 : columnASocks });
+                } else if (columnASocks === 1) {
+                    contributions.push({ batchId: columnABatch, socks: 1 });
+                }
+            }
+
+            // Column A second sock
+            if (columnASocks === 1 && columnASecondBatch) {
+                contributions.push({ batchId: columnASecondBatch, socks: 1 });
+            }
+
+            // Column B primary
+            if (columnBBatch && columnBSocks > 0) {
+                if (columnBSocks === 1 && columnBSecondBatch) {
+                    contributions.push({ batchId: columnBBatch, socks: 1 });
+                } else {
+                    contributions.push({ batchId: columnBBatch, socks: columnBSocks });
+                }
+            }
+
+            // Column B second sock
+            if (columnBSocks === 1 && columnBSecondBatch) {
+                contributions.push({ batchId: columnBSecondBatch, socks: 1 });
+            }
+
+            if (contributions.length === 0) {
+                alert('No socks loaded in columns! Load batches first.');
+                return;
+            }
+
+            // Confirm run
+            let confirmMsg = '⚗️ Run Column to Pot?\n\nThis will process:\n';
+            contributions.forEach(c => {
+                const batch = batches.find(b => b.id === c.batchId);
+                confirmMsg += `• ${c.socks} sock(s) from ${c.batchId} - ${batch?.strain || 'Unknown'}\n`;
+            });
+
+            if (!confirm(confirmMsg)) return;
+
+            // Get current pot ledger
+            const currentStatus = window.currentMachineStatus || {};
+            let potLedger = currentStatus.pot_ledger || [];
+            if (typeof potLedger === 'string') {
+                try { potLedger = JSON.parse(potLedger); } catch(e) { potLedger = []; }
+            }
+
+            // Track socks to decrement from each batch
+            let socksToDecrement = {};
+
+            // Add contributions to pot ledger
+            contributions.forEach(c => {
+                const batch = batches.find(b => b.id === c.batchId);
+                if (!batch) return;
+
+                const trimPerSock = batch.trim_per_sock || (batch.trim_weight / (batch.socks_total || 1));
+                const trimWeight = trimPerSock * c.socks;
+
+                // Check if batch already in ledger
+                const existingEntry = potLedger.find(p => p.batch_id === c.batchId);
+                if (existingEntry) {
+                    existingEntry.socks += c.socks;
+                    existingEntry.trim_weight += trimWeight;
+                } else {
+                    potLedger.push({
+                        batch_id: c.batchId,
+                        metrc_tag: batch.metrc_source_tag || '',
+                        socks: c.socks,
+                        trim_weight: trimWeight,
+                        cultivation_license: batch.partner || '',
+                        material_agreement: batch.material_agreement || '',
+                        strain: batch.strain || ''
+                    });
+                }
+
+                // Track socks to decrement
+                socksToDecrement[c.batchId] = (socksToDecrement[c.batchId] || 0) + c.socks;
+            });
+
+            // Determine majority batch for pot_batch
+            let majorityBatchId = '';
+            let maxSocks = 0;
+            potLedger.forEach(p => {
+                if (p.socks > maxSocks) {
+                    maxSocks = p.socks;
+                    majorityBatchId = p.batch_id;
+                }
+            });
+
+            // Update UI
+            document.getElementById('machinePotBatch').value = majorityBatchId;
+            const majorityBatch = batches.find(b => b.id === majorityBatchId);
+            document.getElementById('machinePotBatchDisplay').value = majorityBatch ?
+                `${majorityBatchId} - ${majorityBatch.strain}` : majorityBatchId;
+
+            // Increment pot runs
+            const currentRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
+            document.getElementById('machinePotRuns').value = currentRuns + 1;
+
+            // Update current machine status with new ledger
+            window.currentMachineStatus = window.currentMachineStatus || {};
+            window.currentMachineStatus.pot_ledger = potLedger;
+
+            // Update pot ledger display
+            displayPotLedger({ pot_ledger: potLedger });
+
+            // Clear columns (they've been run)
+            document.getElementById('machineColumnBatch').value = '';
+            document.getElementById('machineColumnASocks').value = '0';
+            document.getElementById('machineColumnASecondBatch').value = '';
+            document.getElementById('columnASecondSock').style.display = 'none';
+            document.getElementById('machineColumnBBatch').value = '';
+            document.getElementById('machineColumnBSocks').value = '0';
+            document.getElementById('machineColumnBSecondBatch').value = '';
+            document.getElementById('columnBSecondSock').style.display = 'none';
+
+            // Decrement socks from batches in database
+            const decrementPromises = Object.entries(socksToDecrement).map(([batchId, sockCount]) => {
+                const batch = batches.find(b => b.id === batchId);
+                if (!batch) return Promise.resolve();
+
+                const currentRemaining = batch.socks_remaining ?? batch.socks_total ?? 0;
+                const newRemaining = Math.max(0, currentRemaining - sockCount);
+
+                // Update local cache
+                batch.socks_remaining = newRemaining;
+
+                return supabaseClient
+                    .from('wm_batches')
+                    .update({ socks_remaining: newRemaining })
+                    .eq('id', batchId);
+            });
+
+            Promise.all(decrementPromises).then(() => {
+                // Refresh extraction queue to show updated sock counts
+                populateExtractionQueue();
+                alert('✅ Column run added to pot! Click "Save Status" to save machine state.');
+            }).catch(err => {
+                console.error('Error updating sock counts:', err);
+                alert('⚠️ Run added to pot but error updating sock counts. Check console.');
+            });
         }
 
         function closeMachineModal() {
@@ -6991,6 +7247,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const columnBBatch = document.getElementById('machineColumnBBatch').value;
             const columnASocks = parseInt(document.getElementById('machineColumnASocks').value) || 0;
             const columnBSocks = parseInt(document.getElementById('machineColumnBSocks').value) || 0;
+            const columnASecondBatch = document.getElementById('machineColumnASecondBatch').value;
+            const columnBSecondBatch = document.getElementById('machineColumnBSecondBatch').value;
             const potBatch = document.getElementById('machinePotBatch').value;
             const potRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
             const filterClay = parseFloat(document.getElementById('machineFilterClay').value) || 0;
@@ -7007,6 +7265,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 column_b_batch: columnBBatch,
                 column_a_socks: columnASocks,
                 column_b_socks: columnBSocks,
+                column_a_second_batch: columnASecondBatch,
+                column_b_second_batch: columnBSecondBatch,
                 pot_batch: potBatch,
                 pot_runs: potRuns,
                 pot_ledger: potLedger,
@@ -7048,6 +7308,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 column_b_batch: null,
                 column_a_socks: 0,
                 column_b_socks: 0,
+                column_a_second_batch: null,
+                column_b_second_batch: null,
                 pot_batch: null,
                 pot_runs: 0,
                 pot_ledger: [],
@@ -7057,7 +7319,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 last_updated: new Date().toISOString(),
                 updated_by: currentRole ? currentRole.name : 'Unknown'
             };
-            
+
             supabaseClient
                 .from('wm_machine_status')
                 .upsert(emptyStatus, { onConflict: 'machine' })
@@ -7066,11 +7328,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         console.error('Error clearing machine status:', error);
                         return;
                     }
-                    
+
                     // Clear form
                     document.getElementById('machineColumnBatch').value = '';
                     document.getElementById('machineColumnBBatch').value = '';
+                    document.getElementById('machineColumnASocks').value = '0';
+                    document.getElementById('machineColumnBSocks').value = '0';
+                    document.getElementById('machineColumnASecondBatch').value = '';
+                    document.getElementById('machineColumnBSecondBatch').value = '';
+                    document.getElementById('columnASecondSock').style.display = 'none';
+                    document.getElementById('columnBSecondSock').style.display = 'none';
                     document.getElementById('machinePotBatch').value = '';
+                    document.getElementById('machinePotBatchDisplay').value = '';
                     document.getElementById('machinePotRuns').value = '';
                     document.getElementById('machineFilterClay').value = '';
                     document.getElementById('machineFilterSilica').value = '';
