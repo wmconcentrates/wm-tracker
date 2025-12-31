@@ -3810,8 +3810,6 @@
                     <button onclick="filterPipelineStage('extraction')" class="pipeline-stage-btn" data-stage="extraction" style="background: var(--bg-tertiary); padding: 10px 20px; border-radius: 8px; border: none; color: var(--text-primary); cursor: pointer;">Extraction</button>
                     <button onclick="filterPipelineStage('finishing')" class="pipeline-stage-btn" data-stage="finishing" style="background: var(--bg-tertiary); padding: 10px 20px; border-radius: 8px; border: none; color: var(--text-primary); cursor: pointer;">Finishing</button>
                     <button onclick="filterPipelineStage('packaging')" class="pipeline-stage-btn" data-stage="packaging" style="background: var(--bg-tertiary); padding: 10px 20px; border-radius: 8px; border: none; color: var(--text-primary); cursor: pointer;">Packaging</button>
-                    <button onclick="filterPipelineStage('labeling')" class="pipeline-stage-btn" data-stage="labeling" style="background: var(--bg-tertiary); padding: 10px 20px; border-radius: 8px; border: none; color: var(--text-primary); cursor: pointer;">Labeling</button>
-                    <button onclick="filterPipelineStage('complete')" class="pipeline-stage-btn" data-stage="complete" style="background: var(--bg-tertiary); padding: 10px 20px; border-radius: 8px; border: none; color: var(--text-primary); cursor: pointer;">Complete</button>
                 </div>
 
                 <!-- Pipeline Table -->
@@ -16265,6 +16263,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return stages[status] || stages['intake'];
         }
 
+        let completedLastWeekData = { weight: 0, salesWeight: 0, count: 0 };
+
         function loadSalesPipeline() {
             // Get all batches that have post-extraction data (final_weight)
             // Exclude buy-back agreements (0% sales)
@@ -16277,10 +16277,39 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const salesPercent = getSalesPercentage(batch.material_agreement);
                 if (salesPercent === 0) return false;
 
-                // Include batches in active pipeline stages (not just intake)
-                // Status: extraction, finishing, packaging, or complete (with or without labels)
-                const validStatuses = ['extraction', 'finishing', 'packaging', 'complete'];
+                // Include batches in active pipeline stages (not complete)
+                // Status: extraction, finishing, packaging
+                const validStatuses = ['extraction', 'finishing', 'packaging'];
                 return validStatuses.includes(batch.status);
+            });
+
+            // Calculate completed last week (for the "out" stat)
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+            completedLastWeekData = { weight: 0, salesWeight: 0, count: 0 };
+            batches.forEach(batch => {
+                if (batch.status !== 'complete') return;
+
+                // Check if completed in last week (look at timeline or labeling_date)
+                let completedDate = null;
+                if (batch.labeling_date) {
+                    completedDate = new Date(batch.labeling_date);
+                } else if (batch.timeline) {
+                    const completeEvent = batch.timeline.find(t => t.stage === 'complete' || t.status === 'complete');
+                    if (completeEvent) completedDate = new Date(completeEvent.timestamp || completeEvent.date);
+                }
+
+                if (!completedDate || completedDate < oneWeekAgo) return;
+
+                // Exclude buy-backs
+                const salesPercent = getSalesPercentage(batch.material_agreement);
+                if (salesPercent === 0) return;
+
+                const weight = parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
+                completedLastWeekData.weight += weight;
+                completedLastWeekData.salesWeight += weight * (salesPercent / 100);
+                completedLastWeekData.count++;
             });
 
             // Sort by stage order, then by date
@@ -16313,8 +16342,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const stageCounts = {
                 extraction: 0,
                 finishing: 0,
-                packaging: 0,
-                complete: 0
+                packaging: 0
             };
 
             pipelineData.forEach(batch => {
@@ -16351,8 +16379,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     <div style="font-size: 0.85rem; color: var(--text-secondary);">In Finishing</div>
                 </div>
                 <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #14B8A6;">
-                    <div style="font-size: 2rem; font-weight: 700; color: #14B8A6;">${stageCounts.packaging + stageCounts.complete}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Ready/Complete</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: #14B8A6;">${stageCounts.packaging}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">In Packaging</div>
+                </div>
+                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2)); padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #10B981;">
+                    <div style="font-size: 2rem; font-weight: 700; color: #10B981;">${completedLastWeekData.salesWeight.toFixed(0)}g</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Out Last 7 Days</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">${completedLastWeekData.count} batches</div>
                 </div>
             `;
         }
@@ -16517,9 +16550,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const stageData = {
                 extraction: { count: 0, weight: 0, salesWeight: 0 },
                 finishing: { count: 0, weight: 0, salesWeight: 0 },
-                packaging: { count: 0, weight: 0, salesWeight: 0 },
-                labeling: { count: 0, weight: 0, salesWeight: 0 },
-                complete: { count: 0, weight: 0, salesWeight: 0 }
+                packaging: { count: 0, weight: 0, salesWeight: 0 }
             };
 
             pipelineData.forEach(batch => {
@@ -16527,33 +16558,21 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const salesPercent = getSalesPercentage(batch.material_agreement);
                 const salesWeight = weight * (salesPercent / 100);
 
-                let stage = batch.status;
-                // Split complete into labeling vs truly complete
-                if (batch.status === 'complete') {
-                    stage = batch.labels_applied ? 'complete' : 'labeling';
-                }
-
-                if (stageData[stage]) {
-                    stageData[stage].count++;
-                    stageData[stage].weight += weight;
-                    stageData[stage].salesWeight += salesWeight;
+                if (stageData[batch.status]) {
+                    stageData[batch.status].count++;
+                    stageData[batch.status].weight += weight;
+                    stageData[batch.status].salesWeight += salesWeight;
                 }
             });
 
             const stages = [
                 { key: 'extraction', label: 'Extraction', icon: '⚗️', color: '#8B5CF6' },
                 { key: 'finishing', label: 'Finishing', icon: '✨', color: '#F59E0B' },
-                { key: 'packaging', label: 'Packaging', icon: '📦', color: '#3B82F6' },
-                { key: 'labeling', label: 'Labeling', icon: '🏷️', color: '#EC4899' },
-                { key: 'complete', label: 'Complete', icon: '✅', color: '#10B981' }
+                { key: 'packaging', label: 'Packaging', icon: '📦', color: '#3B82F6' }
             ];
 
-            container.innerHTML = stages.map((stage, index) => {
+            let html = stages.map((stage, index) => {
                 const data = stageData[stage.key];
-                const arrow = index < stages.length - 1 ? `
-                    <div style="color: var(--text-secondary); font-size: 1.5rem; padding: 0 5px;">→</div>
-                ` : '';
-
                 return `
                     <div style="flex: 1; min-width: 120px; text-align: center; background: ${stage.color}15; padding: 15px 10px; border-radius: 10px; border: 2px solid ${stage.color}40;">
                         <div style="font-size: 1.5rem; margin-bottom: 5px;">${stage.icon}</div>
@@ -16563,9 +16582,23 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         <div style="font-size: 0.9rem; font-weight: 600; color: #10B981; margin-top: 5px;">${data.salesWeight.toFixed(0)}g</div>
                         <div style="font-size: 0.7rem; color: var(--text-secondary);">for sale</div>
                     </div>
-                    ${arrow}
+                    <div style="color: var(--text-secondary); font-size: 1.5rem; padding: 0 5px;">→</div>
                 `;
             }).join('');
+
+            // Add "Out" stage showing completed last week
+            html += `
+                <div style="flex: 1; min-width: 120px; text-align: center; background: linear-gradient(135deg, #10B98115, #3B82F615); padding: 15px 10px; border-radius: 10px; border: 2px solid #10B981;">
+                    <div style="font-size: 1.5rem; margin-bottom: 5px;">✅</div>
+                    <div style="font-weight: 600; color: #10B981; margin-bottom: 8px;">Out (7 days)</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary);">${completedLastWeekData.count}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">batches</div>
+                    <div style="font-size: 0.9rem; font-weight: 600; color: #10B981; margin-top: 5px;">${completedLastWeekData.salesWeight.toFixed(0)}g</div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary);">completed</div>
+                </div>
+            `;
+
+            container.innerHTML = html;
         }
 
     </script>
