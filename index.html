@@ -7464,13 +7464,45 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             });
 
             Promise.all(decrementPromises).then(() => {
-                // Refresh extraction queue to show updated sock counts
+                // Refresh extraction queue and column dropdowns
                 populateExtractionQueue();
+                refreshColumnDropdowns();
                 alert(`✅ Column ${column} run added to pot! Click "Save Status" to save machine state.`);
             }).catch(err => {
                 console.error('Error updating sock counts:', err);
                 alert('⚠️ Run added to pot but error updating sock counts. Check console.');
             });
+        }
+
+        function refreshColumnDropdowns() {
+            const columnSelect = document.getElementById('machineColumnBatch');
+            const columnBSelect = document.getElementById('machineColumnBBatch');
+            if (!columnSelect || !columnBSelect) return;
+
+            // Save current selections
+            const currentA = columnSelect.value;
+            const currentB = columnBSelect.value;
+
+            // Repopulate with updated sock counts
+            columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+            columnBSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+
+            batches.forEach(batch => {
+                if (batch.status === 'intake') {
+                    // Skip batches with 0 socks remaining
+                    if (batch.socks_total != null && batch.socks_remaining === 0) return;
+                    const socksRemaining = batch.socks_remaining ?? batch.socks_total ?? '?';
+                    const socksTotal = batch.socks_total ?? '?';
+                    const sockDisplay = `(${socksRemaining}/${socksTotal} socks)`;
+                    const option = `<option value="${batch.id}">${batch.id} - ${batch.strain} ${sockDisplay}</option>`;
+                    columnSelect.innerHTML += option;
+                    columnBSelect.innerHTML += option;
+                }
+            });
+
+            // Restore selections if still valid
+            columnSelect.value = currentA;
+            columnBSelect.value = currentB;
         }
 
         function closeMachineModal() {
