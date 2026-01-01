@@ -9059,7 +9059,7 @@ ${employeeReport || 'No activity recorded today'}
                         <div class="batch-id">${batch.id}</div>
                         <div class="batch-status status-${batch.status}">${batch.status.toUpperCase()}</div>
                         <div style="margin-left: auto; color: var(--accent-blue); font-size: 0.9rem; font-weight: 600;">
-                            <span id="timeline-toggle-${batch.id}">Show History ▼</span>
+                            <span id="timeline-toggle-${batch.id}">▼</span>
                         </div>
                     </div>
                     
@@ -9070,29 +9070,27 @@ ${employeeReport || 'No activity recorded today'}
                                 <div class="batch-detail-value">${batch.parent_batch_id}</div>
                             </div>
                         ` : ''}
-                        <div class="batch-detail">
-                            <div class="batch-detail-label">Product</div>
-                            <div class="batch-detail-value">${batch.strain} (${batch.strain_type})</div>
+                        <div class="batch-detail" style="grid-column: 1/-1;">
+                            <div class="batch-detail-value" style="font-size: 1.4rem; font-weight: 700;">${batch.strain} <span style="font-weight: 400; font-size: 0.9rem; color: var(--text-secondary);">(${batch.strain_type})</span></div>
                         </div>
+                        ${batch.final_weight ? `
+                            <div class="batch-detail">
+                                <div class="batch-detail-label">Net Wt</div>
+                                <div class="batch-detail-value" style="font-weight: 600;">${batch.net_weight || batch.final_weight}g</div>
+                            </div>
+                            <div class="batch-detail">
+                                <div class="batch-detail-label">Yield</div>
+                                <div class="batch-detail-value" style="font-weight: 700; font-size: 1.1rem; color: ${((parseFloat(batch.final_weight) / parseFloat(batch.trim_weight)) * 100) < 15 ? '#f44336' : (((parseFloat(batch.final_weight) / parseFloat(batch.trim_weight)) * 100) > 21 ? 'var(--accent-green)' : 'var(--accent-blue)')};">${((parseFloat(batch.final_weight) / parseFloat(batch.trim_weight)) * 100).toFixed(1)}%</div>
+                            </div>
+                        ` : ''}
                         <div class="batch-detail">
-                            <div class="batch-detail-label">Trim Weight</div>
-                            <div class="batch-detail-value">${batch.trim_weight}g${batch.is_sub_batch ? ' (allocated)' : ''}</div>
+                            <div class="batch-detail-label">Trim</div>
+                            <div class="batch-detail-value">${batch.trim_weight}g</div>
                         </div>
                         ${batch.grams_labeled ? `
                             <div class="batch-detail">
-                                <div class="batch-detail-label">Labeled Weight</div>
-                                <div class="batch-detail-value">${batch.grams_labeled}g (sellable)</div>
-                            </div>
-                            ${batch.net_weight ? `
-                                <div class="batch-detail" style="grid-column: 1/-1;">
-                                    <div class="batch-detail-label">Bulk Weight (Pre-Label)</div>
-                                    <div class="batch-detail-value">${batch.net_weight}g</div>
-                                </div>
-                            ` : ''}
-                        ` : batch.final_weight ? `
-                            <div class="batch-detail">
-                                <div class="batch-detail-label">Post-Extraction Weight</div>
-                                <div class="batch-detail-value">${batch.final_weight}g${batch.net_weight ? ` (${batch.net_weight}g net)` : ''}</div>
+                                <div class="batch-detail-label">Labeled</div>
+                                <div class="batch-detail-value">${batch.grams_labeled}g</div>
                             </div>
                         ` : ''}
                         ${(() => {
@@ -9138,9 +9136,6 @@ ${employeeReport || 'No activity recorded today'}
                     </div>
                     
                     ${(() => {
-                        const yieldData = calculateYield(batch);
-                        return yieldData ? displayYieldAlert(batch, yieldData) : '';
-                    })()}
                     
                     <div class="timeline" id="timeline-${batch.id}" style="display: none;">
                         <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
@@ -9207,7 +9202,7 @@ ${employeeReport || 'No activity recorded today'}
                 toggle.textContent = 'Hide History ▲';
             } else {
                 timeline.style.display = 'none';
-                toggle.textContent = 'Show History ▼';
+                toggle.textContent = '▼';
             }
         }
 
