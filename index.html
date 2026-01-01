@@ -312,7 +312,7 @@
 
         .header {
             background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple), var(--accent-blue));
-            padding: 30px;
+            padding: 15px 30px 30px 30px;
             border-radius: 20px;
             margin-bottom: 30px;
             box-shadow: 0 0 40px rgba(255, 16, 240, 0.4), 0 0 80px rgba(0, 240, 255, 0.2);
@@ -1129,7 +1129,7 @@
         </div>
 
         <div class="user-login" id="userLogin">
-            <h2>🔐 Enter Your PIN</h2>
+            
             <form id="pinForm" style="max-width: 300px; margin: 0 auto;" onsubmit="event.preventDefault(); login();">
                 <input type="password" 
                        id="pinInput" 
@@ -4400,7 +4400,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 laser.style.top = '0';
                 laser.style.transformOrigin = 'top center';
                 laser.style.transform = `rotate(${angle}deg)`;
-                laser.style.animation = `laser-pulse ${0.2 + Math.random() * 0.3}s ease-in-out infinite`;
+                laser.style.animation = `laser-pulse ${0.8 + Math.random() * 0.4}s ease-in-out infinite`;
 
                 // Sweep animation
                 let currentAngle = angle;
