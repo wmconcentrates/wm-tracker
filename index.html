@@ -7152,12 +7152,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
             selectElement.innerHTML = '<option value="">None (leave empty)</option>';
 
-            console.log('Primary batch:', primaryBatch.id, 'Agreement:', primaryBatch.material_agreement);
-
             batches.forEach(b => {
                 if (b.id === excludeBatchId) return; // Skip primary batch
                 if (b.status !== 'intake') return; // Only intake batches
 
+                const hasSocksData = b.socks_remaining !== undefined || b.socks_total !== undefined;
                 const socksRemaining = b.socks_remaining ?? b.socks_total ?? 2;
                 if (socksRemaining < 1) return; // Need at least 1 sock
 
@@ -7165,12 +7164,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 const primaryAgreement = primaryBatch.material_agreement || '';
                 const batchAgreement = b.material_agreement || '';
 
-                console.log('Checking batch:', b.id, 'Agreement:', batchAgreement, 'Primary:', primaryAgreement);
-
                 // Wholesale can mix with any Wholesale
                 if (primaryAgreement === 'Wholesale' && batchAgreement === 'Wholesale') {
                     canMix = true;
-                    console.log('  -> CAN MIX (both Wholesale)');
                 }
                 // Percentage Split and Per Gram can only mix with same partner
                 else if (primaryAgreement === batchAgreement &&
@@ -7179,7 +7175,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 }
 
                 if (canMix) {
-                    const sockDisplay = `(${socksRemaining} socks left)`;
+                    const sockDisplay = hasSocksData ? `(${socksRemaining} socks left)` : '';
                     selectElement.innerHTML += `<option value="${b.id}">${b.id} - ${b.strain} ${sockDisplay}</option>`;
                 }
             });
