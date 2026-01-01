@@ -1160,9 +1160,7 @@
                 <button type="submit" id="loginBtn" style="width: 100%; padding: 15px; background: var(--accent-purple); border: none; border-radius: 10px; color: white; font-size: 1.1rem; font-weight: 700; cursor: pointer;">Login</button>
                 <div id="loginError" style="color: var(--accent-red); text-align: center; margin-top: 10px; display: none;">Invalid PIN</div>
             </form>
-            <div class="current-user" id="currentUser" style="display: none; margin-top: 15px;">
-                Logged in as: <span id="userName"></span>
-            </div>
+            
         </div>
 
         <div id="appContent" style="display: none;">
@@ -3984,8 +3982,7 @@
                 currentRole = ROLES[savedRole];
                 if (currentRole) {
                     document.getElementById('userName').textContent = currentRole.name;
-                    document.getElementById('currentUser').style.display = 'block';
-                    document.getElementById('pinInput').style.display = 'none';
+                                        document.getElementById('pinInput').style.display = 'none';
                     document.getElementById('loginBtn').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
                     document.getElementById('myStatsBtn').style.display = 'block';
@@ -4564,8 +4561,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 localStorage.setItem('wmSessionId', sessionId); // Store session ID for logout tracking
                 
                 document.getElementById('userName').textContent = currentRole.name;
-                document.getElementById('currentUser').style.display = 'block';
-                document.getElementById('pinInput').style.display = 'none';
+                                document.getElementById('pinInput').style.display = 'none';
                 document.getElementById('loginBtn').style.display = 'none';
                 document.getElementById('appContent').style.display = 'block';
                 document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
