@@ -3008,15 +3008,10 @@
                 <div id="personalStatsContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 30px;">
                     <!-- Populated dynamically -->
                 </div>
-                
-                <!-- My Current Batches -->
-                <div id="myBatchesSection" style="margin-top: 30px; padding-top: 30px; border-top: 2px solid var(--border);">
-                    <h3 style="color: var(--accent-blue); margin-bottom: 20px; font-size: 1.3rem;">📋 My Current Batches</h3>
-                    <div id="myBatchesList">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-                
+
+                <!-- Sales Overdue Placeholder (hidden by default) -->
+                <div id="myBatchesSection" style="display: none; margin-top: 30px; padding-top: 30px; border-top: 2px solid var(--border);"></div>
+
                 <!-- Personal Records -->
                 <div id="personalRecords" style="padding-top: 30px; border-top: 2px solid var(--border); margin-top: 30px;">
                     <h3 style="color: var(--accent-purple); margin-bottom: 20px; text-align: center; font-size: 1.5rem;">🏆 Your Best Days</h3>
@@ -6726,7 +6721,6 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             } else {
                 populateWhatsNext();
                 populateTodayProgress();
-                populateMyBatches();
                 updatePersonalStats('today');
             }
         }
@@ -6986,48 +6980,6 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             }
             
             progressEl.innerHTML = html;
-        }
-        
-        function populateMyBatches() {
-            const userName = currentRole.name;
-            const batchesEl = document.getElementById('myBatchesList');
-            
-            const myBatches = batches.filter(b => {
-                return (b.packaging_user === userName && b.status !== 'complete') ||
-                       (b.finishing_user === userName && b.status !== 'complete') ||
-                       (b.extraction_user === userName && b.status !== 'complete') ||
-                       (b.timeline && b.timeline.some(e => e.user === userName));
-            });
-            
-            if (myBatches.length === 0) {
-                batchesEl.innerHTML = `<div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; text-align: center; color: var(--text-secondary);">
-                    No active batches assigned to you
-                </div>`;
-                return;
-            }
-            
-            batchesEl.innerHTML = myBatches.map(batch => {
-                const statusColors = {
-                    'intake': 'var(--accent-orange)',
-                    'extraction': 'var(--accent-blue)',
-                    'finishing': 'var(--accent-purple)',
-                    'packaging': 'var(--accent-green)',
-                    'complete': 'var(--accent-green)'
-                };
-                
-                return `<div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${statusColors[batch.status] || 'var(--border)'};">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-size: 1.1rem; font-weight: 700; font-family: 'Space Mono', monospace;">${batch.id}</div>
-                            <div style="color: var(--text-secondary); font-size: 0.9rem;">${batch.strain || 'Unknown'} • ${batch.status}</div>
-                        </div>
-                        <div style="text-align: right;">
-                            ${batch.units_packaged ? `<div style="font-size: 0.85rem; color: var(--text-secondary);">${batch.units_packaged} units</div>` : ''}
-                            ${batch.net_weight ? `<div style="font-size: 0.85rem; color: var(--text-secondary);">${parseFloat(batch.net_weight).toFixed(0)}g</div>` : ''}
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
         }
         
         function closePersonalStatsModal() {
