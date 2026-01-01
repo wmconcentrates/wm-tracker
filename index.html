@@ -311,25 +311,22 @@
         }
 
         .header {
-            background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple), var(--accent-blue));
-            padding: 15px 30px 30px 30px;
-            border-radius: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 0 40px rgba(255, 16, 240, 0.4), 0 0 80px rgba(0, 240, 255, 0.2);
-            border: 1px solid rgba(255, 16, 240, 0.3);
+            background: transparent;
+            padding: 20px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        
+
         .header-content {
-            gap: 25px;
+            display: flex;
+            justify-content: center;
         }
 
         .header-logo {
-            width: 150px;
-            height: 100px;
-            flex-shrink: 0;
+            width: 180px;
+            height: auto;
         }
 
         .header-logo img {
@@ -337,6 +334,26 @@
             height: auto;
             display: block;
             object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(191, 0, 255, 0.8))
+                    drop-shadow(0 0 15px rgba(191, 0, 255, 0.6))
+                    drop-shadow(0 0 30px rgba(191, 0, 255, 0.4))
+                    drop-shadow(0 0 50px rgba(0, 240, 255, 0.3));
+            animation: neon-flicker 3s ease-in-out infinite;
+        }
+
+        @keyframes neon-flicker {
+            0%, 100% {
+                filter: drop-shadow(0 0 8px rgba(191, 0, 255, 0.8))
+                        drop-shadow(0 0 15px rgba(191, 0, 255, 0.6))
+                        drop-shadow(0 0 30px rgba(191, 0, 255, 0.4))
+                        drop-shadow(0 0 50px rgba(0, 240, 255, 0.3));
+            }
+            50% {
+                filter: drop-shadow(0 0 12px rgba(191, 0, 255, 1))
+                        drop-shadow(0 0 25px rgba(191, 0, 255, 0.8))
+                        drop-shadow(0 0 45px rgba(191, 0, 255, 0.5))
+                        drop-shadow(0 0 70px rgba(0, 240, 255, 0.4));
+            }
         }
 
         .header-logo svg {
@@ -1123,7 +1140,7 @@
         <div class="header">
             <div class="header-content">
                 <div class="header-logo">
-                    <img src="https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w" alt="White Mousse" style="filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));">
+                    <img src="https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w" alt="White Mousse">
                 </div>
             </div>
         </div>
