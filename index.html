@@ -3253,7 +3253,7 @@
                     <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Only use this to correct errors or set initial inventory</p>
                 </div>
                 <div style="text-align: center; margin-bottom: 20px;">
-                    <div style="font-size: 0.9rem; color: var(--text-secondary);">Current Bulk Tank</div>
+                    <div style="font-size: 1.6rem; font-weight: 700; color: ${statusColor};">Current Bulk Tank</div>
                     <div id="editButaneCurrentDisplay" style="font-size: 2rem; font-weight: 700; color: var(--accent-blue);">0 lbs</div>
                 </div>
                 <form onsubmit="event.preventDefault(); setButaneWeight();">
@@ -3316,7 +3316,7 @@
                     <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Only use this to correct errors or set initial inventory</p>
                 </div>
                 <div style="text-align: center; margin-bottom: 20px;">
-                    <div style="font-size: 0.9rem; color: var(--text-secondary);">Current Nitrogen Tanks</div>
+                    <div style="font-size: 1.6rem; font-weight: 700; color: ${statusColor};">Current Nitrogen Tanks</div>
                     <div id="editNitrogenCurrentDisplay" style="font-size: 2rem; font-weight: 700; color: var(--accent-purple);">0 tanks</div>
                 </div>
                 <form onsubmit="event.preventDefault(); setNitrogenAmount();">
@@ -3571,7 +3571,7 @@
 
                 <!-- Pay Period Info -->
                 <div id="timecardPeriodInfo" style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(59, 130, 246, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; text-align: center; border: 2px solid var(--accent-purple);">
-                    <div style="font-size: 0.9rem; color: var(--text-secondary);">Pay Period</div>
+                    <div style="font-size: 1.6rem; font-weight: 700; color: ${statusColor};">Pay Period</div>
                     <div id="timecardPeriodDates" style="font-size: 1.3rem; font-weight: 600; color: var(--accent-purple);">--</div>
                 </div>
 
@@ -3660,7 +3660,7 @@
             </div>
 
             <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                <div style="font-size: 0.9rem; color: var(--text-secondary);">Batch to delete:</div>
+                <div style="font-size: 1.6rem; font-weight: 700; color: ${statusColor};">Batch to delete:</div>
                 <div id="deleteBatchId" style="font-weight: 700; font-size: 1.3rem; color: #ef4444; margin-top: 5px;"></div>
                 <div id="deleteBatchInfo" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px;"></div>
             </div>
@@ -8831,8 +8831,8 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             return `
                 <div style="background: rgba(${statusColor === '#f44336' ? '244, 67, 54' : '59, 130, 246'}, 0.1); padding: 12px; border-radius: 8px; border-left: 4px solid ${statusColor}; margin-top: 10px;">
                     <div style="font-weight: 600; color: ${statusColor}; margin-bottom: 5px;">${statusIcon} ${statusText}</div>
-                    <div style="font-size: 0.9rem; color: var(--text-secondary);">
-                        Actual: ${yieldData.actual.toFixed(1)}% | Expected: ${yieldData.expected}% | Variance: ${yieldData.variance > 0 ? '+' : ''}${yieldData.variance.toFixed(1)}%
+                    <div style="font-size: 1.6rem; font-weight: 700; color: ${statusColor};">
+                        ${yieldData.actual.toFixed(1)}% Yield
                     </div>
                 </div>
             `;
@@ -11334,7 +11334,7 @@ ${employeeReport || 'No activity recorded today'}
                     </div>` : ''}
                 </div>
                 <div style="text-align: center; margin-top: 20px; padding: 15px; background: rgba(16, 185, 129, 0.2); border-radius: 10px;">
-                    <div style="font-size: 0.9rem; color: var(--text-secondary);">Total Processing Time</div>
+                    <div style="font-size: 1.6rem; font-weight: 700; color: ${statusColor};">Total Processing Time</div>
                     <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">${totalDays} days</div>
                 </div>
             `;
