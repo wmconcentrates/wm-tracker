@@ -9163,14 +9163,14 @@ ${employeeReport || 'No activity recorded today'}
                         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
                             ${batch.is_sub_batch ? `
                                 <div style="display: flex; gap: 10px;">
-                                    <button class="btn" style="background: var(--accent-orange); flex: 1;" onclick="openEditBatch('${batch.id}')">✏️ Edit Batch</button>
-                                    <button class="btn" style="background: var(--accent-red); flex: 1;" onclick="deleteSubBatch('${batch.id}')">🗑️ Delete Sub-Batch</button>
+                                    <button class="btn" style="background: var(--accent-orange); padding: 6px 12px; font-size: 0.95rem;" onclick="openEditBatch('${batch.id}')">✏️ Edit</button>
+                                    <button class="btn" style="background: var(--accent-red); padding: 6px 12px; font-size: 0.95rem;" onclick="deleteSubBatch('${batch.id}')">🗑️ Delete</button>
                                 </div>
                             ` : `
                                 <div style="display: flex; gap: 10px;">
-                                    <button class="btn" style="background: var(--accent-orange); flex: 1;" onclick="openEditBatch('${batch.id}')">✏️ Edit Batch</button>
-                                    <button class="btn" style="background: var(--accent-green); flex: 1;" onclick="openCreateSubBatch('${batch.id}')">➕ Create Sub-Batch</button>
-                                    <button class="btn" style="background: #ef4444; padding: 8px 12px;" onclick="event.stopPropagation(); openDeleteBatchModal('${batch.id}')" title="Delete Batch">🗑️</button>
+                                    <button class="btn" style="background: var(--accent-orange); padding: 6px 12px; font-size: 0.95rem;" onclick="openEditBatch('${batch.id}')">✏️ Edit</button>
+                                    <button class="btn" style="background: var(--accent-green); padding: 6px 12px; font-size: 0.95rem;" onclick="openCreateSubBatch('${batch.id}')">➕ Sub-Batch</button>
+                                    <button class="btn" style="background: #ef4444; padding: 6px 12px; font-size: 0.95rem;" onclick="event.stopPropagation(); openDeleteBatchModal('${batch.id}')" title="Delete Batch">🗑️</button>
                                 </div>
                             `}
                         </div>
