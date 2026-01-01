@@ -1396,6 +1396,8 @@
         <div class="station-content" id="finishing">
             <div class="form-section">
                 <h2>✨ Post Extraction & Batch Splitting</h2>
+
+
                 <div class="form-group">
                     <label>Select Batch to Finish</label>
                     <select id="finishingBatchSelect" required>
@@ -5329,13 +5331,14 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             // Include both regular batches AND sub-batches that are at extraction status
             // (Sub-batches can be retroactively created and need post-processing)
             const extractionBatches = batches.filter(b => b.status === 'extraction');
-            
+
             select.innerHTML = '<option value="">Select a batch...</option>';
             extractionBatches.forEach(batch => {
                 let label;
                 
                 if (batch.is_sub_batch) {
-                    label = `${batch.id} - ${batch.strain} - ${batch.product_made} (SUB-BATCH)`;
+                    const estYield = ((parseFloat(batch.trim_weight) || 0) * 0.13).toFixed(0);
+                    label = `${batch.id} - ${batch.strain} (~${estYield}g yield) - ${batch.product_made} (SUB-BATCH)`;
                 } else {
                     // Build label with jar/slab counts from pull batch
                     let counts = [];
@@ -5354,7 +5357,8 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                     }
                     
                     const countText = counts.length > 0 ? counts.join(', ') : 'no counts';
-                    label = `${batch.id} - ${batch.strain} - ${batch.product_made} (${countText})`;
+                    const estYield = ((parseFloat(batch.trim_weight) || 0) * 0.13).toFixed(0);
+                    label = `${batch.id} - ${batch.strain} (~${estYield}g yield) - ${batch.product_made} (${countText})`;
                 }
 
                 const workerIndicator = batch.finishing_user ? ` ▶ ${batch.finishing_user.split(' ')[0]}` : '';
