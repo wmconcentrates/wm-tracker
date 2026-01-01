@@ -16657,10 +16657,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const category = getProductCategory(batch.product_made);
                 if (category && pipelineCategoryData[category]) {
                     pipelineCategoryData[category].count++;
+                    const weight = batch.final_weight || batch.net_weight || batch.grams_labeled || 0;
+                    const salesPercent = getSalesPercentage(batch.material_agreement);
+                    const availableGrams = (weight * salesPercent / 100).toFixed(1);
                     pipelineCategoryData[category].strains.push({
                         strain: batch.strain || 'Unknown',
                         batchId: batch.id,
-                        status: batch.status
+                        status: batch.status,
+                        weight: weight,
+                        availableGrams: availableGrams
                     });
                 }
             });
@@ -16704,27 +16709,33 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             // Group strains and count occurrences
             const strainCounts = {};
+            let totalGrams = 0;
             data.strains.forEach(item => {
                 const key = item.strain;
                 if (!strainCounts[key]) {
-                    strainCounts[key] = { count: 0, batches: [] };
+                    strainCounts[key] = { count: 0, batches: [], grams: 0 };
                 }
                 strainCounts[key].count++;
-                strainCounts[key].batches.push(item.batchId);
+                strainCounts[key].batches.push({ id: item.batchId, grams: item.availableGrams });
+                strainCounts[key].grams += parseFloat(item.availableGrams) || 0;
+                totalGrams += parseFloat(item.availableGrams) || 0;
             });
 
-            // Sort by count descending, then alphabetically
+            // Update title with total grams
+            document.getElementById('pipelinePopupTitle').textContent = data.label + ' - ' + totalGrams.toFixed(1) + 'g';
+
+            // Sort by grams descending, then alphabetically
             const sortedStrains = Object.entries(strainCounts)
-                .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]));
+                .sort((a, b) => b[1].grams - a[1].grams || a[0].localeCompare(b[0]));
 
             contentEl.innerHTML = sortedStrains.map(([strain, info]) => `
                 <div style="padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${data.color};">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; color: var(--text-primary);">${strain}</span>
-                        <span style="background: ${data.color}22; color: ${data.color}; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">${info.count}</span>
+                        <span style="background: ${data.color}22; color: ${data.color}; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">${info.grams.toFixed(1)}g</span>
                     </div>
                     <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px;">
-                        ${info.batches.join(', ')}
+                        ${info.batches.map(b => b.id + ' (' + b.grams + 'g)').join(', ')}
                     </div>
                 </div>
             `).join('');
