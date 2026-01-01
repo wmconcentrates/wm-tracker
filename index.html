@@ -325,7 +325,7 @@
         }
 
         .header-logo {
-            width: 180px;
+            width: 250px;
             height: auto;
         }
 
@@ -1104,6 +1104,7 @@
     <div class="actions-menu">
         <button class="actions-toggle-btn" onclick="toggleActionsMenu()">Actions</button>
         <div class="actions-dropdown">
+            <button id="logoutBtn" onclick="logout()" style="display: none; background: var(--accent-red);">🚪 Log Out</button>
             <button id="myStatsBtn" onclick="openPersonalStatsModal()" style="display: none;">👤 My Workload</button>
             <button id="timeClockBtn" onclick="openTimeClockModal()" style="display: none;">Time Clock</button>
             <button id="viewTimecardsBtn" onclick="openTimecardsModal()" style="display: none;">Timecards</button>
@@ -1161,7 +1162,6 @@
             </form>
             <div class="current-user" id="currentUser" style="display: none; margin-top: 15px;">
                 Logged in as: <span id="userName"></span>
-                <button onclick="logout()" style="margin-left: 15px; padding: 8px 15px; background: var(--accent-red); border: none; border-radius: 5px; color: white; cursor: pointer;">Logout</button>
             </div>
         </div>
 
@@ -3988,7 +3988,8 @@
                     document.getElementById('pinInput').style.display = 'none';
                     document.getElementById('loginBtn').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
-                    document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
+                    document.getElementById('myStatsBtn').style.display = 'block';
+                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                     applyRolePermissions();
                 }
             }
