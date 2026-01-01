@@ -3814,94 +3814,34 @@
 
     <!-- Sales Pipeline Modal -->
     <div id="salesPipelineModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; overflow-y: auto;">
-        <div style="max-width: 1200px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(16, 185, 129, 0.4);">
+        <div style="max-width: 800px; margin: 50px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(16, 185, 129, 0.4);">
             <!-- Header -->
-            <div style="background: linear-gradient(135deg, #10B981, #3B82F6); padding: 30px; border-radius: 20px 20px 0 0;">
+            <div style="background: linear-gradient(135deg, #10B981, #3B82F6); padding: 25px 30px; border-radius: 20px 20px 0 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 1.8rem; display: flex; align-items: center; gap: 12px;">
-                            <span style="font-size: 1.5rem;">📊</span> Sales Pipeline
-                        </h2>
-                        <p style="color: rgba(255,255,255,0.9); margin: 0;">Products moving through production - available for sale</p>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button onclick="refreshSalesPipeline()" class="btn" style="background: rgba(255,255,255,0.2); padding: 10px 20px; color: white; border: 1px solid rgba(255,255,255,0.3);">Refresh</button>
-                        <button onclick="closeSalesPipelineModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px; transition: all 0.3s ease;">&times;</button>
-                    </div>
+                    <h2 style="color: white; margin: 0; font-size: 1.5rem;">Pipeline</h2>
+                    <button onclick="closeSalesPipelineModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 12px; border-radius: 8px;">&times;</button>
                 </div>
             </div>
 
             <!-- Content -->
             <div style="padding: 30px;">
-                <!-- Legend -->
-                <div style="display: flex; gap: 20px; margin-bottom: 25px; flex-wrap: wrap; padding: 15px; background: var(--bg-tertiary); border-radius: 12px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="width: 12px; height: 12px; background: #10B981; border-radius: 3px;"></span>
-                        <span style="font-size: 0.85rem; color: var(--text-secondary);">House Material (100% sales)</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="width: 12px; height: 12px; background: #F59E0B; border-radius: 3px;"></span>
-                        <span style="font-size: 0.85rem; color: var(--text-secondary);">50/50 Split (50% sales)</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="width: 12px; height: 12px; background: #EF4444; border-radius: 3px;"></span>
-                        <span style="font-size: 0.85rem; color: var(--text-secondary);">Buy-back (0% - not shown)</span>
-                    </div>
-                </div>
-
-                <!-- Summary Stats -->
-                <div id="pipelineSummaryStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                <!-- Product Category Grid -->
+                <div id="pipelineCategoryGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
                     <!-- Populated dynamically -->
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <!-- Product Type Totals -->
-                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); border: 2px solid #10B981; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
-                    <h4 style="margin: 0 0 15px 0; color: #10B981; display: flex; align-items: center; gap: 10px;">
-                        <span>📦</span> Sales Inventory by Product Type
-                    </h4>
-                    <div id="pipelineProductTotals" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- Stage Filter Tabs -->
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                    <button onclick="filterPipelineStage('all')" class="pipeline-stage-btn active" data-stage="all" style="background: var(--accent-blue); padding: 10px 20px; border-radius: 8px; border: none; color: white; cursor: pointer; font-weight: 600;">All Stages</button>
-                    <button onclick="filterPipelineStage('extraction')" class="pipeline-stage-btn" data-stage="extraction" style="background: var(--bg-tertiary); padding: 10px 20px; border-radius: 8px; border: none; color: var(--text-primary); cursor: pointer;">Extraction</button>
-                    <button onclick="filterPipelineStage('finishing')" class="pipeline-stage-btn" data-stage="finishing" style="background: var(--bg-tertiary); padding: 10px 20px; border-radius: 8px; border: none; color: var(--text-primary); cursor: pointer;">Finishing</button>
-                    <button onclick="filterPipelineStage('packaging')" class="pipeline-stage-btn" data-stage="packaging" style="background: var(--bg-tertiary); padding: 10px 20px; border-radius: 8px; border: none; color: var(--text-primary); cursor: pointer;">Packaging</button>
-                </div>
-
-                <!-- Pipeline Table -->
-                <div style="background: var(--bg-primary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
-                    <div style="max-height: 500px; overflow-y: auto;">
-                        <table id="pipelineTable" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-                            <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
-                                <tr>
-                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Batch ID</th>
-                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Strain</th>
-                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Product</th>
-                                    <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Stage</th>
-                                    <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Total Weight</th>
-                                    <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Sales %</th>
-                                    <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Available for Sale</th>
-                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Agreement</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pipelineTableBody">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Pipeline Visual Flow -->
-                <div style="margin-top: 25px; padding: 20px; background: var(--bg-tertiary); border-radius: 12px;">
-                    <h4 style="margin: 0 0 20px 0; color: var(--text-primary);">Pipeline Flow</h4>
-                    <div id="pipelineFlowChart" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
+    <!-- Pipeline Strains Popup -->
+    <div id="pipelineStrainsPopup" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10002; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 80px auto; background: var(--bg-secondary); border-radius: 16px; padding: 0; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+            <div style="background: var(--bg-tertiary); padding: 20px 25px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="pipelinePopupTitle" style="margin: 0; color: var(--text-primary); font-size: 1.2rem;">Strains</h3>
+                <button onclick="closePipelineStrainsPopup()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="pipelinePopupContent" style="padding: 20px 25px; max-height: 400px; overflow-y: auto;">
+                <!-- Populated dynamically -->
             </div>
         </div>
     </div>
@@ -16642,8 +16582,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // SALES PIPELINE FUNCTIONS
         // ============================================
 
-        let currentPipelineFilter = 'all';
         let pipelineData = [];
+        let pipelineCategoryData = {};
 
         function openSalesPipelineModal() {
             document.getElementById('salesPipelineModal').style.display = 'block';
@@ -16656,390 +16596,140 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             document.body.style.overflow = '';
         }
 
-        function refreshSalesPipeline() {
-            loadSalesPipeline();
+        function closePipelineStrainsPopup() {
+            document.getElementById('pipelineStrainsPopup').style.display = 'none';
         }
 
         // Get sales percentage based on material agreement
         function getSalesPercentage(materialAgreement) {
-            if (!materialAgreement) return 100; // Default to house material
-
+            if (!materialAgreement) return 100;
             const agreement = materialAgreement.toLowerCase();
-
-            // House Material / Wholesale = 100%
-            if (agreement.includes('house') || agreement.includes('wholesale') || agreement === 'wholesale') {
-                return 100;
-            }
-
-            // 50/50 Split = 50%
-            if (agreement.includes('50') || agreement.includes('split') || agreement.includes('percentage')) {
-                return 50;
-            }
-
-            // Per Gram / Buy Back / Custom Buyback = 0% (exclude from sales)
-            if (agreement.includes('gram') || agreement.includes('buyback') || agreement.includes('buy back') || agreement.includes('buy-back')) {
-                return 0;
-            }
-
-            // Default to 100% for unknown
+            if (agreement.includes('house') || agreement.includes('wholesale') || agreement === 'wholesale') return 100;
+            if (agreement.includes('50') || agreement.includes('split') || agreement.includes('percentage')) return 50;
+            if (agreement.includes('gram') || agreement.includes('buyback') || agreement.includes('buy back') || agreement.includes('buy-back')) return 0;
             return 100;
         }
 
-        // Get agreement display color
-        function getAgreementColor(salesPercentage) {
-            if (salesPercentage === 100) return '#10B981'; // Green
-            if (salesPercentage === 50) return '#F59E0B';  // Orange/Yellow
-            return '#EF4444'; // Red
-        }
+        // Map product names to categories
+        function getProductCategory(productMade) {
+            if (!productMade) return null;
+            const product = productMade.toLowerCase();
 
-        // Get stage display info
-        function getStageInfo(status) {
-            const stages = {
-                'intake': { label: 'Intake', icon: '📥', color: '#6B7280', order: 0 },
-                'extraction': { label: 'Extraction', icon: '⚗️', color: '#8B5CF6', order: 1 },
-                'finishing': { label: 'Finishing', icon: '✨', color: '#F59E0B', order: 2 },
-                'packaging': { label: 'Packaging', icon: '📦', color: '#3B82F6', order: 3 },
-                'complete': { label: 'Labeling/Complete', icon: '🏷️', color: '#10B981', order: 4 }
-            };
-            return stages[status] || stages['intake'];
-        }
+            if (product.includes('wax') && !product.includes('sugar')) return 'Wax';
+            if (product.includes('sugar')) return 'Sugar Wax';
+            if (product.includes('shatter')) return 'Shatter';
+            if (product.includes('cart') || product === 'live resin oil') return 'Live Resin Carts';
+            if (product.includes('aio') || product.includes('all-in-one') || product.includes('all in one')) return 'Live Resin All in Ones';
+            if (product.includes('brick') || product.includes('hash')) return 'Brick Hash';
 
-        let completedLastWeekData = { weight: 0, salesWeight: 0, count: 0 };
+            return null;
+        }
 
         function loadSalesPipeline() {
-            // Get all batches that have post-extraction data (final_weight)
-            // Exclude buy-back agreements (0% sales)
+            // Define the 6 product categories
+            const categories = [
+                { key: 'Wax', label: 'Wax', color: '#F59E0B' },
+                { key: 'Shatter', label: 'Shatter', color: '#3B82F6' },
+                { key: 'Sugar Wax', label: 'Sugar Wax', color: '#F97316' },
+                { key: 'Live Resin Carts', label: 'Live Resin Carts', color: '#10B981' },
+                { key: 'Live Resin All in Ones', label: 'Live Resin All in Ones', color: '#8B5CF6' },
+                { key: 'Brick Hash', label: 'Brick Hash', color: '#6B7280' }
+            ];
+
+            // Initialize category data
+            pipelineCategoryData = {};
+            categories.forEach(cat => {
+                pipelineCategoryData[cat.key] = { count: 0, strains: [], color: cat.color, label: cat.label };
+            });
+
+            // Filter batches in pipeline (extraction, finishing, packaging stages)
             pipelineData = batches.filter(batch => {
-                // Must have some weight data
                 const hasWeight = batch.final_weight || batch.net_weight || batch.grams_labeled;
                 if (!hasWeight) return false;
-
-                // Exclude buy-backs (0% sales inventory)
                 const salesPercent = getSalesPercentage(batch.material_agreement);
                 if (salesPercent === 0) return false;
-
-                // Include batches in active pipeline stages (not complete)
-                // Status: extraction, finishing, packaging
                 const validStatuses = ['extraction', 'finishing', 'packaging'];
                 return validStatuses.includes(batch.status);
             });
 
-            // Calculate completed last week (for the "out" stat)
-            const oneWeekAgo = new Date();
-            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-            completedLastWeekData = { weight: 0, salesWeight: 0, count: 0 };
-            batches.forEach(batch => {
-                if (batch.status !== 'complete') return;
-
-                // Check if completed in last week (look at timeline or labeling_date)
-                let completedDate = null;
-                if (batch.labeling_date) {
-                    completedDate = new Date(batch.labeling_date);
-                } else if (batch.timeline) {
-                    const completeEvent = batch.timeline.find(t => t.stage === 'complete' || t.status === 'complete');
-                    if (completeEvent) completedDate = new Date(completeEvent.timestamp || completeEvent.date);
+            // Group batches by category
+            pipelineData.forEach(batch => {
+                const category = getProductCategory(batch.product_made);
+                if (category && pipelineCategoryData[category]) {
+                    pipelineCategoryData[category].count++;
+                    pipelineCategoryData[category].strains.push({
+                        strain: batch.strain || 'Unknown',
+                        batchId: batch.id,
+                        status: batch.status
+                    });
                 }
-
-                if (!completedDate || completedDate < oneWeekAgo) return;
-
-                // Exclude buy-backs
-                const salesPercent = getSalesPercentage(batch.material_agreement);
-                if (salesPercent === 0) return;
-
-                const weight = parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
-                completedLastWeekData.weight += weight;
-                completedLastWeekData.salesWeight += weight * (salesPercent / 100);
-                completedLastWeekData.count++;
             });
 
-            // Sort by stage order, then by date
-            pipelineData.sort((a, b) => {
-                const stageA = getStageInfo(a.status).order;
-                const stageB = getStageInfo(b.status).order;
-                if (stageA !== stageB) return stageA - stageB;
-
-                // Within same stage, sort by finishing date or intake date
-                const dateA = new Date(a.finishing_date || a.intake_date);
-                const dateB = new Date(b.finishing_date || b.intake_date);
-                return dateB - dateA;
-            });
-
-            renderPipelineSummary();
-            renderProductTotals();
-            renderPipelineTable();
-            renderPipelineFlow();
+            renderPipelineCategories();
         }
 
-        function renderPipelineSummary() {
-            const container = document.getElementById('pipelineSummaryStats');
+        function renderPipelineCategories() {
+            const container = document.getElementById('pipelineCategoryGrid');
 
-            // Calculate totals
-            let totalWeight = 0;
-            let totalSalesWeight = 0;
-            let batchCount = pipelineData.length;
+            const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin All in Ones', 'Brick Hash'];
 
-            // Count by stage
-            const stageCounts = {
-                extraction: 0,
-                finishing: 0,
-                packaging: 0
-            };
+            container.innerHTML = categoryOrder.map(key => {
+                const data = pipelineCategoryData[key];
+                const hasItems = data.count > 0;
 
-            pipelineData.forEach(batch => {
-                const weight = parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
-                const salesPercent = getSalesPercentage(batch.material_agreement);
-
-                totalWeight += weight;
-                totalSalesWeight += weight * (salesPercent / 100);
-
-                if (stageCounts[batch.status] !== undefined) {
-                    stageCounts[batch.status]++;
-                }
-            });
-
-            container.innerHTML = `
-                <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #10B981;">
-                    <div style="font-size: 2rem; font-weight: 700; color: #10B981;">${batchCount}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Batches in Pipeline</div>
-                </div>
-                <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #3B82F6;">
-                    <div style="font-size: 2rem; font-weight: 700; color: #3B82F6;">${totalWeight.toFixed(1)}g</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Total Weight</div>
-                </div>
-                <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #F59E0B;">
-                    <div style="font-size: 2rem; font-weight: 700; color: #F59E0B;">${totalSalesWeight.toFixed(1)}g</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Available for Sale</div>
-                </div>
-                <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #8B5CF6;">
-                    <div style="font-size: 2rem; font-weight: 700; color: #8B5CF6;">${stageCounts.extraction}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">In Extraction</div>
-                </div>
-                <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #EC4899;">
-                    <div style="font-size: 2rem; font-weight: 700; color: #EC4899;">${stageCounts.finishing}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">In Finishing</div>
-                </div>
-                <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #14B8A6;">
-                    <div style="font-size: 2rem; font-weight: 700; color: #14B8A6;">${stageCounts.packaging}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">In Packaging</div>
-                </div>
-                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2)); padding: 20px; border-radius: 10px; text-align: center; border: 2px solid #10B981;">
-                    <div style="font-size: 2rem; font-weight: 700; color: #10B981;">${completedLastWeekData.salesWeight.toFixed(0)}g</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Out Last 7 Days</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">${completedLastWeekData.count} batches</div>
-                </div>
-            `;
+                return `
+                    <button onclick="showPipelineStrains('${key}')"
+                            style="background: var(--bg-primary); border: 2px solid ${hasItems ? data.color : 'var(--border)'};
+                                   border-radius: 12px; padding: 25px 20px; cursor: pointer; text-align: center;
+                                   transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'};"
+                            onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';"
+                            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: ${data.color}; margin-bottom: 8px;">${data.count}</div>
+                        <div style="font-size: 1rem; color: var(--text-primary); font-weight: 600;">${data.label}</div>
+                    </button>
+                `;
+            }).join('');
         }
 
-        function renderProductTotals() {
-            const container = document.getElementById('pipelineProductTotals');
-
-            // Group by product type
-            const productTotals = {};
-
-            pipelineData.forEach(batch => {
-                const product = batch.product_made || 'Unknown';
-                const weight = parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
-                const salesPercent = getSalesPercentage(batch.material_agreement);
-                const salesWeight = weight * (salesPercent / 100);
-
-                if (!productTotals[product]) {
-                    productTotals[product] = { total: 0, sales: 0, count: 0 };
-                }
-
-                productTotals[product].total += weight;
-                productTotals[product].sales += salesWeight;
-                productTotals[product].count++;
-            });
-
-            // Sort by sales weight descending
-            const sortedProducts = Object.entries(productTotals)
-                .sort((a, b) => b[1].sales - a[1].sales);
-
-            if (sortedProducts.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">No products in pipeline</div>';
+        function showPipelineStrains(category) {
+            const data = pipelineCategoryData[category];
+            if (!data || data.count === 0) {
                 return;
             }
 
-            const productColors = {
-                'Live Resin': '#10B981',
-                'Cured Resin': '#F59E0B',
-                'Diamonds': '#8B5CF6',
-                'Sauce': '#EC4899',
-                'Shatter': '#3B82F6',
-                'Badder': '#14B8A6',
-                'Sugar': '#F97316',
-                'THCa': '#6366F1',
-                'RSO': '#EF4444',
-                'Distillate': '#84CC16'
-            };
+            document.getElementById('pipelinePopupTitle').textContent = data.label + ' (' + data.count + ')';
+            document.getElementById('pipelinePopupTitle').style.color = data.color;
 
-            container.innerHTML = sortedProducts.map(([product, data]) => {
-                const color = productColors[product] || '#6B7280';
-                return `
-                    <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; border-left: 4px solid ${color};">
-                        <div style="font-weight: 600; color: ${color}; margin-bottom: 8px;">${product}</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">${data.sales.toFixed(1)}g</div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary);">${data.count} batches (${data.total.toFixed(1)}g total)</div>
-                    </div>
-                `;
-            }).join('');
-        }
+            const contentEl = document.getElementById('pipelinePopupContent');
 
-        function filterPipelineStage(stage) {
-            currentPipelineFilter = stage;
-
-            // Update button styles
-            document.querySelectorAll('.pipeline-stage-btn').forEach(btn => {
-                if (btn.dataset.stage === stage) {
-                    btn.style.background = 'var(--accent-blue)';
-                    btn.style.color = 'white';
-                    btn.style.fontWeight = '600';
-                } else {
-                    btn.style.background = 'var(--bg-tertiary)';
-                    btn.style.color = 'var(--text-primary)';
-                    btn.style.fontWeight = 'normal';
+            // Group strains and count occurrences
+            const strainCounts = {};
+            data.strains.forEach(item => {
+                const key = item.strain;
+                if (!strainCounts[key]) {
+                    strainCounts[key] = { count: 0, batches: [] };
                 }
+                strainCounts[key].count++;
+                strainCounts[key].batches.push(item.batchId);
             });
 
-            renderPipelineTable();
-        }
+            // Sort by count descending, then alphabetically
+            const sortedStrains = Object.entries(strainCounts)
+                .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]));
 
-        function renderPipelineTable() {
-            const tbody = document.getElementById('pipelineTableBody');
-
-            // Filter by stage if needed
-            let filteredData = pipelineData;
-            if (currentPipelineFilter !== 'all') {
-                if (currentPipelineFilter === 'labeling') {
-                    // Labeling = complete status but not yet labeled
-                    filteredData = pipelineData.filter(b => b.status === 'complete' && !b.labels_applied);
-                } else if (currentPipelineFilter === 'complete') {
-                    // Complete = complete status and labeled
-                    filteredData = pipelineData.filter(b => b.status === 'complete' && b.labels_applied);
-                } else {
-                    filteredData = pipelineData.filter(b => b.status === currentPipelineFilter);
-                }
-            }
-
-            if (filteredData.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" style="padding: 40px; text-align: center; color: var(--text-secondary);">
-                            No batches in this stage
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tbody.innerHTML = filteredData.map(batch => {
-                const weight = parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
-                const salesPercent = getSalesPercentage(batch.material_agreement);
-                const salesWeight = weight * (salesPercent / 100);
-                const stageInfo = getStageInfo(batch.status);
-                const agreementColor = getAgreementColor(salesPercent);
-
-                // Determine actual stage label for complete batches
-                let stageLabel = stageInfo.label;
-                let stageIcon = stageInfo.icon;
-                if (batch.status === 'complete') {
-                    if (batch.labels_applied) {
-                        stageLabel = 'Complete';
-                        stageIcon = '✅';
-                    } else {
-                        stageLabel = 'Labeling';
-                        stageIcon = '🏷️';
-                    }
-                }
-
-                return `
-                    <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;"
-                        onmouseover="this.style.background='var(--bg-tertiary)'"
-                        onmouseout="this.style.background='transparent'">
-                        <td style="padding: 12px; font-family: 'Space Mono', monospace; font-weight: 600; color: var(--accent-blue);">${batch.id}</td>
-                        <td style="padding: 12px;">
-                            <div style="font-weight: 600;">${batch.strain || 'Unknown'}</div>
-                            <div style="font-size: 0.8rem; color: var(--text-secondary);">${batch.strain_type || ''}</div>
-                        </td>
-                        <td style="padding: 12px; color: var(--text-primary);">${batch.product_made || 'N/A'}</td>
-                        <td style="padding: 12px; text-align: center;">
-                            <span style="background: ${stageInfo.color}22; color: ${stageInfo.color}; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-                                ${stageIcon} ${stageLabel}
-                            </span>
-                        </td>
-                        <td style="padding: 12px; text-align: right; font-family: 'Space Mono', monospace; font-weight: 600;">${weight.toFixed(1)}g</td>
-                        <td style="padding: 12px; text-align: right;">
-                            <span style="color: ${agreementColor}; font-weight: 700;">${salesPercent}%</span>
-                        </td>
-                        <td style="padding: 12px; text-align: right; font-family: 'Space Mono', monospace; font-weight: 700; color: #10B981;">${salesWeight.toFixed(1)}g</td>
-                        <td style="padding: 12px;">
-                            <span style="display: inline-flex; align-items: center; gap: 6px;">
-                                <span style="width: 8px; height: 8px; background: ${agreementColor}; border-radius: 2px;"></span>
-                                ${batch.material_agreement || 'House Material'}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function renderPipelineFlow() {
-            const container = document.getElementById('pipelineFlowChart');
-
-            // Count batches and weight at each stage
-            const stageData = {
-                extraction: { count: 0, weight: 0, salesWeight: 0 },
-                finishing: { count: 0, weight: 0, salesWeight: 0 },
-                packaging: { count: 0, weight: 0, salesWeight: 0 }
-            };
-
-            pipelineData.forEach(batch => {
-                const weight = parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
-                const salesPercent = getSalesPercentage(batch.material_agreement);
-                const salesWeight = weight * (salesPercent / 100);
-
-                if (stageData[batch.status]) {
-                    stageData[batch.status].count++;
-                    stageData[batch.status].weight += weight;
-                    stageData[batch.status].salesWeight += salesWeight;
-                }
-            });
-
-            const stages = [
-                { key: 'extraction', label: 'Extraction', icon: '⚗️', color: '#8B5CF6' },
-                { key: 'finishing', label: 'Finishing', icon: '✨', color: '#F59E0B' },
-                { key: 'packaging', label: 'Packaging', icon: '📦', color: '#3B82F6' }
-            ];
-
-            let html = stages.map((stage, index) => {
-                const data = stageData[stage.key];
-                return `
-                    <div style="flex: 1; min-width: 120px; text-align: center; background: ${stage.color}15; padding: 15px 10px; border-radius: 10px; border: 2px solid ${stage.color}40;">
-                        <div style="font-size: 1.5rem; margin-bottom: 5px;">${stage.icon}</div>
-                        <div style="font-weight: 600; color: ${stage.color}; margin-bottom: 8px;">${stage.label}</div>
-                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary);">${data.count}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">batches</div>
-                        <div style="font-size: 0.9rem; font-weight: 600; color: #10B981; margin-top: 5px;">${data.salesWeight.toFixed(0)}g</div>
-                        <div style="font-size: 0.7rem; color: var(--text-secondary);">for sale</div>
+            contentEl.innerHTML = sortedStrains.map(([strain, info]) => `
+                <div style="padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${data.color};">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600; color: var(--text-primary);">${strain}</span>
+                        <span style="background: ${data.color}22; color: ${data.color}; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">${info.count}</span>
                     </div>
-                    <div style="color: var(--text-secondary); font-size: 1.5rem; padding: 0 5px;">→</div>
-                `;
-            }).join('');
-
-            // Add "Out" stage showing completed last week
-            html += `
-                <div style="flex: 1; min-width: 120px; text-align: center; background: linear-gradient(135deg, #10B98115, #3B82F615); padding: 15px 10px; border-radius: 10px; border: 2px solid #10B981;">
-                    <div style="font-size: 1.5rem; margin-bottom: 5px;">✅</div>
-                    <div style="font-weight: 600; color: #10B981; margin-bottom: 8px;">Out (7 days)</div>
-                    <div style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary);">${completedLastWeekData.count}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">batches</div>
-                    <div style="font-size: 0.9rem; font-weight: 600; color: #10B981; margin-top: 5px;">${completedLastWeekData.salesWeight.toFixed(0)}g</div>
-                    <div style="font-size: 0.7rem; color: var(--text-secondary);">completed</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px;">
+                        ${info.batches.join(', ')}
+                    </div>
                 </div>
-            `;
+            `).join('');
 
-            container.innerHTML = html;
+            document.getElementById('pipelineStrainsPopup').style.display = 'block';
         }
 
     </script>
