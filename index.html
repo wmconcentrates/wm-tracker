@@ -7146,9 +7146,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
         function populateCompatibleBatches(selectElement, primaryBatch, excludeBatchId) {
             // Mixing rules:
-            // - House Material (Wholesale) can mix with any Wholesale
-            // - Percentage Split can only mix with same partner (cultivation license)
-            // - Per Gram can only mix with same partner
+            // - Wholesale can mix with any Wholesale
+            // - 50-50 Split can only mix with same partner (cultivation license)
+            // - Custom Buyback can only mix with same partner
 
             selectElement.innerHTML = '<option value="">None (leave empty)</option>';
 
@@ -7163,8 +7163,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 const primaryAgreement = primaryBatch.material_agreement || '';
                 const batchAgreement = b.material_agreement || '';
 
-                // House Material / Wholesale can mix with any Wholesale
-                if (primaryAgreement === 'House Material' && batchAgreement === 'House Material') {
+                // Wholesale can mix with any Wholesale
+                if (primaryAgreement === 'Wholesale' && batchAgreement === 'Wholesale') {
                     canMix = true;
                 }
                 // Percentage Split and Per Gram can only mix with same partner
