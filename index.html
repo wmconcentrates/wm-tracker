@@ -451,11 +451,8 @@
         }
         
         .user-login {
-            background: var(--bg-secondary);
             padding: 25px;
-            border-radius: 15px;
             margin-bottom: 30px;
-            border: 2px solid var(--border);
         }
         
         .user-login h2 {
@@ -3984,6 +3981,7 @@
                     document.getElementById('pinInput').style.display = 'none';
                     document.getElementById('loginBtn').style.display = 'none';
                     document.getElementById('actionsMenu').style.display = 'block';
+                    document.getElementById('userLogin').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
                     document.getElementById('myStatsBtn').style.display = 'block';
                 document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
@@ -4563,6 +4561,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('pinInput').style.display = 'none';
                 document.getElementById('loginBtn').style.display = 'none';
                 document.getElementById('actionsMenu').style.display = 'block';
+                document.getElementById('userLogin').style.display = 'none';
                 document.getElementById('appContent').style.display = 'block';
                 document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                 errorMsg.style.display = 'none';
