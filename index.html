@@ -7057,8 +7057,13 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             const queueEl = document.getElementById('extractionQueueList');
             if (!queueEl) return;
 
-            // Get batches at intake status (ready for extraction)
-            const queueBatches = batches.filter(b => b.status === 'intake');
+            // Get batches at intake status with socks remaining
+            const queueBatches = batches.filter(b => {
+                if (b.status !== 'intake') return false;
+                // If socks are set and none remaining, hide from queue
+                if (b.socks_total != null && b.socks_remaining === 0) return false;
+                return true;
+            });
 
             if (queueBatches.length === 0) {
                 queueEl.innerHTML = `<div style="text-align: center; color: var(--text-secondary); padding: 20px;">
@@ -7167,6 +7172,8 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
 
                     batches.forEach(batch => {
                         if (batch.status === 'intake') {
+                            // Skip batches with 0 socks remaining
+                            if (batch.socks_total != null && batch.socks_remaining === 0) return;
                             const socksRemaining = batch.socks_remaining ?? batch.socks_total ?? '?';
                             const socksTotal = batch.socks_total ?? '?';
                             const sockDisplay = `(${socksRemaining}/${socksTotal} socks)`;
