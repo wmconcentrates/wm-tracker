@@ -3981,8 +3981,7 @@
             if (savedRole && sessionTime && (Date.now() - parseInt(sessionTime)) < 12 * 60 * 60 * 1000) {
                 currentRole = ROLES[savedRole];
                 if (currentRole) {
-                    document.getElementById('userName').textContent = currentRole.name;
-                                        document.getElementById('pinInput').style.display = 'none';
+                    document.getElementById('pinInput').style.display = 'none';
                     document.getElementById('loginBtn').style.display = 'none';
                     document.getElementById('actionsMenu').style.display = 'block';
                     document.getElementById('appContent').style.display = 'block';
@@ -4561,8 +4560,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 localStorage.setItem('wmSession', sessionId);
                 localStorage.setItem('wmSessionId', sessionId); // Store session ID for logout tracking
                 
-                document.getElementById('userName').textContent = currentRole.name;
-                                document.getElementById('pinInput').style.display = 'none';
+                document.getElementById('pinInput').style.display = 'none';
                 document.getElementById('loginBtn').style.display = 'none';
                 document.getElementById('actionsMenu').style.display = 'block';
                 document.getElementById('appContent').style.display = 'block';
