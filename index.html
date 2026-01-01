@@ -1090,6 +1090,7 @@
             <button id="myStatsBtn" onclick="openPersonalStatsModal()" style="display: none;">👤 My Workload</button>
             <button id="timeClockBtn" onclick="openTimeClockModal()" style="display: none;">Time Clock</button>
             <button id="viewTimecardsBtn" onclick="openTimecardsModal()" style="display: none;">Timecards</button>
+            <button id="viewTrashBtn" onclick="openTrashModal()" style="display: none;">🗑️ Deleted Batches</button>
         </div>
     </div>
 
@@ -3623,6 +3624,59 @@
         </div>
     </div>
 
+    <!-- Deleted Batches (Trash) Modal -->
+    <div id="trashModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; overflow-y: auto;">
+        <div style="max-width: 900px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(239, 68, 68, 0.4);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #ef4444, #b91c1c); padding: 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 2rem;">
+                            🗑️ Deleted Batches
+                        </h2>
+                        <p style="color: rgba(255,255,255,0.9); margin: 0;">Batches that have been removed from production</p>
+                    </div>
+                    <button onclick="closeTrashModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px; transition: all 0.3s ease;">&times;</button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 30px;">
+                <div id="trashBatchesList">
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        Loading deleted batches...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Batch Confirmation Modal -->
+    <div id="deleteBatchModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 80px auto; background: var(--bg-secondary); border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(239, 68, 68, 0.4); border: 2px solid #ef4444;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="color: #ef4444; margin: 0;">🗑️ Delete Batch</h2>
+                <button onclick="closeDeleteBatchModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">×</button>
+            </div>
+
+            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">Batch to delete:</div>
+                <div id="deleteBatchId" style="font-weight: 700; font-size: 1.3rem; color: #ef4444; margin-top: 5px;"></div>
+                <div id="deleteBatchInfo" style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px;"></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Reason for deletion (required)</label>
+                <textarea id="deleteNoteInput" rows="3" placeholder="Why is this batch being deleted?" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeDeleteBatchModal()" style="flex: 1; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); cursor: pointer;">Cancel</button>
+                <button onclick="confirmDeleteBatch()" style="flex: 1; padding: 12px; background: #ef4444; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Delete Batch</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Punch Time Modal -->
     <div id="editPunchModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; overflow-y: auto;">
         <div style="max-width: 500px; margin: 80px auto; background: var(--bg-secondary); border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(255, 107, 0, 0.4); border: 2px solid var(--accent-orange);">
@@ -3969,7 +4023,7 @@
                     document.getElementById('pinInput').style.display = 'none';
                     document.getElementById('loginBtn').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
-                    document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';}
+                    document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                     applyRolePermissions();
                 }
             }
@@ -4293,6 +4347,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const { data, error } = await supabaseClient
                 .from('wm_batches')
                 .select('*')
+                .neq('status', 'deleted')
                 .order('created_at', { ascending: false });
             
             if (error) {
@@ -4537,7 +4592,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('pinInput').style.display = 'none';
                 document.getElementById('loginBtn').style.display = 'none';
                 document.getElementById('appContent').style.display = 'block';
-                document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';}
+                document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                 errorMsg.style.display = 'none';
                 
                 // Log login to database
@@ -8982,6 +9037,7 @@ ${employeeReport || 'No activity recorded today'}
                                 <div style="display: flex; gap: 10px;">
                                     <button class="btn" style="background: var(--accent-orange); flex: 1;" onclick="openEditBatch('${batch.id}')">✏️ Edit Batch</button>
                                     <button class="btn" style="background: var(--accent-green); flex: 1;" onclick="openCreateSubBatch('${batch.id}')">➕ Create Sub-Batch</button>
+                                    <button class="btn" style="background: #ef4444; padding: 8px 12px;" onclick="event.stopPropagation(); openDeleteBatchModal('${batch.id}')" title="Delete Batch">🗑️</button>
                                 </div>
                             `}
                         </div>
@@ -15669,6 +15725,148 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Stop auto-refresh when modal closes
             stopClockedInRefresh();
         }
+
+        // ==================== DELETED BATCHES (TRASH) ====================
+
+        let batchToDelete = null;
+
+        // Open Trash Modal
+        async function openTrashModal() {
+            if (!currentRole || (currentRole.name !== 'Ryan (Admin)' && currentRole.name !== 'Alex')) {
+                alert('Only Ryan and Alex can view deleted batches.');
+                return;
+            }
+
+            document.getElementById('trashModal').style.display = 'block';
+            await renderTrashBatches();
+        }
+
+        // Close Trash Modal
+        function closeTrashModal() {
+            document.getElementById('trashModal').style.display = 'none';
+        }
+
+        // Render deleted batches
+        async function renderTrashBatches() {
+            const container = document.getElementById('trashBatchesList');
+
+            try {
+                const { data: deletedBatches, error } = await supabaseClient
+                    .from('wm_batches')
+                    .select('*')
+                    .eq('status', 'deleted')
+                    .order('deleted_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (!deletedBatches || deletedBatches.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 60px; color: var(--text-secondary);">
+                            <div style="font-size: 3rem; margin-bottom: 15px;">🗑️</div>
+                            <div style="font-size: 1.1rem;">No deleted batches</div>
+                            <div style="font-size: 0.9rem; margin-top: 5px;">Batches you delete will appear here</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = deletedBatches.map(batch => `
+                    <div style="background: var(--bg-tertiary); border-radius: 12px; padding: 20px; margin-bottom: 15px; border-left: 4px solid #ef4444;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 700; font-size: 1.2rem; color: #ef4444; margin-bottom: 8px;">
+                                    ${batch.id}
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; font-size: 0.9rem;">
+                                    <div><span style="color: var(--text-secondary);">Strain:</span> ${batch.strain || 'N/A'}</div>
+                                    <div><span style="color: var(--text-secondary);">License:</span> ${batch.cultivation_license || 'N/A'}</div>
+                                    <div><span style="color: var(--text-secondary);">Intake:</span> ${batch.intake_date || 'N/A'}</div>
+                                    <div><span style="color: var(--text-secondary);">Deleted:</span> ${batch.deleted_at ? new Date(batch.deleted_at).toLocaleDateString() : 'N/A'}</div>
+                                </div>
+                                ${batch.delete_note ? `
+                                    <div style="margin-top: 12px; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
+                                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px;">Reason for deletion:</div>
+                                        <div style="color: var(--text-primary);">${batch.delete_note}</div>
+                                    </div>
+                                ` : ''}
+                                <div style="margin-top: 8px; font-size: 0.85rem; color: var(--text-secondary);">
+                                    Deleted by: ${batch.deleted_by || 'Unknown'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading deleted batches:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #ef4444;">
+                        Error loading deleted batches: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Open delete batch confirmation modal
+        function openDeleteBatchModal(batchId) {
+            if (!currentRole || (currentRole.name !== 'Ryan (Admin)' && currentRole.name !== 'Alex')) {
+                alert('Only Ryan and Alex can delete batches.');
+                return;
+            }
+
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) {
+                alert('Batch not found.');
+                return;
+            }
+
+            batchToDelete = batch;
+            document.getElementById('deleteBatchId').textContent = batch.id;
+            document.getElementById('deleteBatchInfo').textContent = `${batch.strain || 'Unknown strain'} • ${batch.cultivation_license || 'No license'} • Status: ${batch.status}`;
+            document.getElementById('deleteNoteInput').value = '';
+            document.getElementById('deleteBatchModal').style.display = 'block';
+        }
+
+        // Close delete batch modal
+        function closeDeleteBatchModal() {
+            document.getElementById('deleteBatchModal').style.display = 'none';
+            batchToDelete = null;
+        }
+
+        // Confirm and execute batch deletion
+        async function confirmDeleteBatch() {
+            if (!batchToDelete) return;
+
+            const deleteNote = document.getElementById('deleteNoteInput').value.trim();
+            if (!deleteNote) {
+                alert('Please enter a reason for deleting this batch.');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('wm_batches')
+                    .update({
+                        status: 'deleted',
+                        deleted_at: new Date().toISOString(),
+                        deleted_by: currentRole.name,
+                        delete_note: deleteNote
+                    })
+                    .eq('id', batchToDelete.id);
+
+                if (error) throw error;
+
+                alert(`✅ Batch ${batchToDelete.id} has been deleted.`);
+                closeDeleteBatchModal();
+                await loadBatches();
+
+            } catch (error) {
+                console.error('Error deleting batch:', error);
+                alert('Error deleting batch: ' + error.message);
+            }
+        }
+
+        // ==================== END DELETED BATCHES ====================
 
         // Update pay period display
         function updatePayPeriodDisplay() {
