@@ -747,12 +747,12 @@
         }
 
         /* Orange neon buttons */
-        .btn[style*="accent-orange"], .btn[style*="#ff6b00"], .btn[style*="#FFD700"], .btn[style*="FFD700"] {
+        .btn[style*="accent-orange"], .btn[style*="#ff6b00"] {
             border-color: var(--accent-orange) !important;
             color: var(--accent-orange) !important;
             box-shadow: 0 0 10px rgba(255, 107, 0, 0.3), inset 0 0 10px rgba(255, 107, 0, 0.05);
         }
-        .btn[style*="accent-orange"]:hover, .btn[style*="#ff6b00"]:hover, .btn[style*="#FFD700"]:hover, .btn[style*="FFD700"]:hover {
+        .btn[style*="accent-orange"]:hover, .btn[style*="#ff6b00"]:hover {
             background: rgba(255, 107, 0, 0.15) !important;
             box-shadow: 0 0 20px rgba(255, 107, 0, 0.5), 0 0 40px rgba(255, 107, 0, 0.3), inset 0 0 15px rgba(255, 107, 0, 0.1);
         }
@@ -777,6 +777,30 @@
         .btn[style*="linear-gradient"]:hover {
             background: rgba(191, 0, 255, 0.15) !important;
             box-shadow: 0 0 25px rgba(191, 0, 255, 0.5), 0 0 40px rgba(0, 240, 255, 0.4), 0 0 60px rgba(255, 16, 240, 0.3), inset 0 0 15px rgba(191, 0, 255, 0.1);
+        }
+
+        /* Silver neon buttons (machine status) */
+        .btn[style*="#C0C0C0"], .btn[style*="C0C0C0"] {
+            background: transparent !important;
+            border-color: #C0C0C0 !important;
+            color: #E8E8E8 !important;
+            box-shadow: 0 0 15px rgba(192, 192, 192, 0.4), 0 0 30px rgba(192, 192, 192, 0.2), inset 0 0 15px rgba(192, 192, 192, 0.05) !important;
+        }
+        .btn[style*="#C0C0C0"]:hover, .btn[style*="C0C0C0"]:hover {
+            background: rgba(192, 192, 192, 0.15) !important;
+            box-shadow: 0 0 25px rgba(192, 192, 192, 0.6), 0 0 50px rgba(192, 192, 192, 0.3), inset 0 0 20px rgba(192, 192, 192, 0.1) !important;
+        }
+
+        /* Gold neon buttons (pull batch) */
+        .btn[style*="#FFD700"], .btn[style*="FFD700"] {
+            background: transparent !important;
+            border-color: #FFD700 !important;
+            color: #FFD700 !important;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), 0 0 30px rgba(255, 215, 0, 0.2), inset 0 0 15px rgba(255, 215, 0, 0.05) !important;
+        }
+        .btn[style*="#FFD700"]:hover, .btn[style*="FFD700"]:hover {
+            background: rgba(255, 215, 0, 0.15) !important;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.6), 0 0 50px rgba(255, 215, 0, 0.3), inset 0 0 20px rgba(255, 215, 0, 0.1) !important;
         }
 
         /* Tertiary/muted neon buttons */
