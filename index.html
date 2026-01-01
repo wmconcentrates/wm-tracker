@@ -4348,6 +4348,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 message = 'Task completed successfully!',
                 stats = [],
                 confettiCount = 50,
+                laserCount = 8,
+                showFire = true,
                 buttonText = 'Awesome!'
             } = options;
 
@@ -4373,48 +4375,55 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 setTimeout(() => confetti.remove(), 4500);
             }
 
-            // Create laser show
+            // Create laser show from top
             const laserContainer = document.createElement('div');
             laserContainer.className = 'laser-container';
             document.body.appendChild(laserContainer);
 
-            const laserColors = ['#39ff14', '#00f0ff', '#ff10f0', '#bf00ff'];
-            const numLasers = 8;
+            const laserColors = ['#39ff14', '#00f0ff', '#ff10f0', '#bf00ff', '#ff0055', '#ff6b00'];
 
-            for (let i = 0; i < numLasers; i++) {
+            for (let i = 0; i < laserCount; i++) {
                 const laser = document.createElement('div');
                 laser.className = 'laser-beam';
                 const color = laserColors[i % laserColors.length];
-                laser.style.background = `linear-gradient(to bottom, transparent, ${color}, transparent)`;
+                laser.style.background = `linear-gradient(to bottom, ${color}, transparent 70%)`;
                 laser.style.color = color;
-                laser.style.left = `${(i / numLasers) * 100}%`;
-                laser.style.top = '50%';
-                laser.style.transform = `rotate(${(i * 45) - 90}deg)`;
+                laser.style.boxShadow = `0 0 15px ${color}, 0 0 30px ${color}`;
 
-                // Animate rotation
-                const duration = 3 + Math.random() * 2;
-                const direction = i % 2 === 0 ? 1 : -1;
-                laser.style.animation = `laser-pulse 0.3s ease-in-out infinite`;
+                // Position lasers across the top, fanning out
+                const spreadAngle = 120; // degrees of spread
+                const startAngle = -spreadAngle / 2;
+                const angleStep = spreadAngle / (laserCount - 1 || 1);
+                const angle = startAngle + (i * angleStep);
 
-                // Rotate over time
-                let angle = (i * 45) - 90;
+                laser.style.left = `${10 + (i / laserCount) * 80}%`;
+                laser.style.top = '0';
+                laser.style.transformOrigin = 'top center';
+                laser.style.transform = `rotate(${angle}deg)`;
+                laser.style.animation = `laser-pulse ${0.2 + Math.random() * 0.3}s ease-in-out infinite`;
+
+                // Sweep animation
+                let currentAngle = angle;
+                const sweepSpeed = (Math.random() - 0.5) * 4;
                 const rotateInterval = setInterval(() => {
-                    angle += direction * 2;
-                    laser.style.transform = `rotate(${angle}deg)`;
+                    currentAngle += sweepSpeed;
+                    // Bounce back at limits
+                    if (currentAngle > 60 || currentAngle < -60) {
+                        currentAngle = Math.max(-60, Math.min(60, currentAngle));
+                    }
+                    laser.style.transform = `rotate(${currentAngle}deg)`;
                 }, 50);
 
                 laserContainer.appendChild(laser);
 
-                // Clean up interval when laser is removed
-                setTimeout(() => {
-                    clearInterval(rotateInterval);
-                }, 5000);
+                setTimeout(() => clearInterval(rotateInterval), 5000);
             }
 
             // Remove laser container after animation
             setTimeout(() => laserContainer.remove(), 5000);
 
-            // Create fire cannons
+            // Create fire cannons (if enabled)
+            if (showFire) {
             const fireContainer = document.createElement('div');
             fireContainer.className = 'fire-container';
             document.body.appendChild(fireContainer);
@@ -4463,6 +4472,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
             // Remove fire container after animation
             setTimeout(() => fireContainer.remove(), 3000);
+            }
 
             // Build stats HTML
             let statsHtml = '';
@@ -4616,7 +4626,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     title: `Welcome, ${currentRole.name}!`,
                     message: randomMessage,
                     stats: [],
-                    confettiCount: 30,
+                    confettiCount: 0,
+                    laserCount: 24,
+                    showFire: false,
                     buttonText: randomButton
                 });
             } else {
