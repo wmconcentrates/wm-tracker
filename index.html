@@ -9135,9 +9135,7 @@ ${employeeReport || 'No activity recorded today'}
                         ` : ''}
                     </div>
                     
-                    ${(() => {
-                    
-                    <div class="timeline" id="timeline-${batch.id}" style="display: none;">
+                                        <div class="timeline" id="timeline-${batch.id}" style="display: none;">
                         <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                             <h4 style="margin-bottom: 10px; color: var(--accent-purple);">📊 Progress Timeline</h4>
                             ${showBatchTimeline(batch.id)}
