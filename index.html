@@ -1520,7 +1520,7 @@
                 
                 <!-- Machine Status Buttons -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <button class="btn" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); padding: 20px; text-align: left;" onclick="openMachineModal('left')">
+                    <button class="btn" style="background: transparent; border: 2px solid #C0C0C0; color: #E8E8E8; padding: 20px; text-align: left; box-shadow: 0 0 15px rgba(192, 192, 192, 0.4), 0 0 30px rgba(192, 192, 192, 0.2), inset 0 0 15px rgba(192, 192, 192, 0.05);" onclick="openMachineModal('left')">
                         <div style="font-weight: 700; margin-bottom: 8px;">⚗️ Left Machine</div>
                         <div id="leftMachineStatus" style="font-size: 0.85rem; opacity: 0.9;">
                             <div>Col A: <span id="leftColumnBatch">Empty</span></div>
@@ -1529,7 +1529,7 @@
                             <div>Filter: <span id="leftFilterStatus">Not loaded</span></div>
                         </div>
                     </button>
-                    <button class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 20px; text-align: left;" onclick="openMachineModal('right')">
+                    <button class="btn" style="background: transparent; border: 2px solid #C0C0C0; color: #E8E8E8; padding: 20px; text-align: left; box-shadow: 0 0 15px rgba(192, 192, 192, 0.4), 0 0 30px rgba(192, 192, 192, 0.2), inset 0 0 15px rgba(192, 192, 192, 0.05);" onclick="openMachineModal('right')">
                         <div style="font-weight: 700; margin-bottom: 8px;">⚗️ Right Machine</div>
                         <div id="rightMachineStatus" style="font-size: 0.85rem; opacity: 0.9;">
                             <div>Col A: <span id="rightColumnBatch">Empty</span></div>
@@ -1542,10 +1542,10 @@
                 
                 <!-- Pull Batch Buttons -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                    <button class="btn" style="background: var(--accent-green); padding: 15px; font-weight: 600;" onclick="openPullBatchModal('left')">
+                    <button class="btn" style="background: transparent; border: 2px solid #FFD700; color: #FFD700; padding: 15px; font-weight: 600; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), 0 0 30px rgba(255, 215, 0, 0.2), inset 0 0 15px rgba(255, 215, 0, 0.05);" onclick="openPullBatchModal('left')">
                         🫙 Pull Batch (Left)
                     </button>
-                    <button class="btn" style="background: var(--accent-green); padding: 15px; font-weight: 600;" onclick="openPullBatchModal('right')">
+                    <button class="btn" style="background: transparent; border: 2px solid #FFD700; color: #FFD700; padding: 15px; font-weight: 600; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), 0 0 30px rgba(255, 215, 0, 0.2), inset 0 0 15px rgba(255, 215, 0, 0.05);" onclick="openPullBatchModal('right')">
                         🫙 Pull Batch (Right)
                     </button>
                 </div>
