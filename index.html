@@ -6716,7 +6716,7 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             document.getElementById('personalStatsModal').style.display = 'block';
 
             // Check if user is Drew (Sales) - show sales stats instead
-            if (currentRole.name.includes('Drew') || currentRole.name.includes('Sales')) {
+            if (currentRole.name.includes('Drew') || currentRole.name.includes('Sales') || currentRole.name.includes('Ryan')) {
                 showSalesWorkload();
             } else {
                 populateWhatsNext();
