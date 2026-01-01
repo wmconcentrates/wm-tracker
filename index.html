@@ -9068,12 +9068,12 @@ ${employeeReport || 'No activity recorded today'}
 
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 6px;">
                             ${currentRole && (currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex') ? `
-                                <button class="btn" style="background: var(--accent-orange); padding: 5px 10px; font-size: 0.9rem;" onclick="event.stopPropagation(); openEditBatch('${batch.id}')">✏️</button>
+                                <button class="btn" style="background: var(--accent-orange); padding: 8px 14px; font-size: 1rem;" onclick="event.stopPropagation(); openEditBatch('${batch.id}')">✏️</button>
                                 ${batch.is_sub_batch ? `
-                                    <button class="btn" style="background: var(--accent-red); padding: 5px 10px; font-size: 0.9rem;" onclick="event.stopPropagation(); deleteSubBatch('${batch.id}')">🗑️</button>
+                                    <button class="btn" style="background: var(--accent-red); padding: 8px 14px; font-size: 1rem;" onclick="event.stopPropagation(); deleteSubBatch('${batch.id}')">🗑️</button>
                                 ` : `
-                                    <button class="btn" style="background: var(--accent-green); padding: 5px 10px; font-size: 0.9rem;" onclick="event.stopPropagation(); openCreateSubBatch('${batch.id}')">➕</button>
-                                    <button class="btn" style="background: #ef4444; padding: 5px 10px; font-size: 0.9rem;" onclick="event.stopPropagation(); openDeleteBatchModal('${batch.id}')">🗑️</button>
+                                    <button class="btn" style="background: var(--accent-green); padding: 8px 14px; font-size: 1rem;" onclick="event.stopPropagation(); openCreateSubBatch('${batch.id}')">➕</button>
+                                    <button class="btn" style="background: #ef4444; padding: 8px 14px; font-size: 1rem;" onclick="event.stopPropagation(); openDeleteBatchModal('${batch.id}')">🗑️</button>
                                 `}
                             ` : ''}
                             <span onclick="toggleBatchTimeline('${batch.id}')" style="cursor: pointer; color: var(--accent-blue); padding: 3px 6px;" id="timeline-toggle-${batch.id}">▼</span>
