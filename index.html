@@ -1101,7 +1101,7 @@
         <span id="statusText">Connecting...</span>
     </div>
     
-    <div class="actions-menu">
+    <div class="actions-menu" id="actionsMenu" style="display: none;">
         <button class="actions-toggle-btn" onclick="toggleActionsMenu()">Actions</button>
         <div class="actions-dropdown">
             <button id="logoutBtn" onclick="logout()" style="display: none; background: var(--accent-red);">🚪 Log Out</button>
@@ -3984,6 +3984,7 @@
                     document.getElementById('userName').textContent = currentRole.name;
                                         document.getElementById('pinInput').style.display = 'none';
                     document.getElementById('loginBtn').style.display = 'none';
+                    document.getElementById('actionsMenu').style.display = 'block';
                     document.getElementById('appContent').style.display = 'block';
                     document.getElementById('myStatsBtn').style.display = 'block';
                 document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
@@ -4563,6 +4564,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('userName').textContent = currentRole.name;
                                 document.getElementById('pinInput').style.display = 'none';
                 document.getElementById('loginBtn').style.display = 'none';
+                document.getElementById('actionsMenu').style.display = 'block';
                 document.getElementById('appContent').style.display = 'block';
                 document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                 errorMsg.style.display = 'none';
@@ -4655,6 +4657,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         function logout() {
+            // Hide actions menu
+            document.getElementById('actionsMenu').style.display = 'none';
+
             // Cleanup realtime subscription
             if (realtimeChannel) {
                 realtimeChannel.unsubscribe();
