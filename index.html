@@ -283,22 +283,23 @@
         }
 
         .celebration-btn {
-            background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+            background: transparent;
             border: 2px solid var(--accent-pink);
             padding: 15px 40px;
             border-radius: 12px;
-            color: white;
+            color: var(--accent-pink);
             font-size: 1.1rem;
             font-weight: 700;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 0 20px rgba(255, 16, 240, 0.4);
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(255, 16, 240, 0.4), 0 0 40px rgba(191, 0, 255, 0.2), inset 0 0 15px rgba(255, 16, 240, 0.05);
+            text-shadow: 0 0 10px rgba(255, 16, 240, 0.5);
         }
 
         .celebration-btn:hover {
             transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(255, 16, 240, 0.6), 0 0 60px rgba(191, 0, 255, 0.4);
+            background: rgba(255, 16, 240, 0.15);
+            box-shadow: 0 0 30px rgba(255, 16, 240, 0.6), 0 0 60px rgba(191, 0, 255, 0.4), inset 0 0 20px rgba(255, 16, 240, 0.1);
         }
 
         .confetti-piece {
@@ -470,7 +471,7 @@
         
         .user-btn {
             padding: 15px;
-            background: var(--bg-tertiary);
+            background: transparent;
             border: 2px solid var(--border);
             color: var(--text-primary);
             border-radius: 10px;
@@ -479,15 +480,19 @@
             font-weight: 600;
             transition: all 0.3s ease;
         }
-        
+
         .user-btn:hover {
             border-color: var(--accent-purple);
-            background: rgba(147, 51, 234, 0.1);
+            color: var(--accent-purple);
+            background: transparent;
+            box-shadow: 0 0 15px rgba(191, 0, 255, 0.3), inset 0 0 10px rgba(191, 0, 255, 0.05);
         }
-        
+
         .user-btn.active {
-            background: var(--accent-purple);
+            background: transparent;
             border-color: var(--accent-purple);
+            color: var(--accent-purple);
+            box-shadow: 0 0 20px rgba(191, 0, 255, 0.5), 0 0 40px rgba(191, 0, 255, 0.3), inset 0 0 15px rgba(191, 0, 255, 0.1);
         }
         
         .current-user {
@@ -507,22 +512,26 @@
         
         .station-tab {
             padding: 20px;
-            background: var(--bg-secondary);
+            background: transparent;
             border: 2px solid var(--border);
             border-radius: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
         }
-        
+
         .station-tab:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            border-color: var(--accent-purple);
+            color: var(--accent-purple);
+            box-shadow: 0 0 20px rgba(191, 0, 255, 0.3), 0 5px 20px rgba(0,0,0,0.3), inset 0 0 10px rgba(191, 0, 255, 0.05);
         }
-        
+
         .station-tab.active {
             border-color: var(--accent-purple);
-            background: rgba(147, 51, 234, 0.1);
+            background: transparent;
+            color: var(--accent-purple);
+            box-shadow: 0 0 20px rgba(191, 0, 255, 0.5), 0 0 40px rgba(191, 0, 255, 0.3), inset 0 0 15px rgba(191, 0, 255, 0.1);
         }
         
         .station-tab h3 {
@@ -623,9 +632,9 @@
         
         .btn {
             padding: 15px 30px;
-            background: var(--accent-purple);
-            color: white;
-            border: none;
+            background: transparent;
+            color: var(--accent-purple);
+            border: 2px solid var(--accent-purple);
             border-radius: 10px;
             font-size: 1rem;
             font-weight: 700;
@@ -633,23 +642,156 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(191, 0, 255, 0.3), inset 0 0 10px rgba(191, 0, 255, 0.05);
         }
-        
+
         .btn:hover {
-            background: #7c3aed;
+            background: rgba(191, 0, 255, 0.15);
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(147, 51, 234, 0.4);
+            box-shadow: 0 0 20px rgba(191, 0, 255, 0.5), 0 0 40px rgba(191, 0, 255, 0.3), inset 0 0 15px rgba(191, 0, 255, 0.1);
         }
-        
+
         .btn:active {
             transform: translateY(0);
         }
-        
+
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            box-shadow: none;
         }
-        
+
+        /* Neon button color variants */
+        .btn[style*="--accent-green"], .btn[style*="accent-green"] {
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.3), inset 0 0 10px rgba(57, 255, 20, 0.05);
+        }
+        .btn[style*="--accent-green"]:hover, .btn[style*="accent-green"]:hover {
+            background: rgba(57, 255, 20, 0.15);
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.5), 0 0 40px rgba(57, 255, 20, 0.3), inset 0 0 15px rgba(57, 255, 20, 0.1);
+        }
+
+        .btn[style*="--accent-blue"], .btn[style*="accent-blue"] {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3), inset 0 0 10px rgba(0, 240, 255, 0.05);
+        }
+        .btn[style*="--accent-blue"]:hover, .btn[style*="accent-blue"]:hover {
+            background: rgba(0, 240, 255, 0.15);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5), 0 0 40px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.1);
+        }
+
+        .btn[style*="--accent-orange"], .btn[style*="accent-orange"] {
+            color: var(--accent-orange);
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 10px rgba(255, 107, 0, 0.3), inset 0 0 10px rgba(255, 107, 0, 0.05);
+        }
+        .btn[style*="--accent-orange"]:hover, .btn[style*="accent-orange"]:hover {
+            background: rgba(255, 107, 0, 0.15);
+            box-shadow: 0 0 20px rgba(255, 107, 0, 0.5), 0 0 40px rgba(255, 107, 0, 0.3), inset 0 0 15px rgba(255, 107, 0, 0.1);
+        }
+
+        .btn[style*="--accent-red"], .btn[style*="accent-red"] {
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.3), inset 0 0 10px rgba(255, 0, 85, 0.05);
+        }
+        .btn[style*="--accent-red"]:hover, .btn[style*="accent-red"]:hover {
+            background: rgba(255, 0, 85, 0.15);
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.5), 0 0 40px rgba(255, 0, 85, 0.3), inset 0 0 15px rgba(255, 0, 85, 0.1);
+        }
+
+        .btn[style*="--accent-pink"], .btn[style*="accent-pink"] {
+            color: var(--accent-pink);
+            border-color: var(--accent-pink);
+            box-shadow: 0 0 10px rgba(255, 16, 240, 0.3), inset 0 0 10px rgba(255, 16, 240, 0.05);
+        }
+        .btn[style*="--accent-pink"]:hover, .btn[style*="accent-pink"]:hover {
+            background: rgba(255, 16, 240, 0.15);
+            box-shadow: 0 0 20px rgba(255, 16, 240, 0.5), 0 0 40px rgba(255, 16, 240, 0.3), inset 0 0 15px rgba(255, 16, 240, 0.1);
+        }
+
+        /* Neon outline overrides for buttons with inline background styles */
+        .btn[style*="background"] {
+            background: transparent !important;
+            border: 2px solid var(--accent-purple) !important;
+            color: var(--accent-purple) !important;
+            box-shadow: 0 0 10px rgba(191, 0, 255, 0.3), inset 0 0 10px rgba(191, 0, 255, 0.05);
+        }
+        .btn[style*="background"]:hover {
+            background: rgba(191, 0, 255, 0.15) !important;
+            box-shadow: 0 0 20px rgba(191, 0, 255, 0.5), 0 0 40px rgba(191, 0, 255, 0.3), inset 0 0 15px rgba(191, 0, 255, 0.1);
+        }
+
+        /* Green neon buttons */
+        .btn[style*="accent-green"], .btn[style*="#39ff14"], .btn[style*="#10B981"], .btn[style*="10B981"] {
+            border-color: var(--accent-green) !important;
+            color: var(--accent-green) !important;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.3), inset 0 0 10px rgba(57, 255, 20, 0.05);
+        }
+        .btn[style*="accent-green"]:hover, .btn[style*="#39ff14"]:hover, .btn[style*="#10B981"]:hover, .btn[style*="10B981"]:hover {
+            background: rgba(57, 255, 20, 0.15) !important;
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.5), 0 0 40px rgba(57, 255, 20, 0.3), inset 0 0 15px rgba(57, 255, 20, 0.1);
+        }
+
+        /* Blue neon buttons */
+        .btn[style*="accent-blue"], .btn[style*="#00f0ff"], .btn[style*="#3B82F6"], .btn[style*="3B82F6"] {
+            border-color: var(--accent-blue) !important;
+            color: var(--accent-blue) !important;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3), inset 0 0 10px rgba(0, 240, 255, 0.05);
+        }
+        .btn[style*="accent-blue"]:hover, .btn[style*="#00f0ff"]:hover, .btn[style*="#3B82F6"]:hover, .btn[style*="3B82F6"]:hover {
+            background: rgba(0, 240, 255, 0.15) !important;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5), 0 0 40px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.1);
+        }
+
+        /* Orange neon buttons */
+        .btn[style*="accent-orange"], .btn[style*="#ff6b00"], .btn[style*="#FFD700"], .btn[style*="FFD700"] {
+            border-color: var(--accent-orange) !important;
+            color: var(--accent-orange) !important;
+            box-shadow: 0 0 10px rgba(255, 107, 0, 0.3), inset 0 0 10px rgba(255, 107, 0, 0.05);
+        }
+        .btn[style*="accent-orange"]:hover, .btn[style*="#ff6b00"]:hover, .btn[style*="#FFD700"]:hover, .btn[style*="FFD700"]:hover {
+            background: rgba(255, 107, 0, 0.15) !important;
+            box-shadow: 0 0 20px rgba(255, 107, 0, 0.5), 0 0 40px rgba(255, 107, 0, 0.3), inset 0 0 15px rgba(255, 107, 0, 0.1);
+        }
+
+        /* Red neon buttons */
+        .btn[style*="accent-red"], .btn[style*="#ff0055"] {
+            border-color: var(--accent-red) !important;
+            color: var(--accent-red) !important;
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.3), inset 0 0 10px rgba(255, 0, 85, 0.05);
+        }
+        .btn[style*="accent-red"]:hover, .btn[style*="#ff0055"]:hover {
+            background: rgba(255, 0, 85, 0.15) !important;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.5), 0 0 40px rgba(255, 0, 85, 0.3), inset 0 0 15px rgba(255, 0, 85, 0.1);
+        }
+
+        /* Gradient neon buttons - use purple as primary with multi-color glow */
+        .btn[style*="linear-gradient"] {
+            border-color: var(--accent-purple) !important;
+            color: var(--accent-purple) !important;
+            box-shadow: 0 0 10px rgba(191, 0, 255, 0.3), 0 0 20px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(191, 0, 255, 0.05);
+        }
+        .btn[style*="linear-gradient"]:hover {
+            background: rgba(191, 0, 255, 0.15) !important;
+            box-shadow: 0 0 25px rgba(191, 0, 255, 0.5), 0 0 40px rgba(0, 240, 255, 0.4), 0 0 60px rgba(255, 16, 240, 0.3), inset 0 0 15px rgba(191, 0, 255, 0.1);
+        }
+
+        /* Tertiary/muted neon buttons */
+        .btn[style*="bg-tertiary"] {
+            border-color: var(--text-secondary) !important;
+            color: var(--text-primary) !important;
+            box-shadow: 0 0 8px rgba(136, 136, 136, 0.2), inset 0 0 8px rgba(136, 136, 136, 0.03);
+        }
+        .btn[style*="bg-tertiary"]:hover {
+            border-color: var(--accent-purple) !important;
+            color: var(--accent-purple) !important;
+            background: rgba(191, 0, 255, 0.1) !important;
+            box-shadow: 0 0 15px rgba(191, 0, 255, 0.4), inset 0 0 10px rgba(191, 0, 255, 0.05);
+        }
+
         .batch-list {
             background: var(--bg-secondary);
             padding: 30px;
@@ -742,17 +884,19 @@
         .btn-small {
             padding: 8px 16px;
             font-size: 1rem;
-            background: var(--accent-purple);
-            color: white;
-            border: none;
+            background: transparent;
+            color: var(--accent-purple);
+            border: 2px solid var(--accent-purple);
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s ease;
+            box-shadow: 0 0 8px rgba(191, 0, 255, 0.3), inset 0 0 8px rgba(191, 0, 255, 0.05);
         }
-        
+
         .btn-small:hover {
-            background: #7c3aed;
+            background: rgba(191, 0, 255, 0.15);
+            box-shadow: 0 0 15px rgba(191, 0, 255, 0.5), 0 0 30px rgba(191, 0, 255, 0.3), inset 0 0 10px rgba(191, 0, 255, 0.1);
         }
         
         .filter-bar {
@@ -764,7 +908,7 @@
         
         .filter-btn {
             padding: 10px 20px;
-            background: var(--bg-tertiary);
+            background: transparent;
             border: 2px solid var(--border);
             color: var(--text-primary);
             border-radius: 8px;
@@ -772,14 +916,18 @@
             font-size: 0.9rem;
             transition: all 0.3s ease;
         }
-        
+
         .filter-btn:hover {
             border-color: var(--accent-purple);
+            color: var(--accent-purple);
+            box-shadow: 0 0 15px rgba(191, 0, 255, 0.3), inset 0 0 10px rgba(191, 0, 255, 0.05);
         }
-        
+
         .filter-btn.active {
-            background: var(--accent-purple);
+            background: transparent;
             border-color: var(--accent-purple);
+            color: var(--accent-purple);
+            box-shadow: 0 0 15px rgba(191, 0, 255, 0.4), 0 0 30px rgba(191, 0, 255, 0.2), inset 0 0 10px rgba(191, 0, 255, 0.1);
         }
         
         .search-box {
@@ -974,18 +1122,23 @@
                 }
         
                 .actions-toggle-btn {
-                    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
-                    color: white;
-                    border: none;
+                    background: transparent;
+                    color: var(--accent-purple);
+                    border: 2px solid var(--accent-purple);
                     padding: 12px 24px;
                     border-radius: 12px;
                     font-weight: 700;
                     cursor: pointer;
                     font-size: 1rem;
-                    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
+                    box-shadow: 0 0 15px rgba(191, 0, 255, 0.4), 0 0 30px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(191, 0, 255, 0.05);
                     transition: all 0.3s ease;
                 }
-        
+
+                .actions-toggle-btn:hover {
+                    background: rgba(191, 0, 255, 0.15);
+                    box-shadow: 0 0 25px rgba(191, 0, 255, 0.6), 0 0 50px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(191, 0, 255, 0.1);
+                }
+
                 .actions-dropdown {
                     display: none;
                     position: absolute;
@@ -994,28 +1147,32 @@
                     background: var(--bg-secondary);
                     border-radius: 12px;
                     padding: 10px;
-                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), 0 0 20px rgba(191, 0, 255, 0.2);
                     margin-top: 10px;
                     width: 200px;
+                    border: 2px solid var(--accent-purple);
                 }
-        
+
                 .actions-dropdown button {
                     display: block;
                     width: 100%;
                     padding: 10px;
                     margin-bottom: 5px;
                     text-align: left;
-                    background: var(--bg-tertiary);
+                    background: transparent;
                     color: var(--text-primary);
                     border: 1px solid var(--border);
                     border-radius: 8px;
                     font-size: 0.9rem;
+                    transition: all 0.2s ease;
                 }
-        
-                        .actions-dropdown button:hover {
-                            background: var(--accent-purple);
-                            border-color: var(--accent-purple);
-                        }
+
+                .actions-dropdown button:hover {
+                    background: transparent;
+                    border-color: var(--accent-purple);
+                    color: var(--accent-purple);
+                    box-shadow: 0 0 10px rgba(191, 0, 255, 0.3), inset 0 0 8px rgba(191, 0, 255, 0.05);
+                }
                 
                         #connectionStatus {
                             display: none !important;
@@ -3364,23 +3521,25 @@
         
         #myStatsBtn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(147, 51, 234, 0.5);
+            box-shadow: 0 0 20px rgba(191, 0, 255, 0.5), 0 0 40px rgba(191, 0, 255, 0.3), inset 0 0 15px rgba(191, 0, 255, 0.1);
         }
 
         /* Front of House Styles */
         .quick-tag-btn {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
+            background: transparent;
+            border: 2px solid var(--accent-blue);
+            color: var(--accent-blue);
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s ease;
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.3), inset 0 0 6px rgba(0, 240, 255, 0.05);
         }
         .quick-tag-btn:hover {
-            background: var(--accent-purple);
-            border-color: var(--accent-purple);
+            background: rgba(0, 240, 255, 0.15);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.5), 0 0 30px rgba(0, 240, 255, 0.3), inset 0 0 10px rgba(0, 240, 255, 0.1);
         }
         .foh-batch-card {
             background: var(--bg-tertiary);
