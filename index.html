@@ -5246,6 +5246,135 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
         }
 
+        // Generate ZPL for post-production label (2" x 1.5" horizontal)
+        function generatePostProductionLabelZPL(batch, finalWeight, sampleWeight) {
+            // 2" x 1.5" label at 203dpi = 406 x 305 dots (horizontal)
+            const width = 406;
+            const height = 305;
+
+            // Get product name and batch ID
+            const productName = (batch.strain || 'Unknown').toUpperCase();
+            const batchId = batch.id || '';
+
+            // Weights
+            const trimWeight = batch.trim_weight || 0;
+
+            // METRC tags
+            let metrcTags = batch.metrc_tags || '';
+            if (metrcTags.length > 25) {
+                metrcTags = metrcTags.substring(0, 22) + '...';
+            }
+
+            // Source contributions for partial tag info
+            let partialInfo = '';
+            let sourceContributions = batch.source_contributions || [];
+            if (typeof sourceContributions === 'string') {
+                try { sourceContributions = JSON.parse(sourceContributions); } catch(e) { sourceContributions = []; }
+            }
+            if (sourceContributions.length > 0) {
+                // Show first partial source
+                const firstSource = sourceContributions[0];
+                const trimUsed = parseFloat(firstSource.trim_weight) || 0;
+                partialInfo = `${firstSource.batch_id} (${trimUsed.toFixed(0)}g)`;
+                if (sourceContributions.length > 1) {
+                    partialInfo += ` +${sourceContributions.length - 1}`;
+                }
+            }
+
+            // Agreement type - shorten
+            let agreement = batch.material_agreement || 'Wholesale';
+            if (agreement === '50-50 Split') agreement = '50/50';
+            if (agreement === 'Custom Buyback') agreement = 'Buyback';
+
+            // Grower info
+            const license = batch.cultivation_license || '';
+            const growerName = batch.grower_name || '';
+            let growerLine = license;
+            if (growerName) {
+                growerLine = license ? `${license} / ${growerName}` : growerName;
+            }
+            if (growerLine.length > 28) {
+                growerLine = growerLine.substring(0, 25) + '...';
+            }
+
+            const zpl = `^XA
+^MMT
+^PW${width}
+^LL${height}
+^LS0
+
+~SD20
+
+^FO0,0^GB${width},${height},3^FS
+
+^CF0,32
+^FO10,10^FD${productName.substring(0, 16)}^FS
+^CF0,24
+^FO280,12^FD${batchId}^FS
+
+^FO10,45^GB386,2,2^FS
+
+^CF0,20
+^FO10,55^FDFinal: ${finalWeight}g^FS
+^FO210,55^FDTrim: ${trimWeight}g^FS
+
+^CF0,16
+^FO10,85^FDMETRC: ${metrcTags}^FS
+${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
+
+^FO10,130^GB386,2,2^FS
+
+^CF0,16
+^FO10,140^FDSample: ${sampleWeight}g^FS
+^FO150,140^FD${agreement}^FS
+
+^FO10,165^FD${growerLine}^FS
+
+^XZ`;
+
+            return zpl;
+        }
+
+        // Print post-production labels (multiple copies)
+        async function printPostProductionLabels(batch, finalWeight, sampleWeight, copies) {
+            const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
+
+            // Print server URL
+            const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
+
+            for (let i = 0; i < copies; i++) {
+                try {
+                    const response = await fetch(printServerURL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ zpl: zpl })
+                    });
+
+                    if (response.ok) {
+                        console.log(`Post-production label ${i + 1}/${copies} sent to printer`);
+                    }
+                } catch (error) {
+                    console.log('Print server not available:', error.message);
+
+                    // Fallback to Browser Print
+                    if (window.BrowserPrint) {
+                        try {
+                            const printer = await window.BrowserPrint.getDefaultDevice('printer');
+                            printer.send(zpl, undefined, (error) => {
+                                if (error) {
+                                    console.log('Print failed for label', i + 1);
+                                }
+                            });
+                        } catch (printError) {
+                            console.log('Printer not available');
+                        }
+                    }
+                }
+            }
+
+            console.log(`Printed ${copies} post-production label(s) for batch ${batch.id}`);
+        }
+
         // Extraction functions
         
         // Finishing functions
@@ -5687,6 +5816,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 message: `${batchId} has been processed and is ready for packaging.`,
                 stats: celebrationStats
             });
+
+            // Auto-print post-production labels (one per slab/jar)
+            const labelCount = isShatter ? outputSlabsCount : (isBulk ? outputJarsCount : 1);
+            printPostProductionLabels(batch, finalWeight, sampleWeight, labelCount);
 
             document.getElementById('finishingForm').style.display = 'none';
             document.getElementById('finishingBatchSelect').value = '';
