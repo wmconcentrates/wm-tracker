@@ -3158,6 +3158,7 @@
                     <button onclick="searchComplianceTopic('security')" class="compliance-topic-btn">Security</button>
                     <button onclick="searchComplianceTopic('transport')" class="compliance-topic-btn">Transport</button>
                     <button onclick="searchComplianceTopic('testing')" class="compliance-topic-btn">Testing</button>
+                    <button onclick="searchComplianceTopic('reducedtesting')" class="compliance-topic-btn">Reduced Testing</button>
                 </div>
             </div>
 
@@ -7595,6 +7596,20 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                     { num: "3-335", text: "EMPLOYEE TRAINING: All employees must complete responsible vendor training within 90 days of hire. Refresher training required annually." },
                     { num: "3-336", text: "EMPLOYEE RECORDS: Must maintain records of all employees including badge numbers, training certifications, and background check dates." },
                     { num: "3-340", text: "PREMISES DIAGRAM: Must maintain current diagram showing all Limited Access Areas, cameras, safes, and entry/exit points. Update within 10 days of changes." }
+                ]
+            },
+            reducedtesting: {
+                title: "Reduced Testing Allowance (4-230 Series)",
+                rules: [
+                    { num: "4-230", text: "REDUCED TESTING ALLOWANCE: Allows qualified licensees to reduce frequency of certain tests after demonstrating consistent compliance. Certification fee: $4,200." },
+                    { num: "4-230-A", text: "ACHIEVING REDUCED TESTING: Must pass consecutive tests for contaminants or potency. Cultivators need 5 consecutive passing batches; Manufacturers need specific batch counts per product type." },
+                    { num: "4-230-B", text: "CONTAMINANT TESTING ALLOWANCE: Cultivation Facility may achieve reduced testing if every Harvest Batch passes required contaminant testing for 5 consecutive batches." },
+                    { num: "4-230-D", text: "POTENCY/HOMOGENEITY ALLOWANCE: Products Manufacturer may achieve reduced testing for potency if 5 consecutive Production Batches test within 10% of target potency." },
+                    { num: "4-230-E", text: "EXPIRATION: Reduced Testing Allowance is effective for ONE YEAR (365 days) from date achieved. Must reauthorize or resume full testing when expired." },
+                    { num: "4-230-F", text: "CERTIFICATION FEE: Licensee must pay $4,200 fee and submit attestation of substantial compliance. Privileges effective for 12 months. Renewable annually." },
+                    { num: "4-230-G", text: "MAINTAINING ALLOWANCE: Must continue periodic testing to maintain. Cultivators test monthly; Manufacturers test quarterly. Failed test may revoke allowance." },
+                    { num: "4-230-K", text: "REAUTHORIZATION REQUIRED: Failed test or Material Modification to production process requires reauthorization. Must pass 3 consecutive batches to reauthorize." },
+                    { num: "4-230-M", text: "R&D UNITS: Batches of R-and-D Units are NOT eligible for Reduced Testing Allowance. Products using extraction solvents not eligible for reduced microbial testing." }
                 ]
             }
         };
