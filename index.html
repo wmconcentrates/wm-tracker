@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.0 - Front of House update -->
+<!-- v2.1 - Mobile responsive fixes -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1272,6 +1272,24 @@
             }
 
             /* Front of House Mobile Fixes */
+
+            /* Force Generate Post to stack vertically */
+            .foh-generate-container {
+                flex-direction: column !important;
+            }
+
+            #fohQuickInput {
+                width: 100% !important;
+                flex: none !important;
+                min-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            .foh-generate-btn {
+                width: 100% !important;
+                flex: none !important;
+            }
+
             #frontofhouse div[style*="display: flex"] {
                 flex-wrap: wrap !important;
             }
@@ -1292,8 +1310,7 @@
                 margin: 0 !important;
             }
 
-            #frontofhouse input[type="text"],
-            #frontofhouse #fohQuickInput {
+            #frontofhouse input[type="text"] {
                 width: 100% !important;
                 max-width: 100% !important;
                 flex: none !important;
@@ -2466,9 +2483,9 @@
                     </h3>
                     <p style="color: var(--text-secondary); margin: 0 0 15px 0;">Type a quick note and I'll turn it into an engaging post. Mention partners and they'll be auto-tagged!</p>
 
-                    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                    <div class="foh-generate-container" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
                         <input type="text" id="fohQuickInput" placeholder="e.g., Grabbed some fire GMO trim from In The Flow..." style="flex: 1 1 100%; min-width: 0; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--border); background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box;">
-                        <button onclick="generateBlogPost()" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; flex: 1 1 100%;">
+                        <button onclick="generateBlogPost()" class="btn foh-generate-btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; flex: 1 1 100%;">
                             ✨ Generate Post
                         </button>
                     </div>
