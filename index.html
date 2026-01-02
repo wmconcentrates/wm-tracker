@@ -1520,13 +1520,21 @@
                             <input type="text" id="strainName" required>
                         </div>
                         <div class="form-group">
-                            <label>Trim Weight (grams)</label>
+                            <label>Material Type</label>
+                            <select id="materialType" required onchange="updateMaterialTypeUI()">
+                                <option value="Trim">Trim (Standard BHO - ~13% yield)</option>
+                                <option value="Fresh Frozen">Fresh Frozen (Live Resin - ~3.5% yield)</option>
+                                <option value="Whole Flower">Whole Flower (~18% yield)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label id="weightLabel">Trim Weight (grams)</label>
                             <input type="number" id="trimWeight" step="0.1" required>
                         </div>
                         <div class="form-group">
-                            <label>Number of Socks</label>
+                            <label id="socksLabel">Number of Socks</label>
                             <input type="number" id="socksTotal" min="1" value="1" required>
-                            <div class="help-text">How many socks is this trim packed into?</div>
+                            <div class="help-text" id="socksHelp">How many socks is this trim packed into?</div>
                         </div>
                         <div class="form-group">
                             <label>Cost of Material ($)</label>
@@ -1584,6 +1592,10 @@
                             <label class="checkbox-item">
                                 <input type="checkbox" name="products" value="Live Resin Carts">
                                 <span>Live Resin Carts</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="products" value="Live Resin AIOs">
+                                <span>Live Resin AIOs</span>
                             </label>
                             <label class="checkbox-item">
                                 <input type="checkbox" name="products" value="Wax">
@@ -3287,6 +3299,7 @@
                             <option value="shatter">Shatter (count slabs)</option>
                             <option value="wax">Wax (count bowls)</option>
                             <option value="sugar_wax">Sugar Wax (count bowls)</option>
+                            <option value="live_resin">Live Resin Oil (count bowls)</option>
                         </select>
                     </div>
                     
@@ -5473,10 +5486,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const socksTotal = parseInt(document.getElementById('socksTotal').value) || 1;
             const trimPerSock = trimWeight / socksTotal;
 
-            const batch = {
-                id: `WM-${batchCounter}`,
+            const materialType = document.getElementById('materialType')?.value || 'Trim';\n            const batch = {\n                id: `WM-${batchCounter}`,
                 strain: document.getElementById('strainName').value,
                 strain_type: document.getElementById('strainType').value,
+                material_type: document.getElementById('materialType')?.value || 'Trim',
+                expected_yield: getExpectedYield(document.getElementById('materialType')?.value || 'Trim'),
                 trim_weight: trimWeight,
                 socks_total: socksTotal,
                 socks_remaining: socksTotal,
@@ -6086,6 +6100,9 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
         document.getElementById('finishingBatchSelect').addEventListener('change', function() {
             const form = document.getElementById('finishingForm');
             form.style.display = this.value ? 'block' : 'none';
+
+            // Check if Live Resin batch to show split section
+            checkShowSplitSection(this.value);
             
             if (this.value) {
                 const batch = batches.find(b => b.id === this.value);
@@ -7516,6 +7533,190 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             document.getElementById('personalStatsModal').style.display = 'none';
         }
 
+        // ==================== MATERIAL TYPE / LIVE RESIN WORKFLOW ====================
+        function updateMaterialTypeUI() {
+            const materialType = document.getElementById('materialType').value;
+            const weightLabel = document.getElementById('weightLabel');
+            const socksLabel = document.getElementById('socksLabel');
+            const socksHelp = document.getElementById('socksHelp');
+
+            if (materialType === 'Fresh Frozen') {
+                weightLabel.textContent = 'Fresh Frozen Weight (grams)';
+                socksLabel.textContent = 'Number of Bowls';
+                socksHelp.textContent = 'How many bowls will this fresh frozen fill?';
+
+                // Auto-check Live Resin products
+                document.querySelectorAll('input[name="products"]').forEach(cb => {
+                    if (cb.value.includes('Live Resin')) {
+                        cb.checked = true;
+                    } else if (!cb.value.includes('Brick Hash')) {
+                        cb.checked = false;
+                    }
+                });
+            } else {
+                weightLabel.textContent = 'Trim Weight (grams)';
+                socksLabel.textContent = 'Number of Socks';
+                socksHelp.textContent = 'How many socks is this trim packed into?';
+            }
+        }
+
+        // Get expected yield based on material type
+        function getExpectedYield(materialType) {
+            switch(materialType) {
+                case 'Fresh Frozen': return 3.5;  // Live Resin
+                case 'Whole Flower': return 18;
+                case 'Trim':
+                default: return 13;  // Standard BHO
+            }
+        }
+
+
+        // Split Live Resin batch into Carts and AIOs sub-batches
+        async function splitLiveResinBatch() {
+            const finishBatchSelect = document.getElementById('finishBatchSelect');
+            const batchId = finishBatchSelect.value;
+            if (!batchId) {
+                alert('Please select a batch first');
+                return;
+            }
+
+            const cartsWeight = parseFloat(document.getElementById('splitCartsWeight').value) || 0;
+            const aiosWeight = parseFloat(document.getElementById('splitAIOsWeight').value) || 0;
+
+            if (cartsWeight === 0 && aiosWeight === 0) {
+                alert('Please enter weights for at least one product type');
+                return;
+            }
+
+            // Get the parent batch
+            const { data: parentBatch, error: fetchError } = await supabaseClient
+                .from('wm_batches')
+                .select('*')
+                .eq('id', batchId)
+                .single();
+
+            if (fetchError || !parentBatch) {
+                alert('Error fetching batch');
+                return;
+            }
+
+            const subBatches = [];
+            const batchBase = batchId.split('-').slice(0, 2).join('-');
+
+            // Create Carts sub-batch
+            if (cartsWeight > 0) {
+                const cartsSubId = batchBase + '-CARTS';
+                subBatches.push({
+                    id: cartsSubId,
+                    strain: parentBatch.strain,
+                    strain_type: parentBatch.strain_type,
+                    material_type: parentBatch.material_type || 'Fresh Frozen',
+                    expected_yield: parentBatch.expected_yield || 3.5,
+                    trim_weight: parentBatch.trim_weight,
+                    net_weight_grams: cartsWeight,
+                    extraction_output: cartsWeight,
+                    planned_products: [{ type: 'Live Resin Carts' }],
+                    cultivation_license: parentBatch.cultivation_license,
+                    grower_name: parentBatch.grower_name,
+                    metrc_tags: parentBatch.metrc_tags,
+                    parent_batch_id: batchId,
+                    is_sub_batch: true,
+                    status: 'post_extraction',
+                    timeline: [{
+                        stage: 'split',
+                        user: currentRole ? currentRole.name : "Unknown",
+                        date: new Date().toISOString(),
+                        action: 'Split from ' + batchId + ' for Live Resin Carts - ' + cartsWeight + 'g'
+                    }],
+                    created_at: new Date().toISOString()
+                });
+            }
+
+            // Create AIOs sub-batch
+            if (aiosWeight > 0) {
+                const aiosSubId = batchBase + '-AIOs';
+                subBatches.push({
+                    id: aiosSubId,
+                    strain: parentBatch.strain,
+                    strain_type: parentBatch.strain_type,
+                    material_type: parentBatch.material_type || 'Fresh Frozen',
+                    expected_yield: parentBatch.expected_yield || 3.5,
+                    trim_weight: parentBatch.trim_weight,
+                    net_weight_grams: aiosWeight,
+                    extraction_output: aiosWeight,
+                    planned_products: [{ type: 'Live Resin AIOs' }],
+                    cultivation_license: parentBatch.cultivation_license,
+                    grower_name: parentBatch.grower_name,
+                    metrc_tags: parentBatch.metrc_tags,
+                    parent_batch_id: batchId,
+                    is_sub_batch: true,
+                    status: 'post_extraction',
+                    timeline: [{
+                        stage: 'split',
+                        user: currentRole ? currentRole.name : "Unknown",
+                        date: new Date().toISOString(),
+                        action: 'Split from ' + batchId + ' for Live Resin AIOs - ' + aiosWeight + 'g'
+                    }],
+                    created_at: new Date().toISOString()
+                });
+            }
+
+            // Insert sub-batches
+            const { error: insertError } = await supabaseClient
+                .from('wm_batches')
+                .insert(subBatches);
+
+            if (insertError) {
+                console.error('Error creating sub-batches:', insertError);
+                alert('Error creating sub-batches');
+                return;
+            }
+
+            // Update parent batch status
+            await supabaseClient
+                .from('wm_batches')
+                .update({
+                    status: 'split',
+                    net_weight_grams: (cartsWeight + aiosWeight),
+                    timeline: [...(parentBatch.timeline || []), {
+                        stage: 'split',
+                        user: currentRole ? currentRole.name : "Unknown",
+                        date: new Date().toISOString(),
+                        action: 'Batch split into: ' + subBatches.map(b => b.id).join(', ')
+                    }]
+                })
+                .eq('id', batchId);
+
+            alert('✅ Batch split successfully!\n\n' + subBatches.map(b => b.id + ' (' + b.net_weight_grams + 'g)').join('\n'));
+
+            // Reset form
+            document.getElementById('splitCartsWeight').value = '';
+            document.getElementById('splitAIOsWeight').value = '';
+            document.getElementById('splitBatchSection').style.display = 'none';
+
+            // Refresh display
+            loadBatches();
+        }
+
+        // Show/hide split section based on batch selection
+        function checkShowSplitSection(batchId) {
+            const splitSection = document.getElementById('splitBatchSection');
+            if (!splitSection) return;
+
+            const batch = batches.find(b => b.id === batchId);
+            if (batch && (batch.material_type === 'Fresh Frozen' || isLiveResinBatch(batch))) {
+                splitSection.style.display = 'block';
+            } else {
+                splitSection.style.display = 'none';
+            }
+        }
+
+        // Check if batch is Live Resin
+        function isLiveResinBatch(batch) {
+            return batch.material_type === 'Fresh Frozen' ||
+                   (batch.planned_products && batch.planned_products.includes('Live Resin'));
+        }
+
         // ==================== COMPLIANCE ASSISTANT ====================
         // Full Colorado MED Rules Search (1 CCR 212-3) - Effective January 5, 2026
 
@@ -7743,7 +7944,7 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             const productType = document.getElementById('pullProductType').value;
             
             document.getElementById('shatterFields').style.display = productType === 'shatter' ? 'block' : 'none';
-            document.getElementById('waxFields').style.display = (productType === 'wax' || productType === 'sugar_wax') ? 'block' : 'none';
+            document.getElementById('waxFields').style.display = (productType === 'wax' || productType === 'sugar_wax' || productType === 'live_resin') ? 'block' : 'none';
         }
         
         function submitPullBatch() {
@@ -7776,7 +7977,7 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                         return;
                     }
                     
-                    if ((productType === 'wax' || productType === 'sugar_wax') && bowls === 0) {
+                    if ((productType === 'wax' || productType === 'sugar_wax' || productType === 'live_resin') && bowls === 0) {
                         alert('Please enter the number of bowls');
                         return;
                     }
@@ -9635,7 +9836,7 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             if (trimWeight === 0) return null;
             
             const yieldPercent = (finalWeight / trimWeight) * 100;
-            const expectedYield = 18; // Industry standard for BHO
+            const expectedYield = batch.expected_yield || getExpectedYield(batch.material_type) || 13;
             const variance = yieldPercent - expectedYield;
             
             return {
@@ -10419,16 +10620,44 @@ ${employeeReport || 'No activity recorded today'}
             const today = new Date();
             
             // Track BHO and Brick Hash/Dry Sift separately
-            const bhoRTAs = rtaBatches.filter(b => b.extraction_method === 'BHO');
+            const bhoRTAs = rtaBatches.filter(b => b.extraction_method === 'BHO' && !isLiveResinBatch(b));
             const hashRTAs = rtaBatches.filter(b => b.extraction_method === 'Dry Sift' || b.extraction_method === 'Brick Hash');
+
+            // Live Resin Carts and AIOs tracked separately
+            const cartsRTAs = rtaBatches.filter(b => {
+                const products = b.planned_products || [];
+                const productMade = (b.product_made || '').toLowerCase();
+                return isLiveResinBatch(b) && (
+                    products.some(p => (p.type || p).toLowerCase().includes('cart')) ||
+                    productMade.includes('cart') ||
+                    productMade === 'live resin oil'
+                );
+            });
+
+            const aiosRTAs = rtaBatches.filter(b => {
+                const products = b.planned_products || [];
+                const productMade = (b.product_made || '').toLowerCase();
+                return isLiveResinBatch(b) && (
+                    products.some(p => (p.type || p).toLowerCase().includes('aio') || (p.type || p).toLowerCase().includes('all-in-one')) ||
+                    productMade.includes('aio') ||
+                    productMade.includes('all-in-one') ||
+                    productMade.includes('all in one')
+                );
+            });
             
             let reminderHTML = '<div style="display: grid; gap: 15px;">';
             
             // Check BHO RTA Status
-            reminderHTML += checkMethodRTA(bhoRTAs, 'BHO', today);
+            reminderHTML += checkMethodRTA(bhoRTAs, 'BHO (Wax/Shatter/Sugar)', today);
             
             // Check Hash RTA Status
             reminderHTML += checkMethodRTA(hashRTAs, 'Brick Hash / Dry Sift', today);
+
+            // Check Live Resin Carts RTA Status
+            reminderHTML += checkMethodRTA(cartsRTAs, 'Live Resin Carts', today);
+
+            // Check Live Resin AIOs RTA Status
+            reminderHTML += checkMethodRTA(aiosRTAs, 'Live Resin AIOs', today);
             
             reminderHTML += '</div>';
             
