@@ -1789,6 +1789,7 @@
                                             <option value="Sugar Wax">Sugar Wax</option>
                                             <option value="Shatter">Shatter</option>
                                             <option value="Live Resin Oil">Live Resin Oil (Carts)</option>
+                                    <option value="Live Resin AIOs">Live Resin AIOs</option>
                                             <option value="Brick Hash">Brick Hash</option>
                                             <option value="Hash Hits">Hash Hits</option>
                                         </select>
@@ -6160,7 +6161,7 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                 const outputSection = document.getElementById('outputContainersSection');
                 const bulkJarsOutput = document.getElementById('bulkJarsOutput');
                 const shatterSlabsOutput = document.getElementById('shatterSlabsOutput');
-                const productMade = batch.product_made || '';
+                const productMade = newProductType || batch.product_made || '';
 
                 // Check if it's a bulk product (Wax, Sugar Wax) or Shatter
                 const isBulk = productMade === 'Wax' || productMade === 'Sugar Wax' ||
@@ -6429,6 +6430,9 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             const outputJarsCount = parseInt(document.getElementById('outputJarsCount').value) || 1;
             const outputSlabsCount = parseInt(document.getElementById('outputSlabsCount').value) || 1;
 
+            // Get product type change if selected
+            const newProductType = document.getElementById('finishingProductType')?.value || '';
+
             // Determine if bulk or shatter based on product type
             const productMade = batch.product_made || '';
             const isBulk = productMade === 'Wax' || productMade === 'Sugar Wax' ||
@@ -6463,6 +6467,11 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                 net_weight: netWeight,
                 timeline: timeline
             };
+
+            // Update product_made if changed
+            if (newProductType) {
+                updateData.product_made = newProductType;
+            }
 
             // Add output container counts
             if (isBulk) {
