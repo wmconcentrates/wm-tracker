@@ -7517,143 +7517,158 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
         }
 
         // ==================== COMPLIANCE ASSISTANT ====================
-        const complianceRules = {
-            waste: {
-                title: "Waste Disposal Requirements (3-900 Series)",
-                rules: [
-                    { num: "3-900", text: "Regulated Marijuana waste must be stored, secured, locked, and managed in accordance with all applicable federal, state, and local statutes and regulations." },
-                    { num: "3-905", text: "Waste must be rendered UNUSABLE and UNRECOGNIZABLE before disposal. Methods include: grinding with 50%+ non-consumable material (soil, paper, cardboard, food waste), composting, or other Division-approved methods." },
-                    { num: "3-910", text: "WASTE LOG REQUIREMENTS: Must maintain a waste log documenting all waste disposal activities including date, type, weight, method of rendering unusable, and employee signature." },
-                    { num: "3-915", text: "Stalks, stems, fan leaves, and roots may be transferred to third-party composters registered with Colorado Secretary of State. Must be recorded on waste log." },
-                    { num: "3-920", text: "Liquid waste must be disposed of in compliance with all applicable federal, state and local laws, including proper drainage and wastewater requirements." },
-                    { num: "3-925", text: "Mobile waste rendering: May occur outside Licensed Premises if on property under Licensee control immediately adjacent to premises." }
-                ]
-            },
-            metrc: {
-                title: "Inventory Tracking / METRC (3-800 Series)",
-                rules: [
-                    { num: "3-800", text: "All Regulated Marijuana must be tracked in the Seed-to-Sale Tracking System (METRC) from cultivation through final sale or destruction." },
-                    { num: "3-805", text: "Each plant must have a unique RFID tag assigned at the immature/vegetative stage and tracked through harvest." },
-                    { num: "3-810", text: "PACKAGE TAGS: All harvested marijuana and marijuana products must be assigned package tags before transfer or sale." },
-                    { num: "3-815", text: "TRANSFER MANIFESTS: All transfers between licensed facilities require manifests in the tracking system documenting source, destination, and package contents." },
-                    { num: "3-820", text: "RECONCILIATION: Physical inventory must be reconciled with tracking system records. Discrepancies must be reported to the Division within 24 hours if >5% variance." },
-                    { num: "3-825", text: "RECORD RETENTION: Tracking records must be maintained for minimum of 4 years from date of creation." }
-                ]
-            },
-            label: {
-                title: "Labeling & Packaging (3-1000 Series)",
-                rules: [
-                    { num: "3-1000", text: "All Regulated Marijuana products must be labeled and packaged before sale to consumer or transfer to another licensee." },
-                    { num: "3-1005", text: "REQUIRED LABEL INFO: License number, batch/lot number, testing facility name, date of testing, THC/CBD content, net weight, universal symbol." },
-                    { num: "3-1010", text: "UNIVERSAL SYMBOL: The Division-approved THC symbol must be displayed prominently on all marijuana product packaging." },
-                    { num: "3-1015", text: "WARNING STATEMENTS required including: 'Contains marijuana. Keep away from children.' and 'For use by adults 21+ only.'" },
-                    { num: "3-1020", text: "Packaging must be child-resistant, opaque, resealable (if multiple servings), and tamper-evident." },
-                    { num: "3-1025", text: "PROHIBITED: Labels cannot include false/misleading claims, health claims, cartoons/images appealing to minors, or resemble commercial products." }
-                ]
-            },
-            security: {
-                title: "Security Requirements (3-300 Series)",
-                rules: [
-                    { num: "3-305", text: "VIDEO SURVEILLANCE: Required in all Limited Access Areas, point of sale areas, vault/safe areas, and all entry/exit points. Minimum 40fps, 720p resolution." },
-                    { num: "3-310", text: "RECORDING RETENTION: Video recordings must be retained for minimum 40 days and made available to Division upon request within 24 hours." },
-                    { num: "3-315", text: "ALARM SYSTEM: Licensed premises must have professionally monitored alarm system covering all entry points and windows." },
-                    { num: "3-320", text: "LIMITED ACCESS AREAS: Only authorized employees and escorted visitors may enter. Must be clearly marked with signage." },
-                    { num: "3-325", text: "VISITOR LOG: All visitors must sign in/out with name, date, time, and purpose. Visitors must be escorted at all times in Limited Access Areas." }
-                ]
-            },
-            transport: {
-                title: "Transportation (3-1100 Series)",
-                rules: [
-                    { num: "3-1100", text: "TRANSPORT MANIFEST: All marijuana transported must have physical manifest including origin, destination, contents, and recipient signature." },
-                    { num: "3-1105", text: "VEHICLE REQUIREMENTS: Must be locked, enclosed cargo area. No marijuana visible from outside. GPS tracking required for vehicles transporting >$5,000 wholesale value." },
-                    { num: "3-1110", text: "TRANSPORT PERSONNEL: Minimum 2 employees for transports >$5,000 wholesale value. All must be licensed Occupational Badges." },
-                    { num: "3-1115", text: "ROUTE/TIMING: Direct route only, no unnecessary stops. Transport only during business hours unless Division-approved. No storage at unlicensed locations." }
-                ]
-            },
-            testing: {
-                title: "Testing Requirements (3-600 Series)",
-                rules: [
-                    { num: "3-600", text: "All Regulated Marijuana must pass required testing before sale or transfer to consumer-facing licensee." },
-                    { num: "3-605", text: "REQUIRED TESTS: Potency (THC/CBD), microbial contaminants, mycotoxins, heavy metals, residual solvents (concentrates), pesticides." },
-                    { num: "3-610", text: "SAMPLING: Must be performed by licensed Testing Facility employee. Random sampling protocol required. Sample size based on batch size." },
-                    { num: "3-615", text: "FAILED TESTS: Product failing required tests must be destroyed or remediated (if allowed). Re-testing allowed under specific conditions." },
-                    { num: "3-620", text: "TESTING RECORDS: Results must be maintained for 4 years. Certificate of Analysis required for all products transferred or sold." }
-                ]
-            },
-            definitions: {
-                title: "Key Definitions (3-100 Series)",
-                rules: [
-                    { num: "3-100", text: "REGULATED MARIJUANA: Marijuana cultivated, manufactured, distributed, or sold by a Regulated Marijuana Business for use by consumers." },
-                    { num: "3-105", text: "BATCH: A specific quantity of Regulated Marijuana that is uniform in strain, cultivated using the same methods, harvested at the same time." },
-                    { num: "3-110", text: "LIMITED ACCESS AREA: A building, room, or area where Regulated Marijuana is cultivated, stored, weighed, displayed, packaged, sold, or processed for sale." },
-                    { num: "3-115", text: "UNUSABLE AND UNRECOGNIZABLE: Rendered to a condition where no portion could reasonably be identified or consumed as marijuana." }
-                ]
-            },
-            operations: {
-                title: "Operational Requirements (3-300 Series)",
-                rules: [
-                    { num: "3-330", text: "OPERATING HOURS: May only conduct sales during hours approved in license. Must notify Division 10 days before changing hours." },
-                    { num: "3-335", text: "EMPLOYEE TRAINING: All employees must complete responsible vendor training within 90 days of hire. Refresher training required annually." },
-                    { num: "3-336", text: "EMPLOYEE RECORDS: Must maintain records of all employees including badge numbers, training certifications, and background check dates." },
-                    { num: "3-340", text: "PREMISES DIAGRAM: Must maintain current diagram showing all Limited Access Areas, cameras, safes, and entry/exit points. Update within 10 days of changes." }
-                ]
-            },
-            reducedtesting: {
-                title: "Reduced Testing Allowance (4-230 Series)",
-                rules: [
-                    { num: "4-230", text: "REDUCED TESTING ALLOWANCE: Allows qualified licensees to reduce frequency of certain tests after demonstrating consistent compliance. Certification fee: $4,200." },
-                    { num: "4-230-A", text: "ACHIEVING REDUCED TESTING: Must pass consecutive tests for contaminants or potency. Cultivators need 5 consecutive passing batches; Manufacturers need specific batch counts per product type." },
-                    { num: "4-230-B", text: "CONTAMINANT TESTING ALLOWANCE: Cultivation Facility may achieve reduced testing if every Harvest Batch passes required contaminant testing for 5 consecutive batches." },
-                    { num: "4-230-D", text: "POTENCY/HOMOGENEITY ALLOWANCE: Products Manufacturer may achieve reduced testing for potency if 5 consecutive Production Batches test within 10% of target potency." },
-                    { num: "4-230-E", text: "EXPIRATION: Reduced Testing Allowance is effective for ONE YEAR (365 days) from date achieved. Must reauthorize or resume full testing when expired." },
-                    { num: "4-230-F", text: "CERTIFICATION FEE: Licensee must pay $4,200 fee and submit attestation of substantial compliance. Privileges effective for 12 months. Renewable annually." },
-                    { num: "4-230-G", text: "MAINTAINING ALLOWANCE: Must continue periodic testing to maintain. Cultivators test monthly; Manufacturers test quarterly. Failed test may revoke allowance." },
-                    { num: "4-230-K", text: "REAUTHORIZATION REQUIRED: Failed test or Material Modification to production process requires reauthorization. Must pass 3 consecutive batches to reauthorize." },
-                    { num: "4-230-M", text: "R&D UNITS: Batches of R-and-D Units are NOT eligible for Reduced Testing Allowance. Products using extraction solvents not eligible for reduced microbial testing." }
-                ]
+        // Full Colorado MED Rules Search (1 CCR 212-3) - Effective January 5, 2026
+
+        let complianceData = null;
+        let complianceLoading = false;
+
+        async function loadComplianceData() {
+            if (complianceData) return complianceData;
+            if (complianceLoading) return null;
+
+            complianceLoading = true;
+            try {
+                const response = await fetch('./compliance/compliance_rules.json');
+                complianceData = await response.json();
+                console.log('Loaded compliance data:', complianceData.ruleCount, 'rules');
+                return complianceData;
+            } catch (err) {
+                console.error('Failed to load compliance data:', err);
+                return null;
+            } finally {
+                complianceLoading = false;
             }
-        };
+        }
 
         function openComplianceModal() {
             document.getElementById('complianceModal').style.display = 'block';
             document.getElementById('complianceSearchInput').value = '';
-            document.getElementById('complianceResults').innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 40px;"><div style="font-size: 3rem; margin-bottom: 15px;">📚</div><p>Search Colorado MED rules or select a quick topic above.</p></div>';
+            document.getElementById('complianceResults').innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 40px;"><div style="font-size: 3rem; margin-bottom: 15px;">📚</div><p>Loading compliance database...</p></div>';
+
+            // Pre-load the data
+            loadComplianceData().then(data => {
+                if (data) {
+                    document.getElementById('complianceResults').innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 40px;"><div style="font-size: 3rem; margin-bottom: 15px;">📚</div><p>Search ' + data.ruleCount + ' Colorado MED rules or select a topic.</p><p style="font-size: 0.85rem; margin-top: 10px; color: var(--accent-green);">Full-text search across all 559 pages</p></div>';
+                }
+            });
         }
 
         function closeComplianceModal() {
             document.getElementById('complianceModal').style.display = 'none';
         }
 
-        function searchComplianceTopic(topic) {
-            const data = complianceRules[topic];
-            if (!data) return;
-            let html = '<h3 style="color: var(--accent-green); margin: 0 0 20px 0;">' + data.title + '</h3>';
-            data.rules.forEach(rule => {
-                html += '<div class="compliance-result"><h4><span class="compliance-rule-num">' + rule.num + '</span></h4><p>' + rule.text + '</p></div>';
+        async function searchComplianceTopic(topic) {
+            const topicMap = {
+                'waste': ['3-900', '3-905', '3-910', '3-915', '3-920', '3-925', '3-930'],
+                'metrc': ['3-800', '3-805', '3-810', '3-815', '3-820', '3-825'],
+                'label': ['3-1000', '3-1005', '3-1010', '3-1015', '3-1020', '3-1025'],
+                'security': ['3-305', '3-310', '3-315', '3-320', '3-325', '3-330'],
+                'transport': ['3-1100', '3-1105', '3-1110', '3-1115'],
+                'testing': ['3-600', '3-605', '3-610', '3-615', '3-620', '4-205', '4-210', '4-215', '4-220'],
+                'reducedtesting': ['4-230']
+            };
+
+            const ruleNums = topicMap[topic];
+            if (!ruleNums) return;
+
+            const data = await loadComplianceData();
+            if (!data) {
+                document.getElementById('complianceResults').innerHTML = '<p style="color: var(--accent-red);">Failed to load compliance data.</p>';
+                return;
+            }
+
+            let html = '<h3 style="color: var(--accent-green); margin: 0 0 20px 0;">' + topic.charAt(0).toUpperCase() + topic.slice(1) + ' Rules</h3>';
+
+            ruleNums.forEach(num => {
+                const ruleTexts = data.rules[num];
+                if (ruleTexts && ruleTexts.length > 0) {
+                    ruleTexts.forEach(text => {
+                        const preview = text.length > 500 ? text.substring(0, 500) + '...' : text;
+                        html += '<div class="compliance-result"><h4><span class="compliance-rule-num">' + num + '</span></h4><p>' + preview + '</p></div>';
+                    });
+                }
             });
+
+            if (html.indexOf('compliance-result') === -1) {
+                html += '<p style="color: var(--text-secondary);">No specific rules found for this topic in the database.</p>';
+            }
+
             document.getElementById('complianceResults').innerHTML = html;
         }
 
-        function searchComplianceRules() {
+        async function searchComplianceRules() {
             const query = document.getElementById('complianceSearchInput').value.toLowerCase().trim();
-            if (!query) { alert('Please enter a search term'); return; }
-            const results = [];
-            Object.keys(complianceRules).forEach(topic => {
-                const data = complianceRules[topic];
-                data.rules.forEach(rule => {
-                    if (rule.text.toLowerCase().includes(query) || rule.num.toLowerCase().includes(query)) {
-                        results.push({ topic: data.title, num: rule.num, text: rule.text.replace(new RegExp('(' + query + ')', 'gi'), '<mark style="background: rgba(16, 185, 129, 0.3); padding: 2px 4px; border-radius: 3px;">$1</mark>') });
-                    }
-                });
-            });
-            if (results.length === 0) {
-                document.getElementById('complianceResults').innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 40px;"><p>No rules found matching "' + query + '"</p></div>';
+            if (!query) {
+                alert('Please enter a search term');
                 return;
             }
-            let html = '<p style="color: var(--text-secondary); margin-bottom: 20px;">Found ' + results.length + ' rule(s) matching "' + query + '"</p>';
-            results.forEach(r => {
-                html += '<div class="compliance-result"><h4><span class="compliance-rule-num">' + r.num + '</span> ' + r.topic + '</h4><p>' + r.text + '</p></div>';
+
+            document.getElementById('complianceResults').innerHTML = '<div style="text-align: center; padding: 40px;"><div class="spinner" style="border: 4px solid var(--border); border-top: 4px solid var(--accent-green); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div><p style="color: var(--text-secondary); margin-top: 15px;">Searching ' + query + '...</p></div>';
+
+            const data = await loadComplianceData();
+            if (!data) {
+                document.getElementById('complianceResults').innerHTML = '<p style="color: var(--accent-red);">Failed to load compliance data.</p>';
+                return;
+            }
+
+            const results = [];
+            const queryWords = query.split(/\s+/);
+
+            // Search through chunks for context
+            data.chunks.forEach((chunk, idx) => {
+                const lowerText = chunk.text.toLowerCase();
+                let matches = true;
+
+                // Check if all query words are present
+                for (const word of queryWords) {
+                    if (!lowerText.includes(word)) {
+                        matches = false;
+                        break;
+                    }
+                }
+
+                if (matches) {
+                    // Find the best snippet around the match
+                    const firstWordIdx = lowerText.indexOf(queryWords[0]);
+                    const start = Math.max(0, firstWordIdx - 100);
+                    const end = Math.min(chunk.text.length, firstWordIdx + 400);
+                    let snippet = chunk.text.substring(start, end);
+
+                    if (start > 0) snippet = '...' + snippet;
+                    if (end < chunk.text.length) snippet = snippet + '...';
+
+                    // Highlight matches
+                    queryWords.forEach(word => {
+                        const regex = new RegExp('(' + word + ')', 'gi');
+                        snippet = snippet.replace(regex, '<mark style="background: rgba(16, 185, 129, 0.3); padding: 2px 4px; border-radius: 3px;">$1</mark>');
+                    });
+
+                    results.push({
+                        rules: chunk.rules,
+                        snippet: snippet,
+                        relevance: queryWords.filter(w => lowerText.includes(w)).length
+                    });
+                }
             });
+
+            // Sort by relevance
+            results.sort((a, b) => b.relevance - a.relevance);
+
+            // Limit results
+            const limitedResults = results.slice(0, 50);
+
+            if (limitedResults.length === 0) {
+                document.getElementById('complianceResults').innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 40px;"><p>No results found for "<strong>' + query + '</strong>"</p><p style="font-size: 0.9rem; margin-top: 10px;">Try different keywords or check spelling</p></div>';
+                return;
+            }
+
+            let html = '<p style="color: var(--text-secondary); margin-bottom: 20px;">Found <strong>' + results.length + '</strong> matches for "<strong>' + query + '</strong>"' + (results.length > 50 ? ' (showing first 50)' : '') + '</p>';
+
+            limitedResults.forEach(result => {
+                const ruleLabels = result.rules.length > 0 ? result.rules.map(r => '<span class="compliance-rule-num">' + r + '</span>').join(' ') : '<span style="color: var(--text-secondary);">General</span>';
+                html += '<div class="compliance-result"><h4>' + ruleLabels + '</h4><p>' + result.snippet + '</p></div>';
+            });
+
             document.getElementById('complianceResults').innerHTML = html;
         }
         
