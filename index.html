@@ -10655,25 +10655,87 @@ ${employeeReport || 'No activity recorded today'}
         // ==================== RTA QUALIFICATION SYSTEM ====================
         // Colorado MED Rule 4-230: Reduced Testing Allowance
 
-        // RTA status per product type stored in localStorage
-        function getRTAStatus() {
-            const stored = localStorage.getItem('wm_rta_status');
-            if (stored) return JSON.parse(stored);
+        // RTA status per product type - cached locally, synced with Supabase
+        let rtaStatusCache = null;
 
-            // Default structure for each product type
+        function getRTAStatus() {
+            if (rtaStatusCache) return rtaStatusCache;
+            const stored = localStorage.getItem('wm_rta_status');
+            if (stored) {
+                rtaStatusCache = JSON.parse(stored);
+                return rtaStatusCache;
+            }
             return {
-                'BHO': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [], pendingBatches: [] },
-                'Live Resin Carts': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [], pendingBatches: [] },
-                'Live Resin AIOs': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [], pendingBatches: [] },
-                'Brick Hash': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [], pendingBatches: [] }
+                'BHO': { status: 'none', consecutivePasses: 0, qualificationStart: null, qualificationDeadline: null, rtaStart: null, rtaExpires: null, lastTestDate: null, nextTestDue: null, history: [], pendingBatches: [] },
+                'Live Resin Carts': { status: 'none', consecutivePasses: 0, qualificationStart: null, qualificationDeadline: null, rtaStart: null, rtaExpires: null, lastTestDate: null, nextTestDue: null, history: [], pendingBatches: [] },
+                'Live Resin AIOs': { status: 'none', consecutivePasses: 0, qualificationStart: null, qualificationDeadline: null, rtaStart: null, rtaExpires: null, lastTestDate: null, nextTestDue: null, history: [], pendingBatches: [] },
+                'Brick Hash': { status: 'none', consecutivePasses: 0, qualificationStart: null, qualificationDeadline: null, rtaStart: null, rtaExpires: null, lastTestDate: null, nextTestDue: null, history: [], pendingBatches: [] }
             };
         }
 
         function saveRTAStatus(status) {
+            rtaStatusCache = status;
             localStorage.setItem('wm_rta_status', JSON.stringify(status));
+            saveRTAToSupabase(status);
         }
 
-        
+        async function loadRTAFromSupabase() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('wm_rta_status')
+                    .select('*');
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    const status = {};
+                    data.forEach(row => {
+                        status[row.product_type] = {
+                            status: row.status || 'none',
+                            consecutivePasses: row.consecutive_passes || 0,
+                            qualificationStart: row.qualification_start,
+                            qualificationDeadline: row.qualification_deadline,
+                            rtaStart: row.rta_start,
+                            rtaExpires: row.rta_expires,
+                            lastTestDate: row.last_test_date,
+                            nextTestDue: row.next_test_due,
+                            pendingBatches: row.pending_batches || [],
+                            history: row.history || []
+                        };
+                    });
+                    rtaStatusCache = status;
+                    localStorage.setItem('wm_rta_status', JSON.stringify(status));
+                    console.log('RTA status loaded from Supabase');
+                    renderRTAQuickStatus();
+                }
+            } catch (err) {
+                console.error('Error loading RTA from Supabase:', err);
+            }
+        }
+
+        async function saveRTAToSupabase(status) {
+            try {
+                for (const [productType, data] of Object.entries(status)) {
+                    await supabaseClient
+                        .from('wm_rta_status')
+                        .upsert({
+                            product_type: productType,
+                            status: data.status,
+                            consecutive_passes: data.consecutivePasses,
+                            qualification_start: data.qualificationStart,
+                            qualification_deadline: data.qualificationDeadline,
+                            rta_start: data.rtaStart,
+                            rta_expires: data.rtaExpires,
+                            last_test_date: data.lastTestDate,
+                            next_test_due: data.nextTestDue,
+                            pending_batches: data.pendingBatches || [],
+                            history: data.history || [],
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'product_type' });
+                }
+            } catch (err) {
+                console.error('Error saving RTA to Supabase:', err);
+            }
+        }
+
         // Determine RTA product type from batch data
         function getRTAProductType(batch) {
             const productMade = batch.product_made || '';
@@ -11046,7 +11108,10 @@ ${employeeReport || 'No activity recorded today'}
 
         // Initialize RTA status display on page load
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => { renderRTAQuickStatus(); }, 1000);
+            setTimeout(async () => {
+                await loadRTAFromSupabase();
+                renderRTAQuickStatus();
+            }, 1000);
         });
 
         // Check RTA status and show reminder if needed - BY EXTRACTION METHOD
