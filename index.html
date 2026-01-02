@@ -7583,7 +7583,7 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                 const ruleTexts = data.rules[num];
                 if (ruleTexts && ruleTexts.length > 0) {
                     ruleTexts.forEach(text => {
-                        const preview = text.length > 500 ? text.substring(0, 500) + '...' : text;
+                        const preview = text.length > 2000 ? text.substring(0, 2000) + '...' : text;
                         html += '<div class="compliance-result"><h4><span class="compliance-rule-num">' + num + '</span></h4><p>' + preview + '</p></div>';
                     });
                 }
@@ -7630,8 +7630,8 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                 if (matches) {
                     // Find the best snippet around the match
                     const firstWordIdx = lowerText.indexOf(queryWords[0]);
-                    const start = Math.max(0, firstWordIdx - 100);
-                    const end = Math.min(chunk.text.length, firstWordIdx + 400);
+                    const start = Math.max(0, firstWordIdx - 200);
+                    const end = Math.min(chunk.text.length, firstWordIdx + 1500);
                     let snippet = chunk.text.substring(start, end);
 
                     if (start > 0) snippet = '...' + snippet;
