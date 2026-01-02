@@ -4649,8 +4649,8 @@
                     document.getElementById('userLogin').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
                     document.getElementById('myStatsBtn').style.display = 'block';
-                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';
-            document.getElementById('complianceBtn').style.display = 'block';}
+                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
+                    document.getElementById('complianceBtn').style.display = 'block';
                     applyRolePermissions();
                     hidePINsForDemo(); // Hide PINs if in demo mode
                 }
