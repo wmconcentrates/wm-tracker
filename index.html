@@ -5486,11 +5486,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const socksTotal = parseInt(document.getElementById('socksTotal').value) || 1;
             const trimPerSock = trimWeight / socksTotal;
 
-            const materialType = document.getElementById('materialType')?.value || 'Trim';\n            const batch = {\n                id: `WM-${batchCounter}`,
+            const materialType = document.getElementById('materialType')?.value || 'Trim';
+            const batch = {
+                id: `WM-${batchCounter}`,
                 strain: document.getElementById('strainName').value,
                 strain_type: document.getElementById('strainType').value,
-                material_type: document.getElementById('materialType')?.value || 'Trim',
-                expected_yield: getExpectedYield(document.getElementById('materialType')?.value || 'Trim'),
+                material_type: materialType,
+                expected_yield: getExpectedYield(materialType),
                 trim_weight: trimWeight,
                 socks_total: socksTotal,
                 socks_remaining: socksTotal,
