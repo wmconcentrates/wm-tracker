@@ -5039,6 +5039,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             batches = data || [];
             updateDashboard();
             renderBatches();
+            renderWasteLog(); // Update waste log display
             updateSuppliesButton(); // Update supplies button display
             updateMachineDisplays(); // Update machine status displays
 
