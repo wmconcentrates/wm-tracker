@@ -6044,6 +6044,8 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
         async function printPostProductionLabels(batch, finalWeight, sampleWeight, copies) {
             const printerIP = '10.1.10.95'; // Same Zebra ZT230 as intake
             const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
+            console.log("Printing post-production labels:", { batch: batch.id, finalWeight, sampleWeight, copies });
+            alert("🖨️ Printing " + copies + " label(s) for " + batch.id + "...");
 
             for (let i = 0; i < copies; i++) {
                 try {
