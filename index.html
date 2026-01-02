@@ -6068,26 +6068,7 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
 
         // Print post-production labels (multiple copies) - direct to Zebra IP
         async function printPostProductionLabels(batch, finalWeight, sampleWeight, copies) {
-            const printerIP = '10.1.10.95'; // Same Zebra ZT230 as intake
-            const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
-            console.log("Printing post-production labels:", { batch: batch.id, finalWeight, sampleWeight, copies });
-            alert("🖨️ Printing " + copies + " label(s) for " + batch.id + "...");
-
-            for (let i = 0; i < copies; i++) {
-                try {
-                    await fetch(`http://${printerIP}:9100`, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'text/plain' },
-                        body: zpl
-                    });
-                    console.log(`Post-production label ${i + 1}/${copies} sent to printer`);
-                } catch (error) {
-                    console.error('Print error:', error);
-                }
-            }
-
-            console.log(`Printed ${copies} post-production label(s) for batch ${batch.id}`);
+const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);            const printServerURL = localStorage.getItem("printServerURL") || "http://localhost:3000/print";            for (let i = 0; i < copies; i++) {                let printed = false;                try {                    const response = await fetch(printServerURL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ zpl: zpl }) });                    if (response.ok) printed = true;                } catch (e) { }                if (!printed && window.BrowserPrint) {                    try { const printer = await window.BrowserPrint.getDefaultDevice("printer"); printer.send(zpl); printed = true; } catch (e) { }                }                if (!printed && i === 0) {                    const blob = new Blob([zpl], { type: "text/plain" });                    const url = window.URL.createObjectURL(blob);                    const a = document.createElement("a"); a.href = url; a.download = "label-" + batch.id + ".zpl";                    document.body.appendChild(a); a.click(); document.body.removeChild(a);                    alert("Downloaded ZPL file. Use Zebra Setup Utilities to print."); break;                }            }
         }
 
         // Extraction functions
