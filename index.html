@@ -2048,11 +2048,20 @@
                         </div>
                         <div class="form-group">
                             <label>RTA (Full Panel)?</label>
-                            <select id="isRTA" required>
+                            <select id="isRTA" required onchange="updateTestResultVisibility()">
                                 <option value="no">No - Standard Potency Only</option>
                                 <option value="yes">Yes - Full Panel RTA</option>
                             </select>
                             <div class="help-text">Full panel RTA required once per month</div>
+                        </div>
+                        <div class="form-group" id="testResultGroup" style="display: none;">
+                            <label>Full Panel Test Result</label>
+                            <select id="fullPanelResult">
+                                <option value="pending">Pending - Awaiting Results</option>
+                                <option value="pass">✓ PASSED - All Tests Clear</option>
+                                <option value="fail">✗ FAILED - Contamination Found</option>
+                            </select>
+                            <div class="help-text">Update when lab results arrive</div>
                         </div>
                         <div class="form-group">
                             <label>THC % (if results received)</label>
@@ -2070,6 +2079,17 @@
                     </div>
                     
                     <button type="button" class="btn" onclick="submitTestResults()">Save Test Results</button>
+                </div>
+
+                <!-- RTA Qualification Status -->
+                <div id="rtaQualificationSection" style="margin-top: 30px; background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="margin: 0; color: var(--accent-purple);">📋 RTA Qualification Status</h3>
+                        <button class="btn" style="padding: 8px 15px; font-size: 0.9rem;" onclick="openRTAManager()">Manage RTA</button>
+                    </div>
+                    <div id="rtaQualificationStatus">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
 
                 <!-- RTA Reminder -->
@@ -5835,6 +5855,35 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             </div>
         </div>
     </div>
+    <!-- RTA Manager Modal -->
+    <div id="rtaManagerModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10005; overflow-y: auto;">
+        <div style="max-width: 800px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 25px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: white;">📋 RTA Qualification Manager</h2>
+                <button onclick="closeRTAManager()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 15px; border-radius: 8px;">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 10px; color: var(--accent-orange);">⚠️ Colorado MED RTA Requirements</h4>
+                    <ul style="margin: 0; padding-left: 20px; color: var(--text-secondary); font-size: 0.9rem;">
+                        <li><strong>Initial Qualification:</strong> 4 consecutive passing full panel batches within 4-8 weeks</li>
+                        <li><strong>RTA Duration:</strong> Valid for 1 year from first passing batch</li>
+                        <li><strong>Reauthorization (after fail):</strong> 5 consecutive passing batches required</li>
+                        <li><strong>Ongoing:</strong> 1 full panel test every 30 days to maintain</li>
+                    </ul>
+                </div>
+
+                <div id="rtaManagerContent">
+                    <!-- Product type RTA cards populated by JS -->
+                </div>
+
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--bg-tertiary);">
+                    <button class="btn" style="background: var(--accent-red);" onclick="resetAllRTA()">Reset All RTA Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
             `);
@@ -10621,6 +10670,268 @@ ${employeeReport || 'No activity recorded today'}
         // Add event listeners for auto-generation
         document.getElementById('testExpirationDate').addEventListener('change', generateBatchId);
         document.getElementById('metrcLast4').addEventListener('input', generateBatchId);
+
+
+        // ==================== RTA QUALIFICATION SYSTEM ====================
+        // Colorado MED Rule 4-230: Reduced Testing Allowance
+
+        // RTA status per product type stored in localStorage
+        function getRTAStatus() {
+            const stored = localStorage.getItem('wm_rta_status');
+            if (stored) return JSON.parse(stored);
+
+            // Default structure for each product type
+            return {
+                'BHO': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [] },
+                'Live Resin Carts': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [] },
+                'Live Resin AIOs': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [] },
+                'Brick Hash': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [] }
+            };
+        }
+
+        function saveRTAStatus(status) {
+            localStorage.setItem('wm_rta_status', JSON.stringify(status));
+        }
+
+        // Show/hide test result dropdown based on RTA selection
+        function updateTestResultVisibility() {
+            const isRTA = document.getElementById('isRTA').value;
+            const resultGroup = document.getElementById('testResultGroup');
+            if (resultGroup) {
+                resultGroup.style.display = isRTA === 'yes' ? 'block' : 'none';
+            }
+        }
+
+        // Record a full panel test result
+        function recordRTAResult(productType, batchId, result, testDate) {
+            const rtaStatus = getRTAStatus();
+            const typeStatus = rtaStatus[productType];
+            if (!typeStatus) return;
+
+            // Add to history
+            typeStatus.history.push({
+                batchId: batchId,
+                result: result,
+                date: testDate || new Date().toISOString()
+            });
+
+            if (result === 'pass') {
+                typeStatus.consecutivePasses++;
+
+                // Check if just started qualifying
+                if (typeStatus.status === 'none' && typeStatus.consecutivePasses === 1) {
+                    typeStatus.status = 'qualifying';
+                    typeStatus.qualificationStart = new Date().toISOString();
+                }
+
+                // Check if qualification complete (4 passes for initial, 5 for reauth)
+                const requiredPasses = typeStatus.status === 'reauthorizing' ? 5 : 4;
+                if (typeStatus.consecutivePasses >= requiredPasses && typeStatus.status !== 'active') {
+                    typeStatus.status = 'active';
+                    typeStatus.rtaStart = new Date().toISOString();
+                    const expires = new Date();
+                    expires.setFullYear(expires.getFullYear() + 1);
+                    typeStatus.rtaExpires = expires.toISOString();
+                    typeStatus.consecutivePasses = 0; // Reset for ongoing tracking
+
+                    alert('🎉 RTA QUALIFIED!\n\n' + productType + ' has achieved RTA status!\nValid until: ' + expires.toLocaleDateString());
+                }
+            } else if (result === 'fail') {
+                // Failed test
+                if (typeStatus.status === 'active') {
+                    // Was active, now needs reauthorization
+                    typeStatus.status = 'reauthorizing';
+                    typeStatus.consecutivePasses = 0;
+                    alert('⚠️ RTA FAILED\n\n' + productType + ' batch failed full panel test.\nYou must submit 5 consecutive passing batches to reauthorize.');
+                } else if (typeStatus.status === 'reauthorizing') {
+                    // Failed during reauthorization - lose RTA completely
+                    typeStatus.status = 'none';
+                    typeStatus.consecutivePasses = 0;
+                    typeStatus.rtaStart = null;
+                    typeStatus.rtaExpires = null;
+                    alert('🚨 RTA LOST\n\n' + productType + ' failed during reauthorization.\nYou must start over with 4 consecutive passing batches.');
+                } else {
+                    // Failed during initial qualification
+                    typeStatus.status = 'none';
+                    typeStatus.consecutivePasses = 0;
+                    typeStatus.qualificationStart = null;
+                }
+            }
+
+            saveRTAStatus(rtaStatus);
+            renderRTAQualificationStatus();
+        }
+
+        // Start qualification period for a product type
+        function startRTAQualification(productType) {
+            const rtaStatus = getRTAStatus();
+            if (rtaStatus[productType]) {
+                rtaStatus[productType].status = 'qualifying';
+                rtaStatus[productType].consecutivePasses = 0;
+                rtaStatus[productType].qualificationStart = new Date().toISOString();
+                saveRTAStatus(rtaStatus);
+                renderRTAQualificationStatus();
+                closeRTAManager();
+                alert('Started RTA qualification for ' + productType + '\n\nAll batches must be submitted for FULL PANEL testing until 4 consecutive passes.');
+            }
+        }
+
+        // Check if product type is in qualification period (requires full panel)
+        function requiresFullPanel(productType) {
+            const rtaStatus = getRTAStatus();
+            const typeStatus = rtaStatus[productType];
+            if (!typeStatus) return false;
+            return typeStatus.status === 'qualifying' || typeStatus.status === 'reauthorizing';
+        }
+
+        // Render RTA qualification status in testing tab
+        function renderRTAQualificationStatus() {
+            const container = document.getElementById('rtaQualificationStatus');
+            if (!container) return;
+
+            const rtaStatus = getRTAStatus();
+            const today = new Date();
+
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">';
+
+            Object.entries(rtaStatus).forEach(([productType, status]) => {
+                let statusColor, statusText, statusIcon, details;
+
+                switch (status.status) {
+                    case 'active':
+                        const expires = new Date(status.rtaExpires);
+                        const daysLeft = Math.floor((expires - today) / (1000 * 60 * 60 * 24));
+                        statusColor = daysLeft < 30 ? 'var(--accent-orange)' : 'var(--accent-green)';
+                        statusIcon = '✓';
+                        statusText = 'RTA Active';
+                        details = daysLeft < 0 ? 'EXPIRED!' : 'Expires: ' + expires.toLocaleDateString() + ' (' + daysLeft + ' days)';
+                        break;
+                    case 'qualifying':
+                        statusColor = 'var(--accent-blue)';
+                        statusIcon = '🔄';
+                        statusText = 'Qualifying';
+                        details = status.consecutivePasses + '/4 passes';
+                        break;
+                    case 'reauthorizing':
+                        statusColor = 'var(--accent-orange)';
+                        statusIcon = '⚠️';
+                        statusText = 'Reauthorizing';
+                        details = status.consecutivePasses + '/5 passes needed';
+                        break;
+                    default:
+                        statusColor = 'var(--text-secondary)';
+                        statusIcon = '○';
+                        statusText = 'No RTA';
+                        details = 'Not started';
+                }
+
+                html += `
+                    <div style="background: var(--bg-secondary); padding: 15px; border-radius: 10px; border-left: 4px solid ${statusColor};">
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">${productType}</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: ${statusColor}; margin-bottom: 5px;">${statusIcon} ${statusText}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">${details}</div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Open RTA Manager modal
+        function openRTAManager() {
+            renderRTAManagerContent();
+            document.getElementById('rtaManagerModal').style.display = 'block';
+        }
+
+        function closeRTAManager() {
+            document.getElementById('rtaManagerModal').style.display = 'none';
+        }
+
+        // Render RTA Manager content
+        function renderRTAManagerContent() {
+            const container = document.getElementById('rtaManagerContent');
+            if (!container) return;
+
+            const rtaStatus = getRTAStatus();
+            const today = new Date();
+
+            let html = '';
+
+            Object.entries(rtaStatus).forEach(([productType, status]) => {
+                let statusBadge, actionButtons;
+
+                switch (status.status) {
+                    case 'active':
+                        const expires = new Date(status.rtaExpires);
+                        const daysLeft = Math.floor((expires - today) / (1000 * 60 * 60 * 24));
+                        statusBadge = `<span style="background: var(--accent-green); color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;">✓ Active - ${daysLeft} days left</span>`;
+                        actionButtons = `<button class="btn" style="padding: 5px 10px; font-size: 0.85rem; background: var(--accent-red);" onclick="simulateFailure('${productType}')">Record Failed Test</button>`;
+                        break;
+                    case 'qualifying':
+                        statusBadge = `<span style="background: var(--accent-blue); color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;">🔄 Qualifying: ${status.consecutivePasses}/4</span>`;
+                        actionButtons = `
+                            <button class="btn" style="padding: 5px 10px; font-size: 0.85rem; background: var(--accent-green);" onclick="recordRTAResult('${productType}', 'manual', 'pass')">+ Record Pass</button>
+                            <button class="btn" style="padding: 5px 10px; font-size: 0.85rem; background: var(--accent-red);" onclick="recordRTAResult('${productType}', 'manual', 'fail')">Record Fail</button>
+                        `;
+                        break;
+                    case 'reauthorizing':
+                        statusBadge = `<span style="background: var(--accent-orange); color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;">⚠️ Reauth: ${status.consecutivePasses}/5</span>`;
+                        actionButtons = `
+                            <button class="btn" style="padding: 5px 10px; font-size: 0.85rem; background: var(--accent-green);" onclick="recordRTAResult('${productType}', 'manual', 'pass')">+ Record Pass</button>
+                            <button class="btn" style="padding: 5px 10px; font-size: 0.85rem; background: var(--accent-red);" onclick="recordRTAResult('${productType}', 'manual', 'fail')">Record Fail</button>
+                        `;
+                        break;
+                    default:
+                        statusBadge = `<span style="background: var(--bg-tertiary); color: var(--text-secondary); padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;">○ Not Started</span>`;
+                        actionButtons = `<button class="btn" style="padding: 5px 10px; font-size: 0.85rem; background: var(--accent-purple);" onclick="startRTAQualification('${productType}')">Start Qualification</button>`;
+                }
+
+                html += `
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="margin: 0; color: var(--text-primary);">${productType}</h4>
+                            ${statusBadge}
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            ${actionButtons}
+                        </div>
+                        ${status.history && status.history.length > 0 ? `
+                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--bg-secondary);">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Recent: ${status.history.slice(-3).map(h =>
+                                    '<span style="color: ' + (h.result === 'pass' ? 'var(--accent-green)' : 'var(--accent-red)') + ';">' + (h.result === 'pass' ? '✓' : '✗') + '</span>'
+                                ).join(' ')}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Simulate a failure for active RTA (for manual tracking)
+        function simulateFailure(productType) {
+            if (confirm('Record a FAILED full panel test for ' + productType + '?\n\nThis will require 5 consecutive passing batches to reauthorize.')) {
+                recordRTAResult(productType, 'manual-fail', 'fail');
+                renderRTAManagerContent();
+            }
+        }
+
+        // Reset all RTA status
+        function resetAllRTA() {
+            if (confirm('⚠️ Reset ALL RTA status?\n\nThis will clear all qualification progress and history.')) {
+                localStorage.removeItem('wm_rta_status');
+                renderRTAQualificationStatus();
+                renderRTAManagerContent();
+                alert('All RTA status has been reset.');
+            }
+        }
+
+        // Initialize RTA status display on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(renderRTAQualificationStatus, 1000);
+        });
 
         // Check RTA status and show reminder if needed - BY EXTRACTION METHOD
         function checkRTAStatus() {
