@@ -4183,6 +4183,15 @@
     <script>
         // Role configuration with PINs and permissions
         const ROLES = {
+            demo: {
+                name: 'Demo User',
+                pin: '0000',
+                tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
+                access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
+                readOnly: true,
+                salary: true,
+                isDemo: true
+            },
             ryan: {
                 name: 'Ryan (Admin)',
                 pin: '1827',
@@ -4244,6 +4253,78 @@
             }
         };
 
+        // Demo Mode Helpers
+        function isDemoMode() {
+            return currentRole && currentRole.isDemo === true;
+        }
+
+        function hidePINsForDemo() {
+            if (!isDemoMode()) return;
+
+            // Hide PINs in performance filter dropdown
+            const performanceFilter = document.getElementById('performanceFilter');
+            if (performanceFilter) {
+                Array.from(performanceFilter.options).forEach(option => {
+                    option.text = option.text.replace(/ - PIN: \d+/, '');
+                });
+            }
+
+            // Hide any other PIN displays in the UI
+            document.querySelectorAll('[data-pin]').forEach(el => {
+                el.textContent = el.textContent.replace(/PIN: \d+/, 'PIN: ****');
+            });
+
+            // Add demo banner
+            const header = document.querySelector('.header');
+            if (header && !document.querySelector('.demo-banner')) {
+                const demoBanner = document.createElement('div');
+                demoBanner.className = 'demo-banner';
+                demoBanner.style.cssText = 'background: linear-gradient(135deg, #ff6b00, #ff0055); color: white; padding: 10px; text-align: center; font-weight: 600; border-radius: 8px; margin-bottom: 15px;';
+                demoBanner.innerHTML = '🎭 DEMO MODE - All data is fake for demonstration purposes';
+                header.after(demoBanner);
+            }
+        }
+
+        function generateDemoBatches() {
+            const strains = ['GMO', 'Wedding Cake', 'Gelato', 'Blue Dream', 'OG Kush', 'Sour Diesel', 'Purple Punch', 'Zkittlez'];
+            const suppliers = ['Green Valley Farms', 'Mountain High Gardens', 'Coastal Cultivation', 'Urban Harvest'];
+            const statuses = ['intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'completed'];
+            const machines = ['left', 'right'];
+
+            const demoBatches = [];
+            const now = Date.now();
+
+            for (let i = 0; i < 25; i++) {
+                const strain = strains[Math.floor(Math.random() * strains.length)];
+                const supplier = suppliers[Math.floor(Math.random() * suppliers.length)];
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                const trimWeight = Math.floor(Math.random() * 5000) + 1000;
+                const yieldPercent = (Math.random() * 15 + 10).toFixed(2);
+                const bulkWeight = status === 'completed' ? (trimWeight * yieldPercent / 100).toFixed(1) : null;
+
+                demoBatches.push({
+                    id: 1000 + i,
+                    strain: strain,
+                    supplier: supplier,
+                    trim_weight_grams: trimWeight,
+                    status: status,
+                    machine: status === 'extraction' ? machines[Math.floor(Math.random() * machines.length)] : null,
+                    bulk_weight_grams: bulkWeight,
+                    jar_count: status === 'completed' ? Math.floor(Math.random() * 50) + 10 : null,
+                    created_at: new Date(now - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    updated_at: new Date(now - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    created_by: 'Demo User',
+                    notes: i % 3 === 0 ? 'Looking good!' : null,
+                    test_results: status === 'completed' ? JSON.stringify({
+                        thc: (Math.random() * 30 + 60).toFixed(2),
+                        cbd: (Math.random() * 2).toFixed(2)
+                    }) : null
+                });
+            }
+
+            return demoBatches;
+        }
+
         let supabaseClient = null;
         let batches = [];
         let currentRole = null;
@@ -4280,6 +4361,7 @@
                     document.getElementById('myStatsBtn').style.display = 'block';
                 document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                     applyRolePermissions();
+                    hidePINsForDemo(); // Hide PINs if in demo mode
                 }
             }
             
@@ -4599,23 +4681,40 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         };
 
         async function loadBatches() {
+            // Use demo data if in demo mode
+            if (isDemoMode()) {
+                batches = generateDemoBatches();
+                updateDashboard();
+                renderBatches();
+                updateSuppliesButton();
+                updateMachineDisplays();
+
+                if (!window.searchFiltersInitialized) {
+                    setTimeout(() => {
+                        addDropdownSearchFilters();
+                        window.searchFiltersInitialized = true;
+                    }, 500);
+                }
+                return;
+            }
+
             const { data, error } = await supabaseClient
                 .from('wm_batches')
                 .select('*')
                 .neq('status', 'deleted')
                 .order('created_at', { ascending: false });
-            
+
             if (error) {
                 console.error('Error loading batches:', error);
                 return;
             }
-            
+
             batches = data || [];
             updateDashboard();
             renderBatches();
             updateSuppliesButton(); // Update supplies button display
             updateMachineDisplays(); // Update machine status displays
-            
+
             // Initialize dropdown search filters (only once)
             if (!window.searchFiltersInitialized) {
                 setTimeout(() => {
@@ -4859,24 +4958,27 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('appContent').style.display = 'block';
                 document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                 errorMsg.style.display = 'none';
-                
-                // Log login to database
-                supabaseClient
-                    .from('wm_login_history')
-                    .insert({
-                        user_name: currentRole.name,
-                        login_time: new Date().toISOString()
-                    })
-                    .then(({ data, error }) => {
-                        if (error) {
-                            console.error('Error logging login:', error);
-                        } else if (data && data.length > 0) {
-                            // Store the login record ID for logout tracking
-                            localStorage.setItem('wmLoginRecordId', data[0].id);
-                        }
-                    });
-                
+
+                // Log login to database (skip in demo mode)
+                if (!isDemoMode()) {
+                    supabaseClient
+                        .from('wm_login_history')
+                        .insert({
+                            user_name: currentRole.name,
+                            login_time: new Date().toISOString()
+                        })
+                        .then(({ data, error }) => {
+                            if (error) {
+                                console.error('Error logging login:', error);
+                            } else if (data && data.length > 0) {
+                                // Store the login record ID for logout tracking
+                                localStorage.setItem('wmLoginRecordId', data[0].id);
+                            }
+                        });
+                }
+
                 applyRolePermissions();
+                hidePINsForDemo(); // Hide PINs if in demo mode
 
                 // Welcome celebration with random messages
                 const welcomeMessages = [
