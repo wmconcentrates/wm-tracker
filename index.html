@@ -3127,6 +3127,50 @@
         </div>
     </div>
 
+    <!-- Compliance Modal -->
+    <div id="complianceModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10003; overflow-y: auto;">
+        <div style="max-width: 900px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(16, 185, 129, 0.3);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #10B981, #059669); padding: 25px 30px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="margin: 0; color: white; font-size: 1.8rem;">📋 Compliance Assistant</h2>
+                    <p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.8); font-size: 0.95rem;">Colorado MED Rules (1 CCR 212-3) - Effective Jan 5, 2026</p>
+                </div>
+                <button onclick="closeComplianceModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px;">&times;</button>
+            </div>
+
+            <!-- Search Section -->
+            <div style="padding: 25px 30px; border-bottom: 2px solid var(--border);">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <input type="text" id="complianceSearchInput" placeholder="Search rules... (e.g., waste log, METRC, labeling)"
+                        style="flex: 1; min-width: 250px; padding: 15px 20px; border-radius: 10px; border: 2px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); font-size: 1rem;"
+                        onkeyup="if(event.key === 'Enter') searchComplianceRules()">
+                    <button onclick="searchComplianceRules()" class="btn" style="background: var(--accent-green); border-color: var(--accent-green); padding: 15px 30px;">🔍 Search</button>
+                </div>
+
+                <!-- Quick Topics -->
+                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <span style="color: var(--text-secondary); padding: 8px 0;">Quick topics:</span>
+                    <button onclick="searchComplianceTopic('waste')" class="compliance-topic-btn">Waste Disposal</button>
+                    <button onclick="searchComplianceTopic('metrc')" class="compliance-topic-btn">METRC/Tracking</button>
+                    <button onclick="searchComplianceTopic('label')" class="compliance-topic-btn">Labeling</button>
+                    <button onclick="searchComplianceTopic('security')" class="compliance-topic-btn">Security</button>
+                    <button onclick="searchComplianceTopic('transport')" class="compliance-topic-btn">Transport</button>
+                    <button onclick="searchComplianceTopic('testing')" class="compliance-topic-btn">Testing</button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="complianceResults" style="padding: 25px 30px; max-height: 500px; overflow-y: auto;">
+                <div style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">📚</div>
+                    <p>Search Colorado MED rules or select a quick topic above.</p>
+                    <p style="font-size: 0.9rem; margin-top: 10px;">Covers: Definitions, Licensing, Operations, Cultivation, Manufacturing, Testing, Retail, Inventory Tracking, Waste, Labeling, Transportation</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Commission Details Modal -->
     <div id="commissionDetailsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10002; overflow-y: auto;">
         <div style="max-width: 1100px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);">
@@ -3617,6 +3661,49 @@
             color: var(--accent-red);
         }
         
+        
+        .compliance-topic-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+        .compliance-topic-btn:hover {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        .compliance-result {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .compliance-result h4 {
+            color: var(--accent-green);
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+        }
+        .compliance-result p {
+            color: var(--text-primary);
+            margin: 0;
+            line-height: 1.6;
+        }
+        .compliance-rule-num {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
         .stat-box {
             background: var(--bg-tertiary);
             padding: 20px;
@@ -4562,7 +4649,8 @@
                     document.getElementById('userLogin').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
                     document.getElementById('myStatsBtn').style.display = 'block';
-                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
+                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';
+            document.getElementById('complianceBtn').style.display = 'block';}
                     applyRolePermissions();
                     hidePINsForDemo(); // Hide PINs if in demo mode
                 }
@@ -7424,6 +7512,133 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
         
         function closePersonalStatsModal() {
             document.getElementById('personalStatsModal').style.display = 'none';
+        }
+
+        // ==================== COMPLIANCE ASSISTANT ====================
+        const complianceRules = {
+            waste: {
+                title: "Waste Disposal Requirements (3-900 Series)",
+                rules: [
+                    { num: "3-900", text: "Regulated Marijuana waste must be stored, secured, locked, and managed in accordance with all applicable federal, state, and local statutes and regulations." },
+                    { num: "3-905", text: "Waste must be rendered UNUSABLE and UNRECOGNIZABLE before disposal. Methods include: grinding with 50%+ non-consumable material (soil, paper, cardboard, food waste), composting, or other Division-approved methods." },
+                    { num: "3-910", text: "WASTE LOG REQUIREMENTS: Must maintain a waste log documenting all waste disposal activities including date, type, weight, method of rendering unusable, and employee signature." },
+                    { num: "3-915", text: "Stalks, stems, fan leaves, and roots may be transferred to third-party composters registered with Colorado Secretary of State. Must be recorded on waste log." },
+                    { num: "3-920", text: "Liquid waste must be disposed of in compliance with all applicable federal, state and local laws, including proper drainage and wastewater requirements." },
+                    { num: "3-925", text: "Mobile waste rendering: May occur outside Licensed Premises if on property under Licensee control immediately adjacent to premises." }
+                ]
+            },
+            metrc: {
+                title: "Inventory Tracking / METRC (3-800 Series)",
+                rules: [
+                    { num: "3-800", text: "All Regulated Marijuana must be tracked in the Seed-to-Sale Tracking System (METRC) from cultivation through final sale or destruction." },
+                    { num: "3-805", text: "Each plant must have a unique RFID tag assigned at the immature/vegetative stage and tracked through harvest." },
+                    { num: "3-810", text: "PACKAGE TAGS: All harvested marijuana and marijuana products must be assigned package tags before transfer or sale." },
+                    { num: "3-815", text: "TRANSFER MANIFESTS: All transfers between licensed facilities require manifests in the tracking system documenting source, destination, and package contents." },
+                    { num: "3-820", text: "RECONCILIATION: Physical inventory must be reconciled with tracking system records. Discrepancies must be reported to the Division within 24 hours if >5% variance." },
+                    { num: "3-825", text: "RECORD RETENTION: Tracking records must be maintained for minimum of 4 years from date of creation." }
+                ]
+            },
+            label: {
+                title: "Labeling & Packaging (3-1000 Series)",
+                rules: [
+                    { num: "3-1000", text: "All Regulated Marijuana products must be labeled and packaged before sale to consumer or transfer to another licensee." },
+                    { num: "3-1005", text: "REQUIRED LABEL INFO: License number, batch/lot number, testing facility name, date of testing, THC/CBD content, net weight, universal symbol." },
+                    { num: "3-1010", text: "UNIVERSAL SYMBOL: The Division-approved THC symbol must be displayed prominently on all marijuana product packaging." },
+                    { num: "3-1015", text: "WARNING STATEMENTS required including: 'Contains marijuana. Keep away from children.' and 'For use by adults 21+ only.'" },
+                    { num: "3-1020", text: "Packaging must be child-resistant, opaque, resealable (if multiple servings), and tamper-evident." },
+                    { num: "3-1025", text: "PROHIBITED: Labels cannot include false/misleading claims, health claims, cartoons/images appealing to minors, or resemble commercial products." }
+                ]
+            },
+            security: {
+                title: "Security Requirements (3-300 Series)",
+                rules: [
+                    { num: "3-305", text: "VIDEO SURVEILLANCE: Required in all Limited Access Areas, point of sale areas, vault/safe areas, and all entry/exit points. Minimum 40fps, 720p resolution." },
+                    { num: "3-310", text: "RECORDING RETENTION: Video recordings must be retained for minimum 40 days and made available to Division upon request within 24 hours." },
+                    { num: "3-315", text: "ALARM SYSTEM: Licensed premises must have professionally monitored alarm system covering all entry points and windows." },
+                    { num: "3-320", text: "LIMITED ACCESS AREAS: Only authorized employees and escorted visitors may enter. Must be clearly marked with signage." },
+                    { num: "3-325", text: "VISITOR LOG: All visitors must sign in/out with name, date, time, and purpose. Visitors must be escorted at all times in Limited Access Areas." }
+                ]
+            },
+            transport: {
+                title: "Transportation (3-1100 Series)",
+                rules: [
+                    { num: "3-1100", text: "TRANSPORT MANIFEST: All marijuana transported must have physical manifest including origin, destination, contents, and recipient signature." },
+                    { num: "3-1105", text: "VEHICLE REQUIREMENTS: Must be locked, enclosed cargo area. No marijuana visible from outside. GPS tracking required for vehicles transporting >$5,000 wholesale value." },
+                    { num: "3-1110", text: "TRANSPORT PERSONNEL: Minimum 2 employees for transports >$5,000 wholesale value. All must be licensed Occupational Badges." },
+                    { num: "3-1115", text: "ROUTE/TIMING: Direct route only, no unnecessary stops. Transport only during business hours unless Division-approved. No storage at unlicensed locations." }
+                ]
+            },
+            testing: {
+                title: "Testing Requirements (3-600 Series)",
+                rules: [
+                    { num: "3-600", text: "All Regulated Marijuana must pass required testing before sale or transfer to consumer-facing licensee." },
+                    { num: "3-605", text: "REQUIRED TESTS: Potency (THC/CBD), microbial contaminants, mycotoxins, heavy metals, residual solvents (concentrates), pesticides." },
+                    { num: "3-610", text: "SAMPLING: Must be performed by licensed Testing Facility employee. Random sampling protocol required. Sample size based on batch size." },
+                    { num: "3-615", text: "FAILED TESTS: Product failing required tests must be destroyed or remediated (if allowed). Re-testing allowed under specific conditions." },
+                    { num: "3-620", text: "TESTING RECORDS: Results must be maintained for 4 years. Certificate of Analysis required for all products transferred or sold." }
+                ]
+            },
+            definitions: {
+                title: "Key Definitions (3-100 Series)",
+                rules: [
+                    { num: "3-100", text: "REGULATED MARIJUANA: Marijuana cultivated, manufactured, distributed, or sold by a Regulated Marijuana Business for use by consumers." },
+                    { num: "3-105", text: "BATCH: A specific quantity of Regulated Marijuana that is uniform in strain, cultivated using the same methods, harvested at the same time." },
+                    { num: "3-110", text: "LIMITED ACCESS AREA: A building, room, or area where Regulated Marijuana is cultivated, stored, weighed, displayed, packaged, sold, or processed for sale." },
+                    { num: "3-115", text: "UNUSABLE AND UNRECOGNIZABLE: Rendered to a condition where no portion could reasonably be identified or consumed as marijuana." }
+                ]
+            },
+            operations: {
+                title: "Operational Requirements (3-300 Series)",
+                rules: [
+                    { num: "3-330", text: "OPERATING HOURS: May only conduct sales during hours approved in license. Must notify Division 10 days before changing hours." },
+                    { num: "3-335", text: "EMPLOYEE TRAINING: All employees must complete responsible vendor training within 90 days of hire. Refresher training required annually." },
+                    { num: "3-336", text: "EMPLOYEE RECORDS: Must maintain records of all employees including badge numbers, training certifications, and background check dates." },
+                    { num: "3-340", text: "PREMISES DIAGRAM: Must maintain current diagram showing all Limited Access Areas, cameras, safes, and entry/exit points. Update within 10 days of changes." }
+                ]
+            }
+        };
+
+        function openComplianceModal() {
+            document.getElementById('complianceModal').style.display = 'block';
+            document.getElementById('complianceSearchInput').value = '';
+            document.getElementById('complianceResults').innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 40px;"><div style="font-size: 3rem; margin-bottom: 15px;">📚</div><p>Search Colorado MED rules or select a quick topic above.</p></div>';
+        }
+
+        function closeComplianceModal() {
+            document.getElementById('complianceModal').style.display = 'none';
+        }
+
+        function searchComplianceTopic(topic) {
+            const data = complianceRules[topic];
+            if (!data) return;
+            let html = '<h3 style="color: var(--accent-green); margin: 0 0 20px 0;">' + data.title + '</h3>';
+            data.rules.forEach(rule => {
+                html += '<div class="compliance-result"><h4><span class="compliance-rule-num">' + rule.num + '</span></h4><p>' + rule.text + '</p></div>';
+            });
+            document.getElementById('complianceResults').innerHTML = html;
+        }
+
+        function searchComplianceRules() {
+            const query = document.getElementById('complianceSearchInput').value.toLowerCase().trim();
+            if (!query) { alert('Please enter a search term'); return; }
+            const results = [];
+            Object.keys(complianceRules).forEach(topic => {
+                const data = complianceRules[topic];
+                data.rules.forEach(rule => {
+                    if (rule.text.toLowerCase().includes(query) || rule.num.toLowerCase().includes(query)) {
+                        results.push({ topic: data.title, num: rule.num, text: rule.text.replace(new RegExp('(' + query + ')', 'gi'), '<mark style="background: rgba(16, 185, 129, 0.3); padding: 2px 4px; border-radius: 3px;">$1</mark>') });
+                    }
+                });
+            });
+            if (results.length === 0) {
+                document.getElementById('complianceResults').innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 40px;"><p>No rules found matching "' + query + '"</p></div>';
+                return;
+            }
+            let html = '<p style="color: var(--text-secondary); margin-bottom: 20px;">Found ' + results.length + ' rule(s) matching "' + query + '"</p>';
+            results.forEach(r => {
+                html += '<div class="compliance-result"><h4><span class="compliance-rule-num">' + r.num + '</span> ' + r.topic + '</h4><p>' + r.text + '</p></div>';
+            });
+            document.getElementById('complianceResults').innerHTML = html;
         }
         
         // Inventory Management Functions
