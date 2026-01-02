@@ -6533,6 +6533,12 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                 celebrationStats.push({ value: `${outputSlabsCount}`, label: outputSlabsCount === 1 ? 'Output Slab' : 'Output Slabs' });
             }
 
+            // Register batch for RTA qualification tracking
+
+
+            const rtaProductType = getRTAProductType(batch);
+            registerQualificationBatch(rtaProductType, batchId);
+
             showCelebration({
                 emoji: '✨',
                 title: 'Finishing Complete!',
@@ -7715,6 +7721,12 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                     }]
                 })
                 .eq('id', batchId);
+
+            // Register sub-batches for RTA qualification tracking
+            subBatches.forEach(sb => {
+                const rtaType = sb.planned_products[0]?.type || 'BHO';
+                registerQualificationBatch(rtaType, sb.id);
+            });
 
             alert('✅ Batch split successfully!\n\n' + subBatches.map(b => b.id + ' (' + b.net_weight_grams + 'g)').join('\n'));
 
@@ -10653,16 +10665,64 @@ ${employeeReport || 'No activity recorded today'}
 
             // Default structure for each product type
             return {
-                'BHO': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [] },
-                'Live Resin Carts': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [] },
-                'Live Resin AIOs': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [] },
-                'Brick Hash': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [] }
+                'BHO': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [], pendingBatches: [] },
+                'Live Resin Carts': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [], pendingBatches: [] },
+                'Live Resin AIOs': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [], pendingBatches: [] },
+                'Brick Hash': { status: 'none', consecutivePasses: 0, qualificationStart: null, rtaStart: null, rtaExpires: null, history: [], pendingBatches: [] }
             };
         }
 
         function saveRTAStatus(status) {
             localStorage.setItem('wm_rta_status', JSON.stringify(status));
         }
+
+        
+        // Determine RTA product type from batch data
+        function getRTAProductType(batch) {
+            const productMade = batch.product_made || '';
+            const plannedProducts = batch.planned_products || [];
+            const firstPlanned = plannedProducts[0]?.type || '';
+
+            // Check for Live Resin products first
+            if (productMade.includes('Live Resin Carts') || firstPlanned.includes('Live Resin Carts')) {
+                return 'Live Resin Carts';
+            }
+            if (productMade.includes('Live Resin AIOs') || firstPlanned.includes('Live Resin AIOs')) {
+                return 'Live Resin AIOs';
+            }
+            if (productMade.includes('Brick Hash') || firstPlanned.includes('Brick Hash')) {
+                return 'Brick Hash';
+            }
+            // Default to BHO for standard products (Wax, Shatter, Sugar Wax)
+            return 'BHO';
+        }
+
+        // Register a batch created during qualification period
+        function registerQualificationBatch(productType, batchId) {
+            const rtaStatus = getRTAStatus();
+            const typeStatus = rtaStatus[productType];
+            if (!typeStatus) return;
+
+            // Only track if in qualifying or reauthorizing
+            if (typeStatus.status === 'qualifying' || typeStatus.status === 'reauthorizing') {
+                if (!typeStatus.pendingBatches) typeStatus.pendingBatches = [];
+                if (!typeStatus.pendingBatches.includes(batchId)) {
+                    typeStatus.pendingBatches.push(batchId);
+                    saveRTAStatus(rtaStatus);
+                    console.log('Registered batch ' + batchId + ' for RTA qualification');
+                }
+            }
+        }
+
+        // Get count of untested batches during qualification
+        function getUntestedBatchCount(productType) {
+            const rtaStatus = getRTAStatus();
+            const typeStatus = rtaStatus[productType];
+            if (!typeStatus || !typeStatus.pendingBatches) return 0;
+            return typeStatus.pendingBatches.length;
+        }
+
+
 
         // Show/hide test result dropdown based on RTA selection
         function updateTestResultVisibility() {
@@ -10678,6 +10738,11 @@ ${employeeReport || 'No activity recorded today'}
             const rtaStatus = getRTAStatus();
             const typeStatus = rtaStatus[productType];
             if (!typeStatus) return;
+
+            // Remove from pending batches if present
+            if (typeStatus.pendingBatches && batchId !== 'manual') {
+                typeStatus.pendingBatches = typeStatus.pendingBatches.filter(b => b !== batchId);
+            }
 
             // Add to history
             typeStatus.history.push({
@@ -10781,13 +10846,13 @@ ${employeeReport || 'No activity recorded today'}
                         statusColor = 'var(--accent-blue)';
                         statusIcon = '🔄';
                         statusText = 'Qualifying';
-                        details = status.consecutivePasses + '/4 passes';
+                        details = status.consecutivePasses + '/4 passes' + (status.pendingBatches && status.pendingBatches.length > 0 ? ' ⚠️ ' + status.pendingBatches.length + ' untested' : '');
                         break;
                     case 'reauthorizing':
                         statusColor = 'var(--accent-orange)';
                         statusIcon = '⚠️';
                         statusText = 'Reauthorizing';
-                        details = status.consecutivePasses + '/5 passes needed';
+                        details = status.consecutivePasses + '/5 passes' + (status.pendingBatches && status.pendingBatches.length > 0 ? ' ⚠️ ' + status.pendingBatches.length + ' untested' : '');
                         break;
                     default:
                         statusColor = 'var(--text-secondary)';
@@ -10840,10 +10905,15 @@ ${employeeReport || 'No activity recorded today'}
                         actionButtons = `<button class="btn" style="padding: 5px 10px; font-size: 0.85rem; background: var(--accent-red);" onclick="simulateFailure('${productType}')">Record Failed Test</button>`;
                         break;
                     case 'qualifying':
-                        statusBadge = `<span style="background: var(--accent-blue); color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;">🔄 Qualifying: ${status.consecutivePasses}/4</span>`;
+                        const pendingCount = status.pendingBatches ? status.pendingBatches.length : 0;
+                        statusBadge = `<span style="background: var(--accent-blue); color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;">🔄 Qualifying: ${status.consecutivePasses}/4</span>${pendingCount > 0 ? ` <span style="background: var(--accent-orange); color: white; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;">⚠️ ${pendingCount} untested batches</span>` : ''}`;
+                        const pendingList = status.pendingBatches && status.pendingBatches.length > 0
+                            ? '<div style="margin-top: 10px; padding: 10px; background: rgba(255,165,0,0.1); border-radius: 8px; border-left: 3px solid var(--accent-orange);"><strong>⚠️ Untested batches:</strong><br>' + status.pendingBatches.join(', ') + '</div>'
+                            : '';
                         actionButtons = `
                             <button class="btn" style="padding: 5px 10px; font-size: 0.85rem; background: var(--accent-green);" onclick="recordRTAResult('${productType}', 'manual', 'pass')">+ Record Pass</button>
                             <button class="btn" style="padding: 5px 10px; font-size: 0.85rem; background: var(--accent-red);" onclick="recordRTAResult('${productType}', 'manual', 'fail')">Record Fail</button>
+                            ${pendingList}
                         `;
                         break;
                     case 'reauthorizing':
