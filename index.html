@@ -1627,9 +1627,7 @@
                     </div>
                     
                     <div style="display: flex; gap: 10px;">
-                        <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-purple)); flex: 1;" onclick="testPrintBatchLabel()">
-                            🖨️ Print Label
-                        </button>
+                        <!-- Print button removed - auto-prints on submit -->
                         <button type="submit" class="btn" style="flex: 2;">Submit Intake</button>
                     </div>
                 </form>
@@ -5557,11 +5555,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             batchCounter++;
             
-            // Show option to print batch tracking label
-            const printLabel = confirm(`Batch ${batch.id} created successfully!\n\nPrint batch tracking label now?`);
-            if (printLabel) {
-                printIntakeLabelDirectly(batch);
-            }
+            // Auto-print batch tracking label
+            printIntakeLabelDirectly(batch);
             
             // Save fields we want to keep after reset
             const savedLicense = document.getElementById('cultivationLicense').value;
