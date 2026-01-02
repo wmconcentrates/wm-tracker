@@ -6410,6 +6410,10 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                     { value: `${overallYieldPercent.toFixed(1)}%`, label: 'Overall Yield' }
                 ]
             });
+            // Print labels for each sub-batch
+            for (const subBatch of subBatches) {
+                printPostProductionLabels(subBatch, subBatch.final_weight, 0, 1);
+            }
 
             document.getElementById('finishingForm').style.display = 'none';
             document.getElementById('finishingBatchSelect').value = '';
