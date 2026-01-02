@@ -10819,25 +10819,18 @@ ${employeeReport || 'No activity recorded today'}
                     typeStatus.qualificationStart = new Date().toISOString();
                 }
 
-                // Check if qualification complete (4 passes for initial, 5 for reauth)
+                                // Show progress - user must manually complete qualification after 4-week period
                 const requiredPasses = typeStatus.status === 'reauthorizing' ? 5 : 4;
-                if (typeStatus.consecutivePasses >= requiredPasses && typeStatus.status !== 'active') {
-                    typeStatus.status = 'active';
-                    typeStatus.rtaStart = new Date().toISOString();
-                    const expires = new Date();
-                    expires.setFullYear(expires.getFullYear() + 1);
-                    typeStatus.rtaExpires = expires.toISOString();
-                    typeStatus.consecutivePasses = 0; // Reset for ongoing tracking
+                const pendingCount = (typeStatus.pendingBatches || []).length;
 
-                    alert('🎉 RTA QUALIFIED!\n\n' + productType + ' has achieved RTA status!\n\n✓ Valid until: ' + expires.toLocaleDateString() + '\n✓ Next 30-day test due: ' + nextDue.toLocaleDateString() + '\n\nRemember: 1 full panel test every 30 days to maintain!');
-                }
-            } else if (result === 'fail') {
-                // Failed test
-                if (typeStatus.status === 'active') {
-                    // Was active, now needs reauthorization
-                    typeStatus.status = 'reauthorizing';
-                    typeStatus.consecutivePasses = 0;
-                    alert('⚠️ RTA FAILED\n\n' + productType + ' batch failed full panel test.\nYou must submit 5 consecutive passing batches to reauthorize.');
+                if (typeStatus.status === 'qualifying' || typeStatus.status === 'reauthorizing') {
+                    let msg = '✓ Test PASSED!\n\n' + productType + ': ' + typeStatus.consecutivePasses + '/' + requiredPasses + ' passes';
+                    if (pendingCount > 0) {
+                        msg += '\n⚠️ ' + pendingCount + ' batches still need testing';
+                    } else if (typeStatus.consecutivePasses >= requiredPasses) {
+                        msg += '\n\n✓ Ready to complete!\nClick Manage → Complete button';
+                    }
+                    alert(msg);
                 } else if (typeStatus.status === 'reauthorizing') {
                     // Failed during reauthorization - lose RTA completely
                     typeStatus.status = 'none';
@@ -10857,7 +10850,49 @@ ${employeeReport || 'No activity recorded today'}
             renderRTAQualificationStatus();
         }
 
-        // Start qualification period for a product type
+                // Complete RTA qualification (call after 4-week period)
+        function completeRTAQualification(productType) {
+            const rtaStatus = getRTAStatus();
+            const typeStatus = rtaStatus[productType];
+            if (!typeStatus) return;
+
+            const requiredPasses = typeStatus.status === 'reauthorizing' ? 5 : 4;
+            const pendingCount = (typeStatus.pendingBatches || []).length;
+
+            if (typeStatus.consecutivePasses < requiredPasses) {
+                alert('❌ Cannot complete qualification\n\n' + productType + ' needs ' + requiredPasses + ' passes.\nCurrent: ' + typeStatus.consecutivePasses);
+                return;
+            }
+
+            if (pendingCount > 0) {
+                alert('❌ Cannot complete qualification\n\n' + productType + ' has ' + pendingCount + ' untested batches.');
+                return;
+            }
+
+            const now = new Date();
+            typeStatus.status = 'active';
+            typeStatus.rtaStart = now.toISOString();
+            const expires = new Date(now);
+            expires.setFullYear(expires.getFullYear() + 1);
+            typeStatus.rtaExpires = expires.toISOString();
+
+            typeStatus.lastTestDate = now.toISOString();
+            const nextDue = new Date(now);
+            nextDue.setDate(nextDue.getDate() + 30);
+            typeStatus.nextTestDue = nextDue.toISOString();
+            typeStatus.qualificationDeadline = null;
+            typeStatus.consecutivePasses = 0;
+
+            saveRTAStatus(rtaStatus);
+            renderRTAQualificationStatus();
+            renderRTAManagerContent();
+            renderRTAQuickStatus();
+            closeRTAManager();
+
+            alert('🎉 RTA QUALIFIED!\n\n' + productType + ' certified for 1 year!\n\nExpires: ' + expires.toLocaleDateString() + '\nNext 30-day test: ' + nextDue.toLocaleDateString());
+        }
+
+// Start qualification period for a product type
         function startRTAQualification(productType) {
             const rtaStatus = getRTAStatus();
             if (rtaStatus[productType]) {
@@ -10979,10 +11014,20 @@ ${employeeReport || 'No activity recorded today'}
                     case 'qualifying':
                         const deadline = status.qualificationDeadline ? new Date(status.qualificationDeadline) : null;
                         const qualDays = deadline ? Math.floor((deadline - today) / (1000 * 60 * 60 * 24)) : null;
-                        color = 'var(--accent-blue)';
-                        icon = '🔄';
-                        label = status.consecutivePasses + '/4';
-                        sublabel = qualDays ? qualDays + 'd left' : 'In Progress';
+                        const qPending = (status.pendingBatches || []).length;
+                        const readyToComplete = status.consecutivePasses >= 4 && qPending === 0;
+
+                        if (readyToComplete) {
+                            color = 'var(--accent-green)';
+                            icon = '✓';
+                            label = 'Ready!';
+                            sublabel = 'Click Manage';
+                        } else {
+                            color = 'var(--accent-blue)';
+                            icon = '🔄';
+                            label = status.consecutivePasses + '/4';
+                            sublabel = qPending > 0 ? qPending + ' pending' : (qualDays ? qualDays + 'd left' : 'Testing');
+                        }
                         break;
                     case 'reauthorizing':
                         color = 'var(--accent-orange)';
