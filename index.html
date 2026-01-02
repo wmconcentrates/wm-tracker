@@ -5560,7 +5560,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Show option to print batch tracking label
             const printLabel = confirm(`Batch ${batch.id} created successfully!\n\nPrint batch tracking label now?`);
             if (printLabel) {
-                printIntakeBatchLabel(batch);
+                printIntakeLabelDirectly(batch);
             }
             
             // Save fields we want to keep after reset
