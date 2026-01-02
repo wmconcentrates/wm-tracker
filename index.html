@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.0 - Front of House update -->
+<!-- v2.1 - Mobile responsive fixes -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1272,25 +1272,107 @@
             }
 
             /* Front of House Mobile Fixes */
-            #frontofhouse .form-section > div[style*="display: flex"] {
+
+            /* Force Generate Post to stack vertically */
+            .foh-generate-container {
                 flex-direction: column !important;
-                align-items: flex-start !important;
-                gap: 15px !important;
             }
 
-            #frontofhouse .btn {
+            #fohQuickInput {
                 width: 100% !important;
-                text-align: center !important;
+                flex: none !important;
+                min-width: 100% !important;
+                box-sizing: border-box !important;
             }
 
-            /* Sales Dashboard Mobile Fixes */
-            #frontofhouse div[style*="display: flex"][style*="gap: 10px"] {
+            .foh-generate-btn {
+                width: 100% !important;
+                flex: none !important;
+            }
+
+            #frontofhouse div[style*="display: flex"] {
                 flex-wrap: wrap !important;
             }
 
+            #frontofhouse div[style*="display: flex"][style*="justify-content: space-between"],
+            #frontofhouse div[style*="display: flex"][style*="gap: 15px"] {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+            }
+
+            #frontofhouse .btn,
+            #frontofhouse button.btn,
+            #frontofhouse a.btn {
+                width: 100% !important;
+                text-align: center !important;
+                padding: 12px 20px !important;
+                margin: 0 !important;
+            }
+
+            #frontofhouse input[type="text"] {
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: none !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Sales Dashboard Mobile Fixes */
             #frontofhouse select {
                 width: 100% !important;
                 min-width: unset !important;
+            }
+
+            /* Generated Preview buttons */
+            #fohGeneratedPreview div[style*="display: flex"] {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+
+            /* Reduce padding on containers */
+            #frontofhouse > div > div[style*="padding: 25px"] {
+                padding: 15px !important;
+            }
+        }
+
+        /* Extra aggressive fix for smaller phones */
+        @media (max-width: 600px) {
+            body {
+                font-size: 0.9rem;
+            }
+
+            .foh-generate-container {
+                display: block !important;
+            }
+
+            #fohQuickInput {
+                display: block !important;
+                width: 100% !important;
+                margin-bottom: 10px !important;
+                font-size: 1rem !important;
+            }
+
+            .foh-generate-btn {
+                display: block !important;
+                width: 100% !important;
+                font-size: 1rem !important;
+                padding: 12px !important;
+            }
+
+            #frontofhouse button,
+            #frontofhouse .btn {
+                font-size: 0.95rem !important;
+                padding: 10px 15px !important;
+            }
+
+            #frontofhouse .form-section {
+                padding: 15px !important;
+            }
+
+            /* Fix Sales Dashboard grid minimum width */
+            #salesDashboardStats {
+                grid-template-columns: 1fr !important;
             }
         }
     </style>
@@ -2427,14 +2509,14 @@
         <!-- Front of House Station -->
         <div class="station-content" id="frontofhouse">
             <div class="form-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                    <div>
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 15px;">
+                    <div style="flex: 1 1 250px;">
                         <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
                             <span>📣</span> Front of House
                         </h2>
                         <p style="color: var(--text-secondary); margin: 5px 0 0 0;">Create blog posts & social content from production data</p>
                     </div>
-                    <a href="/blog" target="_blank" class="btn" style="background: var(--accent-blue);">
+                    <a href="/blog" target="_blank" class="btn" style="background: var(--accent-blue); flex: 1 1 200px;">
                         🌐 View Live Blog
                     </a>
                 </div>
@@ -2446,9 +2528,9 @@
                     </h3>
                     <p style="color: var(--text-secondary); margin: 0 0 15px 0;">Type a quick note and I'll turn it into an engaging post. Mention partners and they'll be auto-tagged!</p>
 
-                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                        <input type="text" id="fohQuickInput" placeholder="e.g., Grabbed some fire GMO trim from In The Flow..." style="flex: 1; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
-                        <button onclick="generateBlogPost()" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem;">
+                    <div class="foh-generate-container" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                        <input type="text" id="fohQuickInput" placeholder="e.g., Grabbed some fire GMO trim from In The Flow..." style="flex: 1 1 100%; min-width: 0; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--border); background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box;">
+                        <button onclick="generateBlogPost()" class="btn foh-generate-btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; flex: 1 1 100%;">
                             ✨ Generate Post
                         </button>
                     </div>
@@ -2464,12 +2546,12 @@
 
                 <!-- Generated Preview -->
                 <div id="fohGeneratedPreview" style="display: none; background: var(--bg-secondary); border-radius: 16px; padding: 25px; margin-bottom: 30px; border: 2px solid var(--accent-green);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px;">
                         <h3 style="color: var(--accent-green); margin: 0;">✅ Generated Post Preview</h3>
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="regenerateBlogPost()" class="btn" style="background: var(--bg-tertiary);">🔄 Regenerate</button>
-                            <button onclick="editBlogPost()" class="btn" style="background: var(--accent-orange);">✏️ Edit</button>
-                            <button onclick="publishBlogPost()" class="btn" style="background: var(--accent-green);">🚀 Publish</button>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <button onclick="regenerateBlogPost()" class="btn" style="background: var(--bg-tertiary); flex: 1 1 auto;">🔄 Regenerate</button>
+                            <button onclick="editBlogPost()" class="btn" style="background: var(--accent-orange); flex: 1 1 auto;">✏️ Edit</button>
+                            <button onclick="publishBlogPost()" class="btn" style="background: var(--accent-green); flex: 1 1 auto;">🚀 Publish</button>
                         </div>
                     </div>
                     <div id="fohPartnerInfo"></div>
@@ -2498,13 +2580,13 @@
                             </h3>
                             <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 0.9rem;">Sales performance, commissions, and rep tracking</p>
                         </div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <button onclick="openSalesPipelineModal()" class="btn" style="background: linear-gradient(135deg, #10B981, #3B82F6); padding: 10px 20px; font-weight: 600;">Pipeline</button>
-                            <button onclick="openDropCalendarModal()" class="btn" style="background: linear-gradient(135deg, #10B981, #059669); padding: 10px 20px; font-weight: 600;">Calendar</button>
-                            <select id="salesRepFilter" onchange="updateSalesDashboard()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px; min-width: 180px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                            <button onclick="openSalesPipelineModal()" class="btn" style="background: linear-gradient(135deg, #10B981, #3B82F6); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Pipeline</button>
+                            <button onclick="openDropCalendarModal()" class="btn" style="background: linear-gradient(135deg, #10B981, #059669); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Calendar</button>
+                            <select id="salesRepFilter" onchange="updateSalesDashboard()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px; min-width: 0; flex: 1 1 160px;">
                                 <option value="all">All Sales Reps</option>
                             </select>
-                            <button onclick="loadSalesDashboard()" class="btn" style="background: #FFD700; color: #000; padding: 10px 20px; font-weight: 600;">Refresh</button>
+                            <button onclick="loadSalesDashboard()" class="btn" style="background: #FFD700; color: #000; padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Refresh</button>
                         </div>
                     </div>
 
@@ -4101,6 +4183,15 @@
     <script>
         // Role configuration with PINs and permissions
         const ROLES = {
+            demo: {
+                name: 'Demo User',
+                pin: '0000',
+                tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
+                access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
+                readOnly: true,
+                salary: true,
+                isDemo: true
+            },
             ryan: {
                 name: 'Ryan (Admin)',
                 pin: '1827',
@@ -4162,6 +4253,78 @@
             }
         };
 
+        // Demo Mode Helpers
+        function isDemoMode() {
+            return currentRole && currentRole.isDemo === true;
+        }
+
+        function hidePINsForDemo() {
+            if (!isDemoMode()) return;
+
+            // Hide PINs in performance filter dropdown
+            const performanceFilter = document.getElementById('performanceFilter');
+            if (performanceFilter) {
+                Array.from(performanceFilter.options).forEach(option => {
+                    option.text = option.text.replace(/ - PIN: \d+/, '');
+                });
+            }
+
+            // Hide any other PIN displays in the UI
+            document.querySelectorAll('[data-pin]').forEach(el => {
+                el.textContent = el.textContent.replace(/PIN: \d+/, 'PIN: ****');
+            });
+
+            // Add demo banner
+            const header = document.querySelector('.header');
+            if (header && !document.querySelector('.demo-banner')) {
+                const demoBanner = document.createElement('div');
+                demoBanner.className = 'demo-banner';
+                demoBanner.style.cssText = 'background: linear-gradient(135deg, #ff6b00, #ff0055); color: white; padding: 10px; text-align: center; font-weight: 600; border-radius: 8px; margin-bottom: 15px;';
+                demoBanner.innerHTML = '🎭 DEMO MODE - All data is fake for demonstration purposes';
+                header.after(demoBanner);
+            }
+        }
+
+        function generateDemoBatches() {
+            const strains = ['GMO', 'Wedding Cake', 'Gelato', 'Blue Dream', 'OG Kush', 'Sour Diesel', 'Purple Punch', 'Zkittlez'];
+            const suppliers = ['Green Valley Farms', 'Mountain High Gardens', 'Coastal Cultivation', 'Urban Harvest'];
+            const statuses = ['intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'completed'];
+            const machines = ['left', 'right'];
+
+            const demoBatches = [];
+            const now = Date.now();
+
+            for (let i = 0; i < 25; i++) {
+                const strain = strains[Math.floor(Math.random() * strains.length)];
+                const supplier = suppliers[Math.floor(Math.random() * suppliers.length)];
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                const trimWeight = Math.floor(Math.random() * 5000) + 1000;
+                const yieldPercent = (Math.random() * 15 + 10).toFixed(2);
+                const bulkWeight = status === 'completed' ? (trimWeight * yieldPercent / 100).toFixed(1) : null;
+
+                demoBatches.push({
+                    id: 1000 + i,
+                    strain: strain,
+                    supplier: supplier,
+                    trim_weight_grams: trimWeight,
+                    status: status,
+                    machine: status === 'extraction' ? machines[Math.floor(Math.random() * machines.length)] : null,
+                    bulk_weight_grams: bulkWeight,
+                    jar_count: status === 'completed' ? Math.floor(Math.random() * 50) + 10 : null,
+                    created_at: new Date(now - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    updated_at: new Date(now - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    created_by: 'Demo User',
+                    notes: i % 3 === 0 ? 'Looking good!' : null,
+                    test_results: status === 'completed' ? JSON.stringify({
+                        thc: (Math.random() * 30 + 60).toFixed(2),
+                        cbd: (Math.random() * 2).toFixed(2)
+                    }) : null
+                });
+            }
+
+            return demoBatches;
+        }
+
         let supabaseClient = null;
         let batches = [];
         let currentRole = null;
@@ -4198,6 +4361,7 @@
                     document.getElementById('myStatsBtn').style.display = 'block';
                 document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                     applyRolePermissions();
+                    hidePINsForDemo(); // Hide PINs if in demo mode
                 }
             }
             
@@ -4517,23 +4681,40 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         };
 
         async function loadBatches() {
+            // Use demo data if in demo mode
+            if (isDemoMode()) {
+                batches = generateDemoBatches();
+                updateDashboard();
+                renderBatches();
+                updateSuppliesButton();
+                updateMachineDisplays();
+
+                if (!window.searchFiltersInitialized) {
+                    setTimeout(() => {
+                        addDropdownSearchFilters();
+                        window.searchFiltersInitialized = true;
+                    }, 500);
+                }
+                return;
+            }
+
             const { data, error } = await supabaseClient
                 .from('wm_batches')
                 .select('*')
                 .neq('status', 'deleted')
                 .order('created_at', { ascending: false });
-            
+
             if (error) {
                 console.error('Error loading batches:', error);
                 return;
             }
-            
+
             batches = data || [];
             updateDashboard();
             renderBatches();
             updateSuppliesButton(); // Update supplies button display
             updateMachineDisplays(); // Update machine status displays
-            
+
             // Initialize dropdown search filters (only once)
             if (!window.searchFiltersInitialized) {
                 setTimeout(() => {
@@ -4777,24 +4958,27 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('appContent').style.display = 'block';
                 document.getElementById('myStatsBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                 errorMsg.style.display = 'none';
-                
-                // Log login to database
-                supabaseClient
-                    .from('wm_login_history')
-                    .insert({
-                        user_name: currentRole.name,
-                        login_time: new Date().toISOString()
-                    })
-                    .then(({ data, error }) => {
-                        if (error) {
-                            console.error('Error logging login:', error);
-                        } else if (data && data.length > 0) {
-                            // Store the login record ID for logout tracking
-                            localStorage.setItem('wmLoginRecordId', data[0].id);
-                        }
-                    });
-                
+
+                // Log login to database (skip in demo mode)
+                if (!isDemoMode()) {
+                    supabaseClient
+                        .from('wm_login_history')
+                        .insert({
+                            user_name: currentRole.name,
+                            login_time: new Date().toISOString()
+                        })
+                        .then(({ data, error }) => {
+                            if (error) {
+                                console.error('Error logging login:', error);
+                            } else if (data && data.length > 0) {
+                                // Store the login record ID for logout tracking
+                                localStorage.setItem('wmLoginRecordId', data[0].id);
+                            }
+                        });
+                }
+
                 applyRolePermissions();
+                hidePINsForDemo(); // Hide PINs if in demo mode
 
                 // Welcome celebration with random messages
                 const welcomeMessages = [
