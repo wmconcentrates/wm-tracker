@@ -2081,9 +2081,15 @@
                     <button type="button" class="btn" onclick="submitTestResults()">Save Test Results</button>
                 </div>
 
-                <!-- RTA Qualification Status -->
-                <div id="rtaQualificationSection" style="margin-top: 30px;">
-                    <button class="btn" style="padding: 12px 25px; font-size: 1rem; width: 100%;" onclick="openRTAManager()">📋 Manage RTA Qualification Status</button>
+                                <!-- RTA Qualification Status -->
+                <div id="rtaQualificationSection" style="margin-top: 30px; background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: var(--accent-purple);">📋 RTA Status</h3>
+                        <button class="btn" style="padding: 8px 15px; font-size: 0.9rem;" onclick="openRTAManager()">Manage</button>
+                    </div>
+                    <div id="rtaQuickStatus" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -10761,7 +10767,7 @@ ${employeeReport || 'No activity recorded today'}
                     typeStatus.rtaExpires = expires.toISOString();
                     typeStatus.consecutivePasses = 0; // Reset for ongoing tracking
 
-                    alert('🎉 RTA QUALIFIED!\n\n' + productType + ' has achieved RTA status!\nValid until: ' + expires.toLocaleDateString());
+                    alert('🎉 RTA QUALIFIED!\n\n' + productType + ' has achieved RTA status!\n\n✓ Valid until: ' + expires.toLocaleDateString() + '\n✓ Next 30-day test due: ' + nextDue.toLocaleDateString() + '\n\nRemember: 1 full panel test every 30 days to maintain!');
                 }
             } else if (result === 'fail') {
                 // Failed test
@@ -10793,13 +10799,18 @@ ${employeeReport || 'No activity recorded today'}
         function startRTAQualification(productType) {
             const rtaStatus = getRTAStatus();
             if (rtaStatus[productType]) {
+                const now = new Date();
+                const deadline = new Date(now);
+                deadline.setDate(deadline.getDate() + 28); // 4 weeks
+
                 rtaStatus[productType].status = 'qualifying';
                 rtaStatus[productType].consecutivePasses = 0;
-                rtaStatus[productType].qualificationStart = new Date().toISOString();
+                rtaStatus[productType].qualificationStart = now.toISOString();
+                rtaStatus[productType].qualificationDeadline = deadline.toISOString();
                 saveRTAStatus(rtaStatus);
                 renderRTAQualificationStatus();
                 closeRTAManager();
-                alert('Started RTA qualification for ' + productType + '\n\nAll batches must be submitted for FULL PANEL testing until 4 consecutive passes.');
+                alert('Started RTA qualification for ' + productType + '\n\n✓ 4-week window started\n✓ All batches must be FULL PANEL tested\n✓ Need 4 consecutive passes to qualify\n\nDeadline: ' + deadline.toLocaleDateString());
             }
         }
 
@@ -10866,10 +10877,81 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         // Open RTA Manager modal
+        
+        // Render quick status boxes in Testing tab
+        function renderRTAQuickStatus() {
+            const container = document.getElementById('rtaQuickStatus');
+            if (!container) return;
+
+            const rtaStatus = getRTAStatus();
+            const today = new Date();
+
+            let html = '';
+            Object.entries(rtaStatus).forEach(([productType, status]) => {
+                let color, icon, label, sublabel = '';
+
+                switch (status.status) {
+                    case 'active':
+                        const expires = new Date(status.rtaExpires);
+                        const daysLeft = Math.floor((expires - today) / (1000 * 60 * 60 * 24));
+                        const nextTest = status.nextTestDue ? new Date(status.nextTestDue) : null;
+                        const testDaysLeft = nextTest ? Math.floor((nextTest - today) / (1000 * 60 * 60 * 24)) : null;
+
+                        if (daysLeft < 30) {
+                            color = 'var(--accent-orange)';
+                            icon = '⚠️';
+                            label = 'Recert Soon';
+                            sublabel = daysLeft + 'd left';
+                        } else if (testDaysLeft !== null && testDaysLeft <= 7) {
+                            color = 'var(--accent-orange)';
+                            icon = '🔄';
+                            label = 'Test Due';
+                            sublabel = testDaysLeft <= 0 ? 'OVERDUE' : testDaysLeft + 'd';
+                        } else {
+                            color = 'var(--accent-green)';
+                            icon = '✓';
+                            label = 'Active';
+                            sublabel = daysLeft + 'd left';
+                        }
+                        break;
+                    case 'qualifying':
+                        const deadline = status.qualificationDeadline ? new Date(status.qualificationDeadline) : null;
+                        const qualDays = deadline ? Math.floor((deadline - today) / (1000 * 60 * 60 * 24)) : null;
+                        color = 'var(--accent-blue)';
+                        icon = '🔄';
+                        label = status.consecutivePasses + '/4';
+                        sublabel = qualDays ? qualDays + 'd left' : 'In Progress';
+                        break;
+                    case 'reauthorizing':
+                        color = 'var(--accent-orange)';
+                        icon = '⚠️';
+                        label = status.consecutivePasses + '/5';
+                        sublabel = 'Reauth';
+                        break;
+                    default:
+                        color = 'var(--text-secondary)';
+                        icon = '○';
+                        label = 'None';
+                        sublabel = 'Not Started';
+                }
+
+                html += `
+                    <div style="background: var(--bg-secondary); padding: 10px; border-radius: 8px; border-left: 3px solid ${color}; text-align: center;">
+                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 3px;">${productType}</div>
+                        <div style="font-size: 1rem; font-weight: 700; color: ${color};">${icon} ${label}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-secondary);">${sublabel}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
         function openRTAManager() {
             renderRTAQualificationStatus();
             renderRTAManagerContent();
             checkRTAStatus();
+            renderRTAQuickStatus();
             document.getElementById('rtaManagerModal').style.display = 'block';
         }
 
@@ -10964,7 +11046,7 @@ ${employeeReport || 'No activity recorded today'}
 
         // Initialize RTA status display on page load
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(renderRTAQualificationStatus, 1000);
+            setTimeout(() => { renderRTAQuickStatus(); }, 1000);
         });
 
         // Check RTA status and show reminder if needed - BY EXTRACTION METHOD
@@ -18439,7 +18521,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                     <h4 style="margin: 0 0 10px; color: var(--accent-orange);">⚠️ Colorado MED RTA Requirements</h4>
                     <ul style="margin: 0; padding-left: 20px; color: var(--text-secondary); font-size: 0.9rem;">
-                        <li><strong>Initial Qualification:</strong> 4 consecutive passing full panel batches within 4-8 weeks</li>
+                        <li><strong>Initial Qualification:</strong> 4 consecutive passing full panel batches within 4 weeks</li>
                         <li><strong>RTA Duration:</strong> Valid for 1 year from first passing batch</li>
                         <li><strong>Reauthorization (after fail):</strong> 5 consecutive passing batches required</li>
                         <li><strong>Ongoing:</strong> 1 full panel test every 30 days to maintain</li>
