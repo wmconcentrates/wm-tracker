@@ -6130,7 +6130,7 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                 }
                 
                 if (batch.extraction_bowls && batch.extraction_bowls > 0) {
-                    const productName = batch.product_type === 'Sugar Wax' ? 'Sugar Wax' : 'Wax';
+                    const productName = batch.product_type === 'Sugar Wax' ? 'Sugar Wax' : batch.product_type === 'Live Resin Oil' ? 'Live Resin' : 'Wax';
                     info += `<p style="background: rgba(147, 51, 234, 0.2); padding: 10px; border-radius: 8px; border-left: 4px solid var(--accent-purple); margin-top: 10px;">
                         <strong>📦 ${productName} Bowls to Process:</strong> <span style="font-size: 1.3rem; font-weight: 700; color: var(--accent-purple);">${batch.extraction_bowls}</span>
                     </p>`;
@@ -8059,7 +8059,7 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
                 extraction_machine: currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)',
                 extraction_runs: machineStatus.pot_runs || 0,
                 extraction_slabs: productType === 'shatter' ? slabs : null,
-                extraction_bowls: (productType === 'wax' || productType === 'sugar_wax') ? bowls : null,
+                extraction_bowls: (productType === 'wax' || productType === 'sugar_wax' || productType === 'live_resin') ? bowls : null,
                 extraction_notes: notes,
                 source_contributions: potLedger, // Save pot ledger as source contributions
                 timeline: [
