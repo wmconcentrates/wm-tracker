@@ -4325,6 +4325,42 @@
             return demoBatches;
         }
 
+        function generateDemoLeafLinkOrders() {
+            const companies = ['Green Valley Dispensary', 'Mountain High', 'Coastal Cannabis', 'Urban Leaf', 'Valley Verde'];
+            const salesReps = ['Ryan Thompson', 'Drew Martinez', 'Sarah Johnson'];
+            const demoOrders = [];
+            const now = Date.now();
+
+            for (let i = 0; i < 50; i++) {
+                const company = companies[Math.floor(Math.random() * companies.length)];
+                const orderDate = new Date(now - Math.random() * 60 * 24 * 60 * 60 * 1000);
+                const total = (Math.random() * 5000 + 500).toFixed(2);
+
+                demoOrders.push({
+                    id: `DEMO-${1000 + i}`,
+                    number: `WM${1000 + i}`,
+                    company: { name: company },
+                    customer: { company_name: company },
+                    status: Math.random() > 0.3 ? 'Complete' : 'Shipped',
+                    seller_company: { name: 'White Mousse' },
+                    created_on: orderDate.toISOString(),
+                    total: total,
+                    total_paid: Math.random() > 0.2 ? total : (parseFloat(total) * 0.5).toFixed(2),
+                    payment_status: Math.random() > 0.2 ? 'Paid' : 'Unpaid',
+                    sales_rep: { name: salesReps[Math.floor(Math.random() * salesReps.length)] },
+                    line_items: [
+                        {
+                            product: { name: 'Live Resin - ' + ['GMO', 'Wedding Cake', 'Gelato'][Math.floor(Math.random() * 3)] },
+                            quantity: Math.floor(Math.random() * 10) + 1,
+                            unit_price: (Math.random() * 50 + 20).toFixed(2)
+                        }
+                    ]
+                });
+            }
+
+            return demoOrders;
+        }
+
         let supabaseClient = null;
         let batches = [];
         let currentRole = null;
@@ -14238,6 +14274,16 @@ ${employeeReport || 'No activity recorded today'}
 
         // Shared function to load LeafLink data with caching
         async function ensureLeafLinkData(forceRefresh = false) {
+            // Return fake data in demo mode
+            if (isDemoMode()) {
+                if (allLeafLinkOrders.length === 0) {
+                    allLeafLinkOrders = generateDemoLeafLinkOrders();
+                    customerFirstOrderDates = buildCustomerFirstOrderDates(allLeafLinkOrders);
+                    leafLinkDataLoaded = true;
+                }
+                return allLeafLinkOrders;
+            }
+
             // Check if already loaded in memory
             if (!forceRefresh && leafLinkDataLoaded && allLeafLinkOrders.length > 0) {
                 return allLeafLinkOrders;
@@ -14283,6 +14329,11 @@ ${employeeReport || 'No activity recorded today'}
 
         // Fetch orders from LeafLink API
         async function fetchLeafLinkOrders() {
+            // Return fake data in demo mode
+            if (isDemoMode()) {
+                return generateDemoLeafLinkOrders();
+            }
+
             try {
                 const twoMonthsAgo = new Date();
                 twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
