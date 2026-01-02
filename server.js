@@ -1,9 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const app = express();
 
-const LEAFLINK_API_KEY = '1029b2e9f60c4a50ecf1e918bacbd2c1eb49197877481115a7bd4495a96aea20';
+const LEAFLINK_API_KEY = process.env.LEAFLINK_API_KEY;
 const LEAFLINK_API_URL = 'https://www.leaflink.com/api/v2';
 
 // Enable CORS for all origins
