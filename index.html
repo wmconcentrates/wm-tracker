@@ -5654,7 +5654,31 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             alert(`ZPL file downloaded: batch-label-${batch.id}.zpl\n\nTo print:\n1. Open Zebra Setup Utilities\n2. Go to Tools → Send File\n3. Select the .zpl file\n4. Click Send`);
         }
-// Print label from Testing page        async function printTestingLabel() {            const batchId = document.getElementById("testingBatchSelect").value;            if (!batchId) {                alert("Please select a batch first!");                return;            }                        const batch = batches.find(b => b.id === batchId);            if (!batch) {                alert("Batch not found!");                return;            }                        const labelType = document.getElementById("testingLabelType").value;                        if (labelType === "intake") {                printIntakeLabelDirectly(batch);            } else if (labelType === "postprod") {                const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;                const sampleWeight = parseFloat(batch.sample_weight) || 0;                printPostProductionLabels(batch, finalWeight, sampleWeight, 1);            }        }
+
+        // Print label from Testing page
+        async function printTestingLabel() {
+            const batchId = document.getElementById('testingBatchSelect').value;
+            if (!batchId) {
+                alert('Please select a batch first!');
+                return;
+            }
+
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) {
+                alert('Batch not found!');
+                return;
+            }
+
+            const labelType = document.getElementById('testingLabelType').value;
+
+            if (labelType === 'intake') {
+                printIntakeLabelDirectly(batch);
+            } else if (labelType === 'postprod') {
+                const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
+                const sampleWeight = parseFloat(batch.sample_weight) || 0;
+                printPostProductionLabels(batch, finalWeight, sampleWeight, 1);
+            }
+        }
 
         // Open printable intake batch label
         function openPrintableIntakeLabel(batch) {
