@@ -5656,7 +5656,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         }
 
         // Print label from Testing page
-        async function printTestingLabel() {
+        window.printTestingLabel = async function() {
             const batchId = document.getElementById('testingBatchSelect').value;
             if (!batchId) {
                 alert('Please select a batch first!');
