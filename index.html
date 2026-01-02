@@ -5558,7 +5558,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             batchCounter++;
             
             // Auto-print batch tracking label
-            printIntakeLabelDirectly(batch);
+            printIntakeBatchLabel(batch);
             
             // Save fields we want to keep after reset
             const savedLicense = document.getElementById('cultivationLicense').value;
@@ -5672,7 +5672,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const labelType = document.getElementById('testingLabelType').value;
 
             if (labelType === 'intake') {
-                printIntakeLabelDirectly(batch);
+                printIntakeBatchLabel(batch);
             } else if (labelType === 'postprod') {
                 const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 const sampleWeight = parseFloat(batch.sample_weight) || 0;
