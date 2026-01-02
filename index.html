@@ -1519,14 +1519,7 @@
                             <label>Strain Name</label>
                             <input type="text" id="strainName" required>
                         </div>
-                        <div class="form-group">
-                            <label>Material Type</label>
-                            <select id="materialType" required onchange="updateMaterialTypeUI()">
-                                <option value="Trim">Trim (Standard BHO - ~13% yield)</option>
-                                <option value="Fresh Frozen">Fresh Frozen (Live Resin - ~3.5% yield)</option>
-                                <option value="Whole Flower">Whole Flower (~18% yield)</option>
-                            </select>
-                        </div>
+
                         <div class="form-group">
                             <label id="weightLabel">Trim Weight (grams)</label>
                             <input type="number" id="trimWeight" step="0.1" required>
@@ -1590,11 +1583,11 @@
                         <label>Planned Products</label>
                         <div class="checkbox-group">
                             <label class="checkbox-item">
-                                <input type="checkbox" name="products" value="Live Resin Carts">
+                                <input type="checkbox" name="products" value="Live Resin Carts" onchange="updateMaterialTypeUI()">
                                 <span>Live Resin Carts</span>
                             </label>
                             <label class="checkbox-item">
-                                <input type="checkbox" name="products" value="Live Resin AIOs">
+                                <input type="checkbox" name="products" value="Live Resin AIOs" onchange="updateMaterialTypeUI()">
                                 <span>Live Resin AIOs</span>
                             </label>
                             <label class="checkbox-item">
@@ -5499,7 +5492,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const socksTotal = parseInt(document.getElementById('socksTotal').value) || 1;
             const trimPerSock = trimWeight / socksTotal;
 
-            const materialType = document.getElementById('materialType')?.value || 'Trim';
+            // Auto-detect material type based on Live Resin product selection
+            const selectedProducts = Array.from(document.querySelectorAll('input[name="products"]:checked')).map(cb => cb.value);
+            const isLiveResin = selectedProducts.some(p => p.includes('Live Resin'));
+            const materialType = isLiveResin ? 'Fresh Frozen' : 'Trim';
             const batch = {
                 id: `WM-${batchCounter}`,
                 strain: document.getElementById('strainName').value,
@@ -7558,24 +7554,18 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
 
         // ==================== MATERIAL TYPE / LIVE RESIN WORKFLOW ====================
         function updateMaterialTypeUI() {
-            const materialType = document.getElementById('materialType').value;
+            // Check if any Live Resin product is selected
+            const selectedProducts = Array.from(document.querySelectorAll('input[name="products"]:checked')).map(cb => cb.value);
+            const isLiveResin = selectedProducts.some(p => p.includes('Live Resin'));
+
             const weightLabel = document.getElementById('weightLabel');
             const socksLabel = document.getElementById('socksLabel');
             const socksHelp = document.getElementById('socksHelp');
 
-            if (materialType === 'Fresh Frozen') {
+            if (isLiveResin) {
                 weightLabel.textContent = 'Fresh Frozen Weight (grams)';
                 socksLabel.textContent = 'Number of Bowls';
                 socksHelp.textContent = 'How many bowls will this fresh frozen fill?';
-
-                // Auto-check Live Resin products
-                document.querySelectorAll('input[name="products"]').forEach(cb => {
-                    if (cb.value.includes('Live Resin')) {
-                        cb.checked = true;
-                    } else if (!cb.value.includes('Brick Hash')) {
-                        cb.checked = false;
-                    }
-                });
             } else {
                 weightLabel.textContent = 'Trim Weight (grams)';
                 socksLabel.textContent = 'Number of Socks';
@@ -7585,12 +7575,8 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
 
         // Get expected yield based on material type
         function getExpectedYield(materialType) {
-            switch(materialType) {
-                case 'Fresh Frozen': return 3.5;  // Live Resin
-                case 'Whole Flower': return 18;
-                case 'Trim':
-                default: return 13;  // Standard BHO
-            }
+            // Fresh Frozen (Live Resin) = 3.5%, Trim (Standard BHO) = 13%
+            return materialType === 'Fresh Frozen' ? 3.5 : 13;
         }
 
 
