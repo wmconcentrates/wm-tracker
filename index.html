@@ -1272,15 +1272,23 @@
             }
 
             /* Front of House Mobile Fixes */
-            #frontofhouse .form-section > div[style*="display: flex"] {
+            #frontofhouse div[style*="display: flex"][style*="justify-content: space-between"],
+            #frontofhouse div[style*="display: flex"][style*="gap: 15px"] {
                 flex-direction: column !important;
-                align-items: flex-start !important;
-                gap: 15px !important;
+                align-items: stretch !important;
             }
 
-            #frontofhouse .btn {
+            #frontofhouse .btn,
+            #frontofhouse button.btn,
+            #frontofhouse a.btn {
                 width: 100% !important;
                 text-align: center !important;
+                padding: 12px 20px !important;
+            }
+
+            #frontofhouse input[type="text"] {
+                width: 100% !important;
+                margin-bottom: 10px !important;
             }
 
             /* Sales Dashboard Mobile Fixes */
