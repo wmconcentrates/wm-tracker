@@ -12537,7 +12537,8 @@ ${employeeReport || 'No activity recorded today'}
             if (!tbody) return;
             
             // Get batches that have been extracted (have extraction_date)
-            const wasteBatches = batches.filter(b => b.extraction_date && !b.is_sub_batch);
+            const extractedStatuses = ['extraction', 'finishing', 'packaging', 'completed'];
+            const wasteBatches = batches.filter(b => (b.extraction_date || extractedStatuses.includes(b.status)) && !b.is_sub_batch);
             
             if (wasteBatches.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" style="padding: 40px; text-align: center; color: var(--text-secondary);">No waste records found</td></tr>';
@@ -12597,7 +12598,8 @@ ${employeeReport || 'No activity recorded today'}
         }
         
         function exportWasteLog() {
-            const wasteBatches = batches.filter(b => b.extraction_date && !b.is_sub_batch);
+            const extractedStatuses = ['extraction', 'finishing', 'packaging', 'completed'];
+            const wasteBatches = batches.filter(b => (b.extraction_date || extractedStatuses.includes(b.status)) && !b.is_sub_batch);
             if (wasteBatches.length === 0) { alert('No waste records to export'); return; }
             wasteBatches.sort((a, b) => new Date(b.extraction_date) - new Date(a.extraction_date));
             let csv = 'Batch ID,Strain,Trim Weight (g),Waste Weight (g),Extraction Date,Disposal Date,METRC Tag,Mixed With,Disposal Facility\n';
