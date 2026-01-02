@@ -6039,40 +6039,22 @@ ${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
             return zpl;
         }
 
-        // Print post-production labels (multiple copies)
+        // Print post-production labels (multiple copies) - direct to Zebra IP
         async function printPostProductionLabels(batch, finalWeight, sampleWeight, copies) {
+            const printerIP = '10.1.10.95'; // Same Zebra ZT230 as intake
             const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
-
-            // Print server URL
-            const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
 
             for (let i = 0; i < copies; i++) {
                 try {
-                    const response = await fetch(printServerURL, {
+                    await fetch(`http://${printerIP}:9100`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ zpl: zpl })
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: zpl
                     });
-
-                    if (response.ok) {
-                        console.log(`Post-production label ${i + 1}/${copies} sent to printer`);
-                    }
+                    console.log(`Post-production label ${i + 1}/${copies} sent to printer`);
                 } catch (error) {
-                    console.log('Print server not available:', error.message);
-
-                    // Fallback to Browser Print
-                    if (window.BrowserPrint) {
-                        try {
-                            const printer = await window.BrowserPrint.getDefaultDevice('printer');
-                            printer.send(zpl, undefined, (error) => {
-                                if (error) {
-                                    console.log('Print failed for label', i + 1);
-                                }
-                            });
-                        } catch (printError) {
-                            console.log('Printer not available');
-                        }
-                    }
+                    console.error('Print error:', error);
                 }
             }
 
