@@ -2082,14 +2082,8 @@
                 </div>
 
                 <!-- RTA Qualification Status -->
-                <div id="rtaQualificationSection" style="margin-top: 30px; background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 style="margin: 0; color: var(--accent-purple);">📋 RTA Qualification Status</h3>
-                        <button class="btn" style="padding: 8px 15px; font-size: 0.9rem;" onclick="openRTAManager()">Manage RTA</button>
-                    </div>
-                    <div id="rtaQualificationStatus">
-                        <!-- Populated by JS -->
-                    </div>
+                <div id="rtaQualificationSection" style="margin-top: 30px;">
+                    <button class="btn" style="padding: 12px 25px; font-size: 1rem; width: 100%;" onclick="openRTAManager()">📋 Manage RTA Qualification Status</button>
                 </div>
 
                 <!-- RTA Reminder -->
@@ -10822,7 +10816,7 @@ ${employeeReport || 'No activity recorded today'}
 
         // Render RTA qualification status in testing tab
         function renderRTAQualificationStatus() {
-            const container = document.getElementById('rtaQualificationStatus');
+            const container = document.getElementById('rtaStatusCards');
             if (!container) return;
 
             const rtaStatus = getRTAStatus();
@@ -10876,6 +10870,7 @@ ${employeeReport || 'No activity recorded today'}
 
         // Open RTA Manager modal
         function openRTAManager() {
+            renderRTAQualificationStatus();
             renderRTAManagerContent();
             document.getElementById('rtaManagerModal').style.display = 'block';
         }
@@ -18433,6 +18428,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 <button onclick="closeRTAManager()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 15px; border-radius: 8px;">&times;</button>
             </div>
             <div style="padding: 25px;">
+                <!-- Status Overview Cards -->
+                <div id="rtaStatusCards" style="margin-bottom: 25px;">
+                    <!-- Populated by JS -->
+                </div>
+
                 <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                     <h4 style="margin: 0 0 10px; color: var(--accent-orange);">⚠️ Colorado MED RTA Requirements</h4>
                     <ul style="margin: 0; padding-left: 20px; color: var(--text-secondary); font-size: 0.9rem;">
