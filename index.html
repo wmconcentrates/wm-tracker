@@ -5916,40 +5916,42 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
         // Print intake batch tracking label
         async function printIntakeBatchLabel(batch) {
+            console.log('printIntakeBatchLabel called for:', batch.id);
             const zpl = generateIntakeBatchLabelZPL(batch);
-            
+
             // Try print server first
             const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
-            
+
             try {
                 const response = await fetch(printServerURL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ zpl: zpl })
                 });
-                
+
                 if (response.ok) {
-                    console.log('Batch tracking label sent to printer');
+                    console.log('Label sent via print server');
                     return;
                 }
             } catch (error) {
-                console.log('Print server not available:', error.message);
+                console.log('Print server error:', error.message);
             }
-            
+
             // Fallback to Browser Print
             if (window.BrowserPrint) {
                 try {
                     const printer = await window.BrowserPrint.getDefaultDevice('printer');
                     printer.send(zpl, undefined, (error) => {
                         if (error) {
-                            alert('Print failed. Check printer connection.');
+                            openPrintableIntakeLabel(batch);
                         }
                     });
                 } catch (error) {
-                    alert('Printer not available. Make sure Zebra printer is connected.');
+                    openPrintableIntakeLabel(batch);
                 }
             } else {
-                alert('Printer not available. Make sure Zebra printer is connected or print server is running.');
+                // No direct print - open printable view
+                openPrintableIntakeLabel(batch);
             }
         }
 
