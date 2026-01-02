@@ -1270,6 +1270,28 @@
                 min-width: unset;
                 width: 100%;
             }
+
+            /* Front of House Mobile Fixes */
+            #frontofhouse .form-section > div[style*="display: flex"] {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 15px !important;
+            }
+
+            #frontofhouse .btn {
+                width: 100% !important;
+                text-align: center !important;
+            }
+
+            /* Sales Dashboard Mobile Fixes */
+            #frontofhouse div[style*="display: flex"][style*="gap: 10px"] {
+                flex-wrap: wrap !important;
+            }
+
+            #frontofhouse select {
+                width: 100% !important;
+                min-width: unset !important;
+            }
         }
     </style>
 </head>
