@@ -1,8 +1,4 @@
-<!DOCTYPE html>
-<!-- v2.1 - Mobile responsive fixes -->
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
+    </style>"UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>White Mousse Production Tracker - Cloud Sync</title>
 
@@ -2547,21 +2543,34 @@
                 </div>
 
 <!-- Pipeline, Inventory, Needs Sections -->
-                <div class="foh-sections">
+                <style>
+                    .foh-wrapper { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+                    @media (min-width: 768px) { .foh-wrapper { flex-direction: row; } .foh-box { flex: 1; } }
+                    .foh-box { background: var(--bg-secondary); border-radius: 12px; padding: 12px; }
+                    .foh-box h4 { margin: 0 0 10px 0; font-size: 1rem; font-weight: 600; text-align: center; }
+                    .foh-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+                    @media (max-width: 500px) { .foh-items { grid-template-columns: repeat(2, 1fr); } }
+                    .foh-btn { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 8px; cursor: pointer; text-align: center; width: 100%; transition: all 0.15s; }
+                    .foh-btn:hover { background: var(--bg-tertiary); transform: scale(1.02); }
+                    .foh-btn-name { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+                    .foh-btn-num { font-size: 1.8rem; font-weight: 700; color: var(--accent-primary); line-height: 1; }
+                    .foh-btn-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+                </style>
+                <div class="foh-wrapper">
                     <!-- Pipeline -->
-                    <div class="foh-section foh-pipeline">
-                        <h4 class="foh-section-title" style="color: #10B981;">Pipeline</h4>
-                        <div id="inlinePipelineGrid" class="foh-grid"></div>
+                    <div class="foh-box" style="border-left: 4px solid #10B981;">
+                        <h4 style="color: #10B981;">Pipeline</h4>
+                        <div id="inlinePipelineGrid" class="foh-items"></div>
                     </div>
                     <!-- Inventory -->
-                    <div class="foh-section foh-inventory">
-                        <h4 class="foh-section-title" style="color: #8B5CF6;">Inventory</h4>
-                        <div id="inlineInventoryGrid" class="foh-grid"></div>
+                    <div class="foh-box" style="border-left: 4px solid #8B5CF6;">
+                        <h4 style="color: #8B5CF6;">Inventory</h4>
+                        <div id="inlineInventoryGrid" class="foh-items"></div>
                     </div>
                     <!-- Needs -->
-                    <div class="foh-section foh-needs">
-                        <h4 class="foh-section-title" style="color: #F59E0B;">Needs</h4>
-                        <div id="inlineNeedsGrid" class="foh-grid"></div>
+                    <div class="foh-box" style="border-left: 4px solid #F59E0B;">
+                        <h4 style="color: #F59E0B;">Needs</h4>
+                        <div id="inlineNeedsGrid" class="foh-items"></div>
                     </div>
                 </div>
 
@@ -19269,14 +19278,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     if (item.strainType) strainCounts[item.strainType]++;
                 });
 
+                // Calculate total grams
+                const totalGrams = (data.strains || []).reduce((sum, s) => sum + (parseFloat(s.availableGrams) || 0), 0);
+
                 return `
-                    <button onclick="showPipelineStrains('${key}')" class="foh-card" style="opacity: ${hasItems ? '1' : '0.4'};">
-                        <div class="foh-card-label">${data.label}</div>
-                        <div class="foh-card-counts">
-                            <span class="foh-count foh-sativa">${strainCounts.Sativa}</span>
-                            <span class="foh-count foh-hybrid">${strainCounts.Hybrid}</span>
-                            <span class="foh-count foh-indica">${strainCounts.Indica}</span>
-                        </div>
+                    <button onclick="showPipelineStrains('${key}')" class="foh-btn" style="opacity: ${hasItems ? '1' : '0.5'};">
+                        <div class="foh-btn-name">${data.label}</div>
+                        <div class="foh-btn-num">${data.count}</div>
+                        <div class="foh-btn-sub">${totalGrams.toFixed(0)}g</div>
                     </button>
                 `;
             }).join('');
@@ -19615,14 +19624,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 if (item.strainType) strainCounts[item.strainType]++;
             });
 
+            const unit = (key.includes('Cart') || key.includes('AIO')) ? '' : 'g';
             return `
-                <button onclick="showInventoryItems('${key}')" class="foh-card" style="opacity: ${hasItems ? '1' : '0.4'};">
-                    <div class="foh-card-label">${data.label}</div>
-                    <div class="foh-card-counts">
-                        <span class="foh-count foh-sativa">${strainCounts.Sativa}</span>
-                        <span class="foh-count foh-hybrid">${strainCounts.Hybrid}</span>
-                        <span class="foh-count foh-indica">${strainCounts.Indica}</span>
-                    </div>
+                <button onclick="showInventoryItems('${key}')" class="foh-btn" style="opacity: ${hasItems ? '1' : '0.5'};">
+                    <div class="foh-btn-name">${data.label}</div>
+                    <div class="foh-btn-num">${data.count}</div>
+                    <div class="foh-btn-sub">${Math.round(data.totalQty)}${unit}</div>
                 </button>
             `;
         }).join('');
@@ -19875,14 +19882,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 needsByStrain[need.strainType] = need.varietiesNeeded;
             });
 
+            const totalNeeded = needsByStrain.Sativa + needsByStrain.Hybrid + needsByStrain.Indica;
+            const isOk = totalNeeded === 0;
             return `
-                <button onclick="showNeedsItems('${key}')" class="foh-card">
-                    <div class="foh-card-label">${data.label}</div>
-                    <div class="foh-card-counts">
-                        <span class="foh-count ${needsByStrain.Sativa > 0 ? 'foh-need' : 'foh-ok'}">${needsByStrain.Sativa > 0 ? needsByStrain.Sativa : '✓'}</span>
-                        <span class="foh-count ${needsByStrain.Hybrid > 0 ? 'foh-need' : 'foh-ok'}">${needsByStrain.Hybrid > 0 ? needsByStrain.Hybrid : '✓'}</span>
-                        <span class="foh-count ${needsByStrain.Indica > 0 ? 'foh-need' : 'foh-ok'}">${needsByStrain.Indica > 0 ? needsByStrain.Indica : '✓'}</span>
-                    </div>
+                <button onclick="showNeedsItems('${key}')" class="foh-btn">
+                    <div class="foh-btn-name">${data.label}</div>
+                    <div class="foh-btn-num" style="color: ${isOk ? '#10B981' : '#EF4444'};">${isOk ? '✓' : totalNeeded}</div>
+                    <div class="foh-btn-sub">${isOk ? 'Stocked' : 'varieties needed'}</div>
                 </button>
             `;
         }).join('');
