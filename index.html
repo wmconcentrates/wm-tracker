@@ -7963,8 +7963,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             localStorage.setItem('wm_pull_history', JSON.stringify(pullHistory));
 
             // Update batch status to 'extraction' (completing extraction phase)
-            const productTypeText = productType === 'shatter' ? 'Shatter' :
-                                   productType === 'wax' ? 'Wax' : 'Sugar Wax';
+            const productTypeText = productType === 'shatter' ? 'Shatter' : productType === 'wax' ? 'Wax' : productType === 'sugar_wax' ? 'Sugar Wax' : productType === 'live_resin' ? 'Live Resin Oil' : 'Unknown';
             const amountText = productType === 'shatter' ? `${slabs} slab(s)` : `${bowls} bowl(s)`;
 
             // Build source contributions summary for timeline
