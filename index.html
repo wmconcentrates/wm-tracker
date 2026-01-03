@@ -2553,11 +2553,12 @@
                     .foh-box h4 { margin: 0 0 10px 0; font-size: 1rem; font-weight: 600; text-align: center; }
                     .foh-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
                     @media (max-width: 500px) { .foh-items { grid-template-columns: repeat(2, 1fr); } }
-                    .foh-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px 8px; cursor: pointer; text-align: center; width: 100%; transition: all 0.2s; }
-                    .foh-btn:hover { background: rgba(255,255,255,0.08); box-shadow: 0 0 15px rgba(255,255,255,0.15); transform: scale(1.02); }
-                    .foh-btn-name { font-size: 0.9rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
-                    .foh-btn-num { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1; }
-                    .foh-btn-sub { font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-top: 2px; }
+                    .foh-btn { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 12px 8px; cursor: pointer; text-align: center; width: 100%; transition: all 0.2s; animation: foh-glow 3s ease-in-out infinite; }
+                    .foh-btn:hover { transform: scale(1.03); animation: none; box-shadow: 0 0 20px rgba(255,255,255,0.4), 0 0 40px rgba(255,255,255,0.2); }
+                    .foh-btn-name { font-size: 0.9rem; font-weight: 600; color: #222; margin-bottom: 4px; text-shadow: 0 0 10px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.6), 0 0 30px rgba(255,255,255,0.4); }
+                    .foh-btn-num { font-size: 1.8rem; font-weight: 700; color: #111; line-height: 1; text-shadow: 0 0 15px rgba(255,255,255,1), 0 0 30px rgba(255,255,255,0.8), 0 0 45px rgba(255,255,255,0.5); }
+                    .foh-btn-sub { font-size: 0.8rem; color: #333; margin-top: 2px; text-shadow: 0 0 8px rgba(255,255,255,0.8), 0 0 15px rgba(255,255,255,0.5); }
+                    @keyframes foh-glow { 0%, 100% { box-shadow: 0 0 10px rgba(255,255,255,0.15), 0 0 20px rgba(255,255,255,0.1); } 50% { box-shadow: 0 0 15px rgba(255,255,255,0.25), 0 0 30px rgba(255,255,255,0.15), 0 0 45px rgba(255,255,255,0.1); } }
                 </style>
                 <div class="foh-wrapper">
                     <!-- Pipeline -->
