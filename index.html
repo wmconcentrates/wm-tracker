@@ -2556,10 +2556,7 @@
                             <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 0.9rem;">Sales performance, commissions, and rep tracking</p>
                         </div>
                         <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-                            <button onclick="openSalesPipelineModal()" class="btn" style="background: linear-gradient(135deg, #10B981, #3B82F6); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Pipeline</button>
                             <button onclick="openDropCalendarModal()" class="btn" style="background: linear-gradient(135deg, #10B981, #059669); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Calendar</button>
-                            <button onclick="openLeafLinkInventoryModal()" class="btn" style="background: linear-gradient(135deg, #8B5CF6, #EC4899); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Inventory</button>
-                            <button onclick="openNeedsModal()" class="btn" style="background: linear-gradient(135deg, #F59E0B, #EF4444); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Needs</button>
                             <select id="salesRepFilter" onchange="updateSalesDashboard()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px; min-width: 0; flex: 1 1 160px;">
                                 <option value="all">All Sales Reps</option>
                             </select>
@@ -2589,6 +2586,24 @@
                             <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-purple);" id="salesStatNewCustomers">--</div>
                             <div style="color: var(--text-secondary); font-size: 0.85rem;">New Customers</div>
                         </div>
+                    </div>
+
+                    <!-- Pipeline Section -->
+                    <div style="margin-bottom: 25px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-primary); font-size: 1.2rem;">Pipeline</h4>
+                        <div id="inlinePipelineGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;"></div>
+                    </div>
+
+                    <!-- Inventory Section -->
+                    <div style="margin-bottom: 25px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-primary); font-size: 1.2rem;">Inventory</h4>
+                        <div id="inlineInventoryGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;"></div>
+                    </div>
+
+                    <!-- Needs Section -->
+                    <div style="margin-bottom: 25px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-primary); font-size: 1.2rem;">Needs</h4>
+                        <div id="inlineNeedsGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;"></div>
                     </div>
 
                     <!-- Commission Calculator Section -->
@@ -19237,10 +19252,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         function renderPipelineCategories() {
-            const container = document.getElementById('pipelineCategoryGrid');
             const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
 
-            container.innerHTML = categoryOrder.map(key => {
+            const html = categoryOrder.map(key => {
                 const data = pipelineCategoryData[key];
                 const hasItems = data.count > 0;
 
@@ -19253,12 +19267,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 return `
                     <button onclick="showPipelineStrains('${key}')"
                             style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                                   border-radius: 12px; padding: 20px; cursor: pointer; text-align: center;
+                                   border-radius: 10px; padding: 15px; cursor: pointer; text-align: center;
                                    transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'};"
                             onmouseover="this.style.transform='scale(1.02)';"
                             onmouseout="this.style.transform='scale(1)';">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${data.label}</div>
-                        <div style="display: flex; justify-content: center; gap: 15px; font-size: 1.1rem;">
+                        <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
+                        <div style="display: flex; justify-content: center; gap: 10px; font-size: 0.95rem;">
                             <span style="color: #e57373;">${strainCounts.Sativa}s</span>
                             <span style="color: #81c784;">${strainCounts.Hybrid}h</span>
                             <span style="color: #64b5f6;">${strainCounts.Indica}i</span>
@@ -19266,6 +19280,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     </button>
                 `;
             }).join('');
+
+            // Render to both modal and inline
+            const modalContainer = document.getElementById('pipelineCategoryGrid');
+            const inlineContainer = document.getElementById('inlinePipelineGrid');
+            if (modalContainer) modalContainer.innerHTML = html;
+            if (inlineContainer) inlineContainer.innerHTML = html;
         }
 
         function showPipelineStrains(category) {
@@ -19577,10 +19597,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     function renderInventoryCategories() {
-        const container = document.getElementById('inventoryCategoryGrid');
         const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
 
-        container.innerHTML = categoryOrder.map(key => {
+        const html = categoryOrder.map(key => {
             const data = inventoryCategoryData[key];
             const hasItems = data.count > 0;
 
@@ -19593,12 +19612,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return `
                 <button onclick="showInventoryItems('${key}')"
                         style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                               border-radius: 12px; padding: 20px; cursor: pointer; text-align: center;
+                               border-radius: 10px; padding: 15px; cursor: pointer; text-align: center;
                                transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'};"
                         onmouseover="this.style.transform='scale(1.02)';"
                         onmouseout="this.style.transform='scale(1)';">
-                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${data.label}</div>
-                    <div style="display: flex; justify-content: center; gap: 15px; font-size: 1.1rem;">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
+                    <div style="display: flex; justify-content: center; gap: 10px; font-size: 0.95rem;">
                         <span style="color: #e57373;">${strainCounts.Sativa}s</span>
                         <span style="color: #81c784;">${strainCounts.Hybrid}h</span>
                         <span style="color: #64b5f6;">${strainCounts.Indica}i</span>
@@ -19606,6 +19625,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 </button>
             `;
         }).join('');
+
+        // Render to both modal and inline
+        const modalContainer = document.getElementById('inventoryCategoryGrid');
+        const inlineContainer = document.getElementById('inlineInventoryGrid');
+        if (modalContainer) modalContainer.innerHTML = html;
+        if (inlineContainer) inlineContainer.innerHTML = html;
     }
 
         function showInventoryItems(category) {
@@ -19788,10 +19813,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     function renderNeedsCategories() {
-        const container = document.getElementById('needsCategoryGrid');
         const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
 
-        container.innerHTML = categoryOrder.map(key => {
+        const html = categoryOrder.map(key => {
             const data = needsData[key];
 
             // Get needs by strain type
@@ -19803,19 +19827,25 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return `
                 <button onclick="showNeedsItems('${key}')"
                         style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                               border-radius: 12px; padding: 20px; cursor: pointer; text-align: center;
+                               border-radius: 10px; padding: 15px; cursor: pointer; text-align: center;
                                transition: all 0.2s ease;"
                         onmouseover="this.style.transform='scale(1.02)';"
                         onmouseout="this.style.transform='scale(1)';">
-                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${data.label}</div>
-                    <div style="display: flex; justify-content: center; gap: 15px; font-size: 1.1rem;">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
+                    <div style="display: flex; justify-content: center; gap: 10px; font-size: 0.95rem;">
                         <span style="color: ${needsByStrain.Sativa > 0 ? '#e57373' : '#81c784'};">${needsByStrain.Sativa > 0 ? needsByStrain.Sativa + 's' : '✓'}</span>
-                        <span style="color: ${needsByStrain.Hybrid > 0 ? '#81c784' : '#81c784'};">${needsByStrain.Hybrid > 0 ? needsByStrain.Hybrid + 'h' : '✓'}</span>
-                        <span style="color: ${needsByStrain.Indica > 0 ? '#64b5f6' : '#81c784'};">${needsByStrain.Indica > 0 ? needsByStrain.Indica + 'i' : '✓'}</span>
+                        <span style="color: ${needsByStrain.Hybrid > 0 ? '#e57373' : '#81c784'};">${needsByStrain.Hybrid > 0 ? needsByStrain.Hybrid + 'h' : '✓'}</span>
+                        <span style="color: ${needsByStrain.Indica > 0 ? '#e57373' : '#81c784'};">${needsByStrain.Indica > 0 ? needsByStrain.Indica + 'i' : '✓'}</span>
                     </div>
                 </button>
             `;
         }).join('');
+
+        // Render to both modal and inline
+        const modalContainer = document.getElementById('needsCategoryGrid');
+        const inlineContainer = document.getElementById('inlineNeedsGrid');
+        if (modalContainer) modalContainer.innerHTML = html;
+        if (inlineContainer) inlineContainer.innerHTML = html;
     }
 
     function showNeedsItems(category) {
