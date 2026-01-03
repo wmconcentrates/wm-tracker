@@ -2476,15 +2476,6 @@
         <!-- Front of House Station -->
         <div class="station-content" id="frontofhouse">
             <div class="form-section">
-                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 15px;">
-                    <div style="flex: 1 1 250px;">
-                        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
-                            <span>📣</span> Front of House
-                        </h2>
-                        <p style="color: var(--text-secondary); margin: 5px 0 0 0;">Create blog posts & social content from production data</p>
-                    </div>
-                </div>
-
                 <!-- Pipeline, Inventory, Needs Sections -->
                 <style>
                     .foh-wrapper { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
@@ -2502,6 +2493,11 @@
                     @keyframes num-glow { 0%, 100% { text-shadow: 0 0 8px #fff, 0 0 15px #fff, 0 0 25px #fff; } 50% { text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 35px #fff, 0 0 50px #fff; } }
                 </style>
                 <div class="foh-wrapper">
+                    <!-- Needs -->
+                    <div class="foh-box" style="border-left: 4px solid #F59E0B;">
+                        <h4 style="color: #F59E0B;">Needs</h4>
+                        <div id="inlineNeedsGrid" class="foh-items"></div>
+                    </div>
                     <!-- Pipeline -->
                     <div class="foh-box" style="border-left: 4px solid #10B981;">
                         <h4 style="color: #10B981;">Pipeline</h4>
@@ -2511,11 +2507,6 @@
                     <div class="foh-box" style="border-left: 4px solid #8B5CF6;">
                         <h4 style="color: #8B5CF6;">Inventory</h4>
                         <div id="inlineInventoryGrid" class="foh-items"></div>
-                    </div>
-                    <!-- Needs -->
-                    <div class="foh-box" style="border-left: 4px solid #F59E0B;">
-                        <h4 style="color: #F59E0B;">Needs</h4>
-                        <div id="inlineNeedsGrid" class="foh-items"></div>
                     </div>
                 </div>
 
