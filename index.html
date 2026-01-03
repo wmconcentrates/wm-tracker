@@ -12950,19 +12950,31 @@ ${employeeReport || 'No activity recorded today'}
                 }
                 
                 // Find packaging start and complete
-                const packagingStart = batch.timeline.find(t => 
+                const packagingStart = batch.timeline.find(t =>
                     t.action && t.action.includes('Packaging started')
                 );
-                const packagingComplete = batch.timeline.find(t => 
-                    t.stage === 'packaging' && 
-                    t.action && 
+                const packagingComplete = batch.timeline.find(t =>
+                    t.stage === 'packaging' &&
+                    t.action &&
                     (t.action.includes('packaged') || t.action.includes('Packaging completed') || t.action.includes('units packaged'))
                 );
-                
+
                 if (packagingStart && packagingComplete) {
                     const startTime = new Date(packagingStart.date || packagingStart.timestamp);
                     const endTime = new Date(packagingComplete.date || packagingComplete.timestamp);
-                    packagingTime = (endTime - startTime) / (1000 * 60); // minutes
+                    let totalTime = (endTime - startTime) / (1000 * 60); // minutes
+
+                    // Subtract paused time
+                    const packagingPauses = batch.timeline.filter(t => t.action && t.action.toLowerCase().includes('packaging paused'));
+                    const packagingResumes = batch.timeline.filter(t => t.action && t.action.toLowerCase().includes('packaging resumed'));
+                    for (let i = 0; i < Math.min(packagingPauses.length, packagingResumes.length); i++) {
+                        const pauseTime = new Date(packagingPauses[i].date || packagingPauses[i].timestamp);
+                        const resumeTime = new Date(packagingResumes[i].date || packagingResumes[i].timestamp);
+                        if (resumeTime > pauseTime) {
+                            totalTime -= (resumeTime - pauseTime) / (1000 * 60);
+                        }
+                    }
+                    packagingTime = Math.max(0, totalTime);
                 }
                 
                 // Find testing start and complete (test submitted to results received)
@@ -12980,18 +12992,30 @@ ${employeeReport || 'No activity recorded today'}
                 }
                 
                 // Find labeling start and complete
-                const labelingStart = batch.timeline.find(t => 
+                const labelingStart = batch.timeline.find(t =>
                     t.action && t.action.includes('Labeling started')
                 );
-                const labelingComplete = batch.timeline.find(t => 
-                    t.stage === 'labeling' && 
+                const labelingComplete = batch.timeline.find(t =>
+                    t.stage === 'labeling' &&
                     (t.action && t.action.includes('labeled') || t.timestamp)
                 );
-                
+
                 if (labelingStart && labelingComplete) {
                     const startTime = new Date(labelingStart.date || labelingStart.timestamp);
                     const endTime = new Date(labelingComplete.date || labelingComplete.timestamp);
-                    labelingTime = (endTime - startTime) / (1000 * 60); // minutes
+                    let totalTime = (endTime - startTime) / (1000 * 60); // minutes
+
+                    // Subtract paused time
+                    const labelingPauses = batch.timeline.filter(t => t.action && t.action.toLowerCase().includes('labeling paused'));
+                    const labelingResumes = batch.timeline.filter(t => t.action && t.action.toLowerCase().includes('labeling resumed'));
+                    for (let i = 0; i < Math.min(labelingPauses.length, labelingResumes.length); i++) {
+                        const pauseTime = new Date(labelingPauses[i].date || labelingPauses[i].timestamp);
+                        const resumeTime = new Date(labelingResumes[i].date || labelingResumes[i].timestamp);
+                        if (resumeTime > pauseTime) {
+                            totalTime -= (resumeTime - pauseTime) / (1000 * 60);
+                        }
+                    }
+                    labelingTime = Math.max(0, totalTime);
                 }
             }
             
