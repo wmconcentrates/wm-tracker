@@ -9176,7 +9176,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
         // Company Production Summary (respects time range)
         function updateCompanyProductionSummary(timeRange = 30) {
             const now = new Date();
-            const rangeStart = new Date(now.getTime() - (timeRange * 24 * 60 * 60 * 1000));
+            const rangeStart = getPerformanceRangeStart(timeRange);
             
             // Display time range
             const periodEl = document.getElementById('companyPeriodRange');
@@ -13078,6 +13078,18 @@ ${employeeReport || 'No activity recorded today'}
             return saved ? JSON.parse(saved) : { packaging: 200, labeling: 300, extractionTrim: 11200 };
         }
 
+
+        // Helper to calculate date range start (handles 'Today' correctly with local midnight)
+        function getPerformanceRangeStart(timeRange) {
+            const now = new Date();
+            if (timeRange === 1) {
+                // Today: start at midnight local time
+                return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+            }
+            // Other ranges: subtract days
+            return new Date(now.getTime() - (timeRange * 24 * 60 * 60 * 1000));
+        }
+
         function renderPerformanceAnalytics() {
             const filter = document.getElementById('performanceFilter')?.value || 'all';
             const viewMode = document.getElementById('performanceViewMode')?.value || 'overview';
@@ -13103,7 +13115,7 @@ ${employeeReport || 'No activity recorded today'}
             
             // Calculate date range
             const now = new Date();
-            const rangeStart = new Date(now.getTime() - (timeRange * 24 * 60 * 60 * 1000));
+            const rangeStart = getPerformanceRangeStart(timeRange);
             
             // Build employee production data from batches
             const employeeData = {};
@@ -13552,12 +13564,12 @@ ${employeeReport || 'No activity recorded today'}
 
             const targets = loadTargets();
             const now = new Date();
-            const rangeStart = new Date(now.getTime() - (timeRange * 24 * 60 * 60 * 1000));
+            const rangeStart = getPerformanceRangeStart(timeRange);
 
             // Update date range display
             const dateRangeEl = document.getElementById('performanceDateRange');
             if (dateRangeEl) {
-                dateRangeEl.textContent = rangeStart.toLocaleDateString() + ' - ' + now.toLocaleDateString();
+                dateRangeEl.textContent = timeRange === 1 ? 'Today (' + now.toLocaleDateString() + ')' : rangeStart.toLocaleDateString() + ' - ' + now.toLocaleDateString();
             }
 
             // Get all employees from ROLES (excluding demo)
@@ -13665,7 +13677,7 @@ ${employeeReport || 'No activity recorded today'}
 
             // Recalculate employee data
             const now = new Date();
-            const rangeStart = new Date(now.getTime() - (timeRange * 24 * 60 * 60 * 1000));
+            const rangeStart = getPerformanceRangeStart(timeRange);
 
             let empData = {
                 packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
