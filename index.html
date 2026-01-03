@@ -6278,6 +6278,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     extraction_date: batch.extraction_date,
                     extraction_method: batch.extraction_method,
                     product_made: split.productType,
+                    product_type: split.productType,
                     extraction_user: batch.extraction_user,
                     finishing_date: new Date().toISOString().split('T')[0],
                     finishing_user: currentRole ? currentRole.name : "Unknown",
