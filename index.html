@@ -2531,7 +2531,7 @@
                             <select id="salesRepFilter" onchange="updateSalesDashboard()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px; min-width: 0; flex: 1 1 160px;">
                                 <option value="all">All Sales Reps</option>
                             </select>
-                            <button onclick="loadSalesDashboard()" class="btn" style="background: #FFD700; color: #000; padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Refresh</button>
+                            <button onclick="forceRefreshSales()" class="btn" style="background: #FFD700; color: #000; padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Refresh</button>
                         </div>
                     </div>
 
@@ -15988,6 +15988,37 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         // Shared function to load LeafLink data with caching
+        
+        // Force refresh sales data from LeafLink (bypasses all caches)
+        async function forceRefreshSales() {
+            try {
+                // Clear all caches
+                localStorage.removeItem('leaflink_orders_cache');
+                allLeafLinkOrders = [];
+                leafLinkDataLoaded = false;
+                
+                // Fetch fresh from LeafLink
+                const orders = await fetchLeafLinkOrders();
+                if (orders && orders.length > 0) {
+                    allLeafLinkOrders = orders;
+                    customerFirstOrderDates = buildCustomerFirstOrderDates(orders);
+                    leafLinkDataLoaded = true;
+                    saveLeafLinkCache(orders, customerFirstOrderDates);
+                    
+                    // Update Supabase cache
+                    saveSalesDataToSupabase(orders);
+                }
+                
+                // Refresh display
+                updateSalesDashboard();
+                renderSalesBarChart();
+                console.log('Force refreshed ' + orders.length + ' orders from LeafLink');
+            } catch (error) {
+                console.error('Error force refreshing sales:', error);
+                alert('Error refreshing data: ' + error.message);
+            }
+        }
+
         async function ensureLeafLinkData(forceRefresh = false) {
             // Return fake data in demo mode
             if (isDemoMode()) {
