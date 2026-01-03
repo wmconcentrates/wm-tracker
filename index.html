@@ -19106,6 +19106,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     const availableGrams = (weight * salesPercent / 100).toFixed(1);
                     pipelineCategoryData[category].strains.push({
                         strain: batch.strain || 'Unknown',
+                        strainType: batch.strain_type || 'Hybrid',
                         batchId: batch.id,
                         status: batch.status,
                         weight: weight,
@@ -19157,7 +19158,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             data.strains.forEach(item => {
                 const key = item.strain;
                 if (!strainCounts[key]) {
-                    strainCounts[key] = { count: 0, batches: [], grams: 0 };
+                    strainCounts[key] = { count: 0, batches: [], grams: 0, strainType: item.strainType };
                 }
                 strainCounts[key].count++;
                 strainCounts[key].batches.push({ id: item.batchId, grams: item.availableGrams });
