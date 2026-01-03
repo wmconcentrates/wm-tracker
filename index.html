@@ -13202,11 +13202,12 @@ ${employeeReport || 'No activity recorded today'}
                             dailyProduction[dateKey].labeling += batch.units_packaged;
                         }
                         
-                        // Extraction completion
-                        if (event.stage === 'extraction' && 
-                            event.action && 
-                            event.action.toLowerCase().includes('completed') &&
-                            eventDate >= rangeStart) {
+                        // Extraction completion - check multiple formats
+                        const isExtractionComplete1 = (
+                            (event.stage === 'extraction' && event.action && event.action.toLowerCase().includes('completed')) ||
+                            (event.stage === 'ready_for_testing' && event.action && event.action.includes('Extraction Complete'))
+                        );
+                        if (isExtractionComplete1 && eventDate >= rangeStart) {
                             
                             const user = event.user;
                             if (!employeeData[user]) {
@@ -13729,8 +13730,12 @@ ${employeeReport || 'No activity recorded today'}
                             empData.daysActive.add(eventDate.toDateString());
                         }
 
-                        // Extraction
-                        if (event.stage === 'extraction' && event.action && event.action.toLowerCase().includes('completed')) {
+                        // Extraction - check multiple formats
+                        const isExtractionComplete = (
+                            (event.stage === 'extraction' && event.action && event.action.toLowerCase().includes('completed')) ||
+                            (event.stage === 'ready_for_testing' && event.action && event.action.includes('Extraction Complete'))
+                        );
+                        if (isExtractionComplete) {
                             empData.extraction.batches += 1;
                             empData.extraction.runs += batch.extraction_runs ? parseInt(batch.extraction_runs) : 0;
                             empData.extraction.trimWeight += batch.trim_weight ? parseFloat(batch.trim_weight) : 0;
