@@ -9931,7 +9931,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             ).length;
             
             const packaged = todaysBatches.filter(b => 
-                (b.timeline || []).some(t => t.stage === 'packaging' && t.date.startsWith(today) && t.action.includes('ompleted'))
+                (b.timeline || []).some(t => t.stage === 'packaging' && t.date.startsWith(today) && t.action.toLowerCase().includes('packaged'))
             ).length;
             
             const labeled = todaysBatches.filter(b => 
@@ -9947,7 +9947,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                         employeeActivity[t.user] = { extracted: 0, packaged: 0, labeled: 0 };
                     }
                     if (t.stage === 'extraction') employeeActivity[t.user].extracted++;
-                    if (t.stage === 'packaging' && t.action.includes('ompleted')) employeeActivity[t.user].packaged++;
+                    if (t.stage === 'packaging' && t.action.toLowerCase().includes('packaged')) employeeActivity[t.user].packaged++;
                     if (t.stage === 'labeling') employeeActivity[t.user].labeled++;
                 });
             });
@@ -12919,12 +12919,12 @@ ${employeeReport || 'No activity recorded today'}
             if (batch.timeline && batch.timeline.length > 0) {
                 // Find extraction start and complete
                 const extractionStart = batch.timeline.find(t => 
-                    t.action && (t.action.includes('Processing started') || t.action.includes('Extraction started'))
+                    t.action && (t.action.toLowerCase().includes('processing started') || t.action.toLowerCase().includes('extraction started'))
                 );
                 const extractionComplete = batch.timeline.find(t => 
                     (t.stage === 'extraction' || t.stage === 'finishing') && 
                     t.action && 
-                    (t.action.includes('completed') || t.action.includes('Extracted') || t.action.includes('Extraction completed'))
+                    (t.action.toLowerCase().includes('completed') || t.action.toLowerCase().includes('extracted'))
                 );
                 
                 if (extractionStart && extractionComplete) {
@@ -12935,12 +12935,12 @@ ${employeeReport || 'No activity recorded today'}
                 
                 // Find finishing/post-extraction start and complete (if exists)
                 const finishingStart = batch.timeline.find(t => 
-                    t.action && (t.action.includes('Post-processing started') || t.action.includes('Finishing started'))
+                    t.action && (t.action.toLowerCase().includes('post-processing started') || t.action.toLowerCase().includes('finishing started'))
                 );
                 const finishingComplete = batch.timeline.find(t => 
                     t.stage === 'finishing' && 
                     t.action && 
-                    (t.action.includes('Finishing completed') || t.action.includes('Post-extraction completed'))
+                    (t.action.toLowerCase().includes('finishing completed') || t.action.toLowerCase().includes('post-extraction completed'))
                 );
                 
                 if (finishingStart && finishingComplete) {
@@ -12951,7 +12951,7 @@ ${employeeReport || 'No activity recorded today'}
                 
                 // Find packaging start and complete
                 const packagingStart = batch.timeline.find(t =>
-                    t.action && t.action.includes('Packaging started')
+                    t.action && t.action.toLowerCase().includes('packaging started')
                 );
                 const packagingComplete = batch.timeline.find(t =>
                     t.stage === 'packaging' &&
@@ -12979,10 +12979,10 @@ ${employeeReport || 'No activity recorded today'}
                 
                 // Find testing start and complete (test submitted to results received)
                 const testSubmitted = batch.timeline.find(t => 
-                    t.action && (t.action.includes('Test submitted') || t.action.includes('Submitted for testing'))
+                    t.action && (t.action.toLowerCase().includes('test submitted') || t.action.toLowerCase().includes('submitted for testing'))
                 );
                 const testComplete = batch.timeline.find(t => 
-                    t.action && (t.action.includes('Test results recorded') || t.action.includes('results received'))
+                    t.action && (t.action.toLowerCase().includes('test results') || t.action.toLowerCase().includes('results received'))
                 );
                 
                 if (testSubmitted && testComplete) {
@@ -12993,11 +12993,11 @@ ${employeeReport || 'No activity recorded today'}
                 
                 // Find labeling start and complete
                 const labelingStart = batch.timeline.find(t =>
-                    t.action && t.action.includes('Labeling started')
+                    t.action && t.action.toLowerCase().includes('labeling started')
                 );
                 const labelingComplete = batch.timeline.find(t =>
                     t.stage === 'labeling' &&
-                    (t.action && t.action.includes('labeled') || t.timestamp)
+                    (t.action && t.action.toLowerCase().includes('labeled') || t.timestamp)
                 );
 
                 if (labelingStart && labelingComplete) {
