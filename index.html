@@ -1375,6 +1375,12 @@
             #salesDashboardStats {
                 grid-template-columns: 1fr !important;
             }
+
+            /* Sales Bar Chart mobile fixes */
+            #salesBarChart {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
         }
     </style>
 </head>
@@ -17335,8 +17341,28 @@ ${employeeReport || 'No activity recorded today'}
             // Build chart HTML
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+            // Detect mobile viewport for responsive styling
+            const isMobile = window.innerWidth <= 768;
+            const isSmallMobile = window.innerWidth <= 480;
+            const chartHeight = isSmallMobile ? 140 : (isMobile ? 160 : 180);
+            const chartGap = isSmallMobile ? 2 : (isMobile ? 4 : 8);
+            const labelFontSize = isSmallMobile ? '0.6rem' : (isMobile ? '0.65rem' : '0.7rem');
+            const monthFontSize = isSmallMobile ? '0.65rem' : '0.75rem';
+
+            // Helper function to abbreviate numbers on mobile
+            function formatValueForDisplay(val, prefix, isOrders) {
+                if (isOrders) {
+                    return prefix + val;
+                }
+                if (isMobile && val >= 1000) {
+                    const k = val / 1000;
+                    return prefix + k.toFixed(k >= 10 ? 0 : 1) + 'K';
+                }
+                return prefix + val.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            }
+
             let html = `
-                <div style="display: flex; align-items: flex-end; justify-content: space-between; height: 180px; padding: 10px 0; gap: 8px;">
+                <div style="display: flex; align-items: flex-end; justify-content: space-between; height: ${chartHeight}px; padding: 10px 0; gap: ${chartGap}px;">
             `;
 
             sortedMonths.forEach(key => {
@@ -17345,18 +17371,26 @@ ${employeeReport || 'No activity recorded today'}
                 const heightPercent = Math.max((value / maxValue) * 100, 2);
                 const monthLabel = monthNames[data.month];
 
-                const displayValue = valuePrefix + (valueKey === 'orders'
+                // Full display value for tooltip
+                const fullDisplayValue = valuePrefix + (valueKey === 'orders'
                     ? value
                     : value.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
 
+                // Abbreviated display value for bar label
+                const displayValue = formatValueForDisplay(value, valuePrefix, valueKey === 'orders');
+
+                // On very small screens, hide value labels (users can tap to see tooltip)
+                const showValueLabel = !isSmallMobile || value > 0;
+                const valueLabelOpacity = isSmallMobile ? '0.85' : '1';
+
                 html += `
-                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%;">
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; min-width: 0;">
                         <div style="flex: 1; display: flex; align-items: flex-end; width: 100%;">
                             <div style="
                                 width: 100%;
                                 height: ${heightPercent}%;
                                 background: linear-gradient(to top, ${valueColor}, ${valueColor}aa);
-                                border-radius: 6px 6px 0 0;
+                                border-radius: ${isMobile ? '4px 4px 0 0' : '6px 6px 0 0'};
                                 position: relative;
                                 min-height: 4px;
                                 transition: all 0.3s ease;
@@ -17364,20 +17398,22 @@ ${employeeReport || 'No activity recorded today'}
                             "
                             onmouseover="this.style.transform='scaleY(1.02)'; this.style.boxShadow='0 -4px 12px ${valueColor}40';"
                             onmouseout="this.style.transform='scaleY(1)'; this.style.boxShadow='none';"
-                            title="${monthLabel} ${data.year}: ${displayValue}">
-                                <div style="
+                            title="${monthLabel} ${data.year}: ${fullDisplayValue}">
+                                ${showValueLabel ? `<div style="
                                     position: absolute;
-                                    top: -25px;
+                                    top: -22px;
                                     left: 50%;
                                     transform: translateX(-50%);
-                                    font-size: 0.7rem;
+                                    font-size: ${labelFontSize};
                                     font-weight: 600;
                                     color: ${valueColor};
                                     white-space: nowrap;
-                                ">${displayValue}</div>
+                                    opacity: ${valueLabelOpacity};
+                                    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                                ">${displayValue}</div>` : ''}
                             </div>
                         </div>
-                        <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">
+                        <div style="margin-top: ${isMobile ? '6px' : '8px'}; font-size: ${monthFontSize}; color: var(--text-secondary); font-weight: 500;">
                             ${monthLabel}
                         </div>
                     </div>
@@ -17390,18 +17426,24 @@ ${employeeReport || 'No activity recorded today'}
             const totalValue = sortedMonths.reduce((sum, key) => sum + monthlyData[key][valueKey], 0);
             const avgValue = totalValue / sortedMonths.length;
 
+            // Format summary values (abbreviated on mobile)
+            const formattedTotal = formatValueForDisplay(totalValue, valuePrefix, valueKey === 'orders');
+            const formattedAvg = formatValueForDisplay(Math.round(avgValue), valuePrefix, valueKey === 'orders');
+            const summaryFontSize = isSmallMobile ? '0.95rem' : '1.1rem';
+            const summaryLabelSize = isSmallMobile ? '0.7rem' : '0.75rem';
+
             html += `
-                <div style="display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid var(--border-color); margin-top: 10px;">
+                <div style="display: flex; justify-content: space-around; padding: ${isSmallMobile ? '10px' : '15px'} 0; border-top: 1px solid var(--border-color); margin-top: 10px;">
                     <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">6-Month Total</div>
-                        <div style="font-size: 1.1rem; font-weight: 700; color: ${valueColor};">
-                            ${valuePrefix}${valueKey === 'orders' ? totalValue : totalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}
+                        <div style="font-size: ${summaryLabelSize}; color: var(--text-secondary);">6-Month Total</div>
+                        <div style="font-size: ${summaryFontSize}; font-weight: 700; color: ${valueColor};">
+                            ${formattedTotal}
                         </div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Monthly Avg</div>
-                        <div style="font-size: 1.1rem; font-weight: 700; color: ${valueColor};">
-                            ${valuePrefix}${valueKey === 'orders' ? Math.round(avgValue) : avgValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}
+                        <div style="font-size: ${summaryLabelSize}; color: var(--text-secondary);">Monthly Avg</div>
+                        <div style="font-size: ${summaryFontSize}; font-weight: 700; color: ${valueColor};">
+                            ${formattedAvg}
                         </div>
                     </div>
                 </div>
@@ -17409,6 +17451,17 @@ ${employeeReport || 'No activity recorded today'}
 
             container.innerHTML = html;
         }
+
+        // Re-render chart on window resize for responsive behavior
+        let salesChartResizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(salesChartResizeTimeout);
+            salesChartResizeTimeout = setTimeout(function() {
+                if (document.getElementById('salesBarChart')) {
+                    renderSalesBarChart();
+                }
+            }, 250);
+        });
 
         // ==================== ENHANCED DATA LOADING WITH SUPABASE ====================
 
