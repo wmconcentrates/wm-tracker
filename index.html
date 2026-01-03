@@ -16623,13 +16623,19 @@ ${employeeReport || 'No activity recorded today'}
 
         // Load and display sales dashboard
         async function loadSalesDashboard() {
+            console.log('loadSalesDashboard called');
             try {
                 await ensureLeafLinkData();
+                console.log('ensureLeafLinkData done, calling inline loaders');
 
                 // Load Pipeline, Inventory, Needs data for inline display
+                console.log('Calling loadSalesPipeline');
                 loadSalesPipeline();
+                console.log('Calling loadLeafLinkInventory');
                 await loadLeafLinkInventory();
+                console.log('Calling loadNeedsData');
                 await loadNeedsData();
+                console.log('All inline loaders done');
 
                 // Populate sales rep dropdown
                 const salesReps = extractSalesReps(allLeafLinkOrders);
