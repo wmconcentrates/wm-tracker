@@ -10221,28 +10221,66 @@ ${employeeReport || 'No activity recorded today'}
                                 <div class="batch-detail-value">${batch.units_packaged} units${batch.packaging_breakdown ? ` (${batch.packaging_breakdown})` : ''}</div>
                             </div>
                         ` : ''}
-                        <!-- Batch Tracking Section -->
-                        <div style="grid-column: 1/-1; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
-                            <div style="font-weight: 600; color: var(--accent-purple); margin-bottom: 8px;">📋 Batch Tracking</div>
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.85rem;">
-                                <div><strong>Status:</strong> <span style="color: var(--accent-green); text-transform: uppercase;">${batch.status}</span></div>
-                                <div><strong>Socks:</strong> ${batch.socks_remaining != null ? batch.socks_remaining + '/' + batch.socks_total + ' remaining' : 'N/A'}</div>
-                                <div style="grid-column: 1/-1;"><strong>METRC Tags:</strong> <span style="font-family: monospace; font-size: 0.8rem;">${batch.metrc_tags || 'None'}</span></div>
-                                <div><strong>Grow 403:</strong> ${batch.cultivation_license || 'N/A'}</div>
-                                ${batch.parent_batch_id ? '<div><strong>Parent Batch:</strong> ' + batch.parent_batch_id + '</div>' : ''}
+                        <!-- Comprehensive Batch Tracking Section -->
+                        <div style="grid-column: 1/-1; margin-top: 15px; padding-top: 15px; border-top: 2px solid var(--accent-purple);">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+
+                                <!-- INTAKE LABEL CARD -->
+                                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); border: 2px solid var(--accent-blue); border-radius: 12px; padding: 15px;">
+                                    <div style="font-weight: 700; color: var(--accent-blue); font-size: 1rem; margin-bottom: 12px; border-bottom: 1px solid var(--accent-blue); padding-bottom: 8px;">📥 INTAKE DATA</div>
+                                    <div style="font-size: 0.9rem; line-height: 1.6;">
+                                        <div style="margin-bottom: 6px;"><strong>Batch ID:</strong> <span style="font-family: monospace; background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">${batch.id}</span></div>
+                                        <div style="margin-bottom: 6px;"><strong>Strain:</strong> ${batch.strain} <span style="color: var(--text-secondary);">(${batch.strain_type})</span></div>
+                                        <div style="margin-bottom: 6px;"><strong>Trim Weight:</strong> ${batch.trim_weight || 0}g</div>
+                                        <div style="margin-bottom: 6px;"><strong>Socks:</strong> ${batch.socks_total || 'N/A'} total${batch.socks_remaining != null ? ' (' + batch.socks_remaining + ' remaining)' : ''}</div>
+                                        <div style="margin-bottom: 6px;"><strong>Intake Date:</strong> ${batch.intake_date ? new Date(batch.intake_date).toLocaleDateString() : 'N/A'}</div>
+                                        <div style="margin-bottom: 6px;"><strong>Grower:</strong> ${batch.grower_name || 'N/A'}</div>
+                                        <div style="margin-bottom: 6px;"><strong>License (403):</strong> <span style="font-family: monospace;">${batch.cultivation_license || 'N/A'}</span></div>
+                                        <div style="margin-bottom: 6px;"><strong>Agreement:</strong> ${batch.material_agreement || 'N/A'}</div>
+                                        <div style="margin-bottom: 6px;"><strong>Planned Products:</strong> ${batch.planned_products && batch.planned_products.length > 0 ? batch.planned_products.join(', ') : 'N/A'}</div>
+                                        <div style="margin-bottom: 6px;"><strong>METRC Source Tags:</strong></div>
+                                        <div style="font-family: monospace; font-size: 0.8rem; background: var(--bg-tertiary); padding: 8px; border-radius: 6px; word-break: break-all;">${batch.metrc_tags || 'None assigned'}</div>
+                                        ${batch.intake_notes ? '<div style="margin-top: 8px;"><strong>Intake Notes:</strong> <span style="color: var(--text-secondary);">' + batch.intake_notes + '</span></div>' : ''}
+                                    </div>
+                                </div>
+
+                                <!-- POST-PRODUCTION LABEL CARD -->
+                                <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05)); border: 2px solid var(--accent-green); border-radius: 12px; padding: 15px;">
+                                    <div style="font-weight: 700; color: var(--accent-green); font-size: 1rem; margin-bottom: 12px; border-bottom: 1px solid var(--accent-green); padding-bottom: 8px;">📤 POST-PRODUCTION DATA</div>
+                                    <div style="font-size: 0.9rem; line-height: 1.6;">
+                                        <div style="margin-bottom: 6px;"><strong>Status:</strong> <span style="text-transform: uppercase; font-weight: 600; color: ${batch.status === 'complete' ? 'var(--accent-green)' : batch.status === 'extraction' ? 'var(--accent-blue)' : 'var(--accent-yellow)'};">${batch.status}</span></div>
+                                        <div style="margin-bottom: 6px;"><strong>Final Weight:</strong> ${batch.final_weight || 'Not yet'}${batch.final_weight ? 'g' : ''}</div>
+                                        <div style="margin-bottom: 6px;"><strong>Sample Weight:</strong> ${batch.sample_weight || 0}g</div>
+                                        <div style="margin-bottom: 6px;"><strong>Net Weight:</strong> ${batch.net_weight || 'N/A'}${batch.net_weight ? 'g' : ''}</div>
+                                        <div style="margin-bottom: 6px;"><strong>Product Type:</strong> ${batch.product_type || 'N/A'}</div>
+                                        <div style="margin-bottom: 6px;"><strong>Extraction Date:</strong> ${batch.extraction_date ? new Date(batch.extraction_date).toLocaleDateString() : 'Not yet'}</div>
+                                        <div style="margin-bottom: 6px;"><strong>Units Packaged:</strong> ${batch.units_packaged || 'N/A'}${batch.packaging_breakdown ? ' (' + batch.packaging_breakdown + ')' : ''}</div>
+                                        ${batch.parent_batch_id ? '<div style="margin-bottom: 6px;"><strong>Parent Batch:</strong> <span style="font-family: monospace; background: rgba(147, 51, 234, 0.2); padding: 2px 6px; border-radius: 4px;">' + batch.parent_batch_id + '</span></div>' : ''}
+                                        ${batch.extraction_notes ? '<div style="margin-top: 8px;"><strong>Extraction Notes:</strong> <span style="color: var(--text-secondary);">' + batch.extraction_notes + '</span></div>' : ''}
+                                        ${batch.finishing_notes ? '<div style="margin-top: 4px;"><strong>Finishing Notes:</strong> <span style="color: var(--text-secondary);">' + batch.finishing_notes + '</span></div>' : ''}
+                                    </div>
+                                </div>
                             </div>
+
+                            <!-- SOURCE CONTRIBUTIONS - Full Width -->
                             ${(() => {
-                                if (batch.source_contributions && batch.source_contributions.length > 0) {
-                                    const sources = typeof batch.source_contributions === 'string' ? JSON.parse(batch.source_contributions) : batch.source_contributions;
-                                    const sourceInfo = sources.map(s => s.batch_id + ' (' + (s.trim_weight || s.socks) + (s.trim_weight ? 'g' : ' socks') + (s.metrc_tag ? ' - ' + s.metrc_tag : '') + ')').join(', ');
-                                    return '<div style="margin-top: 8px; font-size: 0.85rem;"><strong>Source Contributions:</strong> ' + sourceInfo + '</div>';
+                                let sourceContributions = batch.source_contributions || [];
+                                if (typeof sourceContributions === 'string') {
+                                    try { sourceContributions = JSON.parse(sourceContributions); } catch(e) { sourceContributions = []; }
                                 }
-                                return '';
-                            })()}
-                            ${(() => {
-                                const allNotes = [batch.intake_notes, batch.extraction_notes, batch.finishing_notes, batch.packaging_notes, batch.labeling_notes].filter(n => n);
-                                if (allNotes.length > 0) {
-                                    return '<div style="margin-top: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 6px; font-size: 0.85rem;"><strong>Notes:</strong> ' + allNotes.join(' | ') + '</div>';
+                                if (sourceContributions.length > 0) {
+                                    let rows = sourceContributions.map(s =>
+                                        '<tr style="border-bottom: 1px solid var(--border-color);">' +
+                                        '<td style="padding: 6px; font-family: monospace;">' + s.batch_id + '</td>' +
+                                        '<td style="padding: 6px;">' + (s.trim_weight ? s.trim_weight + 'g' : s.socks + ' socks') + '</td>' +
+                                        '<td style="padding: 6px; font-family: monospace; font-size: 0.8rem;">' + (s.metrc_tag || 'N/A') + '</td>' +
+                                        '</tr>'
+                                    ).join('');
+                                    return '<div style="margin-top: 15px; background: rgba(147, 51, 234, 0.1); border: 2px solid var(--accent-purple); border-radius: 12px; padding: 15px;">' +
+                                        '<div style="font-weight: 700; color: var(--accent-purple); margin-bottom: 10px;">🔗 SOURCE CONTRIBUTIONS (Combined From)</div>' +
+                                        '<table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">' +
+                                        '<thead><tr style="background: var(--bg-tertiary);"><th style="padding: 8px; text-align: left;">Source Batch</th><th style="padding: 8px; text-align: left;">Amount Used</th><th style="padding: 8px; text-align: left;">METRC Tag</th></tr></thead>' +
+                                        '<tbody>' + rows + '</tbody></table></div>';
                                 }
                                 return '';
                             })()}
