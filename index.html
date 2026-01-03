@@ -2546,6 +2546,25 @@
                 </div>
                 </div>
 
+<!-- Pipeline, Inventory, Needs Sections -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
+                    <!-- Pipeline -->
+                    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 15px;">
+                        <h4 style="margin: 0 0 12px 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">Pipeline</h4>
+                        <div id="inlinePipelineGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;"></div>
+                    </div>
+                    <!-- Inventory -->
+                    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 15px;">
+                        <h4 style="margin: 0 0 12px 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">Inventory</h4>
+                        <div id="inlineInventoryGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;"></div>
+                    </div>
+                    <!-- Needs -->
+                    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 15px;">
+                        <h4 style="margin: 0 0 12px 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">Needs</h4>
+                        <div id="inlineNeedsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;"></div>
+                    </div>
+                </div>
+
 <!-- Sales Dashboard -->
                 <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(147, 51, 234, 0.1)); border: 2px solid #FFD700; border-radius: 16px; padding: 25px; margin-bottom: 30px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
@@ -2586,24 +2605,6 @@
                             <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-purple);" id="salesStatNewCustomers">--</div>
                             <div style="color: var(--text-secondary); font-size: 0.85rem;">New Customers</div>
                         </div>
-                    </div>
-
-                    <!-- Pipeline Section -->
-                    <div style="margin-bottom: 25px;">
-                        <h4 style="margin: 0 0 15px 0; color: var(--text-primary); font-size: 1.2rem;">Pipeline</h4>
-                        <div id="inlinePipelineGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;"></div>
-                    </div>
-
-                    <!-- Inventory Section -->
-                    <div style="margin-bottom: 25px;">
-                        <h4 style="margin: 0 0 15px 0; color: var(--text-primary); font-size: 1.2rem;">Inventory</h4>
-                        <div id="inlineInventoryGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;"></div>
-                    </div>
-
-                    <!-- Needs Section -->
-                    <div style="margin-bottom: 25px;">
-                        <h4 style="margin: 0 0 15px 0; color: var(--text-primary); font-size: 1.2rem;">Needs</h4>
-                        <div id="inlineNeedsGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;"></div>
                     </div>
 
                     <!-- Commission Calculator Section -->
@@ -16622,6 +16623,11 @@ ${employeeReport || 'No activity recorded today'}
 
         // Load and display sales dashboard
         async function loadSalesDashboard() {
+        // Load Pipeline, Inventory, Needs data for inline display
+        loadPipelineData();
+        loadLeafLinkInventory();
+        loadNeedsData();
+
             try {
                 await ensureLeafLinkData();
 
