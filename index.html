@@ -19905,6 +19905,18 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         document.getElementById('needsItemsPopup').style.display = 'block';
     }
 
+    // Initialize FOH grids on page load
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            console.log('Initializing FOH grids');
+            if (document.getElementById('inlinePipelineGrid')) {
+                loadSalesPipeline();
+                loadLeafLinkInventory();
+                loadNeedsData();
+            }
+        }, 1000);
+    });
+
     </script>
 
 </body>
