@@ -19251,27 +19251,19 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 });
 
                 return `
-                    <div style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                               border-radius: 12px; padding: 15px; opacity: ${hasItems ? '1' : '0.5'};">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary);">${data.label}</span>
-                            <div style="display: flex; gap: 8px; font-size: 0.85rem;">
-                                <span style="color: #ff6b6b;">${strainCounts.Sativa}s</span>
-                                <span style="color: #69db7c;">${strainCounts.Hybrid}h</span>
-                                <span style="color: #74c0fc;">${strainCounts.Indica}i</span>
-                            </div>
+                    <button onclick="showPipelineStrains('${key}')"
+                            style="background: var(--bg-primary); border: 1px solid var(--border-color);
+                                   border-radius: 12px; padding: 20px; cursor: pointer; text-align: center;
+                                   transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'};"
+                            onmouseover="this.style.transform='scale(1.02)';"
+                            onmouseout="this.style.transform='scale(1)';">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${data.label}</div>
+                        <div style="display: flex; justify-content: center; gap: 15px; font-size: 1.1rem;">
+                            <span style="color: #e57373;">${strainCounts.Sativa}s</span>
+                            <span style="color: #81c784;">${strainCounts.Hybrid}h</span>
+                            <span style="color: #64b5f6;">${strainCounts.Indica}i</span>
                         </div>
-                        <div style="max-height: 120px; overflow-y: auto; font-size: 0.85rem;">
-                            ${(data.strains || []).slice(0, 8).map(item => {
-                                const strainColor = item.strainType === 'Sativa' ? '#ff6b6b' : item.strainType === 'Indica' ? '#74c0fc' : '#69db7c';
-                                return `<div style="padding: 4px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-secondary);">${item.strain}</span>
-                                    <span style="color: ${strainColor};">${Math.round(item.grams || 0)}g</span>
-                                </div>`;
-                            }).join('')}
-                            ${data.strains && data.strains.length > 8 ? `<div style="padding: 4px 0; color: var(--text-secondary); text-align: center;">+${data.strains.length - 8} more</div>` : ''}
-                        </div>
-                    </div>
+                    </button>
                 `;
             }).join('');
         }
@@ -19591,7 +19583,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         container.innerHTML = categoryOrder.map(key => {
             const data = inventoryCategoryData[key];
             const hasItems = data.count > 0;
-            const unit = (key.includes('Cart') || key.includes('AIO')) ? '' : 'g';
 
             // Count by strain type
             const strainCounts = { Sativa: 0, Hybrid: 0, Indica: 0 };
@@ -19600,27 +19591,19 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             });
 
             return `
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                           border-radius: 12px; padding: 15px; opacity: ${hasItems ? '1' : '0.5'};">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary);">${data.label}</span>
-                        <div style="display: flex; gap: 8px; font-size: 0.85rem;">
-                            <span style="color: #ff6b6b;">${strainCounts.Sativa}s</span>
-                            <span style="color: #69db7c;">${strainCounts.Hybrid}h</span>
-                            <span style="color: #74c0fc;">${strainCounts.Indica}i</span>
-                        </div>
+                <button onclick="showInventoryItems('${key}')"
+                        style="background: var(--bg-primary); border: 1px solid var(--border-color);
+                               border-radius: 12px; padding: 20px; cursor: pointer; text-align: center;
+                               transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'};"
+                        onmouseover="this.style.transform='scale(1.02)';"
+                        onmouseout="this.style.transform='scale(1)';">
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${data.label}</div>
+                    <div style="display: flex; justify-content: center; gap: 15px; font-size: 1.1rem;">
+                        <span style="color: #e57373;">${strainCounts.Sativa}s</span>
+                        <span style="color: #81c784;">${strainCounts.Hybrid}h</span>
+                        <span style="color: #64b5f6;">${strainCounts.Indica}i</span>
                     </div>
-                    <div style="max-height: 120px; overflow-y: auto; font-size: 0.85rem;">
-                        ${(data.items || []).sort((a,b) => b.quantity - a.quantity).slice(0, 8).map(item => {
-                            const strainColor = item.strainType === 'Sativa' ? '#ff6b6b' : item.strainType === 'Indica' ? '#74c0fc' : '#69db7c';
-                            return `<div style="padding: 4px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
-                                <span style="color: var(--text-secondary);">${item.name}</span>
-                                <span style="color: ${strainColor};">${Math.round(item.quantity)}${unit}</span>
-                            </div>`;
-                        }).join('')}
-                        ${data.items && data.items.length > 8 ? `<div style="padding: 4px 0; color: var(--text-secondary); text-align: center;">+${data.items.length - 8} more</div>` : ''}
-                    </div>
-                </div>
+                </button>
             `;
         }).join('');
     }
@@ -19810,39 +19793,27 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         container.innerHTML = categoryOrder.map(key => {
             const data = needsData[key];
-            const hasNeeds = data.needs.length > 0;
 
             // Get needs by strain type
-            const needsByStrain = { Sativa: null, Hybrid: null, Indica: null };
+            const needsByStrain = { Sativa: 0, Hybrid: 0, Indica: 0 };
             (data.needs || []).forEach(need => {
-                needsByStrain[need.strainType] = need;
+                needsByStrain[need.strainType] = need.varietiesNeeded;
             });
 
             return `
-                <div style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                           border-radius: 12px; padding: 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary);">${data.label}</span>
-                        <span style="font-size: 0.8rem; color: ${hasNeeds ? '#ef4444' : '#10b981'};">${hasNeeds ? 'needs stock' : '✓ stocked'}</span>
+                <button onclick="showNeedsItems('${key}')"
+                        style="background: var(--bg-primary); border: 1px solid var(--border-color);
+                               border-radius: 12px; padding: 20px; cursor: pointer; text-align: center;
+                               transition: all 0.2s ease;"
+                        onmouseover="this.style.transform='scale(1.02)';"
+                        onmouseout="this.style.transform='scale(1)';">
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">${data.label}</div>
+                    <div style="display: flex; justify-content: center; gap: 15px; font-size: 1.1rem;">
+                        <span style="color: ${needsByStrain.Sativa > 0 ? '#e57373' : '#81c784'};">${needsByStrain.Sativa > 0 ? needsByStrain.Sativa + 's' : '✓'}</span>
+                        <span style="color: ${needsByStrain.Hybrid > 0 ? '#81c784' : '#81c784'};">${needsByStrain.Hybrid > 0 ? needsByStrain.Hybrid + 'h' : '✓'}</span>
+                        <span style="color: ${needsByStrain.Indica > 0 ? '#64b5f6' : '#81c784'};">${needsByStrain.Indica > 0 ? needsByStrain.Indica + 'i' : '✓'}</span>
                     </div>
-                    <div style="font-size: 0.85rem;">
-                        ${['Sativa', 'Hybrid', 'Indica'].map(strain => {
-                            const need = needsByStrain[strain];
-                            const strainColor = strain === 'Sativa' ? '#ff6b6b' : strain === 'Indica' ? '#74c0fc' : '#69db7c';
-                            if (need && need.varietiesNeeded > 0) {
-                                return `<div style="padding: 6px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
-                                    <span style="color: ${strainColor};">${strain}</span>
-                                    <span style="color: #ef4444;">need ${need.varietiesNeeded} more</span>
-                                </div>`;
-                            } else {
-                                return `<div style="padding: 6px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
-                                    <span style="color: ${strainColor};">${strain}</span>
-                                    <span style="color: #10b981;">✓</span>
-                                </div>`;
-                            }
-                        }).join('')}
-                    </div>
-                </div>
+                </button>
             `;
         }).join('');
     }
