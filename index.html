@@ -19691,6 +19691,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     async function loadNeedsData() {
+        // Try to show cached data immediately
+        const cached = localStorage.getItem('foh_needs_cache');
+        if (cached) {
+            try {
+                needsData = JSON.parse(cached);
+                renderNeedsCategories();
+            } catch(e) {}
+        }
+
         // Initialize needs data structure
         const categories = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
         const strainTypes = ['Indica', 'Sativa', 'Hybrid'];
@@ -19802,6 +19811,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             });
         });
 
+        // Cache for instant load next time
+        localStorage.setItem('foh_needs_cache', JSON.stringify(needsData));
         renderNeedsCategories();
     }
 
