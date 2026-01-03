@@ -2251,66 +2251,16 @@
             </div>
         </div>
 
-        <!-- Performance Station -->
+                <!-- Performance Station -->
         <div class="station-content" id="performance">
             <div class="form-section">
-                <h2>👥 Employee Performance Analytics</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 20px;">Production tracking • Real-time staffing insights</p>
-                
-                <!-- Today's Production Summary -->
-                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2)); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-green);">
-                    <h3 style="color: var(--accent-green); margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px; font-size: 1.5rem;">
-                        <span>📊</span>
-                        <span>Today's Production Summary</span>
-                        <span id="todayDate" style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 400; margin-left: auto;"></span>
-                    </h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-orange);">
-                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">⚗️ Trim Extracted</div>
-                            <div id="todayTrimExtracted" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-orange); font-family: 'Space Mono', monospace;">0g</div>
-                            <div id="todayTrimBatches" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0 batches</div>
-                        </div>
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-blue);">
-                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">🔥 Post-Processing Finished</div>
-                            <div id="todayFinished" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-blue); font-family: 'Space Mono', monospace;">0g</div>
-                            <div id="todayFinishedBatches" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0 batches</div>
-                        </div>
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-purple);">
-                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">📦 Units Packaged</div>
-                            <div id="todayPackaged" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-purple); font-family: 'Space Mono', monospace;">0</div>
-                            <div id="todayPackagedWeight" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0g total</div>
-                        </div>
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-green);">
-                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">🏷️ Units Labeled</div>
-                            <div id="todayLabeled" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-green); font-family: 'Space Mono', monospace;">0</div>
-                            <div id="todayLabeledWeight" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0g total</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Login Activity Tracker -->
-                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(147, 51, 234, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-blue);">
-                    <h3 style="color: var(--accent-blue); margin: 0 0 15px 0; display: flex; align-items: center; gap: 10px;">
-                        <span>👥</span>
-                        <span>Team Activity & Login Tracker</span>
-                    </h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px;">
-                            <div style="font-size: 0.95rem; font-weight: 600; color: var(--accent-green); margin-bottom: 10px;">🟢 Currently Active</div>
-                            <div id="activeUsers" style="font-size: 0.9rem; color: var(--text-primary);">Loading...</div>
-                        </div>
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px;">
-                            <div style="font-size: 0.95rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 10px;">📅 Recent Logins (Last 24h)</div>
-                            <div id="recentLogins" style="font-size: 0.85rem; color: var(--text-secondary); max-height: 200px; overflow-y: auto;">Loading...</div>
-                        </div>
-                    </div>
-                </div>
-                
+                <h2>Team Performance</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Click any employee card for detailed performance view</p>
+
                 <!-- Time Period Selector -->
-                <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
-                    <div class="form-group" style="flex: 1; min-width: 200px;">
-                        <label>Time Period:</label>
-                        <select id="performanceTimeRange" onchange="renderPerformanceAnalytics()">
+                <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; align-items: center;">
+                    <div class="form-group" style="margin: 0; min-width: 180px;">
+                        <select id="performanceTimeRange" onchange="renderPerformanceAnalytics()" style="padding: 10px 15px; font-size: 1rem;">
                             <option value="7">Last 7 Days</option>
                             <option value="14">Last 14 Days</option>
                             <option value="30" selected>Last 30 Days</option>
@@ -2318,116 +2268,66 @@
                             <option value="90">Last 90 Days</option>
                         </select>
                     </div>
-                    
-                    <div class="form-group" style="flex: 1; min-width: 200px;">
-                        <label>Filter by Employee:</label>
-                        <select id="performanceFilter" onchange="renderPerformanceAnalytics()">
-                            <option value="all">All Employees</option>
-                            <option value="Ryan (Admin)">Ryan (Admin) - PIN: 1827</option>
-                            <option value="Alex">Alex - PIN: 1980</option>
-                            <option value="Paige">Paige - PIN: 1992</option>
-                            <option value="Donald">Donald - PIN: 1425</option>
-                            <option value="Andrew">Andrew - PIN: 2817</option>
-                            <option value="Tobias">Tobias - PIN: 4200</option>
-                            <option value="Jeremy">Jeremy - PIN: 0710</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group" style="flex: 1; min-width: 200px;">
-                        <label>View Mode:</label>
-                        <select id="performanceViewMode" onchange="renderPerformanceAnalytics()">
-                            <option value="overview">Production Overview</option>
-                            <option value="packaging">Packaging Detail</option>
-                            <option value="labeling">Labeling Detail</option>
-                            <option value="extraction">Extraction Detail</option>
-                        </select>
-                    </div>
+                    <span id="performanceDateRange" style="color: var(--text-secondary); font-size: 0.9rem;"></span>
+                    <!-- Hidden for backwards compatibility -->
+                    <select id="performanceFilter" style="display: none;"><option value="all">All</option></select>
+                    <select id="performanceViewMode" style="display: none;"><option value="overview">Overview</option></select>
                 </div>
 
-                <!-- Company-Wide Production Summary (respects time range) -->
-                <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2)); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-orange);">
-                    <h3 style="color: var(--accent-orange); margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px; font-size: 1.5rem;">
-                        <span>🏢</span>
-                        <span>Company Production Summary</span>
-                        <span id="companyPeriodRange" style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 400; margin-left: auto;"></span>
-                    </h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-orange);">
-                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">⚗️ Trim Extracted</div>
-                            <div id="companyTrimExtracted" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-orange); font-family: 'Space Mono', monospace;">0g</div>
-                            <div id="companyTrimBatches" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0 batches</div>
-                        </div>
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-blue);">
-                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">🔥 Post-Processing Finished</div>
-                            <div id="companyFinished" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-blue); font-family: 'Space Mono', monospace;">0g</div>
-                            <div id="companyFinishedBatches" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0 batches</div>
-                        </div>
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-purple);">
-                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">📦 Units Packaged</div>
-                            <div id="companyPackaged" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-purple); font-family: 'Space Mono', monospace;">0</div>
-                            <div id="companyPackagedWeight" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0g total</div>
-                        </div>
-                        <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-green);">
-                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">🏷️ Units Labeled</div>
-                            <div id="companyLabeled" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-green); font-family: 'Space Mono', monospace;">0</div>
-                            <div id="companyLabeledWeight" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">0g total</div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Employee Cards Grid -->
+                <div id="employeeCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px;"></div>
 
-                <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
-                    <div class="form-group" style="flex: 1; min-width: 200px;">
-                        <label>View Mode:</label>
-                        <select id="performanceViewMode" onchange="renderPerformanceAnalytics()">
-                            <option value="overview">Production Overview</option>
-                            <option value="packaging">Packaging Detail</option>
-                            <option value="labeling">Labeling Detail</option>
-                            <option value="extraction">Extraction Detail</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Individual Performance Cards -->
-                <div id="performanceStats" style="margin-top: 30px;"></div>
-                
-                <!-- Staffing Recommendations -->
-                <div id="staffingRecommendations" style="margin-top: 40px;"></div>
+                <!-- Hidden containers for backwards compatibility -->
+                <div id="performanceStats" style="display: none;"></div>
+                <div id="staffingRecommendations" style="display: none;"></div>
+                <div id="todayDate" style="display: none;"></div>
+                <div id="todayTrimExtracted" style="display: none;"></div>
+                <div id="todayTrimBatches" style="display: none;"></div>
+                <div id="todayFinished" style="display: none;"></div>
+                <div id="todayFinishedBatches" style="display: none;"></div>
+                <div id="todayPackaged" style="display: none;"></div>
+                <div id="todayPackagedWeight" style="display: none;"></div>
+                <div id="todayLabeled" style="display: none;"></div>
+                <div id="todayLabeledWeight" style="display: none;"></div>
+                <div id="activeUsers" style="display: none;"></div>
+                <div id="recentLogins" style="display: none;"></div>
+                <div id="companyPeriodRange" style="display: none;"></div>
+                <div id="companyTrimExtracted" style="display: none;"></div>
+                <div id="companyTrimBatches" style="display: none;"></div>
+                <div id="companyFinished" style="display: none;"></div>
+                <div id="companyFinishedBatches" style="display: none;"></div>
+                <div id="companyPackaged" style="display: none;"></div>
+                <div id="companyPackagedWeight" style="display: none;"></div>
+                <div id="companyLabeled" style="display: none;"></div>
+                <div id="companyLabeledWeight" style="display: none;"></div>
             </div>
 
+            <!-- Collapsible Settings Section -->
             <div class="form-section">
-                <h2>🎯 Production Targets & Capacity Planning</h2>
-                <div id="targetSettings" style="margin-bottom: 30px;">
-                    <div style="background: var(--bg-tertiary); padding: 25px; border-radius: 15px; border: 2px solid var(--accent-orange);">
-                        <h3 style="color: var(--accent-orange); margin-bottom: 20px;">Set Daily Production Targets</h3>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div onclick="this.querySelector('.settings-content').style.display = this.querySelector('.settings-content').style.display === 'none' ? 'block' : 'none'; this.querySelector('.settings-toggle').textContent = this.querySelector('.settings-content').style.display === 'none' ? 'Show Settings' : 'Hide Settings';" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0;">Production Targets</h2>
+                    <span class="settings-toggle" style="font-size: 0.9rem; color: var(--accent-blue);">Show Settings</span>
+                </div>
+                <div class="settings-content" style="display: none; margin-top: 20px;">
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                             <div>
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Packaging Target (units/day):</label>
-                                <input type="number" id="targetPackagingUnits" value="200" min="0" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1.1rem;" onchange="saveTargets(); renderPerformanceAnalytics();">
-                                <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">Per employee daily goal</div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Packaging (units/day)</label>
+                                <input type="number" id="targetPackagingUnits" value="200" min="0" style="width: 100%; padding: 10px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary);" onchange="saveTargets(); renderPerformanceAnalytics();">
                             </div>
-                            
                             <div>
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Labeling Target (units/day):</label>
-                                <input type="number" id="targetLabelingUnits" value="300" min="0" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1.1rem;" onchange="saveTargets(); renderPerformanceAnalytics();">
-                                <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">Per employee daily goal</div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Labeling (units/day)</label>
+                                <input type="number" id="targetLabelingUnits" value="300" min="0" style="width: 100%; padding: 10px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary);" onchange="saveTargets(); renderPerformanceAnalytics();">
                             </div>
-                            
                             <div>
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Extraction Trim Target (grams/day):</label>
-                                <input type="number" id="targetExtractionTrim" value="11200" min="0" step="100" style="width: 100%; padding: 12px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1.1rem;" onchange="saveTargets(); renderPerformanceAnalytics();">
-                                <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">Per employee daily trim processing goal</div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Extraction (g/day)</label>
+                                <input type="number" id="targetExtractionTrim" value="11200" min="0" step="100" style="width: 100%; padding: 10px; background: var(--bg-primary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary);" onchange="saveTargets(); renderPerformanceAnalytics();">
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <div id="capacityPlanning"></div>
-            </div>
-
-            <div class="form-section">
-                <h2>📊 Detailed Activity Timeline</h2>
-                <div id="activityLog"></div>
+                <div id="capacityPlanning" style="display: none;"></div>
+                <div id="activityLog" style="display: none;"></div>
             </div>
         </div>
 
@@ -13325,7 +13225,10 @@ ${employeeReport || 'No activity recorded today'}
             
             // Render company-wide summary (removed - now using separate function)
             
-            // Render individual employee cards based on view mode
+            // Render employee cards
+            renderEmployeeCards(employeeData, timeRange);
+            
+            // Render individual employee cards based on view mode (legacy)
             if (displayData.length === 0) {
                 statsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No production data found for this period</p>';
             } else {
@@ -13634,7 +13537,356 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         
-        // Analytics filter buttons
+
+        // Get employee role info from ROLES object
+        function getEmployeeRole(employeeName) {
+            const roleKey = Object.keys(ROLES).find(key => ROLES[key].name === employeeName);
+            return roleKey ? ROLES[roleKey] : null;
+        }
+
+        // Render clickable employee cards
+        function renderEmployeeCards(employeeData, timeRange) {
+            const grid = document.getElementById('employeeCardsGrid');
+            if (!grid) return;
+
+            const targets = loadTargets();
+            const now = new Date();
+            const rangeStart = new Date(now.getTime() - (timeRange * 24 * 60 * 60 * 1000));
+
+            // Update date range display
+            const dateRangeEl = document.getElementById('performanceDateRange');
+            if (dateRangeEl) {
+                dateRangeEl.textContent = rangeStart.toLocaleDateString() + ' - ' + now.toLocaleDateString();
+            }
+
+            // Get all employees from ROLES (excluding demo)
+            const allEmployees = Object.values(ROLES)
+                .filter(r => !r.isDemo && r.name !== 'Drew (Sales)')
+                .map(r => {
+                    const data = employeeData[r.name] || {
+                        name: r.name,
+                        packaging: { units: 0, batches: 0, byProduct: {}, dates: [], perDay: 0 },
+                        labeling: { units: 0, batches: 0, dates: [], perDay: 0 },
+                        extraction: { batches: 0, runs: 0, trimWeight: 0, dates: [], perDay: 0 },
+                        daysActive: new Set(),
+                        daysActiveCount: 0
+                    };
+                    return { ...data, role: r };
+                });
+
+            if (allEmployees.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">No employees found</p>';
+                return;
+            }
+
+            grid.innerHTML = allEmployees.map(emp => {
+                const role = emp.role;
+                const access = role.access || [];
+
+                // Calculate overall performance %
+                const packagingTarget = targets.packaging * (emp.daysActiveCount || 1);
+                const labelingTarget = targets.labeling * (emp.daysActiveCount || 1);
+                const extractionTarget = (targets.extractionTrim || 11200) * (emp.daysActiveCount || 1);
+
+                let scores = [];
+                if (access.includes('packaging') && packagingTarget > 0) {
+                    scores.push((emp.packaging.units / packagingTarget) * 100);
+                }
+                if (access.includes('labeling') && labelingTarget > 0) {
+                    scores.push((emp.labeling.units / labelingTarget) * 100);
+                }
+                if (access.includes('extraction') && extractionTarget > 0) {
+                    scores.push((emp.extraction.trimWeight / extractionTarget) * 100);
+                }
+
+                const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                const scoreColor = avgScore >= 90 ? 'var(--accent-green)' : avgScore >= 70 ? 'var(--accent-blue)' : avgScore >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
+
+                // Build skill badges based on access
+                const skillBadges = [];
+                if (access.includes('extraction')) skillBadges.push('<span style="background: rgba(245, 158, 11, 0.3); color: var(--accent-orange); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem;">Extraction</span>');
+                if (access.includes('finishing')) skillBadges.push('<span style="background: rgba(59, 130, 246, 0.3); color: var(--accent-blue); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem;">Finishing</span>');
+                if (access.includes('packaging')) skillBadges.push('<span style="background: rgba(147, 51, 234, 0.3); color: var(--accent-purple); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem;">Packaging</span>');
+                if (access.includes('labeling')) skillBadges.push('<span style="background: rgba(16, 185, 129, 0.3); color: var(--accent-green); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem;">Labeling</span>');
+
+                // Build quick stats based on access
+                let quickStats = '';
+                if (access.includes('packaging')) {
+                    quickStats += '<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border);"><span style="color: var(--text-secondary);">Packaged</span><span style="font-weight: 600; font-family: monospace;">' + emp.packaging.units.toLocaleString() + ' units</span></div>';
+                }
+                if (access.includes('labeling')) {
+                    quickStats += '<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border);"><span style="color: var(--text-secondary);">Labeled</span><span style="font-weight: 600; font-family: monospace;">' + emp.labeling.units.toLocaleString() + ' units</span></div>';
+                }
+                if (access.includes('extraction')) {
+                    quickStats += '<div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border);"><span style="color: var(--text-secondary);">Extracted</span><span style="font-weight: 600; font-family: monospace;">' + emp.extraction.trimWeight.toFixed(0) + 'g trim</span></div>';
+                }
+                if (access.includes('finishing')) {
+                    quickStats += '<div style="display: flex; justify-content: space-between; padding: 6px 0;"><span style="color: var(--text-secondary);">Batches Finished</span><span style="font-weight: 600; font-family: monospace;">' + emp.extraction.batches + '</span></div>';
+                }
+
+                if (!quickStats) {
+                    quickStats = '<div style="color: var(--text-secondary); text-align: center; padding: 10px;">No tracked activities</div>';
+                }
+
+                return `
+                    <div onclick="showEmployeeDetailModal('${emp.name}')" style="background: var(--bg-tertiary); padding: 20px; border-radius: 15px; border: 2px solid var(--border); cursor: pointer; transition: all 0.2s ease; position: relative;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
+                        <!-- Performance Score Badge -->
+                        <div style="position: absolute; top: 15px; right: 15px; background: ${scoreColor}; color: white; padding: 5px 10px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">
+                            ${avgScore.toFixed(0)}%
+                        </div>
+
+                        <!-- Name and Days Active -->
+                        <h3 style="font-size: 1.4rem; margin: 0 0 5px 0; color: var(--text-primary);">${emp.name.replace(' (Admin)', '')}</h3>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">${emp.daysActiveCount} days active</div>
+
+                        <!-- Skill Badges -->
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 15px;">
+                            ${skillBadges.join('')}
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div style="font-size: 0.95rem;">
+                            ${quickStats}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Show employee detail modal
+        function showEmployeeDetailModal(employeeName) {
+            const role = getEmployeeRole(employeeName);
+            if (!role) return;
+
+            const access = role.access || [];
+            const timeRange = parseInt(document.getElementById('performanceTimeRange')?.value) || 30;
+            const targets = loadTargets();
+
+            // Recalculate employee data
+            const now = new Date();
+            const rangeStart = new Date(now.getTime() - (timeRange * 24 * 60 * 60 * 1000));
+
+            let empData = {
+                packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
+                labeling: { units: 0, batches: 0, dates: [] },
+                extraction: { batches: 0, runs: 0, trimWeight: 0, dates: [] },
+                finishing: { batches: 0, dates: [] },
+                daysActive: new Set()
+            };
+
+            // Calculate stats from batches
+            batches.forEach(batch => {
+                // Packaging
+                if (batch.packaging_user === employeeName && batch.packaging_date && batch.units_packaged) {
+                    const packagingDate = new Date(batch.packaging_date);
+                    if (packagingDate >= rangeStart) {
+                        empData.packaging.units += batch.units_packaged;
+                        empData.packaging.batches += 1;
+                        empData.daysActive.add(packagingDate.toDateString());
+                        const productType = batch.packaged_product_type || 'Unknown';
+                        empData.packaging.byProduct[productType] = (empData.packaging.byProduct[productType] || 0) + batch.units_packaged;
+                    }
+                }
+
+                // Timeline events
+                if (batch.timeline && batch.timeline.length > 0) {
+                    batch.timeline.forEach(event => {
+                        if (event.user !== employeeName) return;
+                        const eventDate = new Date(event.timestamp || event.date);
+                        if (eventDate < rangeStart) return;
+
+                        // Labeling
+                        if (event.stage === 'labeling' && event.action &&
+                            (event.action.toLowerCase().includes('completed') || event.action.toLowerCase().includes('labeled'))) {
+                            empData.labeling.units += batch.units_packaged || 0;
+                            empData.labeling.batches += 1;
+                            empData.daysActive.add(eventDate.toDateString());
+                        }
+
+                        // Extraction
+                        if (event.stage === 'extraction' && event.action && event.action.toLowerCase().includes('completed')) {
+                            empData.extraction.batches += 1;
+                            empData.extraction.runs += batch.extraction_runs ? parseInt(batch.extraction_runs) : 0;
+                            empData.extraction.trimWeight += batch.trim_weight ? parseFloat(batch.trim_weight) : 0;
+                            empData.daysActive.add(eventDate.toDateString());
+                        }
+
+                        // Finishing
+                        if (event.stage === 'finishing' && event.action && event.action.toLowerCase().includes('completed')) {
+                            empData.finishing.batches += 1;
+                            empData.daysActive.add(eventDate.toDateString());
+                        }
+                    });
+                }
+            });
+
+            const daysActive = empData.daysActive.size || 1;
+
+            // Build detail sections based on access
+            let detailSections = '';
+
+            if (access.includes('extraction')) {
+                const extractionTarget = (targets.extractionTrim || 11200) * daysActive;
+                const extractionPct = extractionTarget > 0 ? ((empData.extraction.trimWeight / extractionTarget) * 100).toFixed(0) : 0;
+                const color = extractionPct >= 90 ? 'var(--accent-green)' : extractionPct >= 70 ? 'var(--accent-blue)' : extractionPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
+
+                detailSections += `
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--accent-orange);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0; color: var(--accent-orange); font-size: 1.2rem;">Extraction</h3>
+                            <span style="font-size: 1.5rem; font-weight: 700; color: ${color};">${extractionPct}%</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Trim Processed</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-orange);">${empData.extraction.trimWeight.toFixed(0)}g</div>
+                            </div>
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Batches</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">${empData.extraction.batches}</div>
+                            </div>
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Per Day Avg</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">${(empData.extraction.trimWeight / daysActive).toFixed(0)}g</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px; font-size: 0.9rem; color: var(--text-secondary);">
+                            Target: ${targets.extractionTrim || 11200}g/day x ${daysActive} days = ${extractionTarget.toLocaleString()}g
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (access.includes('packaging')) {
+                const packagingTarget = targets.packaging * daysActive;
+                const packagingPct = packagingTarget > 0 ? ((empData.packaging.units / packagingTarget) * 100).toFixed(0) : 0;
+                const color = packagingPct >= 90 ? 'var(--accent-green)' : packagingPct >= 70 ? 'var(--accent-blue)' : packagingPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
+
+                const productBreakdown = Object.entries(empData.packaging.byProduct)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([product, units]) => `<div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>${product}</span><span style="font-weight: 600;">${units}</span></div>`)
+                    .join('');
+
+                detailSections += `
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--accent-purple);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0; color: var(--accent-purple); font-size: 1.2rem;">Packaging</h3>
+                            <span style="font-size: 1.5rem; font-weight: 700; color: ${color};">${packagingPct}%</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Units Packaged</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">${empData.packaging.units.toLocaleString()}</div>
+                            </div>
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Batches</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">${empData.packaging.batches}</div>
+                            </div>
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Per Day Avg</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">${(empData.packaging.units / daysActive).toFixed(0)}</div>
+                            </div>
+                        </div>
+                        ${productBreakdown ? `<div style="margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px;"><div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">By Product Type:</div>${productBreakdown}</div>` : ''}
+                        <div style="margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px; font-size: 0.9rem; color: var(--text-secondary);">
+                            Target: ${targets.packaging}/day x ${daysActive} days = ${packagingTarget.toLocaleString()} units
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (access.includes('labeling')) {
+                const labelingTarget = targets.labeling * daysActive;
+                const labelingPct = labelingTarget > 0 ? ((empData.labeling.units / labelingTarget) * 100).toFixed(0) : 0;
+                const color = labelingPct >= 90 ? 'var(--accent-green)' : labelingPct >= 70 ? 'var(--accent-blue)' : labelingPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
+
+                detailSections += `
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--accent-green);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0; color: var(--accent-green); font-size: 1.2rem;">Labeling</h3>
+                            <span style="font-size: 1.5rem; font-weight: 700; color: ${color};">${labelingPct}%</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Units Labeled</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">${empData.labeling.units.toLocaleString()}</div>
+                            </div>
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Batches</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">${empData.labeling.batches}</div>
+                            </div>
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Per Day Avg</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">${(empData.labeling.units / daysActive).toFixed(0)}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px; font-size: 0.9rem; color: var(--text-secondary);">
+                            Target: ${targets.labeling}/day x ${daysActive} days = ${labelingTarget.toLocaleString()} units
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (access.includes('finishing')) {
+                detailSections += `
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--accent-blue);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0; color: var(--accent-blue); font-size: 1.2rem;">Finishing</h3>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; text-align: center;">
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Batches Finished</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">${empData.finishing.batches}</div>
+                            </div>
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Days Active</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">${daysActive}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (!detailSections) {
+                detailSections = '<p style="text-align: center; color: var(--text-secondary); padding: 30px;">No tracked activities for this employee based on their access level.</p>';
+            }
+
+            // Create modal
+            const modal = document.createElement('div');
+            modal.id = 'employeeDetailModal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; display: flex; justify-content: center; align-items: flex-start; padding: 40px 20px; overflow-y: auto;';
+
+            modal.innerHTML = `
+                <div style="background: var(--bg-secondary); border-radius: 20px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative;">
+                    <div style="padding: 25px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg-secondary); z-index: 10;">
+                        <div>
+                            <h2 style="margin: 0; font-size: 1.6rem;">${employeeName.replace(' (Admin)', '')}</h2>
+                            <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">Performance details for last ${timeRange} days</p>
+                        </div>
+                        <button onclick="document.getElementById('employeeDetailModal').remove()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 12px; border-radius: 8px;">&times;</button>
+                    </div>
+                    <div style="padding: 25px;">
+                        ${detailSections}
+                    </div>
+                </div>
+            `;
+
+            // Remove existing modal if any
+            const existingModal = document.getElementById('employeeDetailModal');
+            if (existingModal) existingModal.remove();
+
+            document.body.appendChild(modal);
+
+            // Close on backdrop click
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+
+                // Analytics filter buttons
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('filter-btn') && e.target.dataset.filterAnalytics) {
                 document.querySelectorAll('[data-filter-analytics]').forEach(b => b.classList.remove('active'));
