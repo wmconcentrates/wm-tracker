@@ -16972,8 +16972,11 @@ ${employeeReport || 'No activity recorded today'}
             if (!supabaseClient || !orders || orders.length === 0) return false;
 
             try {
+                // Deduplicate orders by ID
+                const uniqueOrders = [...new Map(orders.map(o => [String(o.id), o])).values()];
+
                 // Prepare order records
-                const orderRecords = orders.map(order => ({
+                const orderRecords = uniqueOrders.map(order => ({
                     order_id: String(order.id),
                     short_id: order.short_id || order.number || '',
                     customer_id: order.customer?.id ? String(order.customer.id) : '',
