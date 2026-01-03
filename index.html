@@ -2543,7 +2543,7 @@
                         </div>
                         <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid #FFD700;">
                             <div style="font-size: 2.2rem; font-weight: 700; color: #FFD700;" id="salesStatTotalRevenue">--</div>
-                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Revenue</div>
+                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Last 30 Days</div>
                         </div>
                         <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid var(--accent-green);">
                             <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-green);" id="salesStatPaidOrders">--</div>
@@ -16512,7 +16512,10 @@ ${employeeReport || 'No activity recorded today'}
 
             // All-time stats
             const totalOrders = filteredOrders.length;
-            const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+            // Last 30 days revenue
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            const last30DaysOrders = filteredOrders.filter(o => new Date(o.created_on) >= thirtyDaysAgo);
+            const totalRevenue = last30DaysOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
             const paidOrders = filteredOrders.filter(o => o.paid === true);
             const unpaidOrders = filteredOrders.filter(o => o.paid === false);
 
