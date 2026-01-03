@@ -2547,21 +2547,21 @@
                 </div>
 
 <!-- Pipeline, Inventory, Needs Sections -->
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
+                <div class="foh-sections">
                     <!-- Pipeline -->
-                    <div style="background: var(--bg-secondary); border-radius: 16px; border: 2px solid #10B981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); padding: 15px;">
-                        <h4 style="margin: 0 0 15px 0; color: #10B981; font-size: 1.2rem; font-weight: 600; text-align: center;">Pipeline</h4>
-                        <div id="inlinePipelineGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+                    <div class="foh-section foh-pipeline">
+                        <h4 class="foh-section-title" style="color: #10B981;">Pipeline</h4>
+                        <div id="inlinePipelineGrid" class="foh-grid"></div>
                     </div>
                     <!-- Inventory -->
-                    <div style="background: var(--bg-secondary); border-radius: 16px; border: 2px solid #8B5CF6; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); padding: 15px;">
-                        <h4 style="margin: 0 0 15px 0; color: #8B5CF6; font-size: 1.2rem; font-weight: 600; text-align: center;">Inventory</h4>
-                        <div id="inlineInventoryGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+                    <div class="foh-section foh-inventory">
+                        <h4 class="foh-section-title" style="color: #8B5CF6;">Inventory</h4>
+                        <div id="inlineInventoryGrid" class="foh-grid"></div>
                     </div>
                     <!-- Needs -->
-                    <div style="background: var(--bg-secondary); border-radius: 16px; border: 2px solid #F59E0B; box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); padding: 15px;">
-                        <h4 style="margin: 0 0 15px 0; color: #F59E0B; font-size: 1.2rem; font-weight: 600; text-align: center;">Needs</h4>
-                        <div id="inlineNeedsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+                    <div class="foh-section foh-needs">
+                        <h4 class="foh-section-title" style="color: #F59E0B;">Needs</h4>
+                        <div id="inlineNeedsGrid" class="foh-grid"></div>
                     </div>
                 </div>
 
@@ -19270,17 +19270,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 });
 
                 return `
-                    <button onclick="showPipelineStrains('${key}')"
-                            style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
-                                   border-radius: 10px; padding: 12px 8px; cursor: pointer; text-align: center;
-                                   transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.4'}; width: 100%;"
-                            onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.transform='scale(1.02)';"
-                            onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.transform='scale(1)';">
-                        <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">${data.label}</div>
-                        <div style="display: flex; justify-content: center; gap: 6px;">
-                            <span style="background: rgba(255,0,85,0.25); border: 1px solid #ff0055; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Sativa}</span>
-                            <span style="background: rgba(57,255,20,0.2); border: 1px solid #39ff14; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Hybrid}</span>
-                            <span style="background: rgba(0,85,255,0.25); border: 1px solid #0055ff; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Indica}</span>
+                    <button onclick="showPipelineStrains('${key}')" class="foh-card" style="opacity: ${hasItems ? '1' : '0.4'};">
+                        <div class="foh-card-label">${data.label}</div>
+                        <div class="foh-card-counts">
+                            <span class="foh-count foh-sativa">${strainCounts.Sativa}</span>
+                            <span class="foh-count foh-hybrid">${strainCounts.Hybrid}</span>
+                            <span class="foh-count foh-indica">${strainCounts.Indica}</span>
                         </div>
                     </button>
                 `;
@@ -19621,17 +19616,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             });
 
             return `
-                <button onclick="showInventoryItems('${key}')"
-                        style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
-                               border-radius: 10px; padding: 12px 8px; cursor: pointer; text-align: center;
-                               transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.4'}; width: 100%;"
-                        onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.transform='scale(1.02)';"
-                        onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.transform='scale(1)';">
-                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">${data.label}</div>
-                    <div style="display: flex; justify-content: center; gap: 6px;">
-                        <span style="background: rgba(255,0,85,0.25); border: 1px solid #ff0055; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Sativa}</span>
-                        <span style="background: rgba(57,255,20,0.2); border: 1px solid #39ff14; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Hybrid}</span>
-                        <span style="background: rgba(0,85,255,0.25); border: 1px solid #0055ff; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Indica}</span>
+                <button onclick="showInventoryItems('${key}')" class="foh-card" style="opacity: ${hasItems ? '1' : '0.4'};">
+                    <div class="foh-card-label">${data.label}</div>
+                    <div class="foh-card-counts">
+                        <span class="foh-count foh-sativa">${strainCounts.Sativa}</span>
+                        <span class="foh-count foh-hybrid">${strainCounts.Hybrid}</span>
+                        <span class="foh-count foh-indica">${strainCounts.Indica}</span>
                     </div>
                 </button>
             `;
@@ -19886,17 +19876,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             });
 
             return `
-                <button onclick="showNeedsItems('${key}')"
-                        style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
-                               border-radius: 10px; padding: 12px 8px; cursor: pointer; text-align: center;
-                               transition: all 0.2s ease; width: 100%;"
-                        onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.transform='scale(1.02)';"
-                        onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.transform='scale(1)';">
-                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">${data.label}</div>
-                    <div style="display: flex; justify-content: center; gap: 6px;">
-                        <span style="background: ${needsByStrain.Sativa > 0 ? 'rgba(255,0,85,0.25)' : 'rgba(57,255,20,0.2)'}; border: 1px solid ${needsByStrain.Sativa > 0 ? '#ff0055' : '#39ff14'}; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${needsByStrain.Sativa > 0 ? needsByStrain.Sativa : '✓'}</span>
-                        <span style="background: ${needsByStrain.Hybrid > 0 ? 'rgba(255,0,85,0.25)' : 'rgba(57,255,20,0.2)'}; border: 1px solid ${needsByStrain.Hybrid > 0 ? '#ff0055' : '#39ff14'}; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${needsByStrain.Hybrid > 0 ? needsByStrain.Hybrid : '✓'}</span>
-                        <span style="background: ${needsByStrain.Indica > 0 ? 'rgba(255,0,85,0.25)' : 'rgba(57,255,20,0.2)'}; border: 1px solid ${needsByStrain.Indica > 0 ? '#ff0055' : '#39ff14'}; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${needsByStrain.Indica > 0 ? needsByStrain.Indica : '✓'}</span>
+                <button onclick="showNeedsItems('${key}')" class="foh-card">
+                    <div class="foh-card-label">${data.label}</div>
+                    <div class="foh-card-counts">
+                        <span class="foh-count ${needsByStrain.Sativa > 0 ? 'foh-need' : 'foh-ok'}">${needsByStrain.Sativa > 0 ? needsByStrain.Sativa : '✓'}</span>
+                        <span class="foh-count ${needsByStrain.Hybrid > 0 ? 'foh-need' : 'foh-ok'}">${needsByStrain.Hybrid > 0 ? needsByStrain.Hybrid : '✓'}</span>
+                        <span class="foh-count ${needsByStrain.Indica > 0 ? 'foh-need' : 'foh-ok'}">${needsByStrain.Indica > 0 ? needsByStrain.Indica : '✓'}</span>
                     </div>
                 </button>
             `;
