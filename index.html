@@ -2488,64 +2488,7 @@
                     </a>
                 </div>
 
-                <!-- Blog Generator Toggle Button -->
-                <button onclick="toggleBlogGenerator()" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; width: 100%; margin-bottom: 20px;">📝 Blog Generator</button>
-                
-                <!-- Blog Generator Section (hidden by default) -->
-                <div id="blogGeneratorSection" style="display: none;">
-                
-                <!-- Quick Update Section -->
-                <div style="background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(191, 0, 255, 0.1)); border: 2px solid var(--accent-blue); border-radius: 16px; padding: 25px; margin-bottom: 30px;">
-                    <h3 style="color: var(--accent-blue); margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;">
-                        <span>⚡</span> Quick Update
-                    </h3>
-                    <p style="color: var(--text-secondary); margin: 0 0 15px 0;">Type a quick note and I'll turn it into an engaging post. Mention partners and they'll be auto-tagged!</p>
-
-                    <div class="foh-generate-container" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
-                        <input type="text" id="fohQuickInput" placeholder="e.g., Grabbed some fire GMO trim from In The Flow..." style="flex: 1 1 100%; min-width: 0; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--border); background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box;">
-                        <button onclick="generateBlogPost()" class="btn foh-generate-btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; flex: 1 1 100%;">
-                            ✨ Generate Post
-                        </button>
-                    </div>
-
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <span style="color: var(--text-secondary); font-size: 0.9rem;">Quick tags:</span>
-                        <button onclick="addQuickTag('new hardware')" class="quick-tag-btn">🔧 Equipment</button>
-                        <button onclick="addQuickTag('fresh batch')" class="quick-tag-btn">🧪 New Batch</button>
-                        <button onclick="addQuickTag('new strain')" class="quick-tag-btn">🌿 New Strain</button>
-                        <button onclick="addQuickTag('lab update')" class="quick-tag-btn">⚗️ Lab Update</button>
-                    </div>
-                </div>
-
-                <!-- Generated Preview -->
-                <div id="fohGeneratedPreview" style="display: none; background: var(--bg-secondary); border-radius: 16px; padding: 25px; margin-bottom: 30px; border: 2px solid var(--accent-green);">
-                    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px;">
-                        <h3 style="color: var(--accent-green); margin: 0;">✅ Generated Post Preview</h3>
-                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                            <button onclick="regenerateBlogPost()" class="btn" style="background: var(--bg-tertiary); flex: 1 1 auto;">🔄 Regenerate</button>
-                            <button onclick="editBlogPost()" class="btn" style="background: var(--accent-orange); flex: 1 1 auto;">✏️ Edit</button>
-                            <button onclick="publishBlogPost()" class="btn" style="background: var(--accent-green); flex: 1 1 auto;">🚀 Publish</button>
-                        </div>
-                    </div>
-                    <div id="fohPartnerInfo"></div>
-                    <h4 id="fohPreviewTitle" style="font-size: 1.4rem; margin: 0 0 15px 0;"></h4>
-                    <div id="fohPreviewContent" style="color: var(--text-secondary); line-height: 1.6;"></div>
-                </div>
-
-                <!-- Recent Completed Batches for Blog -->
-                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 25px; margin-bottom: 30px;">
-                    <h3 style="margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px;">
-                        <span>🔥</span> Recent Completed Batches
-                        <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: normal;">Click to create post</span>
-                    </h3>
-                    <div id="fohRecentBatches" style="display: grid; gap: 15px;">
-                        <!-- Populated dynamically -->
-                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading batches...</div>
-                    </div>
-                </div>
-                </div>
-
-<!-- Pipeline, Inventory, Needs Sections -->
+                <!-- Pipeline, Inventory, Needs Sections -->
                 <style>
                     .foh-wrapper { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
                     @media (min-width: 768px) { .foh-wrapper { flex-direction: row; } .foh-box { flex: 1; } }
@@ -2685,6 +2628,64 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Blog Generator Toggle Button -->
+                <button onclick="toggleBlogGenerator()" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; width: 100%; margin-bottom: 20px;">📝 Blog Generator</button>
+                
+                <!-- Blog Generator Section (hidden by default) -->
+                <div id="blogGeneratorSection" style="display: none;">
+                
+                <!-- Quick Update Section -->
+                <div style="background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(191, 0, 255, 0.1)); border: 2px solid var(--accent-blue); border-radius: 16px; padding: 25px; margin-bottom: 30px;">
+                    <h3 style="color: var(--accent-blue); margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;">
+                        <span>⚡</span> Quick Update
+                    </h3>
+                    <p style="color: var(--text-secondary); margin: 0 0 15px 0;">Type a quick note and I'll turn it into an engaging post. Mention partners and they'll be auto-tagged!</p>
+
+                    <div class="foh-generate-container" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                        <input type="text" id="fohQuickInput" placeholder="e.g., Grabbed some fire GMO trim from In The Flow..." style="flex: 1 1 100%; min-width: 0; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--border); background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box;">
+                        <button onclick="generateBlogPost()" class="btn foh-generate-btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; flex: 1 1 100%;">
+                            ✨ Generate Post
+                        </button>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <span style="color: var(--text-secondary); font-size: 0.9rem;">Quick tags:</span>
+                        <button onclick="addQuickTag('new hardware')" class="quick-tag-btn">🔧 Equipment</button>
+                        <button onclick="addQuickTag('fresh batch')" class="quick-tag-btn">🧪 New Batch</button>
+                        <button onclick="addQuickTag('new strain')" class="quick-tag-btn">🌿 New Strain</button>
+                        <button onclick="addQuickTag('lab update')" class="quick-tag-btn">⚗️ Lab Update</button>
+                    </div>
+                </div>
+
+                <!-- Generated Preview -->
+                <div id="fohGeneratedPreview" style="display: none; background: var(--bg-secondary); border-radius: 16px; padding: 25px; margin-bottom: 30px; border: 2px solid var(--accent-green);">
+                    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px;">
+                        <h3 style="color: var(--accent-green); margin: 0;">✅ Generated Post Preview</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <button onclick="regenerateBlogPost()" class="btn" style="background: var(--bg-tertiary); flex: 1 1 auto;">🔄 Regenerate</button>
+                            <button onclick="editBlogPost()" class="btn" style="background: var(--accent-orange); flex: 1 1 auto;">✏️ Edit</button>
+                            <button onclick="publishBlogPost()" class="btn" style="background: var(--accent-green); flex: 1 1 auto;">🚀 Publish</button>
+                        </div>
+                    </div>
+                    <div id="fohPartnerInfo"></div>
+                    <h4 id="fohPreviewTitle" style="font-size: 1.4rem; margin: 0 0 15px 0;"></h4>
+                    <div id="fohPreviewContent" style="color: var(--text-secondary); line-height: 1.6;"></div>
+                </div>
+
+                <!-- Recent Completed Batches for Blog -->
+                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 25px; margin-bottom: 30px;">
+                    <h3 style="margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px;">
+                        <span>🔥</span> Recent Completed Batches
+                        <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: normal;">Click to create post</span>
+                    </h3>
+                    <div id="fohRecentBatches" style="display: grid; gap: 15px;">
+                        <!-- Populated dynamically -->
+                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading batches...</div>
+                    </div>
+                </div>
+                </div>
+
 
                 <!-- Published Posts -->
                 <div style="background: var(--bg-secondary); border-radius: 16px; padding: 25px;">
