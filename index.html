@@ -13081,14 +13081,25 @@ ${employeeReport || 'No activity recorded today'}
         }
 
 
-        // Helper to calculate date range start (handles 'Today' correctly with local midnight)
+        // Denver timezone helper - converts to Mountain Time
+        function getDenverDate(date = new Date()) {
+            return new Date(date.toLocaleString('en-US', { timeZone: 'America/Denver' }));
+        }
+
+        function getDenverMidnight(date = new Date()) {
+            const denver = getDenverDate(date);
+            denver.setHours(0, 0, 0, 0);
+            return denver;
+        }
+
+        // Helper to calculate date range start (handles 'Today' correctly with Denver midnight)
         function getPerformanceRangeStart(timeRange) {
-            const now = new Date();
+            const now = getDenverDate();
             if (timeRange === 1) {
-                // Today: start at midnight local time
-                return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+                // Today: start at midnight Denver time
+                return getDenverMidnight();
             }
-            // Other ranges: subtract days
+            // Other ranges: subtract days from Denver time
             return new Date(now.getTime() - (timeRange * 24 * 60 * 60 * 1000));
         }
 
@@ -13571,7 +13582,7 @@ ${employeeReport || 'No activity recorded today'}
             // Update date range display
             const dateRangeEl = document.getElementById('performanceDateRange');
             if (dateRangeEl) {
-                dateRangeEl.textContent = timeRange === 1 ? 'Today (' + now.toLocaleDateString() + ')' : rangeStart.toLocaleDateString() + ' - ' + now.toLocaleDateString();
+                dateRangeEl.textContent = timeRange === 1 ? 'Today (' + getDenverDate().toLocaleDateString() + ')' : rangeStart.toLocaleDateString() + ' - ' + getDenverDate().toLocaleDateString();
             }
 
             // Get all employees from ROLES (excluding demo)
