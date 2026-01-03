@@ -2549,19 +2549,31 @@
 <!-- Pipeline, Inventory, Needs Sections -->
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
                     <!-- Pipeline -->
-                    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 15px;">
-                        <h4 style="margin: 0 0 12px 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">Pipeline</h4>
-                        <div id="inlinePipelineGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;"></div>
+                    <div style="background: var(--bg-secondary); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                        <div style="background: linear-gradient(135deg, #10B981, #3B82F6); padding: 15px 20px;">
+                            <h4 style="margin: 0; color: white; font-size: 1.2rem; font-weight: 600;">Pipeline</h4>
+                        </div>
+                        <div style="padding: 15px;">
+                            <div id="inlinePipelineGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+                        </div>
                     </div>
                     <!-- Inventory -->
-                    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 15px;">
-                        <h4 style="margin: 0 0 12px 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">Inventory</h4>
-                        <div id="inlineInventoryGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;"></div>
+                    <div style="background: var(--bg-secondary); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                        <div style="background: linear-gradient(135deg, #8B5CF6, #EC4899); padding: 15px 20px;">
+                            <h4 style="margin: 0; color: white; font-size: 1.2rem; font-weight: 600;">Inventory</h4>
+                        </div>
+                        <div style="padding: 15px;">
+                            <div id="inlineInventoryGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+                        </div>
                     </div>
                     <!-- Needs -->
-                    <div style="background: var(--bg-secondary); border-radius: 12px; padding: 15px;">
-                        <h4 style="margin: 0 0 12px 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">Needs</h4>
-                        <div id="inlineNeedsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;"></div>
+                    <div style="background: var(--bg-secondary); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                        <div style="background: linear-gradient(135deg, #F59E0B, #EF4444); padding: 15px 20px;">
+                            <h4 style="margin: 0; color: white; font-size: 1.2rem; font-weight: 600;">Needs</h4>
+                        </div>
+                        <div style="padding: 15px;">
+                            <div id="inlineNeedsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -19271,13 +19283,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
                 return `
                     <button onclick="showPipelineStrains('${key}')"
-                            style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                                   border-radius: 10px; padding: 15px; cursor: pointer; text-align: center;
-                                   transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'};"
-                            onmouseover="this.style.transform='scale(1.02)';"
-                            onmouseout="this.style.transform='scale(1)';">
-                        <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
-                        <div style="display: flex; justify-content: center; gap: 10px; font-size: 0.95rem;">
+                            style="background: var(--bg-primary); border: 2px solid var(--border-color);
+                                   border-radius: 12px; padding: 18px 12px; cursor: pointer; text-align: center;
+                                   transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'}; width: 100%;"
+                            onmouseover="this.style.transform='scale(1.03)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)';"
+                            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                        <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
+                        <div style="display: flex; justify-content: center; gap: 12px; font-size: 1rem;">
                             <span style="color: #e57373;">${strainCounts.Sativa}s</span>
                             <span style="color: #81c784;">${strainCounts.Hybrid}h</span>
                             <span style="color: #64b5f6;">${strainCounts.Indica}i</span>
@@ -19616,13 +19628,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             return `
                 <button onclick="showInventoryItems('${key}')"
-                        style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                               border-radius: 10px; padding: 15px; cursor: pointer; text-align: center;
-                               transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'};"
-                        onmouseover="this.style.transform='scale(1.02)';"
-                        onmouseout="this.style.transform='scale(1)';">
-                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
-                    <div style="display: flex; justify-content: center; gap: 10px; font-size: 0.95rem;">
+                        style="background: var(--bg-primary); border: 2px solid var(--border-color);
+                               border-radius: 12px; padding: 18px 12px; cursor: pointer; text-align: center;
+                               transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'}; width: 100%;"
+                        onmouseover="this.style.transform='scale(1.03)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)';"
+                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                    <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
+                    <div style="display: flex; justify-content: center; gap: 12px; font-size: 1rem;">
                         <span style="color: #e57373;">${strainCounts.Sativa}s</span>
                         <span style="color: #81c784;">${strainCounts.Hybrid}h</span>
                         <span style="color: #64b5f6;">${strainCounts.Indica}i</span>
@@ -19831,13 +19843,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             return `
                 <button onclick="showNeedsItems('${key}')"
-                        style="background: var(--bg-primary); border: 1px solid var(--border-color);
-                               border-radius: 10px; padding: 15px; cursor: pointer; text-align: center;
-                               transition: all 0.2s ease;"
-                        onmouseover="this.style.transform='scale(1.02)';"
-                        onmouseout="this.style.transform='scale(1)';">
-                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
-                    <div style="display: flex; justify-content: center; gap: 10px; font-size: 0.95rem;">
+                        style="background: var(--bg-primary); border: 2px solid var(--border-color);
+                               border-radius: 12px; padding: 18px 12px; cursor: pointer; text-align: center;
+                               transition: all 0.2s ease; width: 100%;"
+                        onmouseover="this.style.transform='scale(1.03)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)';"
+                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                    <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
+                    <div style="display: flex; justify-content: center; gap: 12px; font-size: 1rem;">
                         <span style="color: ${needsByStrain.Sativa > 0 ? '#e57373' : '#81c784'};">${needsByStrain.Sativa > 0 ? needsByStrain.Sativa + 's' : '✓'}</span>
                         <span style="color: ${needsByStrain.Hybrid > 0 ? '#e57373' : '#81c784'};">${needsByStrain.Hybrid > 0 ? needsByStrain.Hybrid + 'h' : '✓'}</span>
                         <span style="color: ${needsByStrain.Indica > 0 ? '#e57373' : '#81c784'};">${needsByStrain.Indica > 0 ? needsByStrain.Indica + 'i' : '✓'}</span>
