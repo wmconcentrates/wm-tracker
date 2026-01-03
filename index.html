@@ -19321,9 +19321,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Update title with total grams
             document.getElementById('pipelinePopupTitle').textContent = data.label + ' - ' + totalGrams.toFixed(1) + 'g';
 
-            // Sort by grams descending, then alphabetically
+            // Sort by strain type (Sativa, Hybrid, Indica), then by grams descending
+            const strainOrder = { 'Sativa': 0, 'Hybrid': 1, 'Indica': 2 };
             const sortedStrains = Object.entries(strainCounts)
-                .sort((a, b) => b[1].grams - a[1].grams || a[0].localeCompare(b[0]));
+                .sort((a, b) => {
+                    const typeA = strainOrder[a[1].strainType] ?? 1;
+                    const typeB = strainOrder[b[1].strainType] ?? 1;
+                    if (typeA !== typeB) return typeA - typeB;
+                    return b[1].grams - a[1].grams;
+                });
 
             // Get strain color based on type (Sativa=Red, Indica=Blue, Hybrid=Green)
             const getStrainColor = (type) => {
@@ -19648,8 +19654,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         const contentEl = document.getElementById('inventoryPopupContent');
 
-        // Sort by quantity descending
-        const sortedItems = [...data.items].sort((a, b) => b.quantity - a.quantity);
+        // Sort by strain type (Sativa, Hybrid, Indica), then by quantity descending
+        const strainOrder = { 'Sativa': 0, 'Hybrid': 1, 'Indica': 2 };
+        const sortedItems = [...data.items].sort((a, b) => {
+            const typeA = strainOrder[a.strainType] ?? 1;
+            const typeB = strainOrder[b.strainType] ?? 1;
+            if (typeA !== typeB) return typeA - typeB;
+            return b.quantity - a.quantity;
+        });
 
         // Get strain color
         const getStrainColor = (type) => {
@@ -19919,7 +19931,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 </div>
             `;
         } else {
-            contentEl.innerHTML = data.needs.map(need => {
+            // Sort by strain type (Sativa, Hybrid, Indica)
+            const strainOrder = { 'Sativa': 0, 'Hybrid': 1, 'Indica': 2 };
+            const sortedNeeds = [...data.needs].sort((a, b) => {
+                const typeA = strainOrder[a.strainType] ?? 1;
+                const typeB = strainOrder[b.strainType] ?? 1;
+                return typeA - typeB;
+            });
+            contentEl.innerHTML = sortedNeeds.map(need => {
                 const strainColor = getStrainColor(need.strainType);
                 return `
                     <div style="padding: 15px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${strainColor}; box-shadow: 0 0 10px ${strainColor}33;">
