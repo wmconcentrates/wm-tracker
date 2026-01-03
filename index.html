@@ -2557,6 +2557,7 @@
                     .foh-btn:hover { transform: scale(1.02); background: rgba(255,255,255,0.05); }
                     .foh-btn-name { font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
                     .foh-btn-num { font-size: 1.6rem; font-weight: 700; color: #111; line-height: 1; text-shadow: 0 0 8px #fff, 0 0 15px #fff, 0 0 25px #fff, 0 0 40px #fff; animation: num-glow 2s ease-in-out infinite; }
+                    .foh-needs-num { animation: none !important; }
                     .foh-btn-sub { font-size: 0.8rem; color: rgba(255,255,255,0.7); margin-top: 4px; }
                     @keyframes num-glow { 0%, 100% { text-shadow: 0 0 8px #fff, 0 0 15px #fff, 0 0 25px #fff; } 50% { text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 35px #fff, 0 0 50px #fff; } }
                 </style>
@@ -19893,7 +19894,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return `
                 <button onclick="showNeedsItems('${key}')" class="foh-btn">
                     <div class="foh-btn-name">${data.label}</div>
-                    <div class="foh-btn-num" style="color: #111; text-shadow: 0 0 8px ${glowColor}, 0 0 15px ${glowColor}, 0 0 25px ${glowColor}, 0 0 40px ${glowColor};">${isOk ? '✓' : totalNeeded}</div>
+                    <div class="foh-btn-num foh-needs-num" style="text-shadow: 0 0 8px ${glowColor}, 0 0 15px ${glowColor}, 0 0 25px ${glowColor}, 0 0 40px ${glowColor};">${isOk ? '✓' : totalNeeded}</div>
                     <div class="foh-btn-sub">${isOk ? 'Stocked' : 'varieties needed'}</div>
                 </button>
             `;
