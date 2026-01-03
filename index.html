@@ -16628,8 +16628,8 @@ ${employeeReport || 'No activity recorded today'}
 
                 // Load Pipeline, Inventory, Needs data for inline display
                 loadSalesPipeline();
-                loadLeafLinkInventory();
-                loadNeedsData();
+                await loadLeafLinkInventory();
+                await loadNeedsData();
 
                 // Populate sales rep dropdown
                 const salesReps = extractSalesReps(allLeafLinkOrders);
