@@ -19433,7 +19433,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Categorize products
         products.forEach(product => {
             const name = (product.name || '').toLowerCase();
-            const qty = product.available_inventory || product.quantity || 0;
+            const qty = parseFloat(product.available_inventory || product.quantity || 0) || 0;
 
             // Determine strain type from name
             let strainType = 'Hybrid';
@@ -19519,7 +19519,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                                transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'};"
                         onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';"
                         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
-                    <div style="font-size: 2.5rem; font-weight: 700; color: ${data.color}; margin-bottom: 8px;">${data.totalQty}${unit}</div>
+                    <div style="font-size: 2.5rem; font-weight: 700; color: ${data.color}; margin-bottom: 8px;">${Math.round(data.totalQty)}${unit}</div>
                     <div style="font-size: 1rem; color: var(--text-primary); font-weight: 600;">${data.label}</div>
                 </button>
             `;
@@ -19531,7 +19531,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         if (!data || data.count === 0) return;
 
         const unit = (category.includes('Cart') || category.includes('AIO')) ? '' : 'g';
-        document.getElementById('inventoryPopupTitle').textContent = data.label + ' - ' + data.totalQty + unit;
+        document.getElementById('inventoryPopupTitle').textContent = data.label + ' - ' + Math.round(data.totalQty) + unit;
         document.getElementById('inventoryPopupTitle').style.color = data.color;
 
         const contentEl = document.getElementById('inventoryPopupContent');
