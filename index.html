@@ -9,7 +9,7 @@
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#bf00ff">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WM Tracker">
     <link rel="apple-touch-icon" href="https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=180w">
@@ -2305,7 +2305,7 @@
 
             <!-- Collapsible Settings Section -->
             <div class="form-section">
-                <div onclick="this.querySelector('.settings-content').style.display = this.querySelector('.settings-content').style.display === 'none' ? 'block' : 'none'; this.querySelector('.settings-toggle').textContent = this.querySelector('.settings-content').style.display === 'none' ? 'Show Settings' : 'Hide Settings';" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <div onclick="var content = this.nextElementSibling; content.style.display = content.style.display === 'none' ? 'block' : 'none'; this.querySelector('.settings-toggle').textContent = content.style.display === 'none' ? 'Show Settings' : 'Hide Settings';" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                     <h2 style="margin: 0;">Production Targets</h2>
                     <span class="settings-toggle" style="font-size: 0.9rem; color: var(--accent-blue);">Show Settings</span>
                 </div>
