@@ -7983,14 +7983,16 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 extraction_slabs: productType === 'shatter' ? slabs : null,
                 extraction_bowls: (productType === 'wax' || productType === 'sugar_wax' || productType === 'live_resin') ? bowls : null,
                 extraction_notes: notes,
+                extraction_user: currentRole ? currentRole.name : 'Unknown',
+                extraction_date: new Date().toISOString().split('T')[0],
                 source_contributions: potLedger, // Save pot ledger as source contributions
                 timeline: [
                     ...(batch.timeline || []),
                     {
                         timestamp: new Date().toISOString(),
-                        status: 'extraction',
+                        stage: 'extraction',
                         user: currentRole ? currentRole.name : 'Unknown',
-                        note: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.pot_runs || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}${sourcesSummary}`
+                        action: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.pot_runs || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}${sourcesSummary}`
                     }
                 ]
             };
