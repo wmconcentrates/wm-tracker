@@ -19790,26 +19790,35 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Add pipeline inventory to the calculation (product being made counts as upcoming inventory)
         try {
-            if (typeof pipelineCategoryData !== 'undefined' && pipelineCategoryData) {
+            if (typeof pipelineCategoryData === 'object' && pipelineCategoryData !== null) {
                 categories.forEach(cat => {
-                    const catData = pipelineCategoryData[cat];
-                    if (catData && catData.strains && Array.isArray(catData.strains)) {
-                        catData.strains.forEach(item => {
-                            const strainType = item.strainType || 'Hybrid';
-                            const weight = parseFloat(item.availableGrams) || parseFloat(item.weight) || 0;
-                            if (weight > 0 && inventoryByCategory[cat] && inventoryByCategory[cat][strainType]) {
+                    if (!pipelineCategoryData[cat]) return;
+                    const strains = pipelineCategoryData[cat].strains;
+                    if (!Array.isArray(strains)) return;
+
+                    strains.forEach(item => {
+                        // Normalize strain type to match inventory keys
+                        let strainType = (item.strainType || 'Hybrid').trim();
+                        if (!['Indica', 'Sativa', 'Hybrid'].includes(strainType)) {
+                            strainType = 'Hybrid';
+                        }
+
+                        const weight = parseFloat(item.availableGrams) || parseFloat(item.weight) || 0;
+                        if (weight > 0) {
+                            // Double check the array exists before pushing
+                            if (inventoryByCategory[cat] && Array.isArray(inventoryByCategory[cat][strainType])) {
                                 inventoryByCategory[cat][strainType].push({
                                     name: (item.strain || 'Unknown') + ' (Pipeline)',
                                     qty: weight,
                                     isPipeline: true
                                 });
                             }
-                        });
-                    }
+                        }
+                    });
                 });
             }
         } catch(e) {
-            console.log('Pipeline data not available for needs calc:', e);
+            console.log('Pipeline data error in needs calc:', e.message);
         }
 
         // Calculate needs: 3-week supply based on 60-day sales average (21 days lead time from trim to product)
