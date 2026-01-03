@@ -19430,35 +19430,51 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         const products = await fetchLeafLinkInventory();
         console.log('Fetched', products.length, 'products from LeafLink');
 
-        // Categorize products
+        // Categorize products using parent.name field
         products.forEach(product => {
             const name = (product.name || '').toLowerCase();
+            const displayName = product.display_name || product.name || '';
+            const parentName = (product.parent?.name || '').toLowerCase();
             const qty = parseFloat(product.available_inventory || product.quantity || 0) || 0;
+
+            // Skip archived/internal products - only show Available
+            if (product.listing_state !== 'Available') return;
+
+            // Skip products with 0 quantity
+            if (qty <= 0) return;
 
             // Determine strain type from name
             let strainType = 'Hybrid';
-            if (name.includes('sativa')) strainType = 'Sativa';
-            else if (name.includes('indica')) strainType = 'Indica';
+            if (name.includes('sativa') || name.includes('(sativa)')) strainType = 'Sativa';
+            else if (name.includes('indica') || name.includes('(indica)')) strainType = 'Indica';
 
-            // Match to category
-            let matched = false;
-            for (const cat of inventoryCategories) {
-                const matches = cat.keywords.some(kw => name.includes(kw));
-                if (matches) {
-                    matched = true;
-                    inventoryCategoryData[cat.key].count++;
-                    inventoryCategoryData[cat.key].totalQty += qty;
-                    inventoryCategoryData[cat.key].items.push({
-                        name: product.name,
-                        quantity: qty,
-                        strainType: strainType,
-                        sku: product.sku
-                    });
-                    break;
-                }
+            // Map parent.name to our categories
+            let category = null;
+            if (parentName.includes('shatter')) {
+                category = 'Shatter';
+            } else if (parentName.includes('sugar')) {
+                category = 'Sugar Wax';
+            } else if (parentName.includes('wax') || parentName.includes('badder') || parentName.includes('budder')) {
+                category = 'Wax';
+            } else if (parentName.includes('cart') || parentName.includes('cartridge')) {
+                category = 'Live Resin Carts';
+            } else if (parentName.includes('aio') || parentName.includes('disposable') || parentName.includes('all-in-one') || parentName.includes('all in one')) {
+                category = 'Live Resin AIOs';
+            } else if (parentName.includes('hash') || parentName.includes('brick')) {
+                category = 'Brick Hash';
             }
-            if (!matched) {
-                console.log('UNMATCHED PRODUCT:', product.name, '| Qty:', product.available_inventory || product.quantity);
+
+            if (category && inventoryCategoryData[category]) {
+                inventoryCategoryData[category].count++;
+                inventoryCategoryData[category].totalQty += qty;
+                inventoryCategoryData[category].items.push({
+                    name: displayName || product.name,
+                    quantity: qty,
+                    strainType: strainType,
+                    sku: product.sku
+                });
+            } else {
+                console.log('UNMATCHED:', parentName, '|', product.name, '| Qty:', qty);
             }
         });
 
