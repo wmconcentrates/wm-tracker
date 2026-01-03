@@ -19779,11 +19779,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             inventoryByCategory[category][strainType].push({ name: displayName, qty: qty });
         });
 
-        // Calculate needs: 60-day average / 2 months = monthly par, need 3 varieties at par
+        // Calculate needs: 3-week supply based on 60-day sales average (21 days lead time from trim to product)
         categories.forEach(cat => {
             strainTypes.forEach(strain => {
                 const totalSold = salesByCategory[cat][strain];
-                const parLevel = Math.ceil(totalSold / 2); // 60-day sales / 2 = monthly par
+                const parLevel = Math.ceil((totalSold / 60) * 21); // 3-week supply based on daily average
                 const currentItems = inventoryByCategory[cat][strain];
                 const itemsAtPar = currentItems.filter(item => item.qty >= parLevel);
                 const varietiesNeeded = Math.max(0, 3 - itemsAtPar.length);
