@@ -5230,8 +5230,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('myStatsBtn').style.display = 'block'; document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                 errorMsg.style.display = 'none';
 
-                // Log login to database with IP (skip in demo mode)
-                if (!isDemoMode()) {
+                // Log login to database with IP (including demo mode)
                     // Fetch IP address and log login
                     console.log('Attempting to fetch IP...');
                     fetch('https://api.ipify.org?format=json')
@@ -5270,8 +5269,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                                     if (!error && data && data.length > 0) {
                                         localStorage.setItem('wmLoginRecordId', data[0].id);
                                     }
-                                });
-                        });
+                                }););
                 }
 
                 applyRolePermissions();
