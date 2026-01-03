@@ -19173,17 +19173,27 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const sortedStrains = Object.entries(strainCounts)
                 .sort((a, b) => b[1].grams - a[1].grams || a[0].localeCompare(b[0]));
 
-            contentEl.innerHTML = sortedStrains.map(([strain, info]) => `
-                <div style="padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${data.color};">
+            // Get strain color based on type (Sativa=Red, Indica=Blue, Hybrid=Green)
+            const getStrainColor = (type) => {
+                if (type === 'Sativa') return '#ff0055';
+                if (type === 'Indica') return '#00f0ff';
+                return '#39ff14'; // Hybrid default
+            };
+
+            contentEl.innerHTML = sortedStrains.map(([strain, info]) => {
+                const strainColor = getStrainColor(info.strainType);
+                return `
+                <div style="padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${strainColor}; box-shadow: 0 0 10px ${strainColor}33;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; color: var(--text-primary);">${strain}</span>
-                        <span style="background: ${data.color}22; color: ${data.color}; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">${info.grams.toFixed(1)}g</span>
+                        <span style="background: ${strainColor}22; color: ${strainColor}; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">${info.grams.toFixed(1)}g</span>
                     </div>
                     <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px;">
                         ${info.batches.map(b => b.id + ' (' + b.grams + 'g)').join(', ')}
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             document.getElementById('pipelineStrainsPopup').style.display = 'block';
         }
