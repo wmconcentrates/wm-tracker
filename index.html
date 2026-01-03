@@ -12956,7 +12956,7 @@ ${employeeReport || 'No activity recorded today'}
                 const packagingComplete = batch.timeline.find(t =>
                     t.stage === 'packaging' &&
                     t.action &&
-                    (t.action.includes('packaged') || t.action.includes('Packaging completed') || t.action.includes('units packaged'))
+                    (t.action.toLowerCase().includes('packaged') || t.action.includes('Packaging completed'))
                 );
 
                 if (packagingStart && packagingComplete) {
