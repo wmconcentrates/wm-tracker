@@ -2478,11 +2478,15 @@
                 </div>
             </div>
 
-            <!-- Waste Log Section -->
+            <!-- Waste Log Section - Collapsible -->
             <div style="margin: 30px 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="margin: 0;">🗑️ Trim Waste Log</h2>
-                    <div style="display: flex; gap: 15px; align-items: center;">
+                <div onclick="document.getElementById('wasteLogContent').style.display = document.getElementById('wasteLogContent').style.display === 'none' ? 'block' : 'none'; this.querySelector('.waste-arrow').textContent = document.getElementById('wasteLogContent').style.display === 'none' ? '▶' : '▼';"
+                     style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--bg-secondary); border-radius: 12px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="waste-arrow" style="font-size: 1rem;">▶</span>
+                        <h2 style="margin: 0; font-size: 1.3rem;">🗑️ Trim Waste Log</h2>
+                    </div>
+                    <div style="display: flex; gap: 15px; align-items: center;" onclick="event.stopPropagation();">
                         <div style="background: var(--bg-tertiary); padding: 8px 15px; border-radius: 8px;">
                             <span style="color: var(--text-secondary);">Pending:</span>
                             <span id="wastePendingCount" style="color: var(--accent-orange); font-weight: 600;">0</span>
@@ -2498,27 +2502,29 @@
                         <button onclick="exportWasteLog()" style="background: var(--accent-green); border: none; padding: 8px 15px; border-radius: 8px; color: white; cursor: pointer; font-weight: 600;">📥 Export</button>
                     </div>
                 </div>
-                
-                <div style="background: var(--bg-primary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
-                    <div style="max-height: 400px; overflow-y: auto;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                            <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
-                                <tr>
-                                    <th style="padding: 12px 8px; text-align: left; color: var(--text-secondary);">Batch</th>
-                                    <th style="padding: 12px 8px; text-align: left; color: var(--text-secondary);">Strain</th>
-                                    <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary);">Trim</th>
-                                    <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary);">Waste</th>
-                                    <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Extraction</th>
-                                    <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Disposal</th>
-                                    <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">METRC</th>
-                                    <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Mixed</th>
-                                    <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Facility</th>
-                                </tr>
-                            </thead>
-                            <tbody id="wasteLogTableBody">
-                                <tr><td colspan="9" style="padding: 30px; text-align: center; color: var(--text-secondary);">Loading...</td></tr>
-                            </tbody>
-                        </table>
+
+                <div id="wasteLogContent" style="display: none; margin-top: 10px;">
+                    <div style="background: var(--bg-primary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
+                                    <tr>
+                                        <th style="padding: 12px 8px; text-align: left; color: var(--text-secondary);">Batch</th>
+                                        <th style="padding: 12px 8px; text-align: left; color: var(--text-secondary);">Strain</th>
+                                        <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary);">Trim</th>
+                                        <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary);">Waste</th>
+                                        <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Extraction</th>
+                                        <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Disposal</th>
+                                        <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">METRC</th>
+                                        <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Mixed</th>
+                                        <th style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">Facility</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wasteLogTableBody">
+                                    <tr><td colspan="9" style="padding: 30px; text-align: center; color: var(--text-secondary);">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
