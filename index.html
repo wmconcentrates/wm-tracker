@@ -19834,11 +19834,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             console.log('Pipeline data error in needs calc:', e.message);
         }
 
-        // Calculate needs: 3-week supply based on 60-day sales average (21 days lead time from trim to product)
+        // Calculate needs: 2-week supply based on 60-day sales average (14 days lead time from trim to product)
         categories.forEach(cat => {
             strainTypes.forEach(strain => {
                 const totalSold = salesByCategory[cat][strain];
-                const parLevel = Math.ceil((totalSold / 60) * 21); // 3-week supply based on daily average
+                const parLevel = Math.ceil((totalSold / 60) * 14); // 2-week supply based on daily average
                 const currentItems = inventoryByCategory[cat][strain];
                 const itemsAtPar = currentItems.filter(item => item.qty >= parLevel);
                 const varietiesNeeded = Math.max(0, 3 - itemsAtPar.length);
@@ -19888,10 +19888,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             const totalNeeded = needsByStrain.Sativa + needsByStrain.Hybrid + needsByStrain.Indica;
             const isOk = totalNeeded === 0;
+            // Color based on urgency: green=stocked, yellow=1-2 needed, red=3+ needed
+            const glowColor = isOk ? '#10B981' : (totalNeeded <= 2 ? '#F59E0B' : '#EF4444');
             return `
                 <button onclick="showNeedsItems('${key}')" class="foh-btn">
                     <div class="foh-btn-name">${data.label}</div>
-                    <div class="foh-btn-num" style="color: ${isOk ? '#10B981' : '#EF4444'};">${isOk ? '✓' : totalNeeded}</div>
+                    <div class="foh-btn-num" style="color: #111; text-shadow: 0 0 8px ${glowColor}, 0 0 15px ${glowColor}, 0 0 25px ${glowColor}, 0 0 40px ${glowColor};">${isOk ? '✓' : totalNeeded}</div>
                     <div class="foh-btn-sub">${isOk ? 'Stocked' : 'varieties needed'}</div>
                 </button>
             `;
