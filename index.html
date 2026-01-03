@@ -19428,20 +19428,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Fetch products from LeafLink
         const products = await fetchLeafLinkInventory();
-        console.log('Fetched', products.length, 'products from LeafLink');
-
-        // First, collect all unique parent names to debug
-        const uniqueParents = new Set();
-        const uniqueListingStates = new Set();
-        products.forEach(p => {
-            const parentVal = p.parent?.name || (typeof p.parent === 'string' ? p.parent : 'NO_PARENT');
-            uniqueParents.add(parentVal);
-            uniqueListingStates.add(p.listing_state || 'NO_STATE');
-        });
-        console.log('=== ALL UNIQUE PARENT VALUES ===');
-        console.log([...uniqueParents]);
-        console.log('=== ALL LISTING STATES ===');
-        console.log([...uniqueListingStates]);
 
         // Categorize products
         products.forEach(product => {
@@ -19505,21 +19491,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     strainType: strainType,
                     sku: product.sku
                 });
-            } else {
-                console.log('UNMATCHED:', 'parent=' + parentName, '| line=' + productLine, '| cat=' + category_field, '|', product.name, '| Qty:', qty, '| State:', product.listing_state);
             }
         });
 
-        // Debug: show what's in each category
-        console.log('=== INVENTORY BY CATEGORY ===');
-        Object.entries(inventoryCategoryData).forEach(([cat, data]) => {
-            console.log(cat + ': ' + data.count + ' items, ' + data.totalQty + ' total qty');
-            if (data.items.length > 0) {
-                data.items.slice(0, 3).forEach(item => {
-                    console.log('  - ' + item.name + ' (' + item.quantity + ')');
-                });
-            }
-        });
 
         renderInventoryCategories();
     }
