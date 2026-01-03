@@ -17469,9 +17469,9 @@ ${employeeReport || 'No activity recorded today'}
                 if (allLeafLinkOrders && allLeafLinkOrders.length > 10) {
                     console.log("Using existing in-memory data:", allLeafLinkOrders.length, "orders");
                 } else {
-                    // Try Supabase cache first
-                    const cached = await loadSalesDataFromSupabase();
-                    if (cached && cached.data && !cached.stale && cached.data.length > 0) {
+                    // Skip Supabase cache - use localStorage/API instead
+                    const cached = null; // await loadSalesDataFromSupabase();
+                    if (false && cached && cached.data && !cached.stale && cached.data.length > 0) {
                     allLeafLinkOrders = cached.data;
                     customerFirstOrderDates = buildCustomerFirstOrderDates(cached.data);
                     leafLinkDataLoaded = true;
