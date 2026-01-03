@@ -19483,7 +19483,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         try {
             let allProducts = [];
-            let nextUrl = LEAFLINK_PROXY_URL + '/inventory/products/?page_size=100';
+            let nextUrl = LEAFLINK_PROXY_URL + '/products/?page_size=100';
 
             while (nextUrl && allProducts.length < 500) {
                 const response = await fetch(nextUrl);
