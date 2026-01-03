@@ -15587,7 +15587,7 @@ ${employeeReport || 'No activity recorded today'}
 
                 // Fetch shipped and complete orders via proxy
                 let allOrders = [];
-                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
 
                 while (nextUrl) {
                     const response = await fetch(nextUrl);
@@ -16086,7 +16086,7 @@ ${employeeReport || 'No activity recorded today'}
                 const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
 
                 let allOrders = [];
-                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
 
                 while (nextUrl && allOrders.length < 300) {
                     const response = await fetch(nextUrl);
@@ -17420,7 +17420,7 @@ ${employeeReport || 'No activity recorded today'}
                 const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
 
                 let allOrders = [];
-                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
 
                 while (nextUrl) {
                     const response = await fetch(nextUrl);
