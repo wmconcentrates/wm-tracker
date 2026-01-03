@@ -6147,6 +6147,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                             <option value="Sugar Wax">Sugar Wax</option>
                             <option value="Shatter">Shatter</option>
                             <option value="Live Resin Oil">Live Resin Oil (Carts)</option>
+                            <option value="Live Resin AIOs">Live Resin AIOs</option>
                             <option value="Brick Hash">Brick Hash</option>
                             <option value="Hash Hits">Hash Hits</option>
                         </select>
@@ -18949,7 +18950,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (product.includes('sugar')) return 'Sugar Wax';
             if (product.includes('shatter')) return 'Shatter';
             if (product.includes('cart') || product === 'live resin oil') return 'Live Resin Carts';
-            if (product.includes('aio') || product.includes('all-in-one') || product.includes('all in one')) return 'Live Resin All in Ones';
+            if (product.includes('aio') || product.includes('all-in-one') || product.includes('all in one')) return 'Live Resin AIOs';
             if (product.includes('brick') || product.includes('hash')) return 'Brick Hash';
 
             return null;
@@ -18962,7 +18963,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 { key: 'Shatter', label: 'Shatter', color: '#3B82F6' },
                 { key: 'Sugar Wax', label: 'Sugar Wax', color: '#F97316' },
                 { key: 'Live Resin Carts', label: 'Live Resin Carts', color: '#10B981' },
-                { key: 'Live Resin All in Ones', label: 'Live Resin All in Ones', color: '#8B5CF6' },
+                { key: 'Live Resin AIOs', label: 'Live Resin AIOs', color: '#8B5CF6' },
                 { key: 'Brick Hash', label: 'Brick Hash', color: '#6B7280' }
             ];
 
@@ -19006,7 +19007,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         function renderPipelineCategories() {
             const container = document.getElementById('pipelineCategoryGrid');
 
-            const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin All in Ones', 'Brick Hash'];
+            const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
 
             container.innerHTML = categoryOrder.map(key => {
                 const data = pipelineCategoryData[key];
