@@ -10221,8 +10221,34 @@ ${employeeReport || 'No activity recorded today'}
                                 <div class="batch-detail-value">${batch.units_packaged} units${batch.packaging_breakdown ? ` (${batch.packaging_breakdown})` : ''}</div>
                             </div>
                         ` : ''}
+                        <!-- Batch Tracking Section -->
+                        <div style="grid-column: 1/-1; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                            <div style="font-weight: 600; color: var(--accent-purple); margin-bottom: 8px;">📋 Batch Tracking</div>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.85rem;">
+                                <div><strong>Status:</strong> <span style="color: var(--accent-green); text-transform: uppercase;">${batch.status}</span></div>
+                                <div><strong>Socks:</strong> ${batch.socks_remaining != null ? batch.socks_remaining + '/' + batch.socks_total + ' remaining' : 'N/A'}</div>
+                                <div style="grid-column: 1/-1;"><strong>METRC Tags:</strong> <span style="font-family: monospace; font-size: 0.8rem;">${batch.metrc_tags || 'None'}</span></div>
+                                <div><strong>Grow 403:</strong> ${batch.cultivation_license || 'N/A'}</div>
+                                ${batch.parent_batch_id ? '<div><strong>Parent Batch:</strong> ' + batch.parent_batch_id + '</div>' : ''}
+                            </div>
+                            ${(() => {
+                                if (batch.source_contributions && batch.source_contributions.length > 0) {
+                                    const sources = typeof batch.source_contributions === 'string' ? JSON.parse(batch.source_contributions) : batch.source_contributions;
+                                    const sourceInfo = sources.map(s => s.batch_id + ' (' + (s.trim_weight || s.socks) + (s.trim_weight ? 'g' : ' socks') + (s.metrc_tag ? ' - ' + s.metrc_tag : '') + ')').join(', ');
+                                    return '<div style="margin-top: 8px; font-size: 0.85rem;"><strong>Source Contributions:</strong> ' + sourceInfo + '</div>';
+                                }
+                                return '';
+                            })()}
+                            ${(() => {
+                                const allNotes = [batch.intake_notes, batch.extraction_notes, batch.finishing_notes, batch.packaging_notes, batch.labeling_notes].filter(n => n);
+                                if (allNotes.length > 0) {
+                                    return '<div style="margin-top: 8px; padding: 8px; background: var(--bg-tertiary); border-radius: 6px; font-size: 0.85rem;"><strong>Notes:</strong> ' + allNotes.join(' | ') + '</div>';
+                                }
+                                return '';
+                            })()}
+                        </div>
                     </div>
-                    
+
                                         <div class="timeline" id="timeline-${batch.id}" style="display: none;">
                         <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                             <h4 style="margin-bottom: 10px; color: var(--accent-purple);">📊 Progress Timeline</h4>
