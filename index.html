@@ -17465,9 +17465,13 @@ ${employeeReport || 'No activity recorded today'}
         const originalLoadSalesDashboard = loadSalesDashboard;
         loadSalesDashboard = async function() {
             try {
-                // Try Supabase cache first
-                const cached = await loadSalesDataFromSupabase();
-                if (cached && cached.data && !cached.stale && cached.data.length > 0) {
+                // If we already have good data in memory, just update display
+                if (allLeafLinkOrders && allLeafLinkOrders.length > 10) {
+                    console.log("Using existing in-memory data:", allLeafLinkOrders.length, "orders");
+                } else {
+                    // Try Supabase cache first
+                    const cached = await loadSalesDataFromSupabase();
+                    if (cached && cached.data && !cached.stale && cached.data.length > 0) {
                     allLeafLinkOrders = cached.data;
                     customerFirstOrderDates = buildCustomerFirstOrderDates(cached.data);
                     leafLinkDataLoaded = true;
@@ -17480,6 +17484,7 @@ ${employeeReport || 'No activity recorded today'}
                     if (allLeafLinkOrders && allLeafLinkOrders.length > 0) {
                         saveSalesDataToSupabase(allLeafLinkOrders);
                     }
+                }
                 }
 
                 // Populate sales rep dropdown
