@@ -15387,7 +15387,7 @@ ${employeeReport || 'No activity recorded today'}
             const container = document.getElementById('fohRecentBatches');
             if (!container) return;
 
-            const completedBatches = batches.filter(b => b.stage === 'complete').slice(0, 5);
+            const completedBatches = batches.filter(b => b.status === 'complete').slice(0, 5);
 
             if (completedBatches.length === 0) {
                 container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No completed batches yet</div>';
