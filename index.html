@@ -19271,16 +19271,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
                 return `
                     <button onclick="showPipelineStrains('${key}')"
-                            style="background: var(--bg-primary); border: 2px solid var(--border-color);
-                                   border-radius: 12px; padding: 18px 12px; cursor: pointer; text-align: center;
-                                   transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'}; width: 100%;"
-                            onmouseover="this.style.transform='scale(1.03)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)';"
-                            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
-                        <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
-                        <div style="display: flex; justify-content: center; gap: 12px; font-size: 1rem;">
-                            <span style="color: #e57373;">${strainCounts.Sativa}s</span>
-                            <span style="color: #81c784;">${strainCounts.Hybrid}h</span>
-                            <span style="color: #64b5f6;">${strainCounts.Indica}i</span>
+                            style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+                                   border-radius: 10px; padding: 12px 8px; cursor: pointer; text-align: center;
+                                   transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.4'}; width: 100%;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.transform='scale(1.02)';"
+                            onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.transform='scale(1)';">
+                        <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">${data.label}</div>
+                        <div style="display: flex; justify-content: center; gap: 6px;">
+                            <span style="background: rgba(255,0,85,0.25); border: 1px solid #ff0055; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Sativa}</span>
+                            <span style="background: rgba(57,255,20,0.2); border: 1px solid #39ff14; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Hybrid}</span>
+                            <span style="background: rgba(0,85,255,0.25); border: 1px solid #0055ff; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Indica}</span>
                         </div>
                     </button>
                 `;
@@ -19622,16 +19622,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             return `
                 <button onclick="showInventoryItems('${key}')"
-                        style="background: var(--bg-primary); border: 2px solid var(--border-color);
-                               border-radius: 12px; padding: 18px 12px; cursor: pointer; text-align: center;
-                               transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.5'}; width: 100%;"
-                        onmouseover="this.style.transform='scale(1.03)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)';"
-                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
-                    <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
-                    <div style="display: flex; justify-content: center; gap: 12px; font-size: 1rem;">
-                        <span style="color: #e57373;">${strainCounts.Sativa}s</span>
-                        <span style="color: #81c784;">${strainCounts.Hybrid}h</span>
-                        <span style="color: #64b5f6;">${strainCounts.Indica}i</span>
+                        style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+                               border-radius: 10px; padding: 12px 8px; cursor: pointer; text-align: center;
+                               transition: all 0.2s ease; opacity: ${hasItems ? '1' : '0.4'}; width: 100%;"
+                        onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.transform='scale(1.02)';"
+                        onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.transform='scale(1)';">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">${data.label}</div>
+                    <div style="display: flex; justify-content: center; gap: 6px;">
+                        <span style="background: rgba(255,0,85,0.25); border: 1px solid #ff0055; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Sativa}</span>
+                        <span style="background: rgba(57,255,20,0.2); border: 1px solid #39ff14; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Hybrid}</span>
+                        <span style="background: rgba(0,85,255,0.25); border: 1px solid #0055ff; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${strainCounts.Indica}</span>
                     </div>
                 </button>
             `;
@@ -19887,16 +19887,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             return `
                 <button onclick="showNeedsItems('${key}')"
-                        style="background: var(--bg-primary); border: 2px solid var(--border-color);
-                               border-radius: 12px; padding: 18px 12px; cursor: pointer; text-align: center;
+                        style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+                               border-radius: 10px; padding: 12px 8px; cursor: pointer; text-align: center;
                                transition: all 0.2s ease; width: 100%;"
-                        onmouseover="this.style.transform='scale(1.03)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)';"
-                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
-                    <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">${data.label}</div>
-                    <div style="display: flex; justify-content: center; gap: 12px; font-size: 1rem;">
-                        <span style="color: ${needsByStrain.Sativa > 0 ? '#e57373' : '#81c784'};">${needsByStrain.Sativa > 0 ? needsByStrain.Sativa + 's' : '✓'}</span>
-                        <span style="color: ${needsByStrain.Hybrid > 0 ? '#e57373' : '#81c784'};">${needsByStrain.Hybrid > 0 ? needsByStrain.Hybrid + 'h' : '✓'}</span>
-                        <span style="color: ${needsByStrain.Indica > 0 ? '#e57373' : '#81c784'};">${needsByStrain.Indica > 0 ? needsByStrain.Indica + 'i' : '✓'}</span>
+                        onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.transform='scale(1.02)';"
+                        onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.transform='scale(1)';">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">${data.label}</div>
+                    <div style="display: flex; justify-content: center; gap: 6px;">
+                        <span style="background: ${needsByStrain.Sativa > 0 ? 'rgba(255,0,85,0.25)' : 'rgba(57,255,20,0.2)'}; border: 1px solid ${needsByStrain.Sativa > 0 ? '#ff0055' : '#39ff14'}; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${needsByStrain.Sativa > 0 ? needsByStrain.Sativa : '✓'}</span>
+                        <span style="background: ${needsByStrain.Hybrid > 0 ? 'rgba(255,0,85,0.25)' : 'rgba(57,255,20,0.2)'}; border: 1px solid ${needsByStrain.Hybrid > 0 ? '#ff0055' : '#39ff14'}; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${needsByStrain.Hybrid > 0 ? needsByStrain.Hybrid : '✓'}</span>
+                        <span style="background: ${needsByStrain.Indica > 0 ? 'rgba(255,0,85,0.25)' : 'rgba(57,255,20,0.2)'}; border: 1px solid ${needsByStrain.Indica > 0 ? '#ff0055' : '#39ff14'}; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; min-width: 24px;">${needsByStrain.Indica > 0 ? needsByStrain.Indica : '✓'}</span>
                     </div>
                 </button>
             `;
