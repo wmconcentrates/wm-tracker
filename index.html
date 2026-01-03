@@ -16623,13 +16623,13 @@ ${employeeReport || 'No activity recorded today'}
 
         // Load and display sales dashboard
         async function loadSalesDashboard() {
-        // Load Pipeline, Inventory, Needs data for inline display
-        loadPipelineData();
-        loadLeafLinkInventory();
-        loadNeedsData();
-
             try {
                 await ensureLeafLinkData();
+
+                // Load Pipeline, Inventory, Needs data for inline display
+                loadPipelineData();
+                loadLeafLinkInventory();
+                loadNeedsData();
 
                 // Populate sales rep dropdown
                 const salesReps = extractSalesReps(allLeafLinkOrders);
