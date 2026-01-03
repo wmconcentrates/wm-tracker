@@ -2630,7 +2630,10 @@
                 </div>
 
                 <!-- Blog Generator Toggle Button -->
-                <button onclick="toggleBlogGenerator()" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; width: 100%; margin-bottom: 20px;">📝 Blog Generator</button>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button onclick="toggleBlogGenerator()" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; flex: 1;">📝 Blog Generator</button>
+                    <a href="/blog" target="_blank" class="btn" style="background: var(--accent-blue); padding: 15px 30px; font-size: 1.1rem; text-decoration: none; display: flex; align-items: center; justify-content: center;">🌐 View Blog</a>
+                </div>
                 
                 <!-- Blog Generator Section (hidden by default) -->
                 <div id="blogGeneratorSection" style="display: none;">
