@@ -2559,6 +2559,7 @@
                             <button onclick="openSalesPipelineModal()" class="btn" style="background: linear-gradient(135deg, #10B981, #3B82F6); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Pipeline</button>
                             <button onclick="openDropCalendarModal()" class="btn" style="background: linear-gradient(135deg, #10B981, #059669); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Calendar</button>
                             <button onclick="openLeafLinkInventoryModal()" class="btn" style="background: linear-gradient(135deg, #8B5CF6, #EC4899); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Inventory</button>
+                            <button onclick="openNeedsModal()" class="btn" style="background: linear-gradient(135deg, #F59E0B, #EF4444); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Needs</button>
                             <select id="salesRepFilter" onchange="updateSalesDashboard()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px; min-width: 0; flex: 1 1 160px;">
                                 <option value="all">All Sales Reps</option>
                             </select>
@@ -19565,7 +19566,31 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }).join('');
     }
 
-    function showInventoryItems(category) {
+    <!-- Needs Modal (identical to Inventory modal) -->
+    <div id="needsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; overflow-y: auto;">
+        <div style="max-width: 800px; margin: 50px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);">
+            <div style="background: linear-gradient(135deg, #F59E0B, #EF4444); padding: 25px 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="color: white; margin: 0; font-size: 1.5rem;">Needs</h2>
+                    <button onclick="closeNeedsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 12px; border-radius: 8px;">&times;</button>
+                </div>
+            </div>
+            <div style="padding: 30px;">
+                <div id="needsCategoryGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Needs Items Popup -->
+    <div id="needsItemsPopup" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-secondary); border-radius: 20px 20px 0 0; z-index: 10002; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); max-height: 70vh;">
+        <div style="background: var(--bg-tertiary); padding: 20px 25px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="needsPopupTitle" style="margin: 0; color: var(--text-primary); font-size: 1.2rem;">Needs</h3>
+            <button onclick="closeNeedsItemsPopup()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <div id="needsPopupContent" style="padding: 20px 25px; max-height: 400px; overflow-y: auto;"></div>
+    </div>
+
+        function showInventoryItems(category) {
         const data = inventoryCategoryData[category];
         if (!data || data.count === 0) return;
 
@@ -19598,6 +19623,216 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }).join('');
 
         document.getElementById('inventoryItemsPopup').style.display = 'block';
+    }
+
+    // ============ NEEDS MODAL ============
+    let needsData = {};
+    let salesByCategory = {};
+
+    function openNeedsModal() {
+        document.getElementById('needsModal').style.display = 'block';
+        loadNeedsData();
+    }
+
+    function closeNeedsModal() {
+        document.getElementById('needsModal').style.display = 'none';
+    }
+
+    function closeNeedsItemsPopup() {
+        document.getElementById('needsItemsPopup').style.display = 'none';
+    }
+
+    async function loadNeedsData() {
+        // Initialize needs data structure
+        const categories = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
+        const strainTypes = ['Indica', 'Sativa', 'Hybrid'];
+
+        needsData = {};
+        salesByCategory = {};
+
+        categories.forEach(cat => {
+            needsData[cat] = { label: cat, color: getCategoryColor(cat), needs: [] };
+            salesByCategory[cat] = { Indica: 0, Sativa: 0, Hybrid: 0 };
+        });
+
+        // Get 60-day sales data
+        const orders = await fetchAllLeafLinkOrders();
+        const sixtyDaysAgo = new Date();
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+        // Calculate sales by category and strain type
+        orders.forEach(order => {
+            const orderDate = new Date(order.ordered_at || order.created_on);
+            if (orderDate < sixtyDaysAgo) return;
+
+            (order.line_items || []).forEach(item => {
+                const productName = (item.frozen_data?.product?.name || item.product?.name || '').toLowerCase();
+                const qty = parseFloat(item.quantity) || 0;
+
+                // Determine category
+                let category = null;
+                if (productName.includes('shatter')) category = 'Shatter';
+                else if (productName.includes('sugar')) category = 'Sugar Wax';
+                else if (productName.includes('cartridge') || productName.includes('cart')) category = 'Live Resin Carts';
+                else if (productName.includes('disposable') || productName.includes('all in one') || productName.includes('aio')) category = 'Live Resin AIOs';
+                else if (productName.includes('brick') || productName.includes('hash')) category = 'Brick Hash';
+                else if (productName.includes('wax') || productName.includes('badder') || productName.includes('budder')) category = 'Wax';
+
+                if (!category) return;
+
+                // Determine strain type
+                let strainType = 'Hybrid';
+                if (productName.includes('sativa') || productName.includes('(s)')) strainType = 'Sativa';
+                else if (productName.includes('indica') || productName.includes('(i)')) strainType = 'Indica';
+
+                salesByCategory[category][strainType] += qty;
+            });
+        });
+
+        // Get current inventory
+        const products = await fetchLeafLinkInventory();
+        const inventoryByCategory = {};
+        categories.forEach(cat => {
+            inventoryByCategory[cat] = { Indica: [], Sativa: [], Hybrid: [] };
+        });
+
+        products.forEach(product => {
+            const name = (product.name || '').toLowerCase();
+            const displayName = product.display_name || product.name || '';
+            let parentName = '';
+            if (product.parent && typeof product.parent === 'object') {
+                parentName = (product.parent.name || '').toLowerCase();
+            }
+            const matchText = (parentName + ' ' + displayName).toLowerCase();
+            const qty = parseFloat(product.available_inventory || product.quantity || 0) || 0;
+
+            if (product.listing_state && product.listing_state !== 'Available') return;
+            if (qty <= 0) return;
+
+            // Skip non-concentrates
+            if (matchText.includes('syrup') || matchText.includes('jousse') || matchText.includes('rso') || matchText.includes('battery')) return;
+
+            // Determine category
+            let category = null;
+            if (matchText.includes('shatter')) category = 'Shatter';
+            else if (matchText.includes('sugar')) category = 'Sugar Wax';
+            else if (matchText.includes('cartridge') || (matchText.includes('cart') && matchText.includes('live resin'))) category = 'Live Resin Carts';
+            else if (matchText.includes('disposable') || matchText.includes('all in one') || matchText.includes('aio')) category = 'Live Resin AIOs';
+            else if (matchText.includes('brick') || matchText.includes('hash')) category = 'Brick Hash';
+            else if (matchText.includes('wax') || matchText.includes('badder') || matchText.includes('budder')) category = 'Wax';
+
+            if (!category) return;
+
+            // Determine strain type
+            let strainType = 'Hybrid';
+            if (name.includes('sativa') || name.includes('(sativa)')) strainType = 'Sativa';
+            else if (name.includes('indica') || name.includes('(indica)')) strainType = 'Indica';
+
+            inventoryByCategory[category][strainType].push({ name: displayName, qty: qty });
+        });
+
+        // Calculate needs: 60-day average / 2 months = monthly par, need 3 varieties at par
+        categories.forEach(cat => {
+            strainTypes.forEach(strain => {
+                const totalSold = salesByCategory[cat][strain];
+                const parLevel = Math.ceil(totalSold / 2); // 60-day sales / 2 = monthly par
+                const currentItems = inventoryByCategory[cat][strain];
+                const itemsAtPar = currentItems.filter(item => item.qty >= parLevel);
+                const varietiesNeeded = Math.max(0, 3 - itemsAtPar.length);
+                const totalQtyNeeded = Math.max(0, (parLevel * 3) - currentItems.reduce((sum, i) => sum + i.qty, 0));
+
+                if (varietiesNeeded > 0 || totalQtyNeeded > 0) {
+                    needsData[cat].needs.push({
+                        strainType: strain,
+                        varietiesNeeded: varietiesNeeded,
+                        qtyNeeded: Math.round(totalQtyNeeded),
+                        parLevel: parLevel,
+                        currentVarieties: currentItems.length,
+                        currentQty: Math.round(currentItems.reduce((sum, i) => sum + i.qty, 0))
+                    });
+                }
+            });
+        });
+
+        renderNeedsCategories();
+    }
+
+    function getCategoryColor(cat) {
+        const colors = {
+            'Wax': '#8B5CF6',
+            'Shatter': '#EC4899',
+            'Sugar Wax': '#F59E0B',
+            'Live Resin Carts': '#10B981',
+            'Live Resin AIOs': '#3B82F6',
+            'Brick Hash': '#6366F1'
+        };
+        return colors[cat] || '#8B5CF6';
+    }
+
+    function renderNeedsCategories() {
+        const container = document.getElementById('needsCategoryGrid');
+        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
+
+        container.innerHTML = categoryOrder.map(key => {
+            const data = needsData[key];
+            const hasNeeds = data.needs.length > 0;
+            const totalVarietiesNeeded = data.needs.reduce((sum, n) => sum + n.varietiesNeeded, 0);
+
+            return `
+                <button onclick="showNeedsItems('${key}')"
+                        style="background: var(--bg-primary); border: 2px solid ${hasNeeds ? '#EF4444' : '#10B981'};
+                               border-radius: 12px; padding: 25px 20px; cursor: pointer; text-align: center;
+                               transition: all 0.2s ease;"
+                        onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';"
+                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                    <div style="font-size: 2.5rem; font-weight: 700; color: ${hasNeeds ? '#EF4444' : '#10B981'}; margin-bottom: 8px;">${hasNeeds ? totalVarietiesNeeded : '✓'}</div>
+                    <div style="font-size: 1rem; color: var(--text-primary); font-weight: 600;">${data.label}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">${hasNeeds ? 'varieties needed' : 'stocked'}</div>
+                </button>
+            `;
+        }).join('');
+    }
+
+    function showNeedsItems(category) {
+        const data = needsData[category];
+        document.getElementById('needsPopupTitle').textContent = data.label + ' Needs';
+        document.getElementById('needsPopupTitle').style.color = data.color;
+
+        const contentEl = document.getElementById('needsPopupContent');
+
+        const getStrainColor = (type) => {
+            if (type === 'Sativa') return '#ff0055';
+            if (type === 'Indica') return '#0055ff';
+            return '#39ff14';
+        };
+
+        if (data.needs.length === 0) {
+            contentEl.innerHTML = `
+                <div style="padding: 30px; text-align: center; color: #10B981;">
+                    <div style="font-size: 3rem; margin-bottom: 10px;">✓</div>
+                    <div style="font-size: 1.2rem; font-weight: 600;">Fully Stocked</div>
+                    <div style="color: var(--text-secondary); margin-top: 5px;">All strain types at par level</div>
+                </div>
+            `;
+        } else {
+            contentEl.innerHTML = data.needs.map(need => {
+                const strainColor = getStrainColor(need.strainType);
+                return `
+                    <div style="padding: 15px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${strainColor}; box-shadow: 0 0 10px ${strainColor}33;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-weight: 700; color: ${strainColor}; font-size: 1.1rem;">${need.strainType}</span>
+                            <span style="background: #EF444422; color: #EF4444; padding: 4px 10px; border-radius: 8px; font-size: 0.9rem; font-weight: 600;">Need ${need.varietiesNeeded} more</span>
+                        </div>
+                        <div style="display: flex; gap: 15px; color: var(--text-secondary); font-size: 0.85rem;">
+                            <span>Par: ${need.parLevel}g</span>
+                            <span>Have: ${need.currentVarieties} varieties (${need.currentQty}g)</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('needsItemsPopup').style.display = 'block';
     }
 
     </script>
