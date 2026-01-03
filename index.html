@@ -2466,6 +2466,12 @@
                     </a>
                 </div>
 
+                <!-- Blog Generator Toggle Button -->
+                <button onclick="toggleBlogGenerator()" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; width: 100%; margin-bottom: 20px;">📝 Blog Generator</button>
+                
+                <!-- Blog Generator Section (hidden by default) -->
+                <div id="blogGeneratorSection" style="display: none;">
+                
                 <!-- Quick Update Section -->
                 <div style="background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(191, 0, 255, 0.1)); border: 2px solid var(--accent-blue); border-radius: 16px; padding: 25px; margin-bottom: 30px;">
                     <h3 style="color: var(--accent-blue); margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;">
@@ -2514,6 +2520,7 @@
                         <!-- Populated dynamically -->
                         <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading batches...</div>
                     </div>
+                </div>
                 </div>
 
 <!-- Sales Dashboard -->
@@ -15408,6 +15415,11 @@ ${employeeReport || 'No activity recorded today'}
                     </div>
                 </div>
             `).join('');
+        }
+
+        function toggleBlogGenerator() {
+            const section = document.getElementById("blogGeneratorSection");
+            section.style.display = section.style.display === "none" ? "block" : "none";
         }
 
         function createPostFromBatch(batchId) {
