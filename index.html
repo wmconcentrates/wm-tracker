@@ -19656,7 +19656,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         });
 
         // Get 60-day sales data
-        const orders = await fetchAllLeafLinkOrders();
+        const orders = await fetchLeafLinkOrders();
         const sixtyDaysAgo = new Date();
         sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
