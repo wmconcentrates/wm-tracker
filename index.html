@@ -16623,19 +16623,12 @@ ${employeeReport || 'No activity recorded today'}
 
         // Load and display sales dashboard
         async function loadSalesDashboard() {
-            console.log('loadSalesDashboard called');
             try {
                 await ensureLeafLinkData();
-                console.log('ensureLeafLinkData done, calling inline loaders');
-
                 // Load Pipeline, Inventory, Needs data for inline display
-                console.log('Calling loadSalesPipeline');
                 loadSalesPipeline();
-                console.log('Calling loadLeafLinkInventory');
                 await loadLeafLinkInventory();
-                console.log('Calling loadNeedsData');
                 await loadNeedsData();
-                console.log('All inline loaders done');
 
                 // Populate sales rep dropdown
                 const salesReps = extractSalesReps(allLeafLinkOrders);
@@ -19296,7 +19289,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Render to both modal and inline
             const modalContainer = document.getElementById('pipelineCategoryGrid');
             const inlineContainer = document.getElementById('inlinePipelineGrid');
-            console.log('Pipeline render - inline container:', inlineContainer, 'html length:', html.length);
             if (modalContainer) modalContainer.innerHTML = html;
             if (inlineContainer) inlineContainer.innerHTML = html;
         }
@@ -19642,7 +19634,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Render to both modal and inline
         const modalContainer = document.getElementById('inventoryCategoryGrid');
         const inlineContainer = document.getElementById('inlineInventoryGrid');
-        console.log('Inventory render - inline container:', inlineContainer, 'html length:', html.length);
         if (modalContainer) modalContainer.innerHTML = html;
         if (inlineContainer) inlineContainer.innerHTML = html;
     }
@@ -19858,7 +19849,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Render to both modal and inline
         const modalContainer = document.getElementById('needsCategoryGrid');
         const inlineContainer = document.getElementById('inlineNeedsGrid');
-        console.log('Needs render - inline container:', inlineContainer, 'html length:', html.length);
         if (modalContainer) modalContainer.innerHTML = html;
         if (inlineContainer) inlineContainer.innerHTML = html;
     }
