@@ -9730,7 +9730,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             statsTitle.textContent = `${currentRole.name}'s Workload`;
             
             // Count batches at each stage
-            const waitingExtraction = batches.filter(b => b.status === 'intake').length;
+            const waitingExtraction = batches.filter(b => b.status === 'intake' && !(b.socks_total != null && b.socks_remaining === 0)).length;
             const waitingFinishing = batches.filter(b => b.status === 'extraction').length;
             const waitingPackaging = batches.filter(b => b.status === 'finishing').length;
             const waitingTesting = batches.filter(b => b.status === 'packaging' || (b.status === 'complete' && !b.test_thc_percent)).length;
