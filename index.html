@@ -10222,13 +10222,20 @@ ${employeeReport || 'No activity recorded today'}
                             </div>
                         ` : ''}
                         <!-- Comprehensive Batch Tracking Section -->
-                        <div style="grid-column: 1/-1; margin-top: 15px; padding-top: 15px; border-top: 2px solid var(--accent-purple);">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div style="grid-column: 1/-1; margin-top: 15px;">
+                            <!-- Current Stage Badge -->
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid var(--accent-purple);">
+                                <span style="font-size: 1.1rem; color: var(--text-secondary);">Current Stage:</span>
+                                <span style="font-size: 1.2rem; font-weight: 700; padding: 8px 20px; border-radius: 25px; text-transform: uppercase; background: ${batch.status === 'complete' ? 'var(--accent-green)' : batch.status === 'intake' ? 'var(--accent-blue)' : batch.status === 'extraction' ? 'var(--accent-purple)' : batch.status === 'finishing' ? 'var(--accent-orange)' : 'var(--accent-yellow)'}; color: white;">
+                                    ${batch.status === 'intake' ? '📥 Intake' : batch.status === 'extraction' ? '⚗️ Extraction' : batch.status === 'finishing' ? '✨ Finishing' : batch.status === 'packaging' ? '📦 Packaging' : batch.status === 'testing' ? '🧪 Testing' : batch.status === 'labeling' ? '🏷️ Labeling' : batch.status === 'complete' ? '✅ Complete' : batch.status}
+                                </span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
 
                                 <!-- INTAKE LABEL CARD -->
-                                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); border: 2px solid var(--accent-blue); border-radius: 12px; padding: 15px;">
-                                    <div style="font-weight: 700; color: var(--accent-blue); font-size: 1rem; margin-bottom: 12px; border-bottom: 1px solid var(--accent-blue); padding-bottom: 8px;">📥 INTAKE DATA</div>
-                                    <div style="font-size: 0.9rem; line-height: 1.6;">
+                                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 4px solid var(--accent-blue);">
+                                    <div style="font-weight: 700; color: var(--accent-blue); font-size: 1.3rem; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">📥</span> INTAKE DATA</div>
+                                    <div style="font-size: 1.1rem; line-height: 2;">
                                         <div style="margin-bottom: 6px;"><strong>Batch ID:</strong> <span style="font-family: monospace; background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">${batch.id}</span></div>
                                         <div style="margin-bottom: 6px;"><strong>Strain:</strong> ${batch.strain} <span style="color: var(--text-secondary);">(${batch.strain_type})</span></div>
                                         <div style="margin-bottom: 6px;"><strong>Trim Weight:</strong> ${batch.trim_weight || 0}g</div>
@@ -10245,9 +10252,9 @@ ${employeeReport || 'No activity recorded today'}
                                 </div>
 
                                 <!-- POST-PRODUCTION LABEL CARD -->
-                                <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05)); border: 2px solid var(--accent-green); border-radius: 12px; padding: 15px;">
-                                    <div style="font-weight: 700; color: var(--accent-green); font-size: 1rem; margin-bottom: 12px; border-bottom: 1px solid var(--accent-green); padding-bottom: 8px;">📤 POST-PRODUCTION DATA</div>
-                                    <div style="font-size: 0.9rem; line-height: 1.6;">
+                                <div style="background: var(--bg-secondary); border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 4px solid var(--accent-green);">
+                                    <div style="font-weight: 700; color: var(--accent-green); font-size: 1.3rem; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">📤</span> POST-PRODUCTION DATA</div>
+                                    <div style="font-size: 1.1rem; line-height: 2;">
                                         <div style="margin-bottom: 6px;"><strong>Status:</strong> <span style="text-transform: uppercase; font-weight: 600; color: ${batch.status === 'complete' ? 'var(--accent-green)' : batch.status === 'extraction' ? 'var(--accent-blue)' : 'var(--accent-yellow)'};">${batch.status}</span></div>
                                         <div style="margin-bottom: 6px;"><strong>Final Weight:</strong> ${batch.final_weight || 'Not yet'}${batch.final_weight ? 'g' : ''}</div>
                                         <div style="margin-bottom: 6px;"><strong>Sample Weight:</strong> ${batch.sample_weight || 0}g</div>
@@ -10288,20 +10295,21 @@ ${employeeReport || 'No activity recorded today'}
                     </div>
 
                                         <div class="timeline" id="timeline-${batch.id}" style="display: none;">
-                        <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                            <h4 style="margin-bottom: 10px; color: var(--accent-purple);">📊 Progress Timeline</h4>
-                            ${showBatchTimeline(batch.id)}
-                        </div>
-                        
-                        <h4 style="margin-bottom: 10px; color: var(--accent-blue);">📝 Activity History</h4>
-                        ${(batch.timeline || []).map(t => `
-                            <div class="timeline-item">
-                                <div class="timeline-content">
-                                    <div><span class="timeline-user">${t.user}</span> - ${t.action}</div>
-                                    <div class="timeline-date">${new Date(t.date).toLocaleString()}</div>
-                                </div>
+                        <!-- Activity History Dropdown -->
+                        <div style="margin-top: 10px;">
+                            <div onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'; this.querySelector('.arrow').textContent = this.nextElementSibling.style.display === 'none' ? '▶' : '▼';"
+                                 style="background: var(--bg-secondary); padding: 15px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 1.2rem; font-weight: 600; color: var(--accent-blue); box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                                <span class="arrow">▶</span> 📝 Activity History (${(batch.timeline || []).length} entries)
                             </div>
-                        `).join('')}
+                            <div style="display: none; background: var(--bg-tertiary); border-radius: 0 0 12px 12px; padding: 15px; margin-top: 2px;">
+                                ${(batch.timeline || []).length > 0 ? (batch.timeline || []).map(t =>
+                                    '<div style="padding: 12px; border-bottom: 1px solid var(--border-color); font-size: 1rem;">' +
+                                    '<div><strong style="color: var(--accent-purple);">' + t.user + '</strong> - ' + t.action + '</div>' +
+                                    '<div style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 4px;">' + new Date(t.date).toLocaleString() + '</div>' +
+                                    '</div>'
+                                ).join('') : '<div style="padding: 12px; color: var(--text-secondary);">No activity recorded yet</div>'}
+                            </div>
+                        </div>
                     </div>
                     
                 </div>
