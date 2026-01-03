@@ -5248,6 +5248,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                                 .select();
                         })
                         .then(({ data, error }) => {
+                            console.log('Login insert result:', { data, error });
                             if (error) {
                                 console.error('Error logging login:', error);
                             } else if (data && data.length > 0) {
