@@ -19788,6 +19788,24 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             inventoryByCategory[category][strainType].push({ name: displayName, qty: qty });
         });
 
+        // Add pipeline inventory to the calculation (product being made counts as upcoming inventory)
+        if (typeof pipelineCategoryData !== 'undefined') {
+            categories.forEach(cat => {
+                const pipelineItems = pipelineCategoryData[cat]?.strains || [];
+                pipelineItems.forEach(item => {
+                    const strainType = item.strainType || 'Hybrid';
+                    const weight = parseFloat(item.availableGrams) || parseFloat(item.weight) || 0;
+                    if (weight > 0) {
+                        inventoryByCategory[cat][strainType].push({
+                            name: item.strain + ' (Pipeline)',
+                            qty: weight,
+                            isPipeline: true
+                        });
+                    }
+                });
+            });
+        }
+
         // Calculate needs: 3-week supply based on 60-day sales average (21 days lead time from trim to product)
         categories.forEach(cat => {
             strainTypes.forEach(strain => {
