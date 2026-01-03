@@ -1399,6 +1399,22 @@
             <button id="viewTimecardsBtn" onclick="openTimecardsModal()" style="display: none;">Timecards</button>
             <button id="viewTrashBtn" onclick="openTrashModal()" style="display: none;">🗑️ Deleted Batches</button>
             <button id="complianceBtn" onclick="openComplianceModal()" style="display: none;">📋 Compliance</button>
+            <button id="loginHistoryBtn" onclick="openLoginHistoryModal()" style="display: none;">📊 Login History</button>
+        </div>
+    </div>
+
+    <!-- Login History Modal -->
+    <div id="loginHistoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10005; overflow-y: auto;">
+        <div style="max-width: 800px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 25px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: white;">📊 Login History</h2>
+                <button onclick="closeLoginHistoryModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 15px; border-radius: 8px;">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <div id="loginHistoryContent" style="max-height: 500px; overflow-y: auto;">
+                    Loading...
+                </div>
+            </div>
         </div>
     </div>
 
@@ -4613,6 +4629,7 @@
                     document.getElementById('myStatsBtn').style.display = 'block';
                 document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                     document.getElementById('complianceBtn').style.display = 'block';
+                    document.getElementById('loginHistoryBtn').style.display = 'block';
                     applyRolePermissions();
                     hidePINsForDemo(); // Hide PINs if in demo mode
                 }
@@ -5213,13 +5230,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('myStatsBtn').style.display = 'block'; document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
                 errorMsg.style.display = 'none';
 
-                // Log login to database (skip in demo mode)
+                // Log login to database with IP (skip in demo mode)
                 if (!isDemoMode()) {
-                    supabaseClient
-                        .from('wm_login_history')
-                        .insert({
-                            user_name: currentRole.name,
-                            login_time: new Date().toISOString()
+                    // Fetch IP address and log login
+                    fetch('https://api.ipify.org?format=json')
+                        .then(r => r.json())
+                        .then(ipData => {
+                            return supabaseClient
+                                .from('wm_login_history')
+                                .insert({
+                                    user_name: currentRole.name,
+                                    login_time: new Date().toISOString(),
+                                    ip_address: ipData.ip
+                                })
+                                .select();
                         })
                         .then(({ data, error }) => {
                             if (error) {
@@ -5228,6 +5252,22 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                                 // Store the login record ID for logout tracking
                                 localStorage.setItem('wmLoginRecordId', data[0].id);
                             }
+                        })
+                        .catch(err => {
+                            // If IP fetch fails, log without IP
+                            console.log('Could not get IP, logging without:', err);
+                            supabaseClient
+                                .from('wm_login_history')
+                                .insert({
+                                    user_name: currentRole.name,
+                                    login_time: new Date().toISOString()
+                                })
+                                .select()
+                                .then(({ data, error }) => {
+                                    if (!error && data && data.length > 0) {
+                                        localStorage.setItem('wmLoginRecordId', data[0].id);
+                                    }
+                                });
                         });
                 }
 
@@ -9478,12 +9518,87 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                             return `<div style="padding: 5px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
                                 <div><strong>${login.user_name}</strong></div>
                                 <div style="color: var(--text-secondary); font-size: 0.85rem;">${dateStr} ${timeStr} ${sessionInfo}</div>
+                                <div style="color: var(--text-tertiary); font-size: 0.75rem;">${login.ip_address || ''}</div>
                             </div>`;
                         }).join('');
                     }
                 });
         }
         
+        // Login History Modal functions
+        function openLoginHistoryModal() {
+            document.getElementById('loginHistoryModal').style.display = 'block';
+            loadLoginHistory();
+        }
+
+        function closeLoginHistoryModal() {
+            document.getElementById('loginHistoryModal').style.display = 'none';
+        }
+
+        async function loadLoginHistory() {
+            const contentEl = document.getElementById('loginHistoryContent');
+            contentEl.innerHTML = 'Loading...';
+
+            try {
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+                const { data: logins, error } = await supabaseClient
+                    .from('wm_login_history')
+                    .select('*')
+                    .gte('login_time', sevenDaysAgo.toISOString())
+                    .order('login_time', { ascending: false })
+                    .limit(50);
+
+                if (error) throw error;
+
+                if (!logins || logins.length === 0) {
+                    contentEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 40px;">No login records found</div>';
+                    return;
+                }
+
+                contentEl.innerHTML = `
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: var(--bg-tertiary);">
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border);">User</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border);">Login Time</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border);">IP Address</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border);">Session</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${logins.map(login => {
+                                const loginTime = new Date(login.login_time);
+                                const dateStr = loginTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                const timeStr = loginTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                                let sessionInfo = '<span style="color: var(--accent-green);">● Active</span>';
+                                if (login.logout_time) {
+                                    const duration = login.session_duration || 0;
+                                    const hours = Math.floor(duration / 60);
+                                    const mins = duration % 60;
+                                    sessionInfo = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                                }
+
+                                return `
+                                    <tr style="border-bottom: 1px solid var(--border);">
+                                        <td style="padding: 12px;"><strong>${login.user_name}</strong></td>
+                                        <td style="padding: 12px;">${dateStr} ${timeStr}</td>
+                                        <td style="padding: 12px; font-family: monospace; font-size: 0.9rem;">${login.ip_address || '-'}</td>
+                                        <td style="padding: 12px;">${sessionInfo}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (err) {
+                console.error('Error loading login history:', err);
+                contentEl.innerHTML = '<div style="color: var(--accent-red); text-align: center; padding: 40px;">Error loading login history</div>';
+            }
+        }
+
         // Update button display on extraction page
         function updateSuppliesButton() {
             supabaseClient
