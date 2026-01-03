@@ -26,7 +26,7 @@
             --bg-tertiary: #141414;
             --accent-purple: #bf00ff;
             --accent-green: #39ff14;
-            --accent-blue: #00f0ff;
+            --accent-blue: #0055ff;
             --accent-orange: #ff6b00;
             --accent-red: #ff0055;
             --accent-pink: #ff10f0;
@@ -737,12 +737,12 @@
         }
 
         /* Blue neon buttons */
-        .btn[style*="accent-blue"], .btn[style*="#00f0ff"], .btn[style*="#3B82F6"], .btn[style*="3B82F6"] {
+        .btn[style*="accent-blue"], .btn[style*="#0055ff"], .btn[style*="#3B82F6"], .btn[style*="3B82F6"] {
             border-color: var(--accent-blue) !important;
             color: var(--accent-blue) !important;
             box-shadow: 0 0 10px rgba(0, 240, 255, 0.3), inset 0 0 10px rgba(0, 240, 255, 0.05);
         }
-        .btn[style*="accent-blue"]:hover, .btn[style*="#00f0ff"]:hover, .btn[style*="#3B82F6"]:hover, .btn[style*="3B82F6"]:hover {
+        .btn[style*="accent-blue"]:hover, .btn[style*="#0055ff"]:hover, .btn[style*="#3B82F6"]:hover, .btn[style*="3B82F6"]:hover {
             background: rgba(0, 240, 255, 0.15) !important;
             box-shadow: 0 0 20px rgba(0, 240, 255, 0.5), 0 0 40px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.1);
         }
@@ -5014,7 +5014,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             } = options;
 
             // Create confetti - neon laser colors
-            const colors = ['#39ff14', '#00f0ff', '#ff10f0', '#bf00ff', '#ff0055', '#ff6b00'];
+            const colors = ['#39ff14', '#0055ff', '#ff10f0', '#bf00ff', '#ff0055', '#ff6b00'];
             const shapes = ['square', 'circle'];
 
             for (let i = 0; i < confettiCount; i++) {
@@ -5040,7 +5040,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             laserContainer.className = 'laser-container';
             document.body.appendChild(laserContainer);
 
-            const laserColors = ['#39ff14', '#00f0ff', '#ff10f0', '#bf00ff', '#ff0055', '#ff6b00'];
+            const laserColors = ['#39ff14', '#0055ff', '#ff10f0', '#bf00ff', '#ff0055', '#ff6b00'];
 
             for (let i = 0; i < laserCount; i++) {
                 const laser = document.createElement('div');
@@ -19176,7 +19176,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Get strain color based on type (Sativa=Red, Indica=Blue, Hybrid=Green)
             const getStrainColor = (type) => {
                 if (type === 'Sativa') return '#ff0055';
-                if (type === 'Indica') return '#00f0ff';
+                if (type === 'Indica') return '#0055ff';
                 return '#39ff14'; // Hybrid default
             };
 
@@ -19186,10 +19186,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 <div style="padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${strainColor}; box-shadow: 0 0 10px ${strainColor}33;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; color: var(--text-primary);">${strain}</span>
-                        <span style="background: ${strainColor}22; color: ${strainColor}; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;">${info.grams.toFixed(1)}g</span>
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px;">
-                        ${info.batches.map(b => b.id + ' (' + b.grams + 'g)').join(', ')}
+                        <span style="background: ${strainColor}22; color: ${strainColor}; padding: 6px 12px; border-radius: 12px; font-size: 1.1rem; font-weight: 700;">${info.grams.toFixed(1)}g</span>
                     </div>
                 </div>
             `;
