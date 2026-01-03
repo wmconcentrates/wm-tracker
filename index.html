@@ -19430,15 +19430,36 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         const products = await fetchLeafLinkInventory();
         console.log('Fetched', products.length, 'products from LeafLink');
 
-        // Categorize products using parent.name field
+        // First, collect all unique parent names to debug
+        const uniqueParents = new Set();
+        const uniqueListingStates = new Set();
+        products.forEach(p => {
+            const parentVal = p.parent?.name || (typeof p.parent === 'string' ? p.parent : 'NO_PARENT');
+            uniqueParents.add(parentVal);
+            uniqueListingStates.add(p.listing_state || 'NO_STATE');
+        });
+        console.log('=== ALL UNIQUE PARENT VALUES ===');
+        console.log([...uniqueParents]);
+        console.log('=== ALL LISTING STATES ===');
+        console.log([...uniqueListingStates]);
+
+        // Categorize products
         products.forEach(product => {
             const name = (product.name || '').toLowerCase();
             const displayName = product.display_name || product.name || '';
-            const parentName = (product.parent?.name || '').toLowerCase();
+            // Handle parent as object or string
+            let parentName = '';
+            if (product.parent && typeof product.parent === 'object') {
+                parentName = (product.parent.name || '').toLowerCase();
+            } else if (typeof product.parent === 'string') {
+                parentName = product.parent.toLowerCase();
+            }
+            const productLine = (product.product_line || '').toLowerCase();
+            const category_field = (product.category || '').toLowerCase();
             const qty = parseFloat(product.available_inventory || product.quantity || 0) || 0;
 
             // Skip archived/internal products - only show Available
-            if (product.listing_state !== 'Available') return;
+            if (product.listing_state && product.listing_state !== 'Available') return;
 
             // Skip products with 0 quantity
             if (qty <= 0) return;
@@ -19448,19 +19469,22 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (name.includes('sativa') || name.includes('(sativa)')) strainType = 'Sativa';
             else if (name.includes('indica') || name.includes('(indica)')) strainType = 'Indica';
 
-            // Map parent.name to our categories
+            // Combine all fields for matching
+            const matchText = (parentName + ' ' + productLine + ' ' + category_field).toLowerCase();
+
+            // Map to our categories
             let category = null;
-            if (parentName.includes('shatter')) {
+            if (matchText.includes('shatter')) {
                 category = 'Shatter';
-            } else if (parentName.includes('sugar')) {
+            } else if (matchText.includes('sugar')) {
                 category = 'Sugar Wax';
-            } else if (parentName.includes('wax') || parentName.includes('badder') || parentName.includes('budder')) {
+            } else if (matchText.includes('wax') || matchText.includes('badder') || matchText.includes('budder')) {
                 category = 'Wax';
-            } else if (parentName.includes('cart') || parentName.includes('cartridge')) {
+            } else if (matchText.includes('cart') || matchText.includes('cartridge')) {
                 category = 'Live Resin Carts';
-            } else if (parentName.includes('aio') || parentName.includes('disposable') || parentName.includes('all-in-one') || parentName.includes('all in one')) {
+            } else if (matchText.includes('aio') || matchText.includes('disposable') || matchText.includes('all-in-one') || matchText.includes('all in one')) {
                 category = 'Live Resin AIOs';
-            } else if (parentName.includes('hash') || parentName.includes('brick')) {
+            } else if (matchText.includes('hash') || matchText.includes('brick')) {
                 category = 'Brick Hash';
             }
 
@@ -19474,7 +19498,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     sku: product.sku
                 });
             } else {
-                console.log('UNMATCHED:', parentName, '|', product.name, '| Qty:', qty);
+                console.log('UNMATCHED:', 'parent=' + parentName, '| line=' + productLine, '| cat=' + category_field, '|', product.name, '| Qty:', qty, '| State:', product.listing_state);
             }
         });
 
