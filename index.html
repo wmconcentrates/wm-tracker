@@ -19469,23 +19469,31 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (name.includes('sativa') || name.includes('(sativa)')) strainType = 'Sativa';
             else if (name.includes('indica') || name.includes('(indica)')) strainType = 'Indica';
 
-            // Combine all fields for matching
-            const matchText = (parentName + ' ' + productLine + ' ' + category_field).toLowerCase();
+            // Combine all fields for matching - include display name too
+            const matchText = (parentName + ' ' + productLine + ' ' + category_field + ' ' + displayName).toLowerCase();
 
-            // Map to our categories
+            // Map to our categories - check specific product types
             let category = null;
+
+            // Skip non-concentrate products
+            if (matchText.includes('syrup') || matchText.includes('jousse') ||
+                matchText.includes('rso') || matchText.includes('battery') ||
+                matchText.includes('510 thread')) {
+                return; // Skip syrups, RSO, batteries
+            }
+
             if (matchText.includes('shatter')) {
                 category = 'Shatter';
             } else if (matchText.includes('sugar')) {
                 category = 'Sugar Wax';
+            } else if (matchText.includes('cartridge') || (matchText.includes('cart') && matchText.includes('live resin'))) {
+                category = 'Live Resin Carts';
+            } else if (matchText.includes('disposable') || matchText.includes('all in one') || matchText.includes('all-in-one') || matchText.includes('aio')) {
+                category = 'Live Resin AIOs';
+            } else if (matchText.includes('brick') || matchText.includes('hash')) {
+                category = 'Brick Hash';
             } else if (matchText.includes('wax') || matchText.includes('badder') || matchText.includes('budder')) {
                 category = 'Wax';
-            } else if (matchText.includes('cart') || matchText.includes('cartridge')) {
-                category = 'Live Resin Carts';
-            } else if (matchText.includes('aio') || matchText.includes('disposable') || matchText.includes('all-in-one') || matchText.includes('all in one')) {
-                category = 'Live Resin AIOs';
-            } else if (matchText.includes('hash') || matchText.includes('brick')) {
-                category = 'Brick Hash';
             }
 
             if (category && inventoryCategoryData[category]) {
