@@ -8454,6 +8454,31 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     .eq('id', batchId);
             });
 
+            // Calculate total trim for this run
+            const runTrimWeight = contributions.reduce((sum, c) => {
+                const batch = batches.find(b => b.id === c.batchId);
+                if (!batch) return sum;
+                const trimPerSock = batch.trim_per_sock || (batch.trim_weight / (batch.socks_total || 1));
+                return sum + (trimPerSock * c.socks);
+            }, 0);
+
+            // Log extraction run for performance tracking
+            const extractionRun = {
+                timestamp: new Date().toISOString(),
+                user: currentRole ? currentRole.name : 'Unknown',
+                machine: currentMachine,
+                column: column,
+                trimWeight: runTrimWeight,
+                socks: contributions.reduce((sum, c) => sum + c.socks, 0),
+                batches: contributions.map(c => c.batchId)
+            };
+
+            // Store in localStorage for performance tracking
+            const extractionRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
+            extractionRuns.push(extractionRun);
+            localStorage.setItem('wm_extraction_runs', JSON.stringify(extractionRuns));
+            console.log('Logged extraction run:', extractionRun);
+
             Promise.all(decrementPromises).then(() => {
                 // Refresh extraction queue and column dropdowns
                 populateExtractionQueue();
@@ -13236,13 +13261,36 @@ ${employeeReport || 'No activity recorded today'}
                 }
             });
             
+            // Add extraction runs from localStorage (actual column runs)
+            const extractionRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
+            extractionRuns.forEach(run => {
+                const runDate = new Date(run.timestamp);
+                if (runDate < rangeStart) return;
+
+                const user = run.user;
+                if (!employeeData[user]) {
+                    employeeData[user] = {
+                        name: user,
+                        packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
+                        labeling: { units: 0, batches: 0, dates: [] },
+                        extraction: { batches: 0, runs: 0, trimWeight: 0, dates: [] },
+                        daysActive: new Set()
+                    };
+                }
+
+                employeeData[user].extraction.runs += 1;
+                employeeData[user].extraction.trimWeight += run.trimWeight || 0;
+                employeeData[user].extraction.dates.push(runDate);
+                employeeData[user].daysActive.add(runDate.toDateString());
+            });
+
             // Calculate per-day averages for each employee
             Object.values(employeeData).forEach(emp => {
                 const daysActive = emp.daysActive.size;
                 emp.daysActiveCount = daysActive;
                 emp.packaging.perDay = daysActive > 0 ? (emp.packaging.units / daysActive).toFixed(1) : 0;
                 emp.labeling.perDay = daysActive > 0 ? (emp.labeling.units / daysActive).toFixed(1) : 0;
-                emp.extraction.perDay = daysActive > 0 ? (emp.extraction.batches / daysActive).toFixed(2) : 0;
+                emp.extraction.perDay = daysActive > 0 ? (emp.extraction.trimWeight / daysActive).toFixed(0) : 0;
             });
             
             // Filter data if needed
@@ -13700,6 +13748,18 @@ ${employeeReport || 'No activity recorded today'}
                 finishing: { batches: 0, dates: [] },
                 daysActive: new Set()
             };
+
+            // Add extraction runs from localStorage first
+            const extractionRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
+            extractionRuns.forEach(run => {
+                if (run.user !== employeeName) return;
+                const runDate = new Date(run.timestamp);
+                if (runDate < rangeStart) return;
+
+                empData.extraction.runs += 1;
+                empData.extraction.trimWeight += run.trimWeight || 0;
+                empData.daysActive.add(runDate.toDateString());
+            });
 
             // Calculate stats from batches
             batches.forEach(batch => {
