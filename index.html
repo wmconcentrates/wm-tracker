@@ -19441,9 +19441,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             else if (name.includes('indica')) strainType = 'Indica';
 
             // Match to category
+            let matched = false;
             for (const cat of inventoryCategories) {
                 const matches = cat.keywords.some(kw => name.includes(kw));
                 if (matches) {
+                    matched = true;
                     inventoryCategoryData[cat.key].count++;
                     inventoryCategoryData[cat.key].totalQty += qty;
                     inventoryCategoryData[cat.key].items.push({
@@ -19454,6 +19456,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     });
                     break;
                 }
+            }
+            if (!matched) {
+                console.log('UNMATCHED PRODUCT:', product.name, '| Qty:', product.available_inventory || product.quantity);
             }
         });
 
