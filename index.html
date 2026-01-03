@@ -5233,6 +5233,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 // Log login to database with IP (skip in demo mode)
                 if (!isDemoMode()) {
                     // Fetch IP address and log login
+                    console.log('Attempting to fetch IP...');
                     fetch('https://api.ipify.org?format=json')
                         .then(r => r.json())
                         .then(ipData => {
@@ -5256,7 +5257,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                         })
                         .catch(err => {
                             // If IP fetch fails, log without IP
-                            console.log('Could not get IP, logging without:', err);
+                            console.error('IP FETCH FAILED:', err);
                             supabaseClient
                                 .from('wm_login_history')
                                 .insert({
