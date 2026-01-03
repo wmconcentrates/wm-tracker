@@ -5236,6 +5236,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     fetch('https://api.ipify.org?format=json')
                         .then(r => r.json())
                         .then(ipData => {
+                            console.log('Got IP:', ipData.ip);
                             return supabaseClient
                                 .from('wm_login_history')
                                 .insert({
