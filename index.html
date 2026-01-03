@@ -19789,21 +19789,27 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         });
 
         // Add pipeline inventory to the calculation (product being made counts as upcoming inventory)
-        if (typeof pipelineCategoryData !== 'undefined') {
-            categories.forEach(cat => {
-                const pipelineItems = pipelineCategoryData[cat]?.strains || [];
-                pipelineItems.forEach(item => {
-                    const strainType = item.strainType || 'Hybrid';
-                    const weight = parseFloat(item.availableGrams) || parseFloat(item.weight) || 0;
-                    if (weight > 0) {
-                        inventoryByCategory[cat][strainType].push({
-                            name: item.strain + ' (Pipeline)',
-                            qty: weight,
-                            isPipeline: true
+        try {
+            if (typeof pipelineCategoryData !== 'undefined' && pipelineCategoryData) {
+                categories.forEach(cat => {
+                    const catData = pipelineCategoryData[cat];
+                    if (catData && catData.strains && Array.isArray(catData.strains)) {
+                        catData.strains.forEach(item => {
+                            const strainType = item.strainType || 'Hybrid';
+                            const weight = parseFloat(item.availableGrams) || parseFloat(item.weight) || 0;
+                            if (weight > 0 && inventoryByCategory[cat] && inventoryByCategory[cat][strainType]) {
+                                inventoryByCategory[cat][strainType].push({
+                                    name: (item.strain || 'Unknown') + ' (Pipeline)',
+                                    qty: weight,
+                                    isPipeline: true
+                                });
+                            }
                         });
                     }
                 });
-            });
+            }
+        } catch(e) {
+            console.log('Pipeline data not available for needs calc:', e);
         }
 
         // Calculate needs: 3-week supply based on 60-day sales average (21 days lead time from trim to product)
