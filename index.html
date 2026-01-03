@@ -19847,10 +19847,10 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
                 // Need more if total quantity is below par level
                 const qtyNeeded = Math.max(0, parLevel - currentQty);
-                // Need varieties if we have less than 1 variety with product
-                const varietiesNeeded = (currentQty < parLevel && varietyCount === 0) ? 1 : 0;
+                // Need varieties if we have less than 3 varieties
+                const varietiesNeeded = Math.max(0, 3 - varietyCount);
 
-                if (qtyNeeded > 0) {
+                if (qtyNeeded > 0 || varietiesNeeded > 0) {
                     needsData[cat].needs.push({
                         strainType: strain,
                         varietiesNeeded: varietiesNeeded,
