@@ -19842,18 +19842,22 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const totalSold = salesByCategory[cat][strain];
                 const parLevel = Math.ceil((totalSold / 60) * 7); // 1-week supply based on daily average
                 const currentItems = inventoryByCategory[cat][strain];
-                const itemsAtPar = currentItems.filter(item => item.qty >= parLevel);
-                const varietiesNeeded = Math.max(0, 3 - itemsAtPar.length);
-                const totalQtyNeeded = Math.max(0, (parLevel * 3) - currentItems.reduce((sum, i) => sum + i.qty, 0));
+                const currentQty = currentItems.reduce((sum, i) => sum + i.qty, 0);
+                const varietyCount = currentItems.length;
 
-                if (varietiesNeeded > 0 || totalQtyNeeded > 0) {
+                // Need more if total quantity is below par level
+                const qtyNeeded = Math.max(0, parLevel - currentQty);
+                // Need varieties if we have less than 1 variety with product
+                const varietiesNeeded = (currentQty < parLevel && varietyCount === 0) ? 1 : 0;
+
+                if (qtyNeeded > 0) {
                     needsData[cat].needs.push({
                         strainType: strain,
                         varietiesNeeded: varietiesNeeded,
-                        qtyNeeded: Math.round(totalQtyNeeded),
+                        qtyNeeded: Math.round(qtyNeeded),
                         parLevel: parLevel,
-                        currentVarieties: currentItems.length,
-                        currentQty: Math.round(currentItems.reduce((sum, i) => sum + i.qty, 0))
+                        currentVarieties: varietyCount,
+                        currentQty: Math.round(currentQty)
                     });
                 }
             });
