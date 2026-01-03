@@ -19454,7 +19454,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             } else if (typeof product.parent === 'string') {
                 parentName = product.parent.toLowerCase();
             }
-            const productLine = (product.product_line || '').toLowerCase();
+            const productLine = (typeof product.product_line === 'string' ? product.product_line : (product.product_line?.name || '')).toLowerCase();
             const category_field = (typeof product.category === 'string' ? product.category : (product.category?.name || '')).toLowerCase();
             const qty = parseFloat(product.available_inventory || product.quantity || 0) || 0;
 
