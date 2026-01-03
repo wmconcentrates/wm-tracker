@@ -19512,17 +19512,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 if (!response.ok) throw new Error('API request failed');
                 const data = await response.json();
 
-                // Log first product to see structure
-                if (allProducts.length === 0 && data.results && data.results.length > 0) {
-                    console.log('=== SAMPLE PRODUCT STRUCTURE ===');
-                    console.log(JSON.stringify(data.results[0], null, 2));
-                    console.log('All keys:', Object.keys(data.results[0]));
-                }
-
                 allProducts = allProducts.concat(data.results || []);
                 nextUrl = data.next;
             }
-            console.log('Total products fetched:', allProducts.length);
             return allProducts;
         } catch (error) {
             console.error('Error fetching LeafLink inventory:', error);
