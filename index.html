@@ -19462,6 +19462,17 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
         });
 
+        // Debug: show what's in each category
+        console.log('=== INVENTORY BY CATEGORY ===');
+        Object.entries(inventoryCategoryData).forEach(([cat, data]) => {
+            console.log(cat + ': ' + data.count + ' items, ' + data.totalQty + ' total qty');
+            if (data.items.length > 0) {
+                data.items.slice(0, 3).forEach(item => {
+                    console.log('  - ' + item.name + ' (' + item.quantity + ')');
+                });
+            }
+        });
+
         renderInventoryCategories();
     }
 
