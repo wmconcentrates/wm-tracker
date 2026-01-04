@@ -1280,6 +1280,56 @@
                 padding: 0 4px;
             }
 
+            /* Mobile Popup Page Styles */
+            .station-content {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: var(--bg-primary);
+                z-index: 1000;
+                overflow-y: auto;
+                padding: 60px 15px 20px 15px;
+                animation: slideUp 0.25s ease-out;
+            }
+
+            .station-content.active {
+                display: block;
+            }
+
+            @keyframes slideUp {
+                from { transform: translateY(100%); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+
+            /* Back button for mobile popups */
+            .mobile-back-btn {
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                z-index: 1001;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                color: var(--text-primary);
+                padding: 8px 15px;
+                border-radius: 20px;
+                font-size: 0.9rem;
+                cursor: pointer;
+                display: none;
+            }
+
+            .station-content.active .mobile-back-btn {
+                display: block;
+            }
+
+            /* Keep station tabs visible as home screen */
+            .station-tabs {
+                position: relative;
+                z-index: 1;
+            }
+
             .btn {
                 padding: 12px 20px;
                 font-size: 0.9rem;
@@ -1701,6 +1751,7 @@
 
         <!-- Extraction Station -->
         <div class="station-content" id="extraction">
+            <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
             <div class="form-section">
                 <h2>⚗️ Extraction Processing</h2>
                 
@@ -1760,6 +1811,7 @@
         <!-- Finishing Station -->
         <!-- Post Extraction Station -->
         <div class="station-content" id="finishing">
+            <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
             <div class="form-section">
                 <h2>✨ Post Extraction & Batch Splitting</h2>
 
@@ -1904,6 +1956,7 @@
 
         <!-- Packaging Station -->
         <div class="station-content" id="packaging">
+            <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
             <div class="form-section">
                 <h2>📊 Packaging & Listing</h2>
                 <div class="form-group">
@@ -2011,6 +2064,7 @@
 
         <!-- Testing Station -->
         <div class="station-content" id="testing">
+            <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
             <div class="form-section">
                 <h2>🧪 Test Results Entry</h2>
                 <div class="form-group">
@@ -2162,6 +2216,7 @@
 
         <!-- Labeling Station -->
         <div class="station-content" id="labeling">
+            <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
             <div class="form-section">
                 <h2>🏷️ Label Printing & Application</h2>
                 
@@ -2243,6 +2298,7 @@
         <!-- Waste Log -->
         <!-- Analytics -->
         <div class="station-content" id="analytics">
+            <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
             <h2 style="margin-bottom: 30px;">📊 Completed Batches Analytics</h2>
             
             <!-- Summary Stats -->
@@ -2320,6 +2376,7 @@
 
                 <!-- Performance Station -->
         <div class="station-content" id="performance">
+            <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
             <div class="form-section">
                 <h2>Team Performance</h2>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">Click any employee card for detailed performance view</p>
@@ -2401,6 +2458,7 @@
 
         <!-- Dashboard -->
         <div class="station-content" id="dashboard">
+            <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
             <!-- Dashboard Needs Section -->
             <div id="dashboardNeedsSection" style="margin-bottom: 20px;">
                 <div class="foh-box" style="border-left: 4px solid #F59E0B; background: var(--bg-secondary); border-radius: 12px; padding: 12px;">
@@ -2526,6 +2584,7 @@
 
         <!-- Front of House Station -->
         <div class="station-content" id="frontofhouse">
+            <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
             <div class="form-section">
                 <!-- Pipeline, Inventory, Needs Sections -->
                 <style>
@@ -5505,6 +5564,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 .catch(err => console.log('Activity update failed:', err));
         }
 
+        // Close mobile station popup and return to app grid
+        function closeMobileStation() {
+            document.querySelectorAll('.station-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.station-tab').forEach(t => t.classList.remove('active'));
+        }
+
         function applyRolePermissions() {
             if (!currentRole) return;
             
@@ -5536,6 +5601,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.querySelectorAll('.station-content').forEach(c => c.classList.remove('active'));
                 document.getElementById(station).classList.add('active');
                 
+                // Scroll to top when opening station on mobile
+                window.scrollTo(0, 0);
+
                 if (station === 'dashboard') {
                     updateDashboard();
                     renderBatches();
