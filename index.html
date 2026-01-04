@@ -4474,6 +4474,7 @@
         let ROLES = {
             demo: {
                 name: 'Demo User',
+                displayName: 'Demo User',
                 pin: '0000',
                 tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
                 access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
@@ -4501,7 +4502,8 @@
                     const key = emp.name.toLowerCase().replace(/[^a-z]/g, '');
                     ROLES[key] = {
                         id: emp.id,
-                        name: emp.is_admin ? emp.name + ' (Admin)' : emp.name,
+                        name: emp.name,
+                        displayName: emp.is_admin ? emp.name + ' (Admin)' : emp.name,
                         pin: emp.pin,
                         tabs: emp.stations || [],
                         access: emp.stations || [],
