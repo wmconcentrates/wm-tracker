@@ -14498,10 +14498,10 @@ ${employeeReport || 'No activity recorded today'}
                             empData.daysActive.add(eventDate.toDateString());
                         }
 
-                        // Finishing
+                        // Finishing - track batches but don't add to daysActive
+                        // (finishing isn't measured in productivity, so shouldn't inflate days)
                         if (event.stage === 'finishing' && event.action && event.action.toLowerCase().includes('completed')) {
                             empData.finishing.batches += 1;
-                            empData.daysActive.add(eventDate.toDateString());
                         }
                     });
                 }
