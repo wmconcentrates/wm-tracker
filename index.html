@@ -19928,11 +19928,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const totalSold = salesByCategory[cat][strain];
                 const parLevel = Math.ceil((totalSold / 60) * 7); // 1-week supply based on daily average
                 const currentItems = inventoryByCategory[cat][strain];
-                const currentQty = currentItems.reduce((sum, i) => sum + i.qty, 0);
+
+                // Separate pipeline and inventory quantities
+                const pipelineQty = currentItems.filter(i => i.isPipeline).reduce((sum, i) => sum + i.qty, 0);
+                const inventoryQty = currentItems.filter(i => !i.isPipeline).reduce((sum, i) => sum + i.qty, 0);
+                const totalQty = pipelineQty + inventoryQty;
                 const varietyCount = currentItems.length;
 
                 // Need more if total quantity is below par level
-                const qtyNeeded = Math.max(0, parLevel - currentQty);
+                const qtyNeeded = Math.max(0, parLevel - totalQty);
                 // Need varieties if we have less than 3 varieties
                 const varietiesNeeded = Math.max(0, 3 - varietyCount);
 
@@ -19943,8 +19947,10 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     varietiesNeeded: varietiesNeeded,
                     qtyNeeded: Math.round(qtyNeeded),
                     parLevel: parLevel,
+                    pipelineQty: Math.round(pipelineQty),
+                    inventoryQty: Math.round(inventoryQty),
                     currentVarieties: varietyCount,
-                    currentQty: Math.round(currentQty),
+                    currentQty: Math.round(totalQty),
                     isStocked: qtyNeeded === 0 && varietiesNeeded === 0
                 };
                 if (existingIndex >= 0) {
@@ -20039,9 +20045,10 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                             <span style="font-weight: 700; color: ${strainColor}; font-size: 1.1rem;">${need.strainType}</span>
                             ${statusBadge}
                         </div>
-                        <div style="display: flex; gap: 15px; color: var(--text-secondary); font-size: 0.85rem;">
-                            <span>Par: ${need.parLevel}g</span>
-                            <span>Have: ${need.currentVarieties} varieties (${need.currentQty}g)</span>
+                        <div style="display: flex; gap: 20px; color: var(--text-secondary); font-size: 0.9rem;">
+                            <span><strong>Par:</strong> ${need.parLevel}g</span>
+                            <span><strong>Pipeline:</strong> ${need.pipelineQty || 0}g</span>
+                            <span><strong>Inventory:</strong> ${need.inventoryQty || 0}g</span>
                         </div>
                     </div>
                 `;
