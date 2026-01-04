@@ -19813,15 +19813,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             salesByCategory[cat] = { Indica: 0, Sativa: 0, Hybrid: 0 };
         });
 
-        // Get 60-day sales data
+        // Get 120-day sales data
         const orders = await fetchLeafLinkOrders();
-        const sixtyDaysAgo = new Date();
-        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+        const salesPeriodStart = new Date();
+        salesPeriodStart.setDate(salesPeriodStart.getDate() - 120);
 
         // Calculate sales by category and strain type
         orders.forEach(order => {
             const orderDate = new Date(order.ordered_at || order.created_on);
-            if (orderDate < sixtyDaysAgo) return;
+            if (orderDate < salesPeriodStart) return;
 
             (order.line_items || []).forEach(item => {
                 const productName = (item.frozen_data?.product?.name || item.product?.name || '').toLowerCase();
@@ -19922,11 +19922,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             console.log('Pipeline data error in needs calc:', e.message);
         }
 
-        // Calculate needs: 1-week supply based on 60-day sales average (7 days for urgent visibility)
+        // Calculate needs: 1-week supply based on 120-day sales average (7 days for urgent visibility)
         categories.forEach(cat => {
             strainTypes.forEach(strain => {
                 const totalSold = salesByCategory[cat][strain];
-                const parLevel = Math.ceil((totalSold / 60) * 7); // 1-week supply based on daily average
+                const parLevel = Math.ceil((totalSold / 120) * 7); // 1-week supply based on 120-day daily average
                 const currentItems = inventoryByCategory[cat][strain];
 
                 // Separate pipeline and inventory quantities
