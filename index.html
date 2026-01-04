@@ -14070,7 +14070,7 @@ ${employeeReport || 'No activity recorded today'}
                             <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; margin-top: 15px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                     <h4 style="color: var(--accent-blue); font-size: 1.1rem;">📦 Packaging Performance</h4>
-                                    <span style="font-size: 1.5rem; font-weight: 700; color: ${getPerformanceColor(packagingPct)};">${packagingPct}%</span>
+                                    <span style="font-size: 1.5rem; font-weight: 700; color: ${getPerformanceColor(unitsPct)};">${unitsPct}%</span>
                                 </div>
                                 
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
@@ -14095,10 +14095,10 @@ ${employeeReport || 'No activity recorded today'}
                                     </div>
                                 ` : ''}
                                 
-                                <div style="margin-top: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid ${getPerformanceColor(packagingPct)};">
+                                <div style="margin-top: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid ${getPerformanceColor(unitsPct)};">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <span style="color: var(--text-secondary);">Target: ${targets.packaging}/day × ${emp.daysActiveCount} days</span>
-                                        <span style="font-weight: 700;">${emp.packaging.units} / ${packagingTarget}</span>
+                                        <span style="color: var(--text-secondary);">Target: ${targets.unitsPerDay || 800}/day × ${emp.daysActiveCount} days</span>
+                                        <span style="font-weight: 700;">${emp.packaging.units} / ${unitsTarget}</span>
                                     </div>
                                 </div>
                             </div>
@@ -14110,7 +14110,7 @@ ${employeeReport || 'No activity recorded today'}
                             <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; margin-top: 15px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                     <h4 style="color: var(--accent-green); font-size: 1.1rem;">🏷️ Labeling Performance</h4>
-                                    <span style="font-size: 1.5rem; font-weight: 700; color: ${getPerformanceColor(labelingPct)};">${labelingPct}%</span>
+                                    <span style="font-size: 1.5rem; font-weight: 700; color: ${getPerformanceColor(unitsPct)};">${unitsPct}%</span>
                                 </div>
                                 
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
@@ -14128,10 +14128,10 @@ ${employeeReport || 'No activity recorded today'}
                                     </div>
                                 </div>
                                 
-                                <div style="margin-top: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid ${getPerformanceColor(labelingPct)};">
+                                <div style="margin-top: 15px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid ${getPerformanceColor(unitsPct)};">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <span style="color: var(--text-secondary);">Target: ${targets.labeling}/day × ${emp.daysActiveCount} days</span>
-                                        <span style="font-weight: 700;">${emp.labeling.units} / ${labelingTarget}</span>
+                                        <span style="color: var(--text-secondary);">Target: ${targets.unitsPerDay || 800}/day × ${emp.daysActiveCount} days</span>
+                                        <span style="font-weight: 700;">${emp.labeling.units} / ${unitsTarget}</span>
                                     </div>
                                 </div>
                             </div>
@@ -14574,8 +14574,8 @@ ${employeeReport || 'No activity recorded today'}
             if (access.includes('packaging')) {
                 const unitsTarget = (targets.unitsPerDay || 800) * daysActive;
                 const totalUnits = empData.packaging.units + empData.labeling.units;
-                const packagingPct = packagingTarget > 0 ? ((empData.packaging.units / packagingTarget) * 100).toFixed(0) : 0;
-                const color = packagingPct >= 90 ? 'var(--accent-green)' : packagingPct >= 70 ? 'var(--accent-blue)' : packagingPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
+                const unitsPct = unitsTarget > 0 ? ((totalUnits / unitsTarget) * 100).toFixed(0) : 0;
+                const color = unitsPct >= 90 ? 'var(--accent-green)' : unitsPct >= 70 ? 'var(--accent-blue)' : unitsPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
 
                 const productBreakdown = Object.entries(empData.packaging.byProduct)
                     .sort((a, b) => b[1] - a[1])
@@ -14586,7 +14586,7 @@ ${employeeReport || 'No activity recorded today'}
                     <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--accent-purple);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <h3 style="margin: 0; color: var(--accent-purple); font-size: 1.2rem;">Packaging</h3>
-                            <span style="font-size: 1.5rem; font-weight: 700; color: ${color};">${packagingPct}%</span>
+                            <span style="font-size: 1.5rem; font-weight: 700; color: ${color};">${unitsPct}%</span>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
                             <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
@@ -14604,22 +14604,21 @@ ${employeeReport || 'No activity recorded today'}
                         </div>
                         ${productBreakdown ? `<div style="margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px;"><div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">By Product Type:</div>${productBreakdown}</div>` : ''}
                         <div style="margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px; font-size: 0.9rem; color: var(--text-secondary);">
-                            Target: ${targets.packaging}/day x ${daysActive} days = ${packagingTarget.toLocaleString()} units
+                            Target: ${targets.unitsPerDay || 800}/day x ${daysActive} days = ${unitsTarget.toLocaleString()} units
                         </div>
                     </div>
                 `;
             }
 
             if (access.includes('labeling')) {
-                const labelingTarget = targets.labeling * daysActive;
-                const labelingPct = labelingTarget > 0 ? ((empData.labeling.units / labelingTarget) * 100).toFixed(0) : 0;
-                const color = labelingPct >= 90 ? 'var(--accent-green)' : labelingPct >= 70 ? 'var(--accent-blue)' : labelingPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
+                // Labeling uses same combined target
+                const labelingColor = unitsPct >= 90 ? 'var(--accent-green)' : unitsPct >= 70 ? 'var(--accent-blue)' : unitsPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
 
                 detailSections += `
                     <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--accent-green);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <h3 style="margin: 0; color: var(--accent-green); font-size: 1.2rem;">Labeling</h3>
-                            <span style="font-size: 1.5rem; font-weight: 700; color: ${color};">${labelingPct}%</span>
+                            <span style="font-size: 1.5rem; font-weight: 700; color: ${color};">${unitsPct}%</span>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
                             <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
@@ -14636,7 +14635,7 @@ ${employeeReport || 'No activity recorded today'}
                             </div>
                         </div>
                         <div style="margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px; font-size: 0.9rem; color: var(--text-secondary);">
-                            Target: ${targets.labeling}/day x ${daysActive} days = ${labelingTarget.toLocaleString()} units
+                            Target: ${targets.unitsPerDay || 800}/day x ${daysActive} days = ${unitsTarget.toLocaleString()} units
                         </div>
                     </div>
                 `;
