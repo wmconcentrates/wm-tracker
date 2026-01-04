@@ -2358,6 +2358,14 @@
 
         <!-- Dashboard -->
         <div class="station-content" id="dashboard">
+            <!-- Dashboard Needs Section -->
+            <div id="dashboardNeedsSection" style="margin-bottom: 20px;">
+                <div class="foh-box" style="border-left: 4px solid #F59E0B; background: var(--bg-secondary); border-radius: 12px; padding: 12px;">
+                    <h4 style="color: #F59E0B; margin: 0 0 10px 0; font-size: 1rem; font-weight: 600; text-align: center;">What We Need</h4>
+                    <div id="dashboardNeedsGrid" class="foh-items" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"></div>
+                </div>
+            </div>
+
             <!-- Personal Quick Stats -->
             <div id="personalStats" style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(59, 130, 246, 0.2)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-purple);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -7048,6 +7056,11 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             
             // Update badge counts on navigation tabs
             updateBadgeCounts();
+
+            // Load needs data for dashboard display
+            if (document.getElementById('dashboardNeedsGrid')) {
+                loadNeedsData();
+            }
         }
 
         // Update badge counts on navigation tabs
@@ -7430,43 +7443,61 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
         function populateWhatsNext() {
             const userName = currentRole.name;
             const whatsNextEl = document.getElementById('whatsNextContent');
-            
-            // Find next batch waiting for this user based on their role
-            let nextBatch = null;
+
+            // Get priority scores for each batch based on needs
+            function getNeedsPriority(batch) {
+                if (!needsData || typeof needsData !== 'object') return 0;
+                const category = getProductCategory(batch.product_made);
+                if (!category || !needsData[category]) return 0;
+                const strainType = (batch.strain_type || 'Hybrid').trim();
+                const need = (needsData[category].needs || []).find(n => n.strainType === strainType);
+                if (!need) return 0;
+                return (need.varietiesNeeded * 10) + (need.qtyNeeded > 0 ? 5 : 0);
+            }
+
+            // Find batches waiting for this user, sorted by needs priority
+            let availableBatches = [];
             let taskType = '';
-            
-            // Check for packaging tasks
+
             if (currentRole.access.includes('packaging')) {
-                nextBatch = batches.find(b => b.status === 'finishing' && !b.packaging_user);
+                availableBatches = batches.filter(b => b.status === 'finishing' && !b.packaging_user);
                 taskType = '📦 Packaging';
             }
-            
-            // Check for labeling tasks
-            if (!nextBatch && currentRole.access.includes('labeling')) {
-                nextBatch = batches.find(b => b.status === 'packaging' && !b.labeling_user);
+            if (availableBatches.length === 0 && currentRole.access.includes('labeling')) {
+                availableBatches = batches.filter(b => b.status === 'packaging' && !b.labeling_user);
                 taskType = '🏷️ Labeling';
             }
-            
-            // Check for extraction tasks
-            if (!nextBatch && currentRole.access.includes('extraction')) {
-                nextBatch = batches.find(b => b.status === 'intake');
+            if (availableBatches.length === 0 && currentRole.access.includes('extraction')) {
+                availableBatches = batches.filter(b => b.status === 'intake');
                 taskType = '⚗️ Extraction';
             }
-            
-            // Check for finishing tasks
-            if (!nextBatch && currentRole.access.includes('finishing')) {
-                nextBatch = batches.find(b => b.status === 'extraction');
+            if (availableBatches.length === 0 && currentRole.access.includes('finishing')) {
+                availableBatches = batches.filter(b => b.status === 'extraction');
                 taskType = '🔥 Finishing';
             }
-            
+
+            // Sort by needs priority (highest first)
+            availableBatches.sort((a, b) => getNeedsPriority(b) - getNeedsPriority(a));
+
+            const nextBatch = availableBatches[0];
+            const priority = nextBatch ? getNeedsPriority(nextBatch) : 0;
+            const isPriority = priority > 0;
+
             if (nextBatch) {
+                const category = getProductCategory(nextBatch.product_made) || '';
+                const strainType = nextBatch.strain_type || 'Hybrid';
                 whatsNextEl.innerHTML = `
-                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-green);">
-                        <div style="font-size: 1.1rem; font-weight: 600; color: var(--accent-green); margin-bottom: 10px;">${taskType}</div>
+                    <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; border-left: 4px solid ${isPriority ? '#F59E0B' : 'var(--accent-green)'};">
+                        <div style="font-size: 1.1rem; font-weight: 600; color: ${isPriority ? '#F59E0B' : 'var(--accent-green)'}; margin-bottom: 10px;">
+                            ${taskType} ${isPriority ? '⭐ PRIORITY' : ''}
+                        </div>
                         <div style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary); font-family: 'Space Mono', monospace;">${nextBatch.id}</div>
-                        <div style="color: var(--text-secondary); margin-top: 5px;">${nextBatch.strain || 'Unknown strain'}</div>
+                        <div style="color: var(--text-secondary); margin-top: 5px;">${nextBatch.strain || 'Unknown strain'} (${strainType})</div>
+                        ${category ? `<div style="color: var(--text-secondary); margin-top: 5px;">${category}</div>` : ''}
+                        ${isPriority ? `<div style="color: #F59E0B; margin-top: 8px; font-size: 0.9rem;">🔥 High demand - prioritize this batch!</div>` : ''}
                         ${nextBatch.trim_weight ? `<div style="color: var(--text-secondary); margin-top: 5px;">${parseFloat(nextBatch.trim_weight).toFixed(0)}g trim</div>` : ''}
                     </div>
+                    ${availableBatches.length > 1 ? `<div style="color: var(--text-secondary); margin-top: 10px; font-size: 0.85rem;">+ ${availableBatches.length - 1} more batches in queue</div>` : ''}
                 `;
             } else {
                 whatsNextEl.innerHTML = `
@@ -19899,11 +19930,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             `;
         }).join('');
 
-        // Render to both modal and inline
+        // Render to modal, inline FOH, and dashboard
         const modalContainer = document.getElementById('needsCategoryGrid');
         const inlineContainer = document.getElementById('inlineNeedsGrid');
+        const dashboardContainer = document.getElementById('dashboardNeedsGrid');
         if (modalContainer) modalContainer.innerHTML = html;
         if (inlineContainer) inlineContainer.innerHTML = html;
+        if (dashboardContainer) dashboardContainer.innerHTML = html;
     }
 
     function showNeedsItems(category) {
