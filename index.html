@@ -5304,6 +5304,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                                 });
                         });
 
+                // Start activity tracking - update last_activity every 30 seconds when user is active
+                startActivityTracking();
+
                 applyRolePermissions();
                 hidePINsForDemo(); // Hide PINs if in demo mode
 
@@ -5416,6 +5419,47 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             } else {
                 clearAndReload();
             }
+        }
+
+        // Activity tracking - updates last_activity timestamp when user interacts
+        let lastActivityUpdate = 0;
+        let activityTimeout = null;
+
+        function startActivityTracking() {
+            // Track user activity on clicks and key presses
+            document.addEventListener('click', recordActivity);
+            document.addEventListener('keypress', recordActivity);
+            document.addEventListener('touchstart', recordActivity);
+
+            // Also update every 30 seconds if there's been any activity
+            setInterval(() => {
+                if (Date.now() - lastActivityUpdate < 60000) { // Activity in last minute
+                    updateLastActivity();
+                }
+            }, 30000);
+        }
+
+        function recordActivity() {
+            lastActivityUpdate = Date.now();
+            // Debounce - only actually update DB every 30 seconds max
+            if (!activityTimeout) {
+                activityTimeout = setTimeout(() => {
+                    updateLastActivity();
+                    activityTimeout = null;
+                }, 5000); // Wait 5 seconds of inactivity before updating
+            }
+        }
+
+        function updateLastActivity() {
+            const loginRecordId = localStorage.getItem('wmLoginRecordId');
+            if (!loginRecordId || !supabaseClient) return;
+
+            supabaseClient
+                .from('wm_login_history')
+                .update({ last_activity: new Date().toISOString() })
+                .eq('id', loginRecordId)
+                .then(() => {})
+                .catch(err => console.log('Activity update failed:', err));
         }
 
         function applyRolePermissions() {
@@ -9629,12 +9673,35 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                                 const dateStr = loginTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                 const timeStr = loginTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-                                let sessionInfo = '<span style="color: var(--accent-green);">● Active</span>';
+                                let sessionInfo = '';
                                 if (login.logout_time) {
+                                    // Logged out - show session duration
                                     const duration = login.session_duration || 0;
                                     const hours = Math.floor(duration / 60);
                                     const mins = duration % 60;
                                     sessionInfo = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                                } else if (login.last_activity) {
+                                    // Check how recent the activity was
+                                    const lastActive = new Date(login.last_activity);
+                                    const minutesAgo = Math.floor((Date.now() - lastActive.getTime()) / 60000);
+
+                                    if (minutesAgo < 2) {
+                                        sessionInfo = '<span style="color: var(--accent-green);">🟢 Active Now</span>';
+                                    } else if (minutesAgo < 60) {
+                                        sessionInfo = `<span style="color: var(--accent-orange);">🟡 Idle ${minutesAgo}m</span>`;
+                                    } else {
+                                        const hoursAgo = Math.floor(minutesAgo / 60);
+                                        sessionInfo = `<span style="color: var(--text-secondary);">💤 Idle ${hoursAgo}h</span>`;
+                                    }
+                                } else {
+                                    // No activity data yet - show as potentially idle
+                                    const loginTime = new Date(login.login_time);
+                                    const minutesSinceLogin = Math.floor((Date.now() - loginTime.getTime()) / 60000);
+                                    if (minutesSinceLogin < 5) {
+                                        sessionInfo = '<span style="color: var(--accent-green);">🟢 Just logged in</span>';
+                                    } else {
+                                        sessionInfo = '<span style="color: var(--text-secondary);">❓ Unknown</span>';
+                                    }
                                 }
 
                                 return `
