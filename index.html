@@ -1490,6 +1490,7 @@
             <button id="viewTrashBtn" onclick="openTrashModal()" style="display: none;">🗑️ Deleted Batches</button>
             <button id="complianceBtn" onclick="openComplianceModal()" style="display: none;">📋 Compliance</button>
             <button id="loginHistoryBtn" onclick="openLoginHistoryModal()" style="display: none;">📊 Login History</button>
+            <button id="manageEmployeesBtn" onclick="openEmployeeManagement()" style="display: none;">👥 Manage Employees</button>
         </div>
     </div>
 
@@ -1503,6 +1504,96 @@
             <div style="padding: 25px;">
                 <div id="loginHistoryContent" style="max-height: 500px; overflow-y: auto;">
                     Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Management Modal -->
+    <div id="employeeManagementModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10005; overflow-y: auto;">
+        <div style="max-width: 700px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 25px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: white;">👥 Manage Employees</h2>
+                <button onclick="closeEmployeeManagement()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 15px; border-radius: 8px;">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <button onclick="openAddEmployee()" style="background: var(--accent-green); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; margin-bottom: 20px;">+ Add Employee</button>
+                <div id="employeeListContent" style="max-height: 500px; overflow-y: auto;">
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Employee Modal -->
+    <div id="employeeFormModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, var(--accent-green), var(--accent-blue)); padding: 25px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="employeeFormTitle" style="margin: 0; color: white;">Add Employee</h2>
+                <button onclick="closeEmployeeForm()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 15px; border-radius: 8px;">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <input type="hidden" id="employeeEditId">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Name</label>
+                    <input type="text" id="employeeName" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary); font-size: 1rem;" placeholder="Employee name">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">PIN (4 digits)</label>
+                    <input type="text" id="employeePIN" maxlength="4" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary); font-size: 1rem;" placeholder="1234">
+                </div>
+                <div style="margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                        <input type="checkbox" id="employeeIsAdmin" style="width: 18px; height: 18px;"> Admin
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                        <input type="checkbox" id="employeeIsSalary" style="width: 18px; height: 18px;"> Salary
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                        <input type="checkbox" id="employeeReadOnly" style="width: 18px; height: 18px;"> Read Only
+                    </label>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">Station Access</label>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="dashboard" style="width: 16px; height: 16px;"> Dashboard
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="intake" style="width: 16px; height: 16px;"> Intake
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="extraction" style="width: 16px; height: 16px;"> Extraction
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="finishing" style="width: 16px; height: 16px;"> Post-Extract
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="packaging" style="width: 16px; height: 16px;"> Packaging
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="testing" style="width: 16px; height: 16px;"> Testing
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="labeling" style="width: 16px; height: 16px;"> Labeling
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="analytics" style="width: 16px; height: 16px;"> Analytics
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="performance" style="width: 16px; height: 16px;"> Performance
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="frontofhouse" style="width: 16px; height: 16px;"> Front of House
+                        </label>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: space-between;">
+                    <button id="deactivateEmployeeBtn" onclick="deactivateEmployee()" style="display: none; background: var(--accent-red); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">Deactivate</button>
+                    <div style="display: flex; gap: 10px; margin-left: auto;">
+                        <button onclick="closeEmployeeForm()" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 12px 24px; border-radius: 8px; cursor: pointer;">Cancel</button>
+                        <button onclick="saveEmployee()" style="background: var(--accent-green); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">Save</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -4378,8 +4469,9 @@
     </div>
 
     <script>
-        // Role configuration with PINs and permissions
-        const ROLES = {
+        // Role configuration - loaded from database on init
+        // Demo user is hardcoded as fallback, all others from wm_employees table
+        let ROLES = {
             demo: {
                 name: 'Demo User',
                 pin: '0000',
@@ -4388,67 +4480,44 @@
                 readOnly: true,
                 salary: true,
                 isDemo: true
-            },
-            ryan: {
-                name: 'Ryan (Admin)',
-                pin: '1827',
-                tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
-                access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics', 'performance', 'frontofhouse'],
-                readOnly: false,
-                salary: true
-            },
-            drew: {
-                name: 'Drew (Sales)',
-                pin: '6699',
-                tabs: ['frontofhouse', 'dashboard'],
-                access: ['frontofhouse', 'dashboard'],
-                readOnly: true,
-                salary: true
-            },
-            paige: {
-                name: 'Paige',
-                pin: '1992',
-                tabs: ['intake', 'extraction', 'packaging', 'labeling'],
-                access: ['intake', 'extraction', 'packaging', 'labeling'],
-                readOnly: false
-            },
-            alex: {
-                name: 'Alex',
-                pin: '1980',
-                tabs: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics'],
-                access: ['dashboard', 'intake', 'extraction', 'finishing', 'packaging', 'testing', 'labeling', 'analytics'],
-                readOnly: false,
-                salary: true
-            },
-            donald: {
-                name: 'Donald',
-                pin: '1425',
-                tabs: ['finishing', 'packaging', 'labeling'],
-                access: ['finishing', 'packaging', 'labeling'],
-                readOnly: false
-            },
-            andrew: {
-                name: 'Andrew',
-                pin: '2817',
-                tabs: ['packaging', 'labeling'],
-                access: ['packaging', 'labeling'],
-                readOnly: false
-            },
-            tobias: {
-                name: 'Tobias',
-                pin: '4200',
-                tabs: ['intake', 'extraction', 'finishing'],
-                access: ['intake', 'extraction', 'finishing'],
-                readOnly: false
-            },
-            jeremy: {
-                name: 'Jeremy',
-                pin: '0710',
-                tabs: ['extraction', 'finishing'],
-                access: ['extraction', 'finishing'],
-                readOnly: false
             }
         };
+
+        // Load employees from database and populate ROLES object
+        async function loadEmployees() {
+            console.log("loadEmployees() called");
+            try {
+                const { data, error } = await supabaseClient
+                    .from('wm_employees')
+                    .select('*')
+                    .eq('is_active', true);
+
+                if (error) {
+                    console.error('Error loading employees:', error);
+                    return;
+                }
+
+                // Convert database rows to ROLES format
+                data.forEach(emp => {
+                    const key = emp.name.toLowerCase().replace(/[^a-z]/g, '');
+                    console.log('Employee loaded:', emp.name, 'is_admin:', emp.is_admin);
+                    ROLES[key] = {
+                        id: emp.id,
+                        name: emp.is_admin ? emp.name + ' (Admin)' : emp.name,
+                        pin: emp.pin,
+                        tabs: emp.stations || [],
+                        access: emp.stations || [],
+                        readOnly: emp.read_only || false,
+                        salary: emp.is_salary || false,
+                        isAdmin: emp.is_admin || false
+                    };
+                });
+
+                console.log('Loaded ' + data.length + ' employees from database');
+            } catch (err) {
+                console.error('Failed to load employees:', err);
+            }
+        }
 
         // ==================== DEMO MODE ====================
         // Demo mode (PIN: 0000) provides realistic fake data for client demonstrations
@@ -4495,6 +4564,195 @@
                 demoBanner.style.cssText = 'background: linear-gradient(135deg, #ff6b00, #ff0055); color: white; padding: 10px; text-align: center; font-weight: 600; border-radius: 8px; margin-bottom: 15px;';
                 demoBanner.innerHTML = '🎭 DEMO MODE - All data is fake for demonstration purposes';
                 header.after(demoBanner);
+            }
+        }
+
+        // ==================== EMPLOYEE MANAGEMENT ====================
+
+        function openEmployeeManagement() {
+            document.getElementById('employeeManagementModal').style.display = 'block';
+            renderEmployeeList();
+        }
+
+        function closeEmployeeManagement() {
+            document.getElementById('employeeManagementModal').style.display = 'none';
+        }
+
+        async function renderEmployeeList() {
+            const container = document.getElementById('employeeListContent');
+            container.innerHTML = 'Loading...';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('wm_employees')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('name');
+
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-secondary);">No employees found.</p>';
+                    return;
+                }
+
+                container.innerHTML = data.map(emp => `
+                    <div style="background: var(--bg-tertiary); border-radius: 12px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">
+                                ${emp.name} ${emp.is_admin ? '<span style="color: var(--accent-purple); font-size: 0.85rem;">(Admin)</span>' : ''}
+                            </div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">
+                                PIN: ${emp.pin} | ${(emp.stations || []).length} stations
+                                ${emp.is_salary ? ' | Salary' : ''}
+                                ${emp.read_only ? ' | Read Only' : ''}
+                            </div>
+                        </div>
+                        <button onclick="openEditEmployee('${emp.id}')" style="background: var(--accent-blue); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Edit</button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading employees:', err);
+                container.innerHTML = '<p style="color: var(--accent-red);">Error loading employees.</p>';
+            }
+        }
+
+        function openAddEmployee() {
+            document.getElementById('employeeFormTitle').textContent = 'Add Employee';
+            document.getElementById('employeeEditId').value = '';
+            document.getElementById('employeeName').value = '';
+            document.getElementById('employeePIN').value = '';
+            document.getElementById('employeeIsAdmin').checked = false;
+            document.getElementById('employeeIsSalary').checked = false;
+            document.getElementById('employeeReadOnly').checked = false;
+            document.querySelectorAll('.station-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('deactivateEmployeeBtn').style.display = 'none';
+            document.getElementById('employeeFormModal').style.display = 'block';
+        }
+
+        async function openEditEmployee(id) {
+            document.getElementById('employeeFormTitle').textContent = 'Edit Employee';
+            document.getElementById('employeeEditId').value = id;
+            document.getElementById('deactivateEmployeeBtn').style.display = 'block';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('wm_employees')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
+
+                document.getElementById('employeeName').value = data.name || '';
+                document.getElementById('employeePIN').value = data.pin || '';
+                document.getElementById('employeeIsAdmin').checked = data.is_admin || false;
+                document.getElementById('employeeIsSalary').checked = data.is_salary || false;
+                document.getElementById('employeeReadOnly').checked = data.read_only || false;
+
+                document.querySelectorAll('.station-checkbox').forEach(cb => {
+                    cb.checked = (data.stations || []).includes(cb.value);
+                });
+
+                document.getElementById('employeeFormModal').style.display = 'block';
+            } catch (err) {
+                console.error('Error loading employee:', err);
+                alert('Error loading employee data');
+            }
+        }
+
+        function closeEmployeeForm() {
+            document.getElementById('employeeFormModal').style.display = 'none';
+        }
+
+        async function saveEmployee() {
+            const id = document.getElementById('employeeEditId').value;
+            const name = document.getElementById('employeeName').value.trim();
+            const pin = document.getElementById('employeePIN').value.trim();
+            const isAdmin = document.getElementById('employeeIsAdmin').checked;
+            const isSalary = document.getElementById('employeeIsSalary').checked;
+            const readOnly = document.getElementById('employeeReadOnly').checked;
+            const stations = Array.from(document.querySelectorAll('.station-checkbox:checked')).map(cb => cb.value);
+
+            if (!name) {
+                alert('Please enter a name');
+                return;
+            }
+            if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+                alert('Please enter a 4-digit PIN');
+                return;
+            }
+            if (stations.length === 0) {
+                alert('Please select at least one station');
+                return;
+            }
+
+            const employeeData = {
+                name,
+                pin,
+                is_admin: isAdmin,
+                is_salary: isSalary,
+                read_only: readOnly,
+                stations,
+                updated_at: new Date().toISOString()
+            };
+
+            try {
+                let result;
+                if (id) {
+                    // Update existing
+                    result = await supabaseClient
+                        .from('wm_employees')
+                        .update(employeeData)
+                        .eq('id', id);
+                } else {
+                    // Insert new
+                    employeeData.is_active = true;
+                    employeeData.created_at = new Date().toISOString();
+                    result = await supabaseClient
+                        .from('wm_employees')
+                        .insert(employeeData);
+                }
+
+                if (result.error) throw result.error;
+
+                // Reload employees into ROLES
+                await loadEmployees();
+
+                closeEmployeeForm();
+                renderEmployeeList();
+                alert(id ? 'Employee updated!' : 'Employee added!');
+            } catch (err) {
+                console.error('Error saving employee:', err);
+                alert('Error saving employee: ' + err.message);
+            }
+        }
+
+        async function deactivateEmployee() {
+            const id = document.getElementById('employeeEditId').value;
+            const name = document.getElementById('employeeName').value;
+
+            if (!confirm('Are you sure you want to deactivate ' + name + '? They will no longer be able to log in.')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('wm_employees')
+                    .update({ is_active: false, updated_at: new Date().toISOString() })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                // Reload employees into ROLES
+                await loadEmployees();
+
+                closeEmployeeForm();
+                renderEmployeeList();
+                alert('Employee deactivated');
+            } catch (err) {
+                console.error('Error deactivating employee:', err);
+                alert('Error deactivating employee: ' + err.message);
             }
         }
 
@@ -4759,9 +5017,8 @@
                     document.getElementById('userLogin').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
                     document.getElementById('myStatsBtn').style.display = 'block';
-                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
+                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} const isAdminUser = currentRole.isAdmin || currentRole.name.includes('Admin') || currentRole.name === 'Ryan' || currentRole.name === 'Alex'; if(isAdminUser){document.getElementById('viewTimecardsBtn').style.display = 'block'; document.getElementById('manageEmployeesBtn').style.display = 'block'; document.getElementById('loginHistoryBtn').style.display = 'block'; document.getElementById('viewTrashBtn').style.display = 'block';}
                     document.getElementById('complianceBtn').style.display = 'block';
-                    if(currentRole.name === 'Ryan (Admin)'){document.getElementById('loginHistoryBtn').style.display = 'block';}
                     applyRolePermissions();
                     hidePINsForDemo(); // Hide PINs if in demo mode
                 }
@@ -4812,6 +5069,15 @@
                     throw new Error('Database setup failed: ' + dbError.message);
                 }
                 
+                // Load employees from database
+                console.log("About to call loadEmployees...");
+                try {
+                    await loadEmployees();
+                    console.log('Employees loaded from database');
+                } catch (empError) {
+                    console.error('Error loading employees:', empError);
+                }
+
                 // Load batches
                 try {
                     await loadBatches();
@@ -4833,6 +5099,33 @@
                 
                 // Initialize app
                 initializeApp(); initializeTimeclock();
+
+                // Re-check saved session now that employees are loaded from database
+                const savedRole = localStorage.getItem('wmRole');
+                const sessionTime = localStorage.getItem('wmSession');
+                if (savedRole && sessionTime && (Date.now() - parseInt(sessionTime)) < 12 * 60 * 60 * 1000) {
+                    if (ROLES[savedRole] && !currentRole) {
+                        currentRole = ROLES[savedRole];
+                        document.getElementById('pinInput').style.display = 'none';
+                        document.getElementById('loginBtn').style.display = 'none';
+                        document.getElementById('actionsMenu').style.display = 'block';
+                        document.getElementById('userLogin').style.display = 'none';
+                        document.getElementById('appContent').style.display = 'block';
+                        document.getElementById('myStatsBtn').style.display = 'block';
+                        document.getElementById('logoutBtn').style.display = 'block';
+                        if(!currentRole.salary) document.getElementById('timeClockBtn').style.display = 'block';
+                        const isAdminCheck = currentRole.isAdmin || currentRole.name.includes('Admin') || currentRole.name === 'Ryan' || currentRole.name === 'Alex';
+                        if(isAdminCheck) {
+                            document.getElementById('viewTimecardsBtn').style.display = 'block';
+                            document.getElementById('manageEmployeesBtn').style.display = 'block';
+                            document.getElementById('loginHistoryBtn').style.display = 'block';
+                            document.getElementById('viewTrashBtn').style.display = 'block';
+                        }
+                        document.getElementById('complianceBtn').style.display = 'block';
+                        applyRolePermissions();
+                        hidePINsForDemo();
+                    }
+                }
                 
             } catch (error) {
                 console.error('Connection error:', error);
@@ -5359,7 +5652,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('actionsMenu').style.display = 'block';
                 document.getElementById('userLogin').style.display = 'none';
                 document.getElementById('appContent').style.display = 'block';
-                document.getElementById('myStatsBtn').style.display = 'block'; document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} if(currentRole.name.includes('Ryan')){document.getElementById('viewTimecardsBtn').style.display = 'block';} if(currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex'){document.getElementById('viewTrashBtn').style.display = 'block';}
+                document.getElementById('myStatsBtn').style.display = 'block'; document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} const isAdmin = currentRole.isAdmin || currentRole.name.includes('Admin') || currentRole.name === 'Ryan' || currentRole.name === 'Alex'; if(isAdmin){document.getElementById('viewTimecardsBtn').style.display = 'block'; document.getElementById('manageEmployeesBtn').style.display = 'block'; document.getElementById('loginHistoryBtn').style.display = 'block'; document.getElementById('viewTrashBtn').style.display = 'block';}
                 errorMsg.style.display = 'none';
 
                 // Log login to database with IP (including demo mode)
