@@ -14039,6 +14039,44 @@ ${employeeReport || 'No activity recorded today'}
                 });
                 
                 statsContainer.innerHTML = sortedEmployees.map(emp => {
+                    // Determine current task status for this employee
+                    let currentTask = null;
+                    batches.forEach(batch => {
+                        // Check packaging in progress
+                        if (batch.packaging_user === emp.name && batch.status === 'packaging') {
+                            const hasStarted = batch.timeline && batch.timeline.some(t =>
+                                t.action && t.action.toLowerCase().includes('packaging started'));
+                            const hasCompleted = batch.timeline && batch.timeline.some(t =>
+                                t.stage === 'packaging' && t.action &&
+                                (t.action.toLowerCase().includes('packaged') || t.action.includes('Packaging completed')));
+
+                            if (hasStarted && !hasCompleted) {
+                                currentTask = {
+                                    type: 'packaging',
+                                    batchId: batch.id,
+                                    strain: batch.strain_name || 'Unknown',
+                                    paused: batch.packaging_paused || false
+                                };
+                            }
+                        }
+                        // Check labeling in progress
+                        if (batch.labeling_user === emp.name && batch.status === 'labeling') {
+                            const hasStarted = batch.timeline && batch.timeline.some(t =>
+                                t.action && t.action.toLowerCase().includes('labeling started'));
+                            const hasCompleted = batch.timeline && batch.timeline.some(t =>
+                                t.stage === 'labeling' && t.action && t.action.toLowerCase().includes('labeled'));
+
+                            if (hasStarted && !hasCompleted) {
+                                currentTask = {
+                                    type: 'labeling',
+                                    batchId: batch.id,
+                                    strain: batch.strain_name || 'Unknown',
+                                    paused: batch.labeling_paused || false
+                                };
+                            }
+                        }
+                    });
+
                     // Combined units target (packaging + labeling = 800/day total)
                     const unitsTarget = (targets.unitsPerDay || 800) * emp.daysActiveCount;
                     const totalUnits = emp.packaging.units + emp.labeling.units;
@@ -14184,6 +14222,15 @@ ${employeeReport || 'No activity recorded today'}
                                         })()}
                                     </h3>
                                     <p style="color: var(--text-secondary); font-size: 0.95rem;">Active ${emp.daysActiveCount} of ${timeRange} days</p>
+                                    ${currentTask ? `
+                                    <div style="margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+                                        background: ${currentTask.paused ? 'rgba(255, 107, 0, 0.2)' : 'rgba(57, 255, 20, 0.2)'};
+                                        border: 1px solid ${currentTask.paused ? 'var(--accent-orange)' : 'var(--accent-green)'};
+                                        color: ${currentTask.paused ? 'var(--accent-orange)' : 'var(--accent-green)'};">
+                                        <span style="font-size: 1rem;">${currentTask.paused ? '⏸️' : currentTask.type === 'packaging' ? '📦' : '🏷️'}</span>
+                                        <span>${currentTask.paused ? 'PAUSED' : 'WORKING'}: ${currentTask.type === 'packaging' ? 'Packaging' : 'Labeling'} ${currentTask.strain}</span>
+                                    </div>
+                                    ` : ''}
                                 </div>
                                 <div style="text-align: right;">
                                     <div style="font-family: 'Space Mono', monospace; font-size: 2.5rem; font-weight: 700; color: var(--accent-green);">${(emp.packaging.units + emp.labeling.units).toLocaleString()}</div>
