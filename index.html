@@ -19731,14 +19731,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Ensure pipeline data is loaded first (it populates pipelineCategoryData)
         loadSalesPipeline();
 
-        // Try to show cached data immediately
-        const cached = localStorage.getItem('foh_needs_cache');
-        if (cached) {
-            try {
-                needsData = JSON.parse(cached);
-                renderNeedsCategories();
-            } catch(e) {}
-        }
+        // Clear any potentially corrupted cache
+        localStorage.removeItem('foh_needs_cache');
 
         // Initialize needs data structure
         const categories = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
@@ -19876,14 +19870,21 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const varietiesNeeded = Math.max(0, 3 - varietyCount);
 
                 if (qtyNeeded > 0 || varietiesNeeded > 0) {
-                    needsData[cat].needs.push({
+                    // Prevent duplicate strain types - only add if not already present
+                    const existingIndex = needsData[cat].needs.findIndex(n => n.strainType === strain);
+                    const needEntry = {
                         strainType: strain,
                         varietiesNeeded: varietiesNeeded,
                         qtyNeeded: Math.round(qtyNeeded),
                         parLevel: parLevel,
                         currentVarieties: varietyCount,
                         currentQty: Math.round(currentQty)
-                    });
+                    };
+                    if (existingIndex >= 0) {
+                        needsData[cat].needs[existingIndex] = needEntry; // Replace existing
+                    } else {
+                        needsData[cat].needs.push(needEntry);
+                    }
                 }
             });
         });
