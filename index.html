@@ -13953,6 +13953,25 @@ ${employeeReport || 'No activity recorded today'}
                             employeeData[user].extraction.dates.push(eventDate);
                             employeeData[user].daysActive.add(eventDate.toDateString());
                         }
+                        
+                        // Finishing completion - count as active day
+                        if (event.stage === 'finishing' && 
+                            event.action && 
+                            event.action.toLowerCase().includes('completed') &&
+                            eventDate >= rangeStart) {
+                            
+                            const user = event.user;
+                            if (!employeeData[user]) {
+                                employeeData[user] = {
+                                    name: user,
+                                    packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
+                                    labeling: { units: 0, batches: 0, dates: [] },
+                                    extraction: { batches: 0, runs: 0, trimWeight: 0, dates: [] },
+                                    daysActive: new Set()
+                                };
+                            }
+                            employeeData[user].daysActive.add(eventDate.toDateString());
+                        }
                     });
                 }
             });
@@ -14498,10 +14517,10 @@ ${employeeReport || 'No activity recorded today'}
                             empData.daysActive.add(eventDate.toDateString());
                         }
 
-                        // Finishing - track batches but don't add to daysActive
-                        // (finishing isn't measured in productivity, so shouldn't inflate days)
+                        // Finishing
                         if (event.stage === 'finishing' && event.action && event.action.toLowerCase().includes('completed')) {
                             empData.finishing.batches += 1;
+                            empData.daysActive.add(eventDate.toDateString());
                         }
                     });
                 }
