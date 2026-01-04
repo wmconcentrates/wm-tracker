@@ -14536,6 +14536,12 @@ ${employeeReport || 'No activity recorded today'}
 
             const daysActive = empData.daysActive.size || 1;
 
+            // Combined units calculation (available to both packaging and labeling sections)
+            const unitsTarget = (targets.unitsPerDay || 800) * daysActive;
+            const totalUnits = empData.packaging.units + empData.labeling.units;
+            const unitsPct = unitsTarget > 0 ? ((totalUnits / unitsTarget) * 100).toFixed(0) : 0;
+            const unitsColor = unitsPct >= 90 ? 'var(--accent-green)' : unitsPct >= 70 ? 'var(--accent-blue)' : unitsPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
+
             // Build detail sections based on access
             let detailSections = '';
 
@@ -14572,11 +14578,6 @@ ${employeeReport || 'No activity recorded today'}
             }
 
             if (access.includes('packaging')) {
-                const unitsTarget = (targets.unitsPerDay || 800) * daysActive;
-                const totalUnits = empData.packaging.units + empData.labeling.units;
-                const unitsPct = unitsTarget > 0 ? ((totalUnits / unitsTarget) * 100).toFixed(0) : 0;
-                const color = unitsPct >= 90 ? 'var(--accent-green)' : unitsPct >= 70 ? 'var(--accent-blue)' : unitsPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
-
                 const productBreakdown = Object.entries(empData.packaging.byProduct)
                     .sort((a, b) => b[1] - a[1])
                     .map(([product, units]) => `<div style="display: flex; justify-content: space-between; padding: 5px 0;"><span>${product}</span><span style="font-weight: 600;">${units}</span></div>`)
@@ -14586,7 +14587,7 @@ ${employeeReport || 'No activity recorded today'}
                     <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--accent-purple);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <h3 style="margin: 0; color: var(--accent-purple); font-size: 1.2rem;">Packaging</h3>
-                            <span style="font-size: 1.5rem; font-weight: 700; color: ${color};">${unitsPct}%</span>
+                            <span style="font-size: 1.5rem; font-weight: 700; color: ${unitsColor};">${unitsPct}%</span>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
                             <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
@@ -14611,14 +14612,13 @@ ${employeeReport || 'No activity recorded today'}
             }
 
             if (access.includes('labeling')) {
-                // Labeling uses same combined target
-                const labelingColor = unitsPct >= 90 ? 'var(--accent-green)' : unitsPct >= 70 ? 'var(--accent-blue)' : unitsPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
+                // Uses combined units target from outer scope
 
                 detailSections += `
                     <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--accent-green);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <h3 style="margin: 0; color: var(--accent-green); font-size: 1.2rem;">Labeling</h3>
-                            <span style="font-size: 1.5rem; font-weight: 700; color: ${color};">${unitsPct}%</span>
+                            <span style="font-size: 1.5rem; font-weight: 700; color: ${unitsColor};">${unitsPct}%</span>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
                             <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
