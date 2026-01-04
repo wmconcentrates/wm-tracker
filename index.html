@@ -4485,7 +4485,6 @@
 
         // Load employees from database and populate ROLES object
         async function loadEmployees() {
-            console.log("loadEmployees() called");
             try {
                 const { data, error } = await supabaseClient
                     .from('wm_employees')
@@ -4500,7 +4499,6 @@
                 // Convert database rows to ROLES format
                 data.forEach(emp => {
                     const key = emp.name.toLowerCase().replace(/[^a-z]/g, '');
-                    console.log('Employee loaded:', emp.name, 'is_admin:', emp.is_admin);
                     ROLES[key] = {
                         id: emp.id,
                         name: emp.is_admin ? emp.name + ' (Admin)' : emp.name,
@@ -5070,7 +5068,6 @@
                 }
                 
                 // Load employees from database
-                console.log("About to call loadEmployees...");
                 try {
                     await loadEmployees();
                     console.log('Employees loaded from database');
