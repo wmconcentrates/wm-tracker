@@ -5568,6 +5568,42 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             document.querySelectorAll('.station-tab').forEach(t => t.classList.remove('active'));
         }
 
+        // Swipe gesture detection for mobile navigation
+        (function initSwipeGestures() {
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchEndX = 0;
+            let touchEndY = 0;
+
+            document.addEventListener('touchstart', function(e) {
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }, { passive: true });
+
+            document.addEventListener('touchend', function(e) {
+                touchEndX = e.changedTouches[0].screenX;
+                touchEndY = e.changedTouches[0].screenY;
+                handleSwipe();
+            }, { passive: true });
+
+            function handleSwipe() {
+                const diffX = touchEndX - touchStartX;
+                const diffY = touchEndY - touchStartY;
+                const minSwipeDistance = 100;
+
+                // Only trigger if horizontal swipe is dominant
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    // Swipe right to go back
+                    if (diffX > minSwipeDistance) {
+                        const activeStation = document.querySelector('.station-content.active');
+                        if (activeStation && window.innerWidth <= 768) {
+                            closeMobileStation();
+                        }
+                    }
+                }
+            }
+        })();
+
         function applyRolePermissions() {
             if (!currentRole) return;
             
