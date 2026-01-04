@@ -14465,8 +14465,8 @@ ${employeeReport || 'No activity recorded today'}
             const rangeStart = getPerformanceRangeStart(timeRange);
 
             let empData = {
-                packaging: { units: 0, batches: 0, byProduct: {}, dates: [] },
-                labeling: { units: 0, batches: 0, dates: [] },
+                packaging: { units: 0, batches: 0, byProduct: {}, dates: [], timeMinutes: 0 },
+                labeling: { units: 0, batches: 0, dates: [], timeMinutes: 0 },
                 extraction: { batches: 0, runs: 0, trimWeight: 0, dates: [] },
                 finishing: { batches: 0, dates: [] },
                 daysActive: new Set()
@@ -14486,7 +14486,7 @@ ${employeeReport || 'No activity recorded today'}
 
             // Calculate stats from batches
             batches.forEach(batch => {
-                // Packaging
+                // Packaging - with time calculation
                 if (batch.packaging_user === employeeName && batch.packaging_date && batch.units_packaged) {
                     const packagingDate = new Date(batch.packaging_date);
                     if (packagingDate >= rangeStart) {
@@ -14495,6 +14495,31 @@ ${employeeReport || 'No activity recorded today'}
                         empData.daysActive.add(packagingDate.toDateString());
                         const productType = batch.packaged_product_type || 'Unknown';
                         empData.packaging.byProduct[productType] = (empData.packaging.byProduct[productType] || 0) + batch.units_packaged;
+
+                        // Calculate packaging time from timeline
+                        if (batch.timeline) {
+                            const packagingStart = batch.timeline.find(t => t.action && t.action.toLowerCase().includes('packaging started'));
+                            const packagingComplete = batch.timeline.find(t => t.stage === 'packaging' && t.action &&
+                                (t.action.toLowerCase().includes('packaged') || t.action.includes('Packaging completed')));
+
+                            if (packagingStart && packagingComplete) {
+                                const startTime = new Date(packagingStart.date || packagingStart.timestamp);
+                                const endTime = new Date(packagingComplete.date || packagingComplete.timestamp);
+                                let batchTime = (endTime - startTime) / (1000 * 60); // minutes
+
+                                // Subtract paused time
+                                const pauses = batch.timeline.filter(t => t.action && t.action.toLowerCase().includes('packaging paused'));
+                                const resumes = batch.timeline.filter(t => t.action && t.action.toLowerCase().includes('packaging resumed'));
+                                for (let i = 0; i < Math.min(pauses.length, resumes.length); i++) {
+                                    const pauseTime = new Date(pauses[i].date || pauses[i].timestamp);
+                                    const resumeTime = new Date(resumes[i].date || resumes[i].timestamp);
+                                    if (resumeTime > pauseTime) {
+                                        batchTime -= (resumeTime - pauseTime) / (1000 * 60);
+                                    }
+                                }
+                                empData.packaging.timeMinutes += Math.max(0, batchTime);
+                            }
+                        }
                     }
                 }
 
@@ -14505,12 +14530,35 @@ ${employeeReport || 'No activity recorded today'}
                         const eventDate = new Date(event.timestamp || event.date);
                         if (eventDate < rangeStart) return;
 
-                        // Labeling
+                        // Labeling - with time calculation
                         if (event.stage === 'labeling' && event.action &&
                             (event.action.toLowerCase().includes('completed') || event.action.toLowerCase().includes('labeled'))) {
                             empData.labeling.units += batch.units_packaged || 0;
                             empData.labeling.batches += 1;
                             empData.daysActive.add(eventDate.toDateString());
+
+                            // Calculate labeling time from timeline
+                            const labelingStart = batch.timeline.find(t => t.action && t.action.toLowerCase().includes('labeling started'));
+                            const labelingComplete = batch.timeline.find(t => t.stage === 'labeling' &&
+                                (t.action && t.action.toLowerCase().includes('labeled') || t.timestamp));
+
+                            if (labelingStart && labelingComplete) {
+                                const startTime = new Date(labelingStart.date || labelingStart.timestamp);
+                                const endTime = new Date(labelingComplete.date || labelingComplete.timestamp);
+                                let batchTime = (endTime - startTime) / (1000 * 60); // minutes
+
+                                // Subtract paused time
+                                const pauses = batch.timeline.filter(t => t.action && t.action.toLowerCase().includes('labeling paused'));
+                                const resumes = batch.timeline.filter(t => t.action && t.action.toLowerCase().includes('labeling resumed'));
+                                for (let i = 0; i < Math.min(pauses.length, resumes.length); i++) {
+                                    const pauseTime = new Date(pauses[i].date || pauses[i].timestamp);
+                                    const resumeTime = new Date(resumes[i].date || resumes[i].timestamp);
+                                    if (resumeTime > pauseTime) {
+                                        batchTime -= (resumeTime - pauseTime) / (1000 * 60);
+                                    }
+                                }
+                                empData.labeling.timeMinutes += Math.max(0, batchTime);
+                            }
                         }
 
                         // Extraction - check multiple formats
@@ -14603,6 +14651,18 @@ ${employeeReport || 'No activity recorded today'}
                                 <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">${(empData.packaging.units / daysActive).toFixed(0)}</div>
                             </div>
                         </div>
+                        ${empData.packaging.timeMinutes > 0 ? `
+                        <div style="margin-top: 15px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; text-align: center;">
+                            <div style="background: linear-gradient(135deg, rgba(191, 0, 255, 0.2), rgba(191, 0, 255, 0.1)); padding: 15px; border-radius: 8px; border: 1px solid rgba(191, 0, 255, 0.3);">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Time Worked</div>
+                                <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-purple);">${Math.floor(empData.packaging.timeMinutes / 60)}h ${Math.round(empData.packaging.timeMinutes % 60)}m</div>
+                            </div>
+                            <div style="background: linear-gradient(135deg, rgba(57, 255, 20, 0.2), rgba(57, 255, 20, 0.1)); padding: 15px; border-radius: 8px; border: 1px solid rgba(57, 255, 20, 0.3);">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Units/Hour</div>
+                                <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${(empData.packaging.units / (empData.packaging.timeMinutes / 60)).toFixed(0)}</div>
+                            </div>
+                        </div>
+                        ` : ''}
                         ${productBreakdown ? `<div style="margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px;"><div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">By Product Type:</div>${productBreakdown}</div>` : ''}
                         <div style="margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px; font-size: 0.9rem; color: var(--text-secondary);">
                             Target: ${targets.unitsPerDay || 800}/day x ${daysActive} days = ${unitsTarget.toLocaleString()} units
@@ -14634,6 +14694,18 @@ ${employeeReport || 'No activity recorded today'}
                                 <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">${(empData.labeling.units / daysActive).toFixed(0)}</div>
                             </div>
                         </div>
+                        ${empData.labeling.timeMinutes > 0 ? `
+                        <div style="margin-top: 15px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; text-align: center;">
+                            <div style="background: linear-gradient(135deg, rgba(57, 255, 20, 0.2), rgba(57, 255, 20, 0.1)); padding: 15px; border-radius: 8px; border: 1px solid rgba(57, 255, 20, 0.3);">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Time Worked</div>
+                                <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">${Math.floor(empData.labeling.timeMinutes / 60)}h ${Math.round(empData.labeling.timeMinutes % 60)}m</div>
+                            </div>
+                            <div style="background: linear-gradient(135deg, rgba(191, 0, 255, 0.2), rgba(191, 0, 255, 0.1)); padding: 15px; border-radius: 8px; border: 1px solid rgba(191, 0, 255, 0.3);">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Units/Hour</div>
+                                <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent-purple);">${(empData.labeling.units / (empData.labeling.timeMinutes / 60)).toFixed(0)}</div>
+                            </div>
+                        </div>
+                        ` : ''}
                         <div style="margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px; font-size: 0.9rem; color: var(--text-secondary);">
                             Target: ${targets.unitsPerDay || 800}/day x ${daysActive} days = ${unitsTarget.toLocaleString()} units
                         </div>
