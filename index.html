@@ -13792,13 +13792,19 @@ ${employeeReport || 'No activity recorded today'}
             const saved = localStorage.getItem('productionTargets');
             if (saved) {
                 const targets = JSON.parse(saved);
-                if (document.getElementById('targetPackagingUnits')) {
-                    document.getElementById('targetPackagingUnits').value = targets.packaging || 200;
-                    document.getElementById('targetLabelingUnits').value = targets.labeling || 300;
+                if (document.getElementById('targetUnitsPerDay')) {
+                    document.getElementById('targetUnitsPerDay').value = targets.unitsPerDay || 800;
                     document.getElementById('targetExtractionTrim').value = targets.extractionTrim || 11200;
                 }
             }
-            return saved ? JSON.parse(saved) : { packaging: 200, labeling: 300, extractionTrim: 11200 };
+            // Combined units target (packaging + labeling = 800/day total)
+            const defaults = { unitsPerDay: 800, extractionTrim: 11200 };
+            const result = saved ? JSON.parse(saved) : defaults;
+            // Ensure unitsPerDay exists (migration from old format)
+            if (!result.unitsPerDay) {
+                result.unitsPerDay = 800;
+            }
+            return result;
         }
 
 
@@ -14003,6 +14009,9 @@ ${employeeReport || 'No activity recorded today'}
             Object.values(employeeData).forEach(emp => {
                 const daysActive = emp.daysActive.size;
                 emp.daysActiveCount = daysActive;
+                // Combined units (packaging + labeling)
+                emp.totalUnits = emp.packaging.units + emp.labeling.units;
+                emp.unitsPerDay = daysActive > 0 ? (emp.totalUnits / daysActive).toFixed(0) : 0;
                 emp.packaging.perDay = daysActive > 0 ? (emp.packaging.units / daysActive).toFixed(1) : 0;
                 emp.labeling.perDay = daysActive > 0 ? (emp.labeling.units / daysActive).toFixed(1) : 0;
                 emp.extraction.perDay = daysActive > 0 ? (emp.extraction.trimWeight / daysActive).toFixed(0) : 0;
@@ -14030,12 +14039,11 @@ ${employeeReport || 'No activity recorded today'}
                 });
                 
                 statsContainer.innerHTML = sortedEmployees.map(emp => {
-                    const packagingTarget = targets.packaging * emp.daysActiveCount;
-                    const labelingTarget = targets.labeling * emp.daysActiveCount;
+                    // Combined units target (packaging + labeling = 800/day total)
+                    const unitsTarget = (targets.unitsPerDay || 800) * emp.daysActiveCount;
+                    const totalUnits = emp.packaging.units + emp.labeling.units;
+                    const unitsPct = unitsTarget > 0 ? ((totalUnits / unitsTarget) * 100).toFixed(0) : 0;
                     const extractionTrimTarget = (targets.extractionTrim || 11200) * emp.daysActiveCount;
-                    
-                    const packagingPct = packagingTarget > 0 ? ((emp.packaging.units / packagingTarget) * 100).toFixed(0) : 0;
-                    const labelingPct = labelingTarget > 0 ? ((emp.labeling.units / labelingTarget) * 100).toFixed(0) : 0;
                     const extractionPct = extractionTrimTarget > 0 ? ((emp.extraction.trimWeight / extractionTrimTarget) * 100).toFixed(0) : 0;
                     
                     // Determine performance color
@@ -14374,17 +14382,17 @@ ${employeeReport || 'No activity recorded today'}
                 const access = role.access || [];
 
                 // Calculate overall performance %
-                const packagingTarget = targets.packaging * (emp.daysActiveCount || 1);
-                const labelingTarget = targets.labeling * (emp.daysActiveCount || 1);
+                // Combined units target
+                const unitsTarget = (targets.unitsPerDay || 800) * (emp.daysActiveCount || 1);
+                const totalUnits = (emp.packaging?.units || 0) + (emp.labeling?.units || 0);
                 const extractionTarget = (targets.extractionTrim || 11200) * (emp.daysActiveCount || 1);
 
                 let scores = [];
-                if (access.includes('packaging') && packagingTarget > 0) {
-                    scores.push((emp.packaging.units / packagingTarget) * 100);
+                // Combined units score for packaging/labeling
+                if ((access.includes('packaging') || access.includes('labeling')) && unitsTarget > 0) {
+                    scores.push((totalUnits / unitsTarget) * 100);
                 }
-                if (access.includes('labeling') && labelingTarget > 0) {
-                    scores.push((emp.labeling.units / labelingTarget) * 100);
-                }
+                // Extraction score
                 if (access.includes('extraction') && extractionTarget > 0) {
                     scores.push((emp.extraction.trimWeight / extractionTarget) * 100);
                 }
@@ -14564,7 +14572,8 @@ ${employeeReport || 'No activity recorded today'}
             }
 
             if (access.includes('packaging')) {
-                const packagingTarget = targets.packaging * daysActive;
+                const unitsTarget = (targets.unitsPerDay || 800) * daysActive;
+                const totalUnits = empData.packaging.units + empData.labeling.units;
                 const packagingPct = packagingTarget > 0 ? ((empData.packaging.units / packagingTarget) * 100).toFixed(0) : 0;
                 const color = packagingPct >= 90 ? 'var(--accent-green)' : packagingPct >= 70 ? 'var(--accent-blue)' : packagingPct >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
 
