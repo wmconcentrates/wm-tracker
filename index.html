@@ -20358,8 +20358,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Skip non-concentrate products
             if (matchText.includes('syrup') || matchText.includes('jousse') ||
                 matchText.includes('rso') || matchText.includes('battery') ||
-                matchText.includes('510 thread')) {
-                return; // Skip syrups, RSO, batteries
+                matchText.includes('510 thread') || matchText.includes('4 gram') ||
+                matchText.includes('4gram') || matchText.includes('bucket')) {
+                return; // Skip syrups, RSO, batteries, 4 gram buckets
             }
 
             if (matchText.includes('shatter')) {
