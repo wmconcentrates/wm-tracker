@@ -17349,12 +17349,9 @@ ${employeeReport || 'No activity recorded today'}
         // Load and display sales dashboard
         async function loadSalesDashboard() {
             try {
-                console.log('loadSalesDashboard starting...');
                 await ensureLeafLinkData();
-                console.log('ensureLeafLinkData done, calling loadSalesPipeline...');
                 // Load Pipeline, Inventory, Needs data for inline display
                 loadSalesPipeline();
-                console.log('loadSalesPipeline done, calling loadLeafLinkInventory...');
                 await loadLeafLinkInventory();
                 await loadNeedsData();
 
@@ -20297,7 +20294,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     async function loadLeafLinkInventory() {
-        console.log('loadLeafLinkInventory called');
         const container = document.getElementById('inventoryCategoryGrid');
         if (container) {
             container.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px; color: var(--text-secondary);">Loading...</div>';
@@ -20313,7 +20309,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         const products = await fetchLeafLinkInventory();
 
         // Categorize products
-        let liveResinProducts = [];
         products.forEach(product => {
             const name = (product.name || '').toLowerCase();
             const displayName = product.display_name || product.name || '';
@@ -20327,16 +20322,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const productLine = (typeof product.product_line === 'string' ? product.product_line : (product.product_line?.name || '')).toLowerCase();
             const category_field = (typeof product.category === 'string' ? product.category : (product.category?.name || '')).toLowerCase();
             const qty = parseFloat(product.available_inventory || product.quantity || 0) || 0;
-
-            // Debug: Log all products with "live resin" in name
-            if (name.includes('live resin') || displayName.toLowerCase().includes('live resin')) {
-                liveResinProducts.push({
-                    name: displayName,
-                    listing_state: product.listing_state,
-                    qty: qty,
-                    parentName: parentName
-                });
-            }
 
             // Skip archived and internal products
             if (product.listing_state === 'Archived' || product.listing_state === 'Internal') return;
@@ -20389,10 +20374,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
         });
 
-        // Debug: Show all Live Resin products found
-        console.log('All Live Resin products found:', liveResinProducts);
-        console.log('Live Resin products with Available status:', liveResinProducts.filter(p => p.listing_state === 'Available'));
-
         renderInventoryCategories();
     }
 
@@ -20407,21 +20388,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         while (nextUrl) {
             try {
                 const response = await fetch(nextUrl);
-                if (!response.ok) {
-                    console.warn('LeafLink API page failed, returning', allProducts.length, 'products fetched so far');
-                    break;
-                }
+                if (!response.ok) break;
                 const data = await response.json();
-
-                console.log('LeafLink API page fetched:', data.results?.length, 'products');
                 allProducts = allProducts.concat(data.results || []);
                 nextUrl = data.next;
             } catch (error) {
-                console.warn('Error fetching page, returning', allProducts.length, 'products fetched so far:', error);
                 break;
             }
         }
-        console.log('Total products fetched from LeafLink:', allProducts.length);
         return allProducts;
     }
 
@@ -20800,15 +20774,10 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     // Initialize FOH grids on page load
     window.addEventListener('load', function() {
         setTimeout(function() {
-            console.log('Initializing FOH grids');
-            const pipelineGrid = document.getElementById('inlinePipelineGrid');
-            console.log('inlinePipelineGrid element:', pipelineGrid);
-            if (pipelineGrid) {
+            if (document.getElementById('inlinePipelineGrid')) {
                 loadSalesPipeline();
                 loadLeafLinkInventory();
                 loadNeedsData();
-            } else {
-                console.log('inlinePipelineGrid not found - FOH tab may not be visible');
             }
         }, 1000);
     });
