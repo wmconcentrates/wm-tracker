@@ -9142,11 +9142,54 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 // Refresh extraction queue and column dropdowns
                 populateExtractionQueue();
                 refreshColumnDropdowns();
-                alert(`✅ Column ${column} run added to pot! Click "Save Status" to save machine state.`);
+
+                // Auto-save machine status to database
+                autoSaveMachineStatus().then(() => {
+                    alert(`✅ Column ${column} run added to pot and saved!`);
+                }).catch(err => {
+                    console.error('Error auto-saving machine status:', err);
+                    alert(`✅ Column ${column} run added to pot!\n⚠️ Auto-save failed - click "Save Status" manually.`);
+                });
             }).catch(err => {
                 console.error('Error updating sock counts:', err);
                 alert('⚠️ Run added to pot but error updating sock counts. Check console.');
             });
+        }
+
+        // Auto-save machine status without closing modal
+        async function autoSaveMachineStatus() {
+            if (!currentMachine) return;
+
+            const potBatch = document.getElementById('machinePotBatch').value;
+            const potRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
+            const potLedger = window.currentMachineStatus?.pot_ledger || [];
+
+            const machineStatus = {
+                machine: currentMachine,
+                column_batch: document.getElementById('machineColumnBatch').value,
+                column_b_batch: document.getElementById('machineColumnBBatch').value,
+                column_a_socks: parseInt(document.getElementById('machineColumnASocks').value) || 0,
+                column_b_socks: parseInt(document.getElementById('machineColumnBSocks').value) || 0,
+                column_a_second_batch: document.getElementById('machineColumnASecondBatch').value,
+                column_b_second_batch: document.getElementById('machineColumnBSecondBatch').value,
+                pot_batch: potBatch,
+                pot_runs: potRuns,
+                pot_ledger: potLedger,
+                filter_clay: parseFloat(document.getElementById('machineFilterClay').value) || 0,
+                filter_silica: parseFloat(document.getElementById('machineFilterSilica').value) || 0,
+                filter_runs: parseInt(document.getElementById('machineFilterRuns').value) || 0,
+                last_updated: new Date().toISOString(),
+                updated_by: currentRole ? currentRole.name : 'Unknown'
+            };
+
+            const { error } = await supabaseClient
+                .from('wm_machine_status')
+                .upsert(machineStatus, { onConflict: 'machine' });
+
+            if (error) throw error;
+
+            // Update displays
+            updateMachineDisplays();
         }
 
         function refreshColumnDropdowns() {
