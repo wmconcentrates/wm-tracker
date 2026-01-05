@@ -20659,11 +20659,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const pipelineQty = currentItems.filter(i => i.isPipeline).reduce((sum, i) => sum + i.qty, 0);
                 const inventoryQty = currentItems.filter(i => !i.isPipeline).reduce((sum, i) => sum + i.qty, 0);
                 const totalQty = pipelineQty + inventoryQty;
-                const varietyCount = currentItems.length;
+                // Only count varieties with 60g or more as "stocked"
+                const varietyCount = currentItems.filter(i => i.qty >= 60).length;
 
                 // Need more if total quantity is below par level
                 const qtyNeeded = Math.max(0, parLevel - totalQty);
-                // Need varieties if we have less than 3 varieties
+                // Need varieties if we have less than 3 varieties with adequate stock (60g+)
                 const varietiesNeeded = Math.max(0, 3 - varietyCount);
 
                 // Always add all strain types so they show in popup
