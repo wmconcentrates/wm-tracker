@@ -20764,10 +20764,25 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
     function showNeedsItems(category) {
         const data = needsData[category];
+        const contentEl = document.getElementById('needsPopupContent');
+
+        // Check if data is ready
+        if (!data || !data.needs || data.needs.length === 0) {
+            document.getElementById('needsPopupTitle').textContent = (data?.label || category) + ' Needs';
+            document.getElementById('needsPopupTitle').style.color = data?.color || '#F59E0B';
+            contentEl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">Loading data...</div>';
+            document.getElementById('needsItemsPopup').style.display = 'block';
+            // Try to reload data
+            loadNeedsData().then(() => {
+                if (needsData[category]?.needs?.length > 0) {
+                    showNeedsItems(category);
+                }
+            });
+            return;
+        }
+
         document.getElementById('needsPopupTitle').textContent = data.label + ' Needs';
         document.getElementById('needsPopupTitle').style.color = data.color;
-
-        const contentEl = document.getElementById('needsPopupContent');
 
         const getStrainColor = (type) => {
             if (type === 'Sativa') return '#ff0055';
