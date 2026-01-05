@@ -20268,7 +20268,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     let inventoryCategoryData = {};
 
     const inventoryCategories = [
-        { key: 'Live Resin', label: 'Live Resin', color: '#F59E0B', keywords: ['live resin'] },
         { key: 'Wax', label: 'Wax', color: '#FFD700', keywords: ['wax'] },
         { key: 'Shatter', label: 'Shatter', color: '#00CED1', keywords: ['shatter'] },
         { key: 'Sugar Wax', label: 'Sugar Wax', color: '#FF69B4', keywords: ['sugar'] },
@@ -20350,16 +20349,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 category = 'Shatter';
             } else if (matchText.includes('sugar')) {
                 category = 'Sugar Wax';
-            } else if (matchText.includes('cartridge') || (matchText.includes('cart') && matchText.includes('live resin'))) {
-                category = 'Live Resin Carts';
             } else if (matchText.includes('disposable') || matchText.includes('all in one') || matchText.includes('all-in-one') || matchText.includes('aio')) {
                 category = 'Live Resin AIOs';
+            } else if (matchText.includes('cartridge') || matchText.includes('100% live resin')) {
+                category = 'Live Resin Carts';
             } else if (matchText.includes('brick') || matchText.includes('hash')) {
                 category = 'Brick Hash';
             } else if (matchText.includes('wax') || matchText.includes('badder') || matchText.includes('budder')) {
                 category = 'Wax';
-            } else if (matchText.includes('live resin') || matchText.includes('100% live')) {
-                category = 'Live Resin';
             }
 
             if (category && inventoryCategoryData[category]) {
@@ -20423,7 +20420,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     function renderInventoryCategories() {
-        const categoryOrder = ['Live Resin', 'Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
+        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
 
         const html = categoryOrder.map(key => {
             const data = inventoryCategoryData[key];
