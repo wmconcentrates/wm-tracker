@@ -20525,7 +20525,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         localStorage.removeItem('foh_needs_cache');
 
         // Initialize needs data structure
-        const categories = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
+        const categories = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax', '4g Sugar'];
         const strainTypes = ['Indica', 'Sativa', 'Hybrid'];
 
         needsData = {};
@@ -20696,13 +20696,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             'Sugar Wax': '#F59E0B',
             'Live Resin Carts': '#10B981',
             'Live Resin AIOs': '#3B82F6',
-            'Brick Hash': '#6366F1'
+            'Brick Hash': '#6366F1',
+            '4g Wax': '#F97316',
+            '4g Sugar': '#EC4899'
         };
         return colors[cat] || '#8B5CF6';
     }
 
     function renderNeedsCategories() {
-        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
+        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax', '4g Sugar'];
 
         const html = categoryOrder.map(key => {
             const data = needsData[key];
