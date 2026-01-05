@@ -20613,7 +20613,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             else if (is4g && !isHash) category = '4g Wax';
             else if (matchText.includes('shatter')) category = 'Shatter';
             else if (matchText.includes('sugar')) category = 'Sugar Wax';
-            else if (matchText.includes('cartridge') || matchText.includes('100% live resin')) category = 'Live Resin Carts';
+            else if (matchText.includes('cartridge') || (matchText.includes('cart') && matchText.includes('live resin')) || matchText.includes('100% live resin')) category = 'Live Resin Carts';
             else if (matchText.includes('disposable') || matchText.includes('all in one') || matchText.includes('aio')) category = 'Live Resin AIOs';
             else if (isHash) category = 'Brick Hash';
             else if ((matchText.includes('wax') || matchText.includes('badder') || matchText.includes('budder')) && !isHash) category = 'Wax';
