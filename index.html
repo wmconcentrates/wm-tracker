@@ -20404,7 +20404,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             let allProducts = [];
             let nextUrl = LEAFLINK_PROXY_URL + '/products/?page_size=100';
 
-            while (nextUrl && allProducts.length < 500) {
+            while (nextUrl) {
                 const response = await fetch(nextUrl);
                 if (!response.ok) throw new Error('API request failed');
                 const data = await response.json();
