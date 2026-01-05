@@ -4114,6 +4114,9 @@
                     <button onclick="exportForQuickBooks()" style="padding: 12px 24px; background: transparent; border: 2px solid #2CA01C; border-radius: 8px; color: #2CA01C; font-weight: 600; cursor: pointer; box-shadow: 0 0 15px rgba(44, 160, 28, 0.4), 0 0 30px rgba(44, 160, 28, 0.2);">
                         📊 Export for QuickBooks
                     </button>
+                    <button onclick="openAddSickDayModal()" style="padding: 12px 24px; background: transparent; border: 2px solid var(--accent-orange); border-radius: 8px; color: var(--accent-orange); font-weight: 600; cursor: pointer; box-shadow: 0 0 15px rgba(255, 107, 0, 0.4), 0 0 30px rgba(255, 107, 0, 0.2);">
+                        🤒 Add Sick Day
+                    </button>
                 </div>
 
                 <!-- Pay Period Info -->
@@ -4309,6 +4312,37 @@
             </div>
         </div>
     </div>
+    <!-- Add Sick Day Modal -->
+    <div id="addSickDayModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 50px auto; background: var(--bg-secondary); border-radius: 15px; padding: 25px; border: 2px solid var(--accent-blue);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--accent-blue); margin: 0;">🤒 Add Sick Day</h2>
+                <button onclick="closeAddSickDayModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">×</button>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Employee</label>
+                <select id="sickDayEmployee" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                </select>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Date</label>
+                <input type="date" id="sickDayDate" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Hours (default 8)</label>
+                <input type="number" id="sickDayHours" value="8" min="1" max="12" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Notes (optional)</label>
+                <textarea id="sickDayNotes" rows="2" placeholder="e.g., Called in sick, Doctor appointment" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveSickDay()" style="flex: 1; padding: 15px; background: var(--accent-blue); border: none; border-radius: 10px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">💾 Add Sick Day</button>
+                <button onclick="closeAddSickDayModal()" style="flex: 1; padding: 15px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 1rem; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Clock Out Modal -->
     <div id="addClockOutModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; overflow-y: auto;">
         <div style="max-width: 500px; margin: 80px auto; background: var(--bg-secondary); border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(255, 107, 0, 0.4); border: 2px solid var(--accent-orange);">
@@ -18428,10 +18462,10 @@ ${employeeReport || 'No activity recorded today'}
             '75.70.251.65'  // Work location IP
         ];
 
-        // Pay period configuration - paydays are every 2 weeks on Thursday
-        // Next payday is Jan 9, 2025
+        // Pay period configuration - paydays are every 2 weeks on Friday
+        // Updated: Jan 10, 2025 was a Friday
         const PAY_PERIOD_CONFIG = {
-            basePayday: new Date('2025-01-09'), // Reference payday
+            basePayday: new Date('2025-01-10'), // Reference payday (Friday)
             periodDays: 14 // Bi-weekly
         };
 
@@ -19492,6 +19526,85 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         function closeEditShiftModal() {
             document.getElementById('editShiftModal').style.display = 'none';
+        }
+
+        // Sick Day functions
+        function openAddSickDayModal() {
+            // Populate employee dropdown
+            const select = document.getElementById('sickDayEmployee');
+            select.innerHTML = '';
+            Object.entries(ROLES).forEach(([key, role]) => {
+                if (!role.isDemo && !role.salary) {
+                    const option = document.createElement('option');
+                    option.value = role.name;
+                    option.textContent = role.displayName || role.name;
+                    select.appendChild(option);
+                }
+            });
+
+            // Set default date to today
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            document.getElementById('sickDayDate').value = dateStr;
+            document.getElementById('sickDayHours').value = '8';
+            document.getElementById('sickDayNotes').value = '';
+
+            document.getElementById('addSickDayModal').style.display = 'block';
+        }
+
+        function closeAddSickDayModal() {
+            document.getElementById('addSickDayModal').style.display = 'none';
+        }
+
+        async function saveSickDay() {
+            const employeeName = document.getElementById('sickDayEmployee').value;
+            const dateStr = document.getElementById('sickDayDate').value;
+            const hours = parseFloat(document.getElementById('sickDayHours').value) || 8;
+            const notes = document.getElementById('sickDayNotes').value.trim();
+
+            if (!employeeName) { alert('Please select an employee'); return; }
+            if (!dateStr) { alert('Please select a date'); return; }
+
+            // Create clock in at 8am and clock out after X hours
+            const clockInTime = new Date(dateStr + 'T08:00:00');
+            const clockOutTime = new Date(clockInTime.getTime() + (hours * 60 * 60 * 1000));
+
+            // Find the role to get user_role
+            const roleEntry = Object.entries(ROLES).find(([key, role]) => role.name === employeeName);
+            const userRole = roleEntry ? roleEntry[0] : 'unknown';
+
+            // Insert clock in punch
+            const { error: inError } = await supabaseClient
+                .from('timeclock')
+                .insert([{
+                    user_name: employeeName,
+                    user_role: userRole,
+                    punch_type: 'in',
+                    punch_time: clockInTime.toISOString(),
+                    ip_address: 'sick-day' + (notes ? ': ' + notes : '')
+                }]);
+
+            if (inError) { alert('Error adding sick day clock in: ' + inError.message); return; }
+
+            // Insert clock out punch
+            const { error: outError } = await supabaseClient
+                .from('timeclock')
+                .insert([{
+                    user_name: employeeName,
+                    user_role: userRole,
+                    punch_type: 'out',
+                    punch_time: clockOutTime.toISOString(),
+                    ip_address: 'sick-day' + (notes ? ': ' + notes : '')
+                }]);
+
+            if (outError) { alert('Error adding sick day clock out: ' + outError.message); return; }
+
+            alert('✅ Sick day added for ' + employeeName + '!\n\nDate: ' + new Date(dateStr).toLocaleDateString() + '\nHours: ' + hours);
+            closeAddSickDayModal();
+
+            // Refresh timecard if viewing
+            const selectedEmployee = document.getElementById('timecardEmployeeSelect').value;
+            if (selectedEmployee) { loadEmployeeTimecard(selectedEmployee); }
         }
 
         async function saveEditedShift() {
