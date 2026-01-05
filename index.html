@@ -2968,6 +2968,11 @@
                         <input type="number" id="editTrimWeight" step="0.1">
                     </div>
                     <div class="form-group">
+                        <label>Socks Remaining</label>
+                        <input type="number" id="editSocksRemaining" min="0">
+                        <div class="help-text">Socks left to extract</div>
+                    </div>
+                    <div class="form-group">
                         <label>Bulk Weight (g)</label>
                         <input type="number" id="editBulkWeight" step="0.1">
                         <div class="help-text">Post-extraction final weight</div>
@@ -9218,9 +9223,13 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 }
             });
 
-            // Restore selections if still valid
+            // Restore selections if still valid, otherwise default to empty
             columnSelect.value = currentA;
             columnBSelect.value = currentB;
+
+            // Ensure dropdowns show "Empty / Not Loaded" if value is blank
+            if (!columnSelect.value) columnSelect.selectedIndex = 0;
+            if (!columnBSelect.value) columnBSelect.selectedIndex = 0;
         }
 
         function closeMachineModal() {
@@ -14968,6 +14977,7 @@ ${employeeReport || 'No activity recorded today'}
             document.getElementById('editStrainName').value = batch.strain;
             document.getElementById('editStrainType').value = batch.strain_type;
             document.getElementById('editTrimWeight').value = batch.trim_weight;
+            document.getElementById('editSocksRemaining').value = batch.socks_remaining ?? batch.socks_total ?? '';
             document.getElementById('editBulkWeight').value = batch.final_weight || '';
             document.getElementById('editMaterialCost').value = batch.material_cost;
             document.getElementById('editCultivationLicense').value = batch.cultivation_license || '';
@@ -15070,11 +15080,13 @@ ${employeeReport || 'No activity recorded today'}
             // Collect updated values
             const bulkWeight = document.getElementById('editBulkWeight').value;
             const parsedBulkWeight = bulkWeight ? parseFloat(bulkWeight) : null;
+            const socksRemainingVal = document.getElementById('editSocksRemaining').value;
             const updates = {
                 status: document.getElementById('editBatchStatus').value,
                 strain: document.getElementById('editStrainName').value,
                 strain_type: document.getElementById('editStrainType').value,
                 trim_weight: parseFloat(document.getElementById('editTrimWeight').value),
+                socks_remaining: socksRemainingVal !== '' ? parseInt(socksRemainingVal) : null,
                 final_weight: parsedBulkWeight,
                 net_weight: parsedBulkWeight, // Keep net_weight in sync with final_weight
                 material_cost: parseFloat(document.getElementById('editMaterialCost').value),
