@@ -20535,9 +20535,22 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return needsDataLoading;
         }
 
+        // Load cached data immediately for instant display
+        const cachedData = localStorage.getItem('foh_needs_cache');
+        if (cachedData && Object.keys(needsData).length === 0) {
+            try {
+                needsData = JSON.parse(cachedData);
+                renderNeedsCategories();
+            } catch (e) {
+                console.log('Cache parse error:', e);
+            }
+        }
+
         // If data already exists and not forcing reload, just re-render
         if (!forceReload && Object.keys(needsData).length > 0 && needsData['Wax']?.needs?.length > 0) {
             renderNeedsCategories();
+            // Still refresh in background but don't wait
+            setTimeout(() => loadNeedsData(true), 100);
             return Promise.resolve();
         }
 
@@ -20549,11 +20562,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         const categories = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax', '4g Sugar'];
         const strainTypes = ['Indica', 'Sativa', 'Hybrid'];
 
-        needsData = {};
+        const newNeedsData = {};
         salesByCategory = {};
 
         categories.forEach(cat => {
-            needsData[cat] = { label: cat, color: getCategoryColor(cat), needs: [] };
+            newNeedsData[cat] = { label: cat, color: getCategoryColor(cat), needs: [] };
             salesByCategory[cat] = { Indica: 0, Sativa: 0, Hybrid: 0 };
         });
 
@@ -20699,7 +20712,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const varietiesNeeded = Math.max(0, 3 - varietyCount);
 
                 // Always add all strain types so they show in popup
-                const existingIndex = needsData[cat].needs.findIndex(n => n.strainType === strain);
+                const existingIndex = newNeedsData[cat].needs.findIndex(n => n.strainType === strain);
                 const needEntry = {
                     strainType: strain,
                     varietiesNeeded: varietiesNeeded,
@@ -20712,14 +20725,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     isStocked: qtyNeeded === 0 && varietiesNeeded === 0
                 };
                 if (existingIndex >= 0) {
-                    needsData[cat].needs[existingIndex] = needEntry;
+                    newNeedsData[cat].needs[existingIndex] = needEntry;
                 } else {
-                    needsData[cat].needs.push(needEntry);
+                    newNeedsData[cat].needs.push(needEntry);
                 }
             });
         });
 
-        // Cache for instant load next time
+        // Update global data and cache
+        needsData = newNeedsData;
         localStorage.setItem('foh_needs_cache', JSON.stringify(needsData));
         renderNeedsCategories();
         })();
