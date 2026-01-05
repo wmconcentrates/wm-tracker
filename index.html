@@ -20338,8 +20338,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 });
             }
 
-            // Skip archived products only
-            if (product.listing_state === 'Archived') return;
+            // Skip archived and internal products
+            if (product.listing_state === 'Archived' || product.listing_state === 'Internal') return;
 
             // Skip products with 0 quantity
             if (qty <= 0) return;
