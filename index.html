@@ -4544,7 +4544,8 @@
                         access: emp.stations || [],
                         readOnly: emp.read_only || false,
                         salary: emp.is_salary || false,
-                        isAdmin: emp.is_admin || false
+                        isAdmin: emp.is_admin || false,
+                        canEditBatches: emp.can_edit_batches || emp.is_admin || false
                     };
                 });
 
@@ -10803,7 +10804,7 @@ ${employeeReport || 'No activity recorded today'}
                         ${batch.is_sub_batch ? `<div style="color: var(--accent-purple); font-size: 0.8rem;">🔗${batch.parent_batch_id}</div>` : ''}
 
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 6px;">
-                            ${currentRole && (currentRole.isAdmin || currentRole.name === 'Alex') ? `
+                            ${currentRole && currentRole.canEditBatches ? `
                                 <button class="btn" style="background: var(--accent-orange); padding: 8px 14px; font-size: 1rem;" onclick="event.stopPropagation(); openEditBatch('${batch.id}')">✏️</button>
                                 ${batch.is_sub_batch ? `
                                     <button class="btn" style="background: var(--accent-red); padding: 8px 14px; font-size: 1rem;" onclick="event.stopPropagation(); deleteSubBatch('${batch.id}')">🗑️</button>
@@ -15297,8 +15298,8 @@ ${employeeReport || 'No activity recorded today'}
         });
 
         async function deleteSubBatch(subBatchId) {
-            if (!currentRole || (!currentRole.isAdmin && currentRole.name !== 'Alex')) {
-                alert('Only Ryan and Alex can delete sub-batches');
+            if (!currentRole || !currentRole.canEditBatches) {
+                alert('You do not have permission to delete sub-batches');
                 return;
             }
             
@@ -19113,8 +19114,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Open Trash Modal
         async function openTrashModal() {
-            if (!currentRole || (!currentRole.isAdmin && currentRole.name !== 'Alex')) {
-                alert('Only Ryan and Alex can view deleted batches.');
+            if (!currentRole || !currentRole.canEditBatches) {
+                alert('You do not have permission to view deleted batches.');
                 return;
             }
 
@@ -19190,8 +19191,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Open delete batch confirmation modal
         function openDeleteBatchModal(batchId) {
-            if (!currentRole || (!currentRole.isAdmin && currentRole.name !== 'Alex')) {
-                alert('Only Ryan and Alex can delete batches.');
+            if (!currentRole || !currentRole.canEditBatches) {
+                alert('You do not have permission to delete batches.');
                 return;
             }
 
