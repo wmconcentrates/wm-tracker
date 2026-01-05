@@ -20514,6 +20514,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     // ============ NEEDS MODAL ============
     let needsData = {};
     let salesByCategory = {};
+    let needsDataLoading = null; // Track loading promise to prevent concurrent loads
 
     function openNeedsModal() {
         document.getElementById('needsModal').style.display = 'block';
@@ -20528,12 +20529,21 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         document.getElementById('needsItemsPopup').style.display = 'none';
     }
 
-    async function loadNeedsData() {
-        // Ensure pipeline data is loaded first (it populates pipelineCategoryData)
-        loadSalesPipeline();
+    async function loadNeedsData(forceReload = false) {
+        // If already loading, return the existing promise
+        if (needsDataLoading && !forceReload) {
+            return needsDataLoading;
+        }
 
-        // Clear any potentially corrupted cache
-        localStorage.removeItem('foh_needs_cache');
+        // If data already exists and not forcing reload, just re-render
+        if (!forceReload && Object.keys(needsData).length > 0 && needsData['Wax']?.needs?.length > 0) {
+            renderNeedsCategories();
+            return Promise.resolve();
+        }
+
+        needsDataLoading = (async () => {
+            // Ensure pipeline data is loaded first (it populates pipelineCategoryData)
+            loadSalesPipeline();
 
         // Initialize needs data structure
         const categories = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax', '4g Sugar'];
@@ -20712,6 +20722,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Cache for instant load next time
         localStorage.setItem('foh_needs_cache', JSON.stringify(needsData));
         renderNeedsCategories();
+        })();
+
+        // Wait for the loading to complete, then clear the flag
+        try {
+            await needsDataLoading;
+        } finally {
+            needsDataLoading = null;
+        }
     }
 
     function getCategoryColor(cat) {
