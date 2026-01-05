@@ -20313,6 +20313,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         const products = await fetchLeafLinkInventory();
 
         // Categorize products
+        let liveResinProducts = [];
         products.forEach(product => {
             const name = (product.name || '').toLowerCase();
             const displayName = product.display_name || product.name || '';
@@ -20326,6 +20327,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const productLine = (typeof product.product_line === 'string' ? product.product_line : (product.product_line?.name || '')).toLowerCase();
             const category_field = (typeof product.category === 'string' ? product.category : (product.category?.name || '')).toLowerCase();
             const qty = parseFloat(product.available_inventory || product.quantity || 0) || 0;
+
+            // Debug: Log all products with "live resin" in name
+            if (name.includes('live resin') || displayName.toLowerCase().includes('live resin')) {
+                liveResinProducts.push({
+                    name: displayName,
+                    listing_state: product.listing_state,
+                    qty: qty,
+                    parentName: parentName
+                });
+            }
 
             // Skip archived/internal products - only show Available
             if (product.listing_state && product.listing_state !== 'Available') return;
@@ -20377,6 +20388,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
         });
 
+        // Debug: Show all Live Resin products found
+        console.log('All Live Resin products found:', liveResinProducts);
+        console.log('Live Resin products with Available status:', liveResinProducts.filter(p => p.listing_state === 'Available'));
 
         renderInventoryCategories();
     }
