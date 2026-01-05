@@ -20323,7 +20323,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
             const productLine = (typeof product.product_line === 'string' ? product.product_line : (product.product_line?.name || '')).toLowerCase();
             const category_field = (typeof product.category === 'string' ? product.category : (product.category?.name || '')).toLowerCase();
-            const qty = parseFloat(product.available_inventory || product.quantity || 0) || 0;
+            const qty = parseFloat(product.available_inventory != null ? product.available_inventory : (product.quantity || 0)) || 0;
 
             // Combine all fields for matching - include display name too
             const matchText = (parentName + ' ' + productLine + ' ' + category_field + ' ' + displayName).toLowerCase();
@@ -20585,7 +20585,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 parentName = (product.parent.name || '').toLowerCase();
             }
             const matchText = (parentName + ' ' + displayName).toLowerCase();
-            const qty = parseFloat(product.available_inventory || product.quantity || 0) || 0;
+            const qty = parseFloat(product.available_inventory != null ? product.available_inventory : (product.quantity || 0)) || 0;
 
             if (product.listing_state && product.listing_state !== 'Available') return;
             if (qty <= 0) return;
