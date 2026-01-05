@@ -20325,8 +20325,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const category_field = (typeof product.category === 'string' ? product.category : (product.category?.name || '')).toLowerCase();
             const qty = parseFloat(product.available_inventory || product.quantity || 0) || 0;
 
-            // Skip archived and internal products
-            if (product.listing_state === 'Archived' || product.listing_state === 'Internal') return;
+            // Combine all fields for matching - include display name too
+            const matchText = (parentName + ' ' + productLine + ' ' + category_field + ' ' + displayName).toLowerCase();
+
+            // Check if this is a 4g bucket product (allow Internal for these)
+            const is4gBucket = matchText.includes('4 gram') || matchText.includes('4gram') || matchText.includes('bucket');
+
+            // Skip archived products always, skip internal unless it's a 4g bucket
+            if (product.listing_state === 'Archived') return;
+            if (product.listing_state === 'Internal' && !is4gBucket) return;
 
             // Skip products with 0 quantity
             if (qty <= 0) return;
@@ -20335,9 +20342,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             let strainType = 'Hybrid';
             if (name.includes('sativa') || name.includes('(sativa)')) strainType = 'Sativa';
             else if (name.includes('indica') || name.includes('(indica)')) strainType = 'Indica';
-
-            // Combine all fields for matching - include display name too
-            const matchText = (parentName + ' ' + productLine + ' ' + category_field + ' ' + displayName).toLowerCase();
 
             // Map to our categories - check specific product types
             let category = null;
