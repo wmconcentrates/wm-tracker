@@ -10803,7 +10803,7 @@ ${employeeReport || 'No activity recorded today'}
                         ${batch.is_sub_batch ? `<div style="color: var(--accent-purple); font-size: 0.8rem;">🔗${batch.parent_batch_id}</div>` : ''}
 
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 6px;">
-                            ${currentRole && (currentRole.name === 'Ryan (Admin)' || currentRole.name === 'Alex') ? `
+                            ${currentRole && (currentRole.isAdmin || currentRole.name === 'Alex') ? `
                                 <button class="btn" style="background: var(--accent-orange); padding: 8px 14px; font-size: 1rem;" onclick="event.stopPropagation(); openEditBatch('${batch.id}')">✏️</button>
                                 ${batch.is_sub_batch ? `
                                     <button class="btn" style="background: var(--accent-red); padding: 8px 14px; font-size: 1rem;" onclick="event.stopPropagation(); deleteSubBatch('${batch.id}')">🗑️</button>
@@ -15297,7 +15297,7 @@ ${employeeReport || 'No activity recorded today'}
         });
 
         async function deleteSubBatch(subBatchId) {
-            if (!currentRole || (currentRole.name !== 'Ryan (Admin)' && currentRole.name !== 'Alex')) {
+            if (!currentRole || (!currentRole.isAdmin && currentRole.name !== 'Alex')) {
                 alert('Only Ryan and Alex can delete sub-batches');
                 return;
             }
@@ -19113,7 +19113,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Open Trash Modal
         async function openTrashModal() {
-            if (!currentRole || (currentRole.name !== 'Ryan (Admin)' && currentRole.name !== 'Alex')) {
+            if (!currentRole || (!currentRole.isAdmin && currentRole.name !== 'Alex')) {
                 alert('Only Ryan and Alex can view deleted batches.');
                 return;
             }
@@ -19190,7 +19190,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Open delete batch confirmation modal
         function openDeleteBatchModal(batchId) {
-            if (!currentRole || (currentRole.name !== 'Ryan (Admin)' && currentRole.name !== 'Alex')) {
+            if (!currentRole || (!currentRole.isAdmin && currentRole.name !== 'Alex')) {
                 alert('Only Ryan and Alex can delete batches.');
                 return;
             }
