@@ -20445,7 +20445,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 if (item.strainType) strainCounts[item.strainType]++;
             });
 
-            const unit = (key.includes('Cart') || key.includes('AIO')) ? '' : 'g';
+            const unit = (key.includes('Cart') || key.includes('AIO') || key.includes('4g')) ? '' : 'g';
             return `
                 <button onclick="showInventoryItems('${key}')" class="foh-btn" style="opacity: ${hasItems ? '1' : '0.5'};">
                     <div class="foh-btn-name">${data.label}</div>
@@ -20466,7 +20466,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         const data = inventoryCategoryData[category];
         if (!data || data.count === 0) return;
 
-        const unit = (category.includes('Cart') || category.includes('AIO')) ? '' : 'g';
+        const unit = (category.includes('Cart') || category.includes('AIO') || category.includes('4g')) ? '' : 'g';
         document.getElementById('inventoryPopupTitle').textContent = data.label + ' - ' + Math.round(data.totalQty) + unit;
         document.getElementById('inventoryPopupTitle').style.color = data.color;
 
