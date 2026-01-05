@@ -9081,9 +9081,13 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             const currentRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
             document.getElementById('machinePotRuns').value = currentRuns + 1;
 
+            console.log('runColumnToPot - majorityBatchId:', majorityBatchId, 'newRuns:', currentRuns + 1, 'potLedger:', potLedger);
+
             // Update current machine status with new ledger
             window.currentMachineStatus = window.currentMachineStatus || {};
             window.currentMachineStatus.pot_ledger = potLedger;
+
+            console.log('runColumnToPot - window.currentMachineStatus.pot_ledger set to:', window.currentMachineStatus.pot_ledger);
 
             // Update pot ledger display
             displayPotLedger({ pot_ledger: potLedger });
@@ -9163,11 +9167,16 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
         // Auto-save machine status without closing modal
         async function autoSaveMachineStatus() {
-            if (!currentMachine) return;
+            if (!currentMachine) {
+                console.error('autoSaveMachineStatus: No currentMachine set');
+                return;
+            }
 
             const potBatch = document.getElementById('machinePotBatch').value;
             const potRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
             const potLedger = window.currentMachineStatus?.pot_ledger || [];
+
+            console.log('autoSaveMachineStatus - potBatch:', potBatch, 'potRuns:', potRuns, 'potLedger:', potLedger);
 
             const machineStatus = {
                 machine: currentMachine,
@@ -9187,11 +9196,18 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 updated_by: currentRole ? currentRole.name : 'Unknown'
             };
 
+            console.log('autoSaveMachineStatus - saving:', machineStatus);
+
             const { error } = await supabaseClient
                 .from('wm_machine_status')
                 .upsert(machineStatus, { onConflict: 'machine' });
 
-            if (error) throw error;
+            if (error) {
+                console.error('autoSaveMachineStatus - error:', error);
+                throw error;
+            }
+
+            console.log('autoSaveMachineStatus - saved successfully');
 
             // Update displays
             updateMachineDisplays();
