@@ -20074,7 +20074,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         function renderPipelineCategories() {
-            const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
+            const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax'];
 
             const html = categoryOrder.map(key => {
                 const data = pipelineCategoryData[key];
@@ -20273,7 +20273,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         { key: 'Sugar Wax', label: 'Sugar Wax', color: '#FF69B4', keywords: ['sugar'] },
         { key: 'Live Resin Carts', label: 'Carts', color: '#10B981', keywords: ['cart'] },
         { key: 'Live Resin AIOs', label: 'AIOs', color: '#8B5CF6', keywords: ['aio', 'disposable'] },
-        { key: 'Brick Hash', label: 'Brick Hash', color: '#6B7280', keywords: ['hash', 'brick'] }
+        { key: 'Brick Hash', label: 'Brick Hash', color: '#6B7280', keywords: ['hash', 'brick'] },
+        { key: '4g Wax', label: '4g Wax', color: '#F97316', keywords: ['4 gram', 'bucket'] }
     ];
 
     function openLeafLinkInventoryModal() {
@@ -20343,12 +20344,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Skip non-concentrate products
             if (matchText.includes('syrup') || matchText.includes('jousse') ||
                 matchText.includes('rso') || matchText.includes('battery') ||
-                matchText.includes('510 thread') || matchText.includes('4 gram') ||
-                matchText.includes('4gram') || matchText.includes('bucket')) {
-                return; // Skip syrups, RSO, batteries, 4 gram buckets
+                matchText.includes('510 thread')) {
+                return; // Skip syrups, RSO, batteries
             }
 
-            if (matchText.includes('shatter')) {
+            // Check for 4g buckets first (before other wax/sugar matching)
+            if (matchText.includes('4 gram') || matchText.includes('4gram') || matchText.includes('bucket')) {
+                category = '4g Wax';
+            } else if (matchText.includes('shatter')) {
                 category = 'Shatter';
             } else if (matchText.includes('sugar')) {
                 category = 'Sugar Wax';
@@ -20420,7 +20423,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     function renderInventoryCategories() {
-        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
+        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax'];
 
         const html = categoryOrder.map(key => {
             const data = inventoryCategoryData[key];
@@ -20692,7 +20695,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     function renderNeedsCategories() {
-        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
+        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax'];
 
         const html = categoryOrder.map(key => {
             const data = needsData[key];
