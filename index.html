@@ -2946,6 +2946,16 @@
                 
                 <div class="form-grid">
                     <div class="form-group">
+                        <label>Status</label>
+                        <select id="editBatchStatus">
+                            <option value="intake">Intake</option>
+                            <option value="extraction">Extraction</option>
+                            <option value="finishing">Post-Extraction</option>
+                            <option value="packaging">Packaging</option>
+                            <option value="complete">Complete</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>Strain Type</label>
                         <select id="editStrainType">
                             <option value="Indica">Indica (Blue Lid)</option>
@@ -14911,6 +14921,7 @@ ${employeeReport || 'No activity recorded today'}
             
             // Populate form
             document.getElementById('editBatchId').value = batch.id;
+            document.getElementById('editBatchStatus').value = batch.status;
             document.getElementById('editStrainName').value = batch.strain;
             document.getElementById('editStrainType').value = batch.strain_type;
             document.getElementById('editTrimWeight').value = batch.trim_weight;
@@ -15017,6 +15028,7 @@ ${employeeReport || 'No activity recorded today'}
             const bulkWeight = document.getElementById('editBulkWeight').value;
             const parsedBulkWeight = bulkWeight ? parseFloat(bulkWeight) : null;
             const updates = {
+                status: document.getElementById('editBatchStatus').value,
                 strain: document.getElementById('editStrainName').value,
                 strain_type: document.getElementById('editStrainType').value,
                 trim_weight: parseFloat(document.getElementById('editTrimWeight').value),
