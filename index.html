@@ -8613,9 +8613,14 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 sourcesSummary = ' | Sources: ' + potLedger.map(p => `${p.batch_id}(${p.socks}socks)`).join(', ');
             }
 
+            // Only move to extraction status if all socks have been used
+            // If socks remain, keep at intake so they stay visible in the queue
+            const socksRemaining = batch.socks_remaining ?? 0;
+            const shouldMoveToExtraction = socksRemaining === 0;
+
             const updatedBatch = {
                 ...batch,
-                status: 'extraction',
+                status: shouldMoveToExtraction ? 'extraction' : 'intake',
                 extraction_method: 'BHO',
                 product_type: productTypeText,
                 product_made: productTypeText, // Also set product_made for finishing dropdown
@@ -8675,8 +8680,11 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                             loadBatches();
                             updateMachineDisplays();
                             closePullBatchModal();
-                            
-                            alert(`✅ Extraction Complete!\n\n${batch.id}\n${productTypeText}: ${amountText}\n${machineStatus.pot_runs || 0} runs\n\nBatch moved to Finishing stage.\nPot has been emptied.`);
+
+                            const statusMsg = shouldMoveToExtraction
+                                ? 'Batch moved to Finishing stage.'
+                                : `⚠️ ${socksRemaining} sock(s) remaining - batch stays in extraction queue.`;
+                            alert(`✅ Extraction Complete!\n\n${batch.id}\n${productTypeText}: ${amountText}\n${machineStatus.pot_runs || 0} runs\n\n${statusMsg}\nPot has been emptied.`);
                         });
                 });
         }
