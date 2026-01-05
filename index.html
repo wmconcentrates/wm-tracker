@@ -18464,9 +18464,9 @@ ${employeeReport || 'No activity recorded today'}
         ];
 
         // Pay period configuration - paydays are every 2 weeks on Friday
-        // Updated: Jan 10, 2025 was a Friday
+        // Pay periods run Saturday to Friday
         const PAY_PERIOD_CONFIG = {
-            basePayday: new Date('2025-01-10'), // Reference payday (Friday)
+            basePayday: new Date('2025-01-11'), // Saturday after a payday (aligns Sat-Fri periods)
             periodDays: 14 // Bi-weekly
         };
 
