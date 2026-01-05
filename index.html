@@ -18505,6 +18505,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         // Get current pay period dates
+        // Note: Pay period ends 1 WEEK before payday (not the day before)
+        // Staff are paid for "two weeks prior and one week prior, but not week of"
         function getPayPeriodDates(periodType = 'current') {
             const today = new Date();
             const basePayday = new Date(PAY_PERIOD_CONFIG.basePayday);
@@ -18513,7 +18515,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Calculate days since base payday
             const daysSinceBase = Math.floor((today - basePayday) / (1000 * 60 * 60 * 24));
 
-            // Find current period number (add 1 to get period containing today, not the one that ended)
+            // Find current period number
             let periodNumber = Math.floor(daysSinceBase / periodDays) + 1;
             if (daysSinceBase < 0) {
                 periodNumber = Math.ceil(daysSinceBase / periodDays);
@@ -18523,19 +18525,24 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 periodNumber -= 1;
             }
 
-            // Calculate period start and end
-            const periodStart = new Date(basePayday);
-            periodStart.setDate(basePayday.getDate() + (periodNumber * periodDays) - periodDays + 1);
-            periodStart.setHours(0, 0, 0, 0); // Start of day
+            // Calculate payday for this period
+            const payday = new Date(basePayday);
+            payday.setDate(basePayday.getDate() + (periodNumber * periodDays));
 
-            const periodEnd = new Date(periodStart);
-            periodEnd.setDate(periodStart.getDate() + periodDays - 1);
-            periodEnd.setHours(23, 59, 59, 999); // End of day
+            // Period ends 1 week (7 days) before payday
+            // Period is 14 days, so it starts 21 days before payday
+            const periodEnd = new Date(payday);
+            periodEnd.setDate(payday.getDate() - 7); // End 1 week before payday
+            periodEnd.setHours(23, 59, 59, 999);
+
+            const periodStart = new Date(periodEnd);
+            periodStart.setDate(periodEnd.getDate() - periodDays + 1); // Go back 13 days for 14-day period
+            periodStart.setHours(0, 0, 0, 0);
 
             return {
                 start: periodStart,
                 end: periodEnd,
-                payday: new Date(periodEnd.getTime() + (1000 * 60 * 60 * 24)) // Day after period ends
+                payday: payday
             };
         }
 
