@@ -4136,12 +4136,13 @@
                                     <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Clock Out</th>
                                     <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Hours</th>
                                     <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Daily Total</th>
+                                    <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Notes</th>
                                     <th style="padding: 15px 12px; text-align: center; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="timecardTableBody">
                                 <tr>
-                                    <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-secondary);">Select an employee to view their timecard</td>
+                                    <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">Select an employee to view their timecard</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -19261,7 +19262,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             if (!employeeName) {
                 document.getElementById('timecardTableBody').innerHTML =
-                    '<tr><td colspan="6" style="padding: 40px; text-align: center; color: var(--text-secondary);">Select an employee to view their timecard</td></tr>';
+                    '<tr><td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">Select an employee to view their timecard</td></tr>';
                 document.getElementById('timecardSummary').style.display = 'none';
                 return;
             }
@@ -19276,7 +19277,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const summary = document.getElementById('timecardSummary');
 
             if (!punches || punches.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="padding: 40px; text-align: center; color: var(--text-secondary);">No time records found for this period</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">No time records found for this period</td></tr>';
                 summary.style.display = 'none';
                 return;
             }
@@ -19333,6 +19334,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         html += '<td style="padding: 12px; text-align: center; color: var(--accent-orange);">' + outTime + '</td>';
                         html += '<td style="padding: 12px; text-align: right; color: var(--accent-blue);">' + pairHours.toFixed(2) + '</td>';
                         html += '<td style="padding: 12px; text-align: right; font-weight: 600; color: ' + (dayHours > 8 ? 'var(--accent-orange)' : 'var(--accent-green)') + ';">' + (isFirst ? dayHours.toFixed(2) : '') + '</td>';
+                        // Check if this is a sick day
+                        const isSickDay = punch.ip_address && punch.ip_address.includes('sick-day');
+                        const sickDayNote = isSickDay ? '<span style="color: var(--accent-blue); font-weight: 600;">🤒 Sick Day</span>' : '';
+                        html += '<td style="padding: 12px; text-align: center;">' + sickDayNote + '</td>';
+
                         const outPunchId = (nextPunch && nextPunch.punch_type === 'out') ? nextPunch.id : 'null';
                         html += '<td style="padding: 12px; text-align: center;"><button onclick="openEditShiftModal(' + punch.id + ', ' + outPunchId + ')" style="padding: 6px 12px; background: var(--accent-blue); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem;" title="Edit Shift">Edit</button></td>';
                         html += '</tr>';
@@ -19757,7 +19763,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 for (const [employeeName, punches] of Object.entries(employeeData)) {
                     csv += '\n';
                     csv += '"EMPLOYEE: ' + employeeName + '"\n';
-                    csv += 'Date,Clock In,Clock Out,Hours\n';
+                    csv += 'Date,Clock In,Clock Out,Hours,Notes\n';
 
                     // Group by date
                     const punchesByDate = {};
@@ -19790,7 +19796,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                                 }
 
                                 dayHours += pairHours;
-                                csv += '"' + date + '",' + inTimeStr + ',' + outTimeStr + ',' + pairHours.toFixed(2) + '\n';
+                                const sickNote = (punch.ip_address && punch.ip_address.includes('sick-day')) ? 'Sick Day' : '';
+                                csv += '"' + date + '",' + inTimeStr + ',' + outTimeStr + ',' + pairHours.toFixed(2) + ',"' + sickNote + '"\n';
                             }
                         }
 
