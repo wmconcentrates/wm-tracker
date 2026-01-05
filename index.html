@@ -1552,6 +1552,9 @@
                     <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
                         <input type="checkbox" id="employeeReadOnly" style="width: 18px; height: 18px;"> Read Only
                     </label>
+                    <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                        <input type="checkbox" id="employeeCanEditBatches" style="width: 18px; height: 18px;"> Can Edit Batches
+                    </label>
                 </div>
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; margin-bottom: 10px; color: var(--text-secondary);">Station Access</label>
@@ -4661,6 +4664,7 @@
             document.getElementById('employeeIsAdmin').checked = false;
             document.getElementById('employeeIsSalary').checked = false;
             document.getElementById('employeeReadOnly').checked = false;
+            document.getElementById('employeeCanEditBatches').checked = false;
             document.querySelectorAll('.station-checkbox').forEach(cb => cb.checked = false);
             document.getElementById('deactivateEmployeeBtn').style.display = 'none';
             document.getElementById('employeeFormModal').style.display = 'block';
@@ -4685,6 +4689,7 @@
                 document.getElementById('employeeIsAdmin').checked = data.is_admin || false;
                 document.getElementById('employeeIsSalary').checked = data.is_salary || false;
                 document.getElementById('employeeReadOnly').checked = data.read_only || false;
+                document.getElementById('employeeCanEditBatches').checked = data.can_edit_batches || false;
 
                 document.querySelectorAll('.station-checkbox').forEach(cb => {
                     cb.checked = (data.stations || []).includes(cb.value);
@@ -4708,6 +4713,7 @@
             const isAdmin = document.getElementById('employeeIsAdmin').checked;
             const isSalary = document.getElementById('employeeIsSalary').checked;
             const readOnly = document.getElementById('employeeReadOnly').checked;
+            const canEditBatches = document.getElementById('employeeCanEditBatches').checked;
             const stations = Array.from(document.querySelectorAll('.station-checkbox:checked')).map(cb => cb.value);
 
             if (!name) {
@@ -4729,6 +4735,7 @@
                 is_admin: isAdmin,
                 is_salary: isSalary,
                 read_only: readOnly,
+                can_edit_batches: canEditBatches,
                 stations,
                 updated_at: new Date().toISOString()
             };
