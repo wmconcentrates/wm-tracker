@@ -20074,7 +20074,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         function renderPipelineCategories() {
-            const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax'];
+            const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
 
             const html = categoryOrder.map(key => {
                 const data = pipelineCategoryData[key];
@@ -20695,7 +20695,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     function renderNeedsCategories() {
-        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax'];
+        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
 
         const html = categoryOrder.map(key => {
             const data = needsData[key];
