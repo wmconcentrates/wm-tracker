@@ -20555,12 +20555,17 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
                 // Determine category
                 let category = null;
-                if (productName.includes('shatter')) category = 'Shatter';
+                const is4g = productName.includes('4 gram') || productName.includes('4gram') || productName.includes('4g ') || productName.includes('bucket');
+                const isHash = productName.includes('brick') || productName.includes('hash');
+
+                if (is4g && productName.includes('sugar')) category = '4g Sugar';
+                else if (is4g && !isHash) category = '4g Wax';
+                else if (productName.includes('shatter')) category = 'Shatter';
                 else if (productName.includes('sugar')) category = 'Sugar Wax';
                 else if (productName.includes('cartridge') || productName.includes('cart')) category = 'Live Resin Carts';
                 else if (productName.includes('disposable') || productName.includes('all in one') || productName.includes('aio')) category = 'Live Resin AIOs';
-                else if (productName.includes('brick') || productName.includes('hash')) category = 'Brick Hash';
-                else if (productName.includes('wax') || productName.includes('badder') || productName.includes('budder')) category = 'Wax';
+                else if (isHash) category = 'Brick Hash';
+                else if ((productName.includes('wax') || productName.includes('badder') || productName.includes('budder')) && !isHash) category = 'Wax';
 
                 if (!category) return;
 
@@ -20590,7 +20595,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const matchText = (parentName + ' ' + displayName).toLowerCase();
             const qty = parseFloat(product.available_inventory != null ? product.available_inventory : (product.quantity || 0)) || 0;
 
-            if (product.listing_state && product.listing_state !== 'Available') return;
+            // Check if this is a 4g bucket product (allow Internal for these)
+            const is4g = matchText.includes('4 gram') || matchText.includes('4gram') || matchText.includes('4g ') || matchText.includes('bucket');
+            const isHash = matchText.includes('brick') || matchText.includes('hash');
+
+            // Skip archived, skip internal unless 4g bucket
+            if (product.listing_state === 'Archived') return;
+            if (product.listing_state === 'Internal' && !is4g) return;
             if (qty <= 0) return;
 
             // Skip non-concentrates
@@ -20598,12 +20609,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             // Determine category
             let category = null;
-            if (matchText.includes('shatter')) category = 'Shatter';
+            if (is4g && matchText.includes('sugar')) category = '4g Sugar';
+            else if (is4g && !isHash) category = '4g Wax';
+            else if (matchText.includes('shatter')) category = 'Shatter';
             else if (matchText.includes('sugar')) category = 'Sugar Wax';
-            else if (matchText.includes('cartridge') || (matchText.includes('cart') && matchText.includes('live resin'))) category = 'Live Resin Carts';
+            else if (matchText.includes('cartridge') || matchText.includes('100% live resin')) category = 'Live Resin Carts';
             else if (matchText.includes('disposable') || matchText.includes('all in one') || matchText.includes('aio')) category = 'Live Resin AIOs';
-            else if (matchText.includes('brick') || matchText.includes('hash')) category = 'Brick Hash';
-            else if (matchText.includes('wax') || matchText.includes('badder') || matchText.includes('budder')) category = 'Wax';
+            else if (isHash) category = 'Brick Hash';
+            else if ((matchText.includes('wax') || matchText.includes('badder') || matchText.includes('budder')) && !isHash) category = 'Wax';
 
             if (!category) return;
 
