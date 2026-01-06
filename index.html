@@ -6333,44 +6333,24 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             printIntakeLabelDirectly(testBatch);
         }
 
-        // Print directly to Zebra printer via print server or BrowserPrint
+        // Print directly to Zebra printer via IP
         async function printIntakeLabelDirectly(batch) {
+            const printerIP = '10.1.10.95';
             const zpl = generateIntakeBatchLabelZPL(batch);
-            const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
-            let printed = false;
 
-            // Try print server first (works from HTTPS via localhost)
             try {
-                const response = await fetch(printServerURL, {
+                await fetch(`http://${printerIP}:9100`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zpl: zpl })
+                    mode: 'no-cors',
+                    body: zpl
                 });
-                if (response.ok) {
-                    printed = true;
-                    alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}`);
-                    return;
-                }
+                alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}`);
             } catch (error) {
-                console.log('Print server not available:', error.message);
-            }
-
-            // Fallback to BrowserPrint
-            if (window.BrowserPrint) {
-                try {
-                    const printer = await window.BrowserPrint.getDefaultDevice('printer');
-                    printer.send(zpl);
-                    alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}`);
-                    return;
-                } catch (error) {
-                    console.log('BrowserPrint error:', error);
+                console.error('Print error:', error);
+                alert(`⚠️ Could not connect to printer at ${printerIP}:9100`);
+                if (confirm('Download ZPL file instead?')) {
+                    downloadIntakeLabelZPL(batch);
                 }
-            }
-
-            // Last resort - download ZPL
-            alert(`⚠️ Could not connect to printer.\n\nPrint server not running and BrowserPrint not available.`);
-            if (confirm('Download ZPL file instead?')) {
-                downloadIntakeLabelZPL(batch);
             }
         }
 
@@ -6422,40 +6402,19 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
         // Print labeling completion label with alert (for testing)
         async function printLabelingCompletionLabelWithAlert(batch, labeledBy) {
+            const printerIP = '10.1.10.95';
             const zpl = generateLabelingCompletionZPL(batch, labeledBy);
-            const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
-            let printed = false;
 
-            // Try print server first
             try {
-                const response = await fetch(printServerURL, {
+                await fetch(`http://${printerIP}:9100`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zpl: zpl })
+                    mode: 'no-cors',
+                    body: zpl
                 });
-                if (response.ok) {
-                    printed = true;
-                }
-            } catch (error) {
-                console.log('Print server not available:', error.message);
-            }
-
-            // Fallback to BrowserPrint
-            if (!printed && window.BrowserPrint) {
-                try {
-                    const printer = await window.BrowserPrint.getDefaultDevice('printer');
-                    printer.send(zpl);
-                    printed = true;
-                } catch (error) {
-                    console.log('BrowserPrint error:', error);
-                }
-            }
-
-            if (printed) {
                 alert(`✅ Labeling completion label sent to printer!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\nTotal Units: ${batch.units_packaged || 0}\n1g: ${batch.units_1g || 0}  |  4g: ${batch.units_4g || 0}\nLabeled by: ${labeledBy}\nAgreement: ${batch.material_agreement || 'Wholesale'}`);
-            } else {
-                // Offer ZPL download as last resort
-                if (confirm(`⚠️ Could not connect to printer.\n\nPrint server (localhost:3000) not running and BrowserPrint not available.\n\nDownload ZPL file instead?`)) {
+            } catch (error) {
+                console.error('Print error:', error);
+                if (confirm(`⚠️ Could not connect to printer at ${printerIP}:9100\n\nDownload ZPL file instead?`)) {
                     const blob = new Blob([zpl], { type: 'text/plain' });
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -6469,50 +6428,32 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
         }
 
-        // Print post-production label via print server or BrowserPrint
+        // Print post-production label directly to Zebra IP
         async function printPostProductionLabelDirectly(batch, finalWeight, sampleWeight) {
+            const printerIP = '10.1.10.95';
             const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
-            const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
 
-            // Try print server first (works from HTTPS via localhost)
             try {
-                const response = await fetch(printServerURL, {
+                await fetch(`http://${printerIP}:9100`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zpl: zpl })
+                    mode: 'no-cors',
+                    body: zpl
                 });
-                if (response.ok) {
-                    alert(`✅ Post-production label sent to printer!\n\nBatch: ${batch.id}`);
-                    return;
-                }
+                alert(`✅ Post-production label sent to printer!\n\nBatch: ${batch.id}`);
             } catch (error) {
-                console.log('Print server not available:', error.message);
-            }
-
-            // Fallback to BrowserPrint
-            if (window.BrowserPrint) {
-                try {
-                    const printer = await window.BrowserPrint.getDefaultDevice('printer');
-                    printer.send(zpl);
-                    alert(`✅ Post-production label sent to printer!\n\nBatch: ${batch.id}`);
-                    return;
-                } catch (error) {
-                    console.log('BrowserPrint error:', error);
+                console.error('Print error:', error);
+                alert(`⚠️ Could not connect to printer at ${printerIP}:9100`);
+                if (confirm('Download ZPL file instead?')) {
+                    const blob = new Blob([zpl], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `postprod-label-${batch.id}.zpl`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
                 }
-            }
-
-            // Last resort - download ZPL
-            alert(`⚠️ Could not connect to printer.\n\nPrint server not running and BrowserPrint not available.`);
-            if (confirm('Download ZPL file instead?')) {
-                const blob = new Blob([zpl], { type: 'text/plain' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `postprod-label-${batch.id}.zpl`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
             }
         }
 
@@ -6600,41 +6541,21 @@ ${growerName ? `^FO15,705^FD${growerName.substring(0, 25)}^FS` : ''}
             return zpl;
         }
 
-        // Print labeling completion label via print server or BrowserPrint
+        // Print labeling completion label directly to Zebra IP
         async function printLabelingCompletionLabel(batch, labeledBy) {
+            const printerIP = '10.1.10.95';
             const zpl = generateLabelingCompletionZPL(batch, labeledBy);
-            const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
 
-            // Try print server first (works from HTTPS via localhost)
             try {
-                const response = await fetch(printServerURL, {
+                await fetch(`http://${printerIP}:9100`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zpl: zpl })
+                    mode: 'no-cors',
+                    body: zpl
                 });
-                if (response.ok) {
-                    console.log('Labeling completion label sent via print server');
-                    return;
-                }
+                console.log('Labeling completion label sent to printer');
             } catch (error) {
-                console.log('Print server not available:', error.message);
+                console.error('Print error for labeling completion:', error);
             }
-
-            // Fallback to BrowserPrint
-            if (window.BrowserPrint) {
-                try {
-                    const printer = await window.BrowserPrint.getDefaultDevice('printer');
-                    printer.send(zpl, undefined, (error) => {
-                        if (error) console.log('BrowserPrint error:', error);
-                    });
-                    console.log('Labeling completion label sent via BrowserPrint');
-                    return;
-                } catch (error) {
-                    console.log('BrowserPrint error:', error);
-                }
-            }
-
-            console.log('No print method available for labeling completion label');
         }
 
         // Open printable intake batch label
