@@ -5138,11 +5138,26 @@
                 // Build status display based on machine type
                 let statusHtml = '';
                 if (machineType === 'bho') {
-                    const cols = config.columns || 6;
-                    statusHtml = '<div style="margin-bottom: 8px;"><span id="' + machineKey + 'ColumnStatus" style="color: var(--accent-blue);">Columns empty</span></div>' +
-                        '<div>Pot: <span id="' + machineKey + 'PotBatch">Empty</span></div>' +
-                        '<div style="font-size: 0.8rem; color: var(--accent-purple);" id="' + machineKey + 'PotStrain"></div>' +
-                        '<div>Filter: <span id="' + machineKey + 'FilterStatus">Not loaded</span></div>';
+                    // Visual top-down machine layout
+                    statusHtml = '<div style="position: relative; width: 100%; height: 140px; margin-top: 10px;">' +
+                        // Column A (top left)
+                        '<div id="' + machineKey + 'ColAVisual" style="position: absolute; top: 0; left: 15%; width: 50px; height: 50px; border-radius: 50%; background: var(--bg-tertiary); border: 3px solid var(--accent-blue); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; text-align: center; padding: 3px; overflow: hidden; line-height: 1.1;">' +
+                        '<span id="' + machineKey + 'ColAStrain">Empty</span></div>' +
+                        // Column B (top right)
+                        '<div id="' + machineKey + 'ColBVisual" style="position: absolute; top: 0; right: 15%; width: 50px; height: 50px; border-radius: 50%; background: var(--bg-tertiary); border: 3px solid var(--accent-blue); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; text-align: center; padding: 3px; overflow: hidden; line-height: 1.1;">' +
+                        '<span id="' + machineKey + 'ColBStrain">Empty</span></div>' +
+                        // Pot (center, below columns)
+                        '<div id="' + machineKey + 'PotVisual" style="position: absolute; top: 50px; left: 50%; transform: translateX(-50%); width: 80px; height: 80px; border-radius: 50%; background: var(--bg-tertiary); border: 4px solid var(--accent-purple); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; text-align: center; padding: 5px; overflow: hidden; line-height: 1.2;">' +
+                        '<span id="' + machineKey + 'PotStrain" style="font-weight: 600; color: var(--accent-purple);">Empty</span>' +
+                        '<span id="' + machineKey + 'PotRuns" style="font-size: 0.55rem; color: var(--text-secondary);"></span></div>' +
+                        // Filter (right of pot)
+                        '<div id="' + machineKey + 'FilterVisual" style="position: absolute; top: 70px; right: 5px; width: 38px; height: 38px; border-radius: 50%; background: var(--bg-tertiary); border: 3px solid var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; color: var(--accent-green);">' +
+                        '<span id="' + machineKey + 'FilterRuns">0</span></div>' +
+                        // Labels
+                        '<div style="position: absolute; top: 52px; left: 15%; font-size: 0.5rem; color: var(--text-secondary); width: 50px; text-align: center;">Col A</div>' +
+                        '<div style="position: absolute; top: 52px; right: 15%; font-size: 0.5rem; color: var(--text-secondary); width: 50px; text-align: center;">Col B</div>' +
+                        '<div style="position: absolute; bottom: 0; right: 5px; font-size: 0.5rem; color: var(--text-secondary); width: 38px; text-align: center;">Filter</div>' +
+                        '</div>';
                 } else if (machineType === 'rosin') {
                     statusHtml = '<div>Wash 1: <span id="' + machineKey + 'Wash1">Empty</span></div>';
                     if (config.second_wash === true) {
@@ -10198,61 +10213,73 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     machineKeys.forEach(machineKey => {
                         const machineStatus = machineStatuses.find(m => m.machine === machineKey) || {};
 
-                        // Get column status - show strains loaded
-                        let columnStrains = [];
-                        if (machineStatus.column_batch) {
-                            const batchA = batches.find(b => b.id == machineStatus.column_batch);
-                            if (batchA) columnStrains.push(batchA.strain);
-                        }
-                        if (machineStatus.column_b_batch) {
-                            const batchB = batches.find(b => b.id == machineStatus.column_b_batch);
-                            if (batchB && !columnStrains.includes(batchB.strain)) columnStrains.push(batchB.strain);
-                        }
-                        const columnStatusEl = document.getElementById(`${machineKey}ColumnStatus`);
-                        if (columnStatusEl) {
-                            if (columnStrains.length > 0) {
-                                columnStatusEl.textContent = columnStrains.join(', ');
+                        // Update visual Column A
+                        const colAEl = document.getElementById(`${machineKey}ColAStrain`);
+                        const colAVisual = document.getElementById(`${machineKey}ColAVisual`);
+                        if (colAEl) {
+                            if (machineStatus.column_batch) {
+                                const batchA = batches.find(b => b.id == machineStatus.column_batch);
+                                colAEl.textContent = batchA?.strain || 'Loading';
+                                if (colAVisual) colAVisual.style.borderColor = 'var(--accent-blue)';
+                                if (colAVisual) colAVisual.style.background = 'rgba(59, 130, 246, 0.2)';
                             } else {
-                                columnStatusEl.textContent = 'Columns empty';
+                                colAEl.textContent = 'Empty';
+                                if (colAVisual) colAVisual.style.borderColor = 'var(--border)';
+                                if (colAVisual) colAVisual.style.background = 'var(--bg-tertiary)';
                             }
                         }
 
-                        // Get pot text and strain
-                        let potText = 'Empty';
-                        let potStrain = '';
-                        if (machineStatus.pot_batch) {
-                            const batch = batches.find(b => b.id == machineStatus.pot_batch);
-                            if (batch) {
-                                potText = `${batch.id}`;
-                                potStrain = batch.strain || '';
-                                if (machineStatus.pot_runs) {
-                                    potText += ` (${machineStatus.pot_runs} runs)`;
-                                }
+                        // Update visual Column B
+                        const colBEl = document.getElementById(`${machineKey}ColBStrain`);
+                        const colBVisual = document.getElementById(`${machineKey}ColBVisual`);
+                        if (colBEl) {
+                            if (machineStatus.column_b_batch) {
+                                const batchB = batches.find(b => b.id == machineStatus.column_b_batch);
+                                colBEl.textContent = batchB?.strain || 'Loading';
+                                if (colBVisual) colBVisual.style.borderColor = 'var(--accent-blue)';
+                                if (colBVisual) colBVisual.style.background = 'rgba(59, 130, 246, 0.2)';
                             } else {
-                                potText = machineStatus.pot_batch;
-                                if (machineStatus.pot_runs) {
-                                    potText += ` (${machineStatus.pot_runs} runs)`;
-                                }
+                                colBEl.textContent = 'Empty';
+                                if (colBVisual) colBVisual.style.borderColor = 'var(--border)';
+                                if (colBVisual) colBVisual.style.background = 'var(--bg-tertiary)';
                             }
                         }
 
-                        // Filter status
-                        let filterText = 'Not loaded';
-                        if (machineStatus.filter_clay || machineStatus.filter_silica || machineStatus.filter_runs) {
-                            const parts = [];
-                            if (machineStatus.filter_clay) parts.push(`${machineStatus.filter_clay}c clay`);
-                            if (machineStatus.filter_silica) parts.push(`${machineStatus.filter_silica}c silica`);
-                            if (machineStatus.filter_runs) parts.push(`${machineStatus.filter_runs} runs`);
-                            filterText = parts.join(', ');
-                        }
-
-                        // Update display elements (with null safety)
-                        const potEl = document.getElementById(`${machineKey}PotBatch`);
+                        // Update visual Pot
                         const potStrainEl = document.getElementById(`${machineKey}PotStrain`);
-                        const filterEl = document.getElementById(`${machineKey}FilterStatus`);
-                        if (potEl) potEl.textContent = potText;
-                        if (potStrainEl) potStrainEl.textContent = potStrain;
-                        if (filterEl) filterEl.textContent = filterText;
+                        const potRunsEl = document.getElementById(`${machineKey}PotRuns`);
+                        const potVisual = document.getElementById(`${machineKey}PotVisual`);
+                        if (potStrainEl) {
+                            if (machineStatus.pot_batch) {
+                                const batch = batches.find(b => b.id == machineStatus.pot_batch);
+                                potStrainEl.textContent = batch?.strain || machineStatus.pot_batch;
+                                if (potRunsEl) potRunsEl.textContent = machineStatus.pot_runs ? `${machineStatus.pot_runs} runs` : '';
+                                if (potVisual) potVisual.style.borderColor = 'var(--accent-purple)';
+                                if (potVisual) potVisual.style.background = 'rgba(147, 51, 234, 0.2)';
+                            } else {
+                                potStrainEl.textContent = 'Empty';
+                                if (potRunsEl) potRunsEl.textContent = '';
+                                if (potVisual) potVisual.style.borderColor = 'var(--border)';
+                                if (potVisual) potVisual.style.background = 'var(--bg-tertiary)';
+                            }
+                        }
+
+                        // Update visual Filter
+                        const filterRunsEl = document.getElementById(`${machineKey}FilterRuns`);
+                        const filterVisual = document.getElementById(`${machineKey}FilterVisual`);
+                        if (filterRunsEl) {
+                            const runs = machineStatus.filter_runs || 0;
+                            filterRunsEl.textContent = runs;
+                            if (filterVisual) {
+                                if (runs > 0) {
+                                    filterVisual.style.borderColor = 'var(--accent-green)';
+                                    filterVisual.style.background = 'rgba(16, 185, 129, 0.2)';
+                                } else {
+                                    filterVisual.style.borderColor = 'var(--border)';
+                                    filterVisual.style.background = 'var(--bg-tertiary)';
+                                }
+                            }
+                        }
 
                         // Update resinator sift displays
                         const sift1El = document.getElementById(`${machineKey}Sift1`);
