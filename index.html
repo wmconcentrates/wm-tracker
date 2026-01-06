@@ -6344,13 +6344,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     mode: 'no-cors',
                     body: zpl
                 });
-                alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}`);
+                console.log(`Label sent to printer: ${batch.id}`);
             } catch (error) {
                 console.error('Print error:', error);
-                alert(`⚠️ Could not connect to printer at ${printerIP}:9100`);
-                if (confirm('Download ZPL file instead?')) {
-                    downloadIntakeLabelZPL(batch);
-                }
             }
         }
 
@@ -6411,20 +6407,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     mode: 'no-cors',
                     body: zpl
                 });
-                alert(`✅ Labeling completion label sent to printer!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\nTotal Units: ${batch.units_packaged || 0}\n1g: ${batch.units_1g || 0}  |  4g: ${batch.units_4g || 0}\nLabeled by: ${labeledBy}\nAgreement: ${batch.material_agreement || 'Wholesale'}`);
+                alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\nTotal Units: ${batch.units_packaged || 0}\n1g: ${batch.units_1g || 0}  |  4g: ${batch.units_4g || 0}`);
             } catch (error) {
                 console.error('Print error:', error);
-                if (confirm(`⚠️ Could not connect to printer at ${printerIP}:9100\n\nDownload ZPL file instead?`)) {
-                    const blob = new Blob([zpl], { type: 'text/plain' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `labeling-${batch.id}.zpl`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                }
+                alert('Print error - check console for details');
             }
         }
 
@@ -6442,18 +6428,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 alert(`✅ Post-production label sent to printer!\n\nBatch: ${batch.id}`);
             } catch (error) {
                 console.error('Print error:', error);
-                alert(`⚠️ Could not connect to printer at ${printerIP}:9100`);
-                if (confirm('Download ZPL file instead?')) {
-                    const blob = new Blob([zpl], { type: 'text/plain' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `postprod-label-${batch.id}.zpl`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                }
+                alert('Print error - check console for details');
             }
         }
 
