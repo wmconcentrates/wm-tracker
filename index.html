@@ -10020,18 +10020,18 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
         }
 
         function refreshColumnDropdowns() {
-            const columnSelect = document.getElementById('machineColumnBatch');
-            const columnBSelect = document.getElementById('machineColumnBBatch');
-            if (!columnSelect || !columnBSelect) return;
+            // Dynamically refresh all columns A-F
+            const columnLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+            const savedSelections = {};
 
-            // Save current selections
-            const currentA = columnSelect.value;
-            const currentB = columnBSelect.value;
+            // Save current selections for all columns
+            columnLabels.forEach(col => {
+                const select = document.getElementById('machineColumn' + col + 'Batch');
+                if (select) savedSelections[col] = select.value;
+            });
 
-            // Repopulate with updated sock counts
-            columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
-            columnBSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
-
+            // Build options HTML once
+            let optionsHtml = '<option value="">Empty / Not Loaded</option>';
             batches.forEach(batch => {
                 if (batch.status === 'intake') {
                     // Skip batches with 0 socks remaining
@@ -10039,19 +10039,23 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     const socksRemaining = batch.socks_remaining ?? batch.socks_total ?? '?';
                     const socksTotal = batch.socks_total ?? '?';
                     const sockDisplay = `(${socksRemaining}/${socksTotal} socks)`;
-                    const option = `<option value="${batch.id}">${batch.id} - ${batch.strain} ${sockDisplay}</option>`;
-                    columnSelect.innerHTML += option;
-                    columnBSelect.innerHTML += option;
+                    optionsHtml += `<option value="${batch.id}">${batch.id} - ${batch.strain} ${sockDisplay}</option>`;
                 }
             });
 
-            // Restore selections if still valid, otherwise default to empty
-            columnSelect.value = currentA;
-            columnBSelect.value = currentB;
-
-            // Ensure dropdowns show "Empty / Not Loaded" if value is blank
-            if (!columnSelect.value) columnSelect.selectedIndex = 0;
-            if (!columnBSelect.value) columnBSelect.selectedIndex = 0;
+            // Update all column dropdowns
+            columnLabels.forEach(col => {
+                const select = document.getElementById('machineColumn' + col + 'Batch');
+                const secondSelect = document.getElementById('machineColumn' + col + 'SecondBatch');
+                if (select) {
+                    select.innerHTML = optionsHtml;
+                    select.value = savedSelections[col] || '';
+                    if (!select.value) select.selectedIndex = 0;
+                }
+                if (secondSelect) {
+                    secondSelect.innerHTML = '<option value="">None</option>' + optionsHtml.replace('<option value="">Empty / Not Loaded</option>', '');
+                }
+            });
         }
 
         function closeMachineModal() {
