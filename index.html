@@ -1869,11 +1869,6 @@
                     <!-- Populated by renderMachineButtons() -->
                 </div>
 
-                <!-- Pull Batch Buttons (Dynamic from CONFIG) -->
-                <div id="pullBatchButtonsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                    <!-- Populated by renderMachineButtons() -->
-                </div>
-
                 <!-- Extraction Queue with Sock Counts -->
                 <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
                     <h3 style="color: var(--accent-blue); margin-bottom: 15px;">📋 Extraction Queue</h3>
@@ -3567,6 +3562,9 @@
                                 <input type="number" id="machinePotRuns" min="0" placeholder="0" readonly style="background: var(--bg-tertiary);">
                             </div>
                         </div>
+                        <button type="button" id="modalPullBatchBtn" class="btn" style="display: none; background: linear-gradient(135deg, #FFD700, #FFA500); color: #1a1a2e; width: 100%; margin-top: 15px; padding: 15px; font-size: 1.1rem; font-weight: 700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);" onclick="openPullBatchFromModal()">
+                            🫙 Pull Batch from Pot
+                        </button>
                     </div>
 
                     <!-- Filter Status (BHO only) -->
@@ -5119,9 +5117,8 @@
 
         function renderMachineButtons() {
             const machineContainer = document.getElementById('machineButtonsContainer');
-            const pullContainer = document.getElementById('pullBatchButtonsContainer');
 
-            if (!machineContainer || !pullContainer) return;
+            if (!machineContainer) return;
 
             // Use CONFIG.machines or defaults
             const machines = CONFIG.machines.length > 0 ? CONFIG.machines : CONFIG_DEFAULTS.machines;
@@ -5176,14 +5173,6 @@
                 return '<button class="btn" style="background: transparent; border: 2px solid #C0C0C0; color: #E8E8E8; padding: 20px; text-align: left; box-shadow: 0 0 15px rgba(192, 192, 192, 0.4), 0 0 30px rgba(192, 192, 192, 0.2), inset 0 0 15px rgba(192, 192, 192, 0.05);" onclick="openMachineModal(\'' + machineKey + '\')">' +
                     '<div style="font-weight: 700; margin-bottom: 8px;">' + icon + ' ' + machine.name + '</div>' +
                     '<div id="' + machineKey + 'MachineStatus" style="font-size: 0.85rem; opacity: 0.9;">' + statusHtml + '</div>' +
-                '</button>';
-            }).join('');
-
-            // Render pull batch buttons
-            pullContainer.innerHTML = machines.filter(m => (m.machine_type || 'bho') === 'bho').map(machine => {
-                const machineKey = machine.position?.toLowerCase() || machine.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                return '<button class="btn" style="background: transparent; border: 2px solid #FFD700; color: #FFD700; padding: 15px; font-weight: 600; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), 0 0 30px rgba(255, 215, 0, 0.2), inset 0 0 15px rgba(255, 215, 0, 0.05);" onclick="openPullBatchModal(\'' + machineKey + '\')">' +
-                    '🫙 Pull Batch (' + machine.name + ')' +
                 '</button>';
             }).join('');
         }
@@ -9104,6 +9093,15 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             openMachineModal(machineKey);
         }
 
+        // Open Pull Batch modal from within the machine modal
+        function openPullBatchFromModal() {
+            if (!currentMachine) return;
+            // Close the machine modal first
+            document.getElementById('machineModal').style.display = 'none';
+            // Then open the pull batch modal
+            openPullBatchModal(currentMachine);
+        }
+
         function openMachineModal(machine) {
             currentMachine = machine;
 
@@ -9177,6 +9175,13 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     }
 
                     document.getElementById('machinePotRuns').value = machineStatus.pot_runs || 0;
+
+                    // Show/hide Pull Batch button based on pot status
+                    const pullBatchBtn = document.getElementById('modalPullBatchBtn');
+                    if (pullBatchBtn) {
+                        pullBatchBtn.style.display = potBatchId ? 'block' : 'none';
+                    }
+
                     document.getElementById('machineFilterClay').value = machineStatus.filter_clay || '';
                     document.getElementById('machineFilterSilica').value = machineStatus.filter_silica || '';
                     document.getElementById('machineFilterRuns').value = machineStatus.filter_runs || '';
