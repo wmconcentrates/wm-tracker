@@ -15200,10 +15200,11 @@ ${employeeReport || 'No activity recorded today'}
                     // Determine current task status for this employee
                     let currentTask = null;
                     batches.forEach(batch => {
-                        // Check packaging in progress
-                        if (batch.packaging_user === emp.name && batch.status === 'packaging') {
+                        // Check packaging in progress - status stays as 'finishing' while packaging
+                        if (batch.status === 'finishing') {
                             const hasStarted = batch.timeline && batch.timeline.some(t =>
-                                t.action && t.action.toLowerCase().includes('packaging started'));
+                                t.action && t.action.toLowerCase().includes('packaging started') &&
+                                t.user === emp.name);
                             const hasCompleted = batch.timeline && batch.timeline.some(t =>
                                 t.stage === 'packaging' && t.action &&
                                 (t.action.toLowerCase().includes('packaged') || t.action.includes('Packaging completed')));
@@ -15212,15 +15213,16 @@ ${employeeReport || 'No activity recorded today'}
                                 currentTask = {
                                     type: 'packaging',
                                     batchId: batch.id,
-                                    strain: batch.strain_name || 'Unknown',
+                                    strain: batch.strain || batch.strain_name || 'Unknown',
                                     paused: batch.packaging_paused || false
                                 };
                             }
                         }
-                        // Check labeling in progress
-                        if (batch.labeling_user === emp.name && batch.status === 'labeling') {
+                        // Check labeling in progress - status is 'complete' while labeling
+                        if (batch.status === 'complete') {
                             const hasStarted = batch.timeline && batch.timeline.some(t =>
-                                t.action && t.action.toLowerCase().includes('labeling started'));
+                                t.action && t.action.toLowerCase().includes('labeling started') &&
+                                t.user === emp.name);
                             const hasCompleted = batch.timeline && batch.timeline.some(t =>
                                 t.stage === 'labeling' && t.action && t.action.toLowerCase().includes('labeled'));
 
@@ -15228,7 +15230,7 @@ ${employeeReport || 'No activity recorded today'}
                                 currentTask = {
                                     type: 'labeling',
                                     batchId: batch.id,
-                                    strain: batch.strain_name || 'Unknown',
+                                    strain: batch.strain || batch.strain_name || 'Unknown',
                                     paused: batch.labeling_paused || false
                                 };
                             }
