@@ -9984,14 +9984,29 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
             console.log('autoSaveMachineStatus - potBatch:', potBatch, 'potRuns:', potRuns, 'potLedger:', potLedger);
 
+            // Dynamically get column values for A-F
+            const columnLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+            const columnData = {};
+            columnLabels.forEach(col => {
+                const colKey = col.toLowerCase();
+                const batchEl = document.getElementById('machineColumn' + col + 'Batch');
+                const socksEl = document.getElementById('machineColumn' + col + 'Socks');
+                const secondEl = document.getElementById('machineColumn' + col + 'SecondBatch');
+
+                if (batchEl) {
+                    const batchKey = col === 'A' ? 'column_batch' : `column_${colKey}_batch`;
+                    const socksKey = `column_${colKey}_socks`;
+                    const secondKey = `column_${colKey}_second_batch`;
+
+                    columnData[batchKey] = batchEl.value || '';
+                    columnData[socksKey] = socksEl ? (parseInt(socksEl.value) || 0) : 0;
+                    columnData[secondKey] = secondEl ? secondEl.value : '';
+                }
+            });
+
             const machineStatus = {
                 machine: currentMachine,
-                column_batch: document.getElementById('machineColumnBatch').value,
-                column_b_batch: document.getElementById('machineColumnBBatch').value,
-                column_a_socks: parseInt(document.getElementById('machineColumnASocks').value) || 0,
-                column_b_socks: parseInt(document.getElementById('machineColumnBSocks').value) || 0,
-                column_a_second_batch: document.getElementById('machineColumnASecondBatch').value,
-                column_b_second_batch: document.getElementById('machineColumnBSecondBatch').value,
+                ...columnData,
                 pot_batch: potBatch,
                 pot_runs: potRuns,
                 pot_ledger: potLedger,
