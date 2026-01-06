@@ -5176,9 +5176,10 @@
                     statusHtml = '<div style="margin-top: 10px;">' + columnsHtml +
                         '<div style="display: flex; justify-content: center; align-items: center; gap: 20px;">' +
                         // Pot circle
-                        '<button id="' + machineKey + 'PotBtn" onclick="event.stopPropagation(); openComponentSelector(\'' + machineKey + '\', \'pot\')" style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent-purple); background: linear-gradient(145deg, rgba(147,51,234,0.3) 0%, rgba(147,51,234,0.1) 100%); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; box-shadow: 0 6px 20px rgba(147,51,234,0.4);">' +
-                        '<div id="' + machineKey + 'PotStrain" style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); text-align: center; line-height: 1.2;">Empty</div>' +
-                        '<div id="' + machineKey + 'PotRuns" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 3px;"></div></button>' +
+                        '<button id="' + machineKey + 'PotBtn" onclick="event.stopPropagation(); openComponentSelector(\'' + machineKey + '\', \'pot\')" style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--accent-purple); background: linear-gradient(145deg, rgba(147,51,234,0.3) 0%, rgba(147,51,234,0.1) 100%); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; box-shadow: 0 6px 20px rgba(147,51,234,0.4);">' +
+                        '<div id="' + machineKey + 'PotStrain" style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); text-align: center; line-height: 1.2;">Empty</div>' +
+                        '<div id="' + machineKey + 'PotRuns" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;"></div>' +
+                        '<div id="' + machineKey + 'PotYield" style="font-size: 0.75rem; font-weight: 600; color: var(--accent-green); margin-top: 2px;"></div></button>' +
                         // Filter circle
                         '<button id="' + machineKey + 'FilterBtn" onclick="event.stopPropagation(); openComponentSelector(\'' + machineKey + '\', \'filter\')" style="width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--accent-green); background: linear-gradient(145deg, rgba(16,185,129,0.25) 0%, rgba(16,185,129,0.1) 100%); cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">' +
                         '<div id="' + machineKey + 'FilterRuns" style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">0</div></button>' +
@@ -10302,16 +10303,38 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                         // Update Pot button
                         const potStrainEl = document.getElementById(`${machineKey}PotStrain`);
                         const potRunsEl = document.getElementById(`${machineKey}PotRuns`);
+                        const potYieldEl = document.getElementById(`${machineKey}PotYield`);
                         const potBtn = document.getElementById(`${machineKey}PotBtn`);
                         if (potStrainEl) {
                             if (machineStatus.pot_batch) {
                                 const batch = batches.find(b => b.id == machineStatus.pot_batch);
                                 potStrainEl.textContent = batch?.strain || machineStatus.pot_batch;
                                 if (potRunsEl) potRunsEl.textContent = machineStatus.pot_runs ? `${machineStatus.pot_runs} runs` : '';
+
+                                // Calculate predicted yield from pot_ledger
+                                if (potYieldEl) {
+                                    let potLedger = machineStatus.pot_ledger || [];
+                                    if (typeof potLedger === 'string') {
+                                        try { potLedger = JSON.parse(potLedger); } catch(e) { potLedger = []; }
+                                    }
+                                    if (potLedger.length > 0) {
+                                        let totalPredictedYield = 0;
+                                        potLedger.forEach(entry => {
+                                            const entryBatch = batches.find(b => b.id === entry.batch_id);
+                                            const trimWeight = entry.trim_weight || 0;
+                                            const yieldPct = (entryBatch?.expected_yield || 13) / 100;
+                                            totalPredictedYield += trimWeight * yieldPct;
+                                        });
+                                        potYieldEl.textContent = `~${totalPredictedYield.toFixed(0)}g`;
+                                    } else {
+                                        potYieldEl.textContent = '';
+                                    }
+                                }
                                 if (potBtn) potBtn.style.background = 'linear-gradient(145deg, rgba(147,51,234,0.45) 0%, rgba(147,51,234,0.2) 100%)';
                             } else {
                                 potStrainEl.textContent = 'Empty';
                                 if (potRunsEl) potRunsEl.textContent = '';
+                                if (potYieldEl) potYieldEl.textContent = '';
                                 if (potBtn) potBtn.style.background = 'linear-gradient(145deg, rgba(147,51,234,0.3) 0%, rgba(147,51,234,0.1) 100%)';
                             }
                         }
