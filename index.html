@@ -10211,6 +10211,17 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
             // Restore socks to batches from pot_ledger
             const restorePromises = potLedger.map(entry => {
+                // Skip demo batches when not in demo mode (and vice versa)
+                const isDemoBatch = entry.batch_id?.startsWith('DEMO-');
+                if (isDemoBatch && !DEMO_MODE) {
+                    console.log('Skipping demo batch restore in regular mode:', entry.batch_id);
+                    return Promise.resolve();
+                }
+                if (!isDemoBatch && DEMO_MODE) {
+                    console.log('Skipping real batch restore in demo mode:', entry.batch_id);
+                    return Promise.resolve();
+                }
+
                 const batch = batches.find(b => b.id === entry.batch_id);
                 if (!batch) return Promise.resolve();
 
