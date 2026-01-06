@@ -15634,6 +15634,54 @@ ${employeeReport || 'No activity recorded today'}
                     quickStats = '<div style="color: var(--text-secondary); text-align: center; padding: 10px;">No tracked activities</div>';
                 }
 
+                // Determine current task status for this employee
+                let currentTask = null;
+                batches.forEach(batch => {
+                    // Check packaging in progress - status stays as 'finishing' while packaging
+                    if (batch.status === 'finishing') {
+                        const hasStarted = batch.timeline && batch.timeline.some(t =>
+                            t.action && t.action.toLowerCase().includes('packaging started') &&
+                            t.user === emp.name);
+                        const hasCompleted = batch.timeline && batch.timeline.some(t =>
+                            t.stage === 'packaging' && t.action &&
+                            (t.action.toLowerCase().includes('packaged') || t.action.includes('Packaging completed')));
+                        if (hasStarted && !hasCompleted) {
+                            currentTask = {
+                                type: 'packaging',
+                                batchId: batch.id,
+                                strain: batch.strain || batch.strain_name || 'Unknown',
+                                paused: batch.packaging_paused || false
+                            };
+                        }
+                    }
+                    // Check labeling in progress - status is 'complete' while labeling
+                    if (batch.status === 'complete') {
+                        const hasStarted = batch.timeline && batch.timeline.some(t =>
+                            t.action && t.action.toLowerCase().includes('labeling started') &&
+                            t.user === emp.name);
+                        const hasCompleted = batch.timeline && batch.timeline.some(t =>
+                            t.stage === 'labeling' && t.action && t.action.toLowerCase().includes('labeled'));
+                        if (hasStarted && !hasCompleted) {
+                            currentTask = {
+                                type: 'labeling',
+                                batchId: batch.id,
+                                strain: batch.strain || batch.strain_name || 'Unknown',
+                                paused: batch.labeling_paused || false
+                            };
+                        }
+                    }
+                });
+
+                const currentTaskHtml = currentTask ? `
+                    <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+                        background: ${currentTask.paused ? 'rgba(255, 107, 0, 0.2)' : 'rgba(57, 255, 20, 0.2)'};
+                        border: 1px solid ${currentTask.paused ? 'var(--accent-orange)' : 'var(--accent-green)'};
+                        color: ${currentTask.paused ? 'var(--accent-orange)' : 'var(--accent-green)'};">
+                        <span style="font-size: 1rem;">${currentTask.paused ? '⏸️' : currentTask.type === 'packaging' ? '📦' : '🏷️'}</span>
+                        <span>${currentTask.paused ? 'PAUSED' : 'WORKING'}: ${currentTask.type === 'packaging' ? 'Packaging' : 'Labeling'} ${currentTask.strain}</span>
+                    </div>
+                ` : '';
+
                 return `
                     <div onclick="showEmployeeDetailModal('${emp.name}')" style="background: var(--bg-tertiary); padding: 20px; border-radius: 15px; border: 2px solid var(--border); cursor: pointer; transition: all 0.2s ease; position: relative;" onmouseover="this.style.borderColor='var(--accent-purple)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='none';">
                         <!-- Performance Score Badge -->
@@ -15645,8 +15693,11 @@ ${employeeReport || 'No activity recorded today'}
                         <h3 style="font-size: 1.4rem; margin: 0 0 5px 0; color: var(--text-primary);">${emp.name.replace(' (Admin)', '')}</h3>
                         <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">${emp.daysActiveCount} days active</div>
 
+                        <!-- Current Task Badge -->
+                        ${currentTaskHtml}
+
                         <!-- Skill Badges -->
-                        <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 15px; margin-top: 12px;">
                             ${skillBadges.join('')}
                         </div>
 
