@@ -8820,14 +8820,13 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 sourcesSummary = ' | Sources: ' + potLedger.map(p => `${p.batch_id}(${p.socks}socks)`).join(', ');
             }
 
-            // Only move to extraction status if all socks have been used
-            // If socks remain, keep at intake so they stay visible in the queue
+            // Always move to extraction status when pot is pulled
+            // Remaining socks will still show in extraction queue based on socks_remaining > 0
             const socksRemaining = batch.socks_remaining ?? 0;
-            const shouldMoveToExtraction = socksRemaining === 0;
 
             const updatedBatch = {
                 ...batch,
-                status: shouldMoveToExtraction ? 'extraction' : 'intake',
+                status: 'extraction',
                 extraction_method: 'BHO',
                 product_type: productTypeText,
                 product_made: productTypeText, // Also set product_made for finishing dropdown
@@ -8888,9 +8887,9 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                             updateMachineDisplays();
                             closePullBatchModal();
 
-                            const statusMsg = shouldMoveToExtraction
-                                ? 'Batch moved to Finishing stage.'
-                                : `⚠️ ${socksRemaining} sock(s) remaining - batch stays in extraction queue.`;
+                            const statusMsg = socksRemaining > 0
+                                ? `Batch moved to Post-Extraction.\n⚠️ ${socksRemaining} sock(s) remaining - still visible in extraction queue.`
+                                : 'Batch moved to Post-Extraction.';
                             alert(`✅ Extraction Complete!\n\n${batch.id}\n${productTypeText}: ${amountText}\n${machineStatus.pot_runs || 0} runs\n\n${statusMsg}\nPot has been emptied.`);
                         });
                 });
@@ -8904,12 +8903,16 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             const queueEl = document.getElementById('extractionQueueList');
             if (!queueEl) return;
 
-            // Get batches at intake status with socks remaining
+            // Get batches with socks remaining (intake status OR any status with socks left)
             const queueBatches = batches.filter(b => {
-                if (b.status !== 'intake') return false;
-                // If socks are set and none remaining, hide from queue
-                if (b.socks_total != null && b.socks_remaining === 0) return false;
-                return true;
+                // Always show intake batches with socks
+                if (b.status === 'intake') {
+                    if (b.socks_total != null && b.socks_remaining === 0) return false;
+                    return true;
+                }
+                // Also show batches at other statuses if they still have socks remaining
+                if (b.socks_total != null && b.socks_remaining > 0) return true;
+                return false;
             });
 
             if (queueBatches.length === 0) {
@@ -9186,12 +9189,15 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                             if (secondBatchSelect) secondBatchSelect.innerHTML = '<option value="">None</option>';
 
                             batches.forEach(batch => {
-                                if (batch.status === 'intake') {
+                                // Show intake batches OR any batch with socks remaining
+                                const hasSocksRemaining = batch.socks_total != null && batch.socks_remaining > 0;
+                                if (batch.status === 'intake' || hasSocksRemaining) {
                                     // Skip batches with 0 socks remaining
                                     if (batch.socks_total != null && batch.socks_remaining === 0) return;
                                     const socksRemaining = batch.socks_remaining ?? batch.socks_total ?? '?';
                                     const socksTotal = batch.socks_total ?? '?';
-                                    const sockDisplay = `(${socksRemaining}/${socksTotal} socks)`;
+                                    const statusLabel = batch.status !== 'intake' ? ` [${batch.status}]` : '';
+                                    const sockDisplay = `(${socksRemaining}/${socksTotal} socks)${statusLabel}`;
                                     const option = `<option value="${batch.id}">${batch.id} - ${batch.strain} ${sockDisplay}</option>`;
                                     columnSelect.innerHTML += option;
                                     if (secondBatchSelect) secondBatchSelect.innerHTML += option;
@@ -10080,12 +10086,15 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             // Build options HTML once
             let optionsHtml = '<option value="">Empty / Not Loaded</option>';
             batches.forEach(batch => {
-                if (batch.status === 'intake') {
+                // Show intake batches OR any batch with socks remaining
+                const hasSocksRemaining = batch.socks_total != null && batch.socks_remaining > 0;
+                if (batch.status === 'intake' || hasSocksRemaining) {
                     // Skip batches with 0 socks remaining
                     if (batch.socks_total != null && batch.socks_remaining === 0) return;
                     const socksRemaining = batch.socks_remaining ?? batch.socks_total ?? '?';
                     const socksTotal = batch.socks_total ?? '?';
-                    const sockDisplay = `(${socksRemaining}/${socksTotal} socks)`;
+                    const statusLabel = batch.status !== 'intake' ? ` [${batch.status}]` : '';
+                    const sockDisplay = `(${socksRemaining}/${socksTotal} socks)${statusLabel}`;
                     optionsHtml += `<option value="${batch.id}">${batch.id} - ${batch.strain} ${sockDisplay}</option>`;
                 }
             });
