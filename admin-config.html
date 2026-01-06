@@ -625,17 +625,16 @@
         // Admin PINs (will be loaded from database in production)
         const ADMIN_PINS = ['1827', '1980']; // Ryan and Alex
 
+        // Hardcoded Supabase credentials (same as index.html)
+        const SUPABASE_URL = 'https://nspmwcpvukehaqswaewt.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zcG13Y3B2dWtlaGFxc3dhZXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzE2NDQsImV4cCI6MjA3NzA0NzY0NH0.JGYZ4223nhgO_Er619DkB0tOXrIJzfldG9yNkaHCdtI';
+
         // ==================== INITIALIZATION ====================
 
-        // Check for saved credentials
+        // Auto-fill credentials on load
         document.addEventListener('DOMContentLoaded', () => {
-            const savedUrl = localStorage.getItem('supabaseUrl');
-            const savedKey = localStorage.getItem('supabaseKey');
-
-            if (savedUrl && savedKey) {
-                document.getElementById('supabaseUrl').value = savedUrl;
-                document.getElementById('supabaseKey').value = savedKey;
-            }
+            document.getElementById('supabaseUrl').value = SUPABASE_URL;
+            document.getElementById('supabaseKey').value = SUPABASE_KEY;
         });
 
         // Login form handler
