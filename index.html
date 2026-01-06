@@ -21742,7 +21742,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax', '4g Sugar'];
 
         const html = categoryOrder.map(key => {
-            const data = needsData[key];
+            const data = needsData[key] || { label: key, needs: [] };
 
             // Get needs by strain type
             const needsByStrain = { Sativa: 0, Hybrid: 0, Indica: 0 };
