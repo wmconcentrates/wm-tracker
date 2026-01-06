@@ -6516,11 +6516,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
         }
 
-        // Generate ZPL for labeling completion label (2" x 1.5" horizontal)
+        // Generate ZPL for labeling completion label (2" x 4")
         function generateLabelingCompletionZPL(batch, labeledBy) {
-            // 2" x 1.5" label at 203dpi = 406 x 305 dots (horizontal)
+            // 2" x 4" label at 203dpi = 406 x 812 dots
             const width = 406;
-            const height = 305;
+            const height = 812;
 
             // Get data
             const strainName = (batch.strain || batch.strain_name || 'Unknown').toUpperCase();
@@ -6529,11 +6529,16 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const units1g = batch.units_1g || 0;
             const units4g = batch.units_4g || 0;
             const handler = labeledBy || 'Unknown';
+            const gramsLabeled = batch.grams_labeled || batch.total_grams_packaged || 0;
 
-            // Material agreement - shorten if needed
+            // Material agreement
             let agreement = batch.material_agreement || 'Wholesale';
-            if (agreement === '50-50 Split') agreement = '50/50';
+            if (agreement === '50-50 Split') agreement = '50/50 Split';
             if (agreement === 'Custom Buyback') agreement = 'Buyback';
+
+            // Grower info
+            const license = batch.cultivation_license || '';
+            const growerName = batch.grower_name || '';
 
             // Date
             const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
@@ -6543,34 +6548,52 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 ^PW${width}
 ^LL${height}
 ^LS0
+~SD25
 
-~SD20
+^FO0,0^GB${width},${height},4^FS
 
-^FO0,0^GB${width},${height},3^FS
+^FO15,20^GB376,100,100^FS
+^CF0,40
+^FO25,45^FR^FD LABELING COMPLETE ^FS
+
+^CF0,50
+^FO15,140^FD${strainName.substring(0, 18)}^FS
+
+^FO15,200^GB376,3,3^FS
+
+^CF0,36
+^FO15,220^FDBatch: ${batchId}^FS
+
+^FO15,270^GB376,3,3^FS
+
+^CF0,70
+^FO15,295^FD${totalUnits} UNITS^FS
+
+^FO15,380^GB376,3,3^FS
+
+^CF0,40
+^FO15,400^FD1g: ${units1g}^FS
+^FO210,400^FD4g: ${units4g}^FS
+
+^CF0,32
+^FO15,460^FDTotal Weight: ${parseFloat(gramsLabeled).toFixed(1)}g^FS
+
+^FO15,510^GB376,3,3^FS
 
 ^CF0,28
-^FO10,10^FD${strainName.substring(0, 18)}^FS
+^FO15,530^FDLabeled by:^FS
+^CF0,36
+^FO15,565^FD${handler.substring(0, 20)}^FS
 
-^CF0,22
-^FO10,45^FDBatch: ${batchId}^FS
-
-^FO10,75^GB386,2,2^FS
+^FO15,620^GB376,3,3^FS
 
 ^CF0,24
-^FO10,85^FDTotal Units: ${totalUnits}^FS
+^FO15,640^FDAgreement: ${agreement}^FS
+^FO15,675^FDGrower: ${license}^FS
+${growerName ? `^FO15,705^FD${growerName.substring(0, 25)}^FS` : ''}
 
-^CF0,20
-^FO10,115^FD1g: ${units1g}^FS
-^FO120,115^FD4g: ${units4g}^FS
-
-^FO10,145^GB386,2,2^FS
-
-^CF0,18
-^FO10,155^FDLabeled by: ${handler.substring(0, 20)}^FS
-
-^FO10,180^FDAgreement: ${agreement}^FS
-
-^FO10,205^FDDate: ${today}^FS
+^CF0,28
+^FO15,750^FDCompleted: ${today}^FS
 
 ^XZ`;
 
@@ -6814,59 +6837,91 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             popup.document.close();
         }
 
-        // Generate ZPL for intake batch tracking label (2" x 1.5" horizontal)
+        // Generate ZPL for intake batch tracking label (2" x 4")
         function generateIntakeBatchLabelZPL(batch) {
-            // 2" x 1.5" label at 203dpi = 406 x 305 dots (horizontal)
+            // 2" x 4" label at 203dpi = 406 x 812 dots
             const width = 406;
-            const height = 305;
-            
+            const height = 812;
+
             // Format date
             const date = new Date(batch.intake_date).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: 'numeric'});
-            
+
             // Get planned products as string
             let plannedProducts = 'See notes';
             if (batch.planned_products && batch.planned_products.length > 0) {
-                plannedProducts = batch.planned_products.join(', ');
+                if (Array.isArray(batch.planned_products)) {
+                    plannedProducts = batch.planned_products.map(p => typeof p === 'object' ? p.type : p).join(', ');
+                } else {
+                    plannedProducts = batch.planned_products;
+                }
             }
 
-            // Truncate if too long
-            if (plannedProducts.length > 20) {
-                plannedProducts = plannedProducts.substring(0, 17) + '...';
-            }
-            
+            // Material agreement
+            let agreement = batch.material_agreement || 'Wholesale';
+            if (agreement === '50-50 Split') agreement = '50/50 Split';
+            if (agreement === 'Custom Buyback') agreement = 'Buyback';
+
+            // Grower info
+            const growerName = batch.grower_name || '';
+
             const zpl = `^XA
 ^MMT
 ^PW${width}
 ^LL${height}
 ^LS0
+~SD25
 
-~SD20
+^FO0,0^GB${width},${height},4^FS
 
-^FO0,0^GB${width},${height},3^FS
+^FO15,20^GB376,100,100^FS
+^CF0,50
+^FO60,50^FR^FD INTAKE ^FS
 
-^CF0,40
-^FO10,10^FD${batch.strain.toUpperCase()}^FS
+^CF0,44
+^FO15,140^FD${(batch.strain || 'Unknown').toUpperCase().substring(0, 16)}^FS
 
-^FO10,55^GB386,2,2^FS
+^FO15,195^GB376,3,3^FS
+
+^CF0,36
+^FO15,215^FDBatch: ${batch.id}^FS
+
+^FO15,265^GB376,3,3^FS
+
+^CF0,60
+^FO15,290^FD${batch.trim_weight}g^FS
+^CF0,28
+^FO200,305^FDTRIM WEIGHT^FS
+
+^FO15,370^GB376,3,3^FS
 
 ^CF0,32
-^FO10,65^FDBATCH: ${batch.id}^FS
+^FO15,390^FDStrain Type:^FS
+^CF0,40
+^FO15,430^FD${batch.strain_type || 'Hybrid'}^FS
 
-^FO10,105^GB386,2,2^FS
+^FO15,490^GB376,3,3^FS
 
-^CF0,16
-^FO10,115^FDType: ${batch.strain_type}^FS
-^FO10,135^FDWeight: ${batch.trim_weight}g^FS
-^FO10,155^FDDate: ${date}^FS
+^CF0,28
+^FO15,510^FDIntake Date:^FS
+^CF0,36
+^FO15,545^FD${date}^FS
 
-^CF0,16
-^FO210,115^FDGrower:^FS
-^FO210,135^FD${batch.cultivation_license}^FS
-^FO210,155^FDProducts:^FS
-^FO210,175^FD${plannedProducts}^FS
+^FO15,600^GB376,3,3^FS
+
+^CF0,24
+^FO15,620^FDGrower License:^FS
+^CF0,28
+^FO15,650^FD${batch.cultivation_license || 'N/A'}^FS
+${growerName ? `^FO15,685^FD${growerName.substring(0, 25)}^FS` : ''}
+
+^FO15,720^GB376,3,3^FS
+
+^CF0,24
+^FO15,740^FDAgreement: ${agreement}^FS
+^FO15,770^FDProducts: ${plannedProducts.substring(0, 25)}^FS
 
 ^XZ`;
-            
+
             return zpl;
         }
 
@@ -6911,23 +6966,28 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
         }
 
-        // Generate ZPL for post-production label (2" x 1.5" horizontal)
+        // Generate ZPL for post-production label (2" x 4")
         function generatePostProductionLabelZPL(batch, finalWeight, sampleWeight) {
-            // 2" x 1.5" label at 203dpi = 406 x 305 dots (horizontal)
+            // 2" x 4" label at 203dpi = 406 x 812 dots
             const width = 406;
-            const height = 305;
+            const height = 812;
 
             // Get product name and batch ID
             const productName = (batch.strain || 'Unknown').toUpperCase();
             const batchId = batch.id || '';
 
             // Weights
-            const trimWeight = batch.trim_weight || 0;
+            const trimWeight = parseFloat(batch.trim_weight) || 0;
+            const finalWt = parseFloat(finalWeight) || 0;
+            const sampleWt = parseFloat(sampleWeight) || 0;
+
+            // Calculate yield
+            const yieldPercent = trimWeight > 0 ? ((finalWt / trimWeight) * 100).toFixed(1) : '0.0';
 
             // METRC tags
             let metrcTags = batch.metrc_tags || '';
-            if (metrcTags.length > 25) {
-                metrcTags = metrcTags.substring(0, 22) + '...';
+            if (metrcTags.length > 30) {
+                metrcTags = metrcTags.substring(0, 27) + '...';
             }
 
             // Source contributions for partial tag info
@@ -6937,63 +6997,82 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 try { sourceContributions = JSON.parse(sourceContributions); } catch(e) { sourceContributions = []; }
             }
             if (sourceContributions.length > 0) {
-                // Show first partial source
                 const firstSource = sourceContributions[0];
                 const trimUsed = parseFloat(firstSource.trim_weight) || 0;
                 partialInfo = `${firstSource.batch_id} (${trimUsed.toFixed(0)}g)`;
                 if (sourceContributions.length > 1) {
-                    partialInfo += ` +${sourceContributions.length - 1}`;
+                    partialInfo += ` +${sourceContributions.length - 1} more`;
                 }
             }
 
-            // Agreement type - shorten
+            // Agreement type
             let agreement = batch.material_agreement || 'Wholesale';
-            if (agreement === '50-50 Split') agreement = '50/50';
+            if (agreement === '50-50 Split') agreement = '50/50 Split';
             if (agreement === 'Custom Buyback') agreement = 'Buyback';
 
             // Grower info
             const license = batch.cultivation_license || '';
             const growerName = batch.grower_name || '';
-            let growerLine = license;
-            if (growerName) {
-                growerLine = license ? `${license} / ${growerName}` : growerName;
-            }
-            if (growerLine.length > 28) {
-                growerLine = growerLine.substring(0, 25) + '...';
-            }
+
+            // Date
+            const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
 
             const zpl = `^XA
 ^MMT
 ^PW${width}
 ^LL${height}
 ^LS0
+~SD25
 
-~SD20
+^FO0,0^GB${width},${height},4^FS
 
-^FO0,0^GB${width},${height},3^FS
+^FO15,20^GB376,100,100^FS
+^CF0,40
+^FO35,45^FR^FD POST-PRODUCTION ^FS
+
+^CF0,44
+^FO15,140^FD${productName.substring(0, 16)}^FS
+
+^FO15,195^GB376,3,3^FS
+
+^CF0,36
+^FO15,215^FDBatch: ${batchId}^FS
+
+^FO15,265^GB376,3,3^FS
+
+^CF0,50
+^FO15,290^FD${finalWt.toFixed(1)}g^FS
+^CF0,28
+^FO200,305^FDFINAL WEIGHT^FS
 
 ^CF0,32
-^FO10,10^FD${productName.substring(0, 16)}^FS
+^FO15,360^FDTrim: ${trimWeight}g^FS
+^FO220,360^FDYield: ${yieldPercent}%^FS
+
+^FO15,410^GB376,3,3^FS
+
+^CF0,28
+^FO15,430^FDSample Weight:^FS
+^CF0,36
+^FO15,465^FD${sampleWt.toFixed(1)}g^FS
+
+^FO15,520^GB376,3,3^FS
+
 ^CF0,24
-^FO280,12^FD${batchId}^FS
+^FO15,540^FDMETRC Tag:^FS
+^CF0,28
+^FO15,570^FD${metrcTags || 'N/A'}^FS
+${partialInfo ? `^FO15,605^FDPartial: ${partialInfo}^FS` : ''}
 
-^FO10,45^GB386,2,2^FS
+^FO15,645^GB376,3,3^FS
 
-^CF0,20
-^FO10,55^FDFinal: ${finalWeight}g^FS
-^FO210,55^FDTrim: ${trimWeight}g^FS
+^CF0,24
+^FO15,665^FDAgreement: ${agreement}^FS
+^FO15,695^FDGrower: ${license}^FS
+${growerName ? `^FO15,725^FD${growerName.substring(0, 25)}^FS` : ''}
 
-^CF0,16
-^FO10,85^FDMETRC: ${metrcTags}^FS
-${partialInfo ? `^FO10,105^FDPartial: ${partialInfo}^FS` : ''}
-
-^FO10,130^GB386,2,2^FS
-
-^CF0,16
-^FO10,140^FDSample: ${sampleWeight}g^FS
-^FO150,140^FD${agreement}^FS
-
-^FO10,165^FD${growerLine}^FS
+^CF0,28
+^FO15,765^FDDate: ${today}^FS
 
 ^XZ`;
 
