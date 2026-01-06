@@ -15650,6 +15650,7 @@ ${employeeReport || 'No activity recorded today'}
                                 type: 'packaging',
                                 batchId: batch.id,
                                 strain: batch.strain || batch.strain_name || 'Unknown',
+                                weight: batch.trim_weight || batch.weight || 0,
                                 paused: batch.packaging_paused || false
                             };
                         }
@@ -15666,6 +15667,7 @@ ${employeeReport || 'No activity recorded today'}
                                 type: 'labeling',
                                 batchId: batch.id,
                                 strain: batch.strain || batch.strain_name || 'Unknown',
+                                weight: batch.trim_weight || batch.weight || 0,
                                 paused: batch.labeling_paused || false
                             };
                         }
@@ -15678,7 +15680,7 @@ ${employeeReport || 'No activity recorded today'}
                         border: 1px solid ${currentTask.paused ? 'var(--accent-orange)' : 'var(--accent-green)'};
                         color: ${currentTask.paused ? 'var(--accent-orange)' : 'var(--accent-green)'};">
                         <span style="font-size: 1rem;">${currentTask.paused ? '⏸️' : currentTask.type === 'packaging' ? '📦' : '🏷️'}</span>
-                        <span>${currentTask.paused ? 'PAUSED' : 'WORKING'}: ${currentTask.type === 'packaging' ? 'Packaging' : 'Labeling'} ${currentTask.strain}</span>
+                        <span>${currentTask.paused ? 'PAUSED' : 'WORKING'}: ${currentTask.type === 'packaging' ? 'Packaging' : 'Labeling'} ${currentTask.strain}${currentTask.weight ? ' (' + currentTask.weight + 'g)' : ''}</span>
                     </div>
                 ` : '';
 
