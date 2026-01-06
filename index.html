@@ -10312,7 +10312,17 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 // Clear pot ledger display
                 hideEl('potLedgerDisplay');
 
+                // Clear the cached machine status
+                window.currentMachineStatus = {};
+
+                // Hide pull batch button since pot is now empty
+                const pullBatchBtn = document.getElementById('modalPullBatchBtn');
+                if (pullBatchBtn) pullBatchBtn.style.display = 'none';
+
+                // Refresh displays and dropdowns
                 updateMachineDisplays();
+                refreshColumnDropdowns();
+                populateExtractionQueue();
 
                 // Get machine name for alert
                 const machineInfo = CONFIG.machines.find(m => {
