@@ -21517,10 +21517,18 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         const cachedData = localStorage.getItem('foh_needs_cache');
         if (cachedData && Object.keys(needsData).length === 0) {
             try {
-                needsData = JSON.parse(cachedData);
-                renderNeedsCategories();
+                const parsed = JSON.parse(cachedData);
+                // Validate cache structure - must have Wax with needs array
+                if (parsed && parsed['Wax'] && Array.isArray(parsed['Wax'].needs)) {
+                    needsData = parsed;
+                    renderNeedsCategories();
+                } else {
+                    // Invalid cache, clear it
+                    localStorage.removeItem('foh_needs_cache');
+                }
             } catch (e) {
                 console.log('Cache parse error:', e);
+                localStorage.removeItem('foh_needs_cache');
             }
         }
 
