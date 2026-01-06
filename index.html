@@ -6378,7 +6378,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             alert(`ZPL file downloaded: batch-label-${batch.id}.zpl\n\nTo print:\n1. Open Zebra Setup Utilities\n2. Go to Tools → Send File\n3. Select the .zpl file\n4. Click Send`);
         }
 
-        // Print label from Testing page
+        // Print label from Testing page - uses direct IP printing
         window.printTestingLabel = async function() {
             const batchId = document.getElementById('testingBatchSelect').value;
             if (!batchId) {
@@ -6395,11 +6395,46 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const labelType = document.getElementById('testingLabelType').value;
 
             if (labelType === 'intake') {
-                printIntakeBatchLabel(batch);
+                printIntakeLabelDirectly(batch);
             } else if (labelType === 'postprod') {
                 const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 const sampleWeight = parseFloat(batch.sample_weight) || 0;
-                printPostProductionLabels(batch, finalWeight, sampleWeight, 1);
+                printPostProductionLabelDirectly(batch, finalWeight, sampleWeight);
+            }
+        }
+
+        // Print post-production label directly to Zebra IP
+        async function printPostProductionLabelDirectly(batch, finalWeight, sampleWeight) {
+            const printerIP = '10.1.10.95'; // Static IP for Zebra ZT230
+            const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
+
+            try {
+                const response = await fetch(`http://${printerIP}:9100`, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: zpl
+                });
+
+                alert(`✅ Post-production label sent to printer!\n\nBatch: ${batch.id}`);
+            } catch (error) {
+                console.error('Print error:', error);
+                alert(`⚠️ Could not connect to printer at ${printerIP}\n\nError: ${error.message}\n\nTry downloading the ZPL file instead.`);
+
+                // Offer to download instead
+                if (confirm('Download ZPL file instead?')) {
+                    const blob = new Blob([zpl], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `postprod-label-${batch.id}.zpl`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }
             }
         }
 
