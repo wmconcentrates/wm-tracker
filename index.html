@@ -5138,26 +5138,28 @@
                 // Build status display based on machine type
                 let statusHtml = '';
                 if (machineType === 'bho') {
-                    // Stainless steel gradient for circles
-                    const steelGradient = 'linear-gradient(145deg, #d4d4d4 0%, #a8a8a8 25%, #c0c0c0 50%, #888888 75%, #a0a0a0 100%)';
-                    const steelBorder = '3px solid #e8e8e8';
-                    const steelShadow = 'inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.3)';
-
-                    // Visual top-down machine layout - pot is 160px, columns are 80px (half)
-                    statusHtml = '<div style="position: relative; width: 100%; height: 260px; margin-top: 5px;">' +
-                        // Column A (top left) - 80px diameter
-                        '<div id="' + machineKey + 'ColAVisual" style="position: absolute; top: 0; left: 0; width: 80px; height: 80px; border-radius: 50%; background: ' + steelGradient + '; border: ' + steelBorder + '; box-shadow: ' + steelShadow + '; display: flex; align-items: center; justify-content: center; text-align: center; padding: 6px;">' +
-                        '<span id="' + machineKey + 'ColAStrain" style="font-size: 0.8rem; font-weight: 700; color: #1a1a1a; line-height: 1.15; text-shadow: 0 1px 0 rgba(255,255,255,0.5);">Empty</span></div>' +
-                        // Column B (top right) - 80px diameter
-                        '<div id="' + machineKey + 'ColBVisual" style="position: absolute; top: 0; right: 0; width: 80px; height: 80px; border-radius: 50%; background: ' + steelGradient + '; border: ' + steelBorder + '; box-shadow: ' + steelShadow + '; display: flex; align-items: center; justify-content: center; text-align: center; padding: 6px;">' +
-                        '<span id="' + machineKey + 'ColBStrain" style="font-size: 0.8rem; font-weight: 700; color: #1a1a1a; line-height: 1.15; text-shadow: 0 1px 0 rgba(255,255,255,0.5);">Empty</span></div>' +
-                        // Pot (center, below columns) - 160px diameter
-                        '<div id="' + machineKey + 'PotVisual" style="position: absolute; top: 85px; left: 50%; transform: translateX(-50%); width: 160px; height: 160px; border-radius: 50%; background: ' + steelGradient + '; border: 5px solid #e8e8e8; box-shadow: inset 0 5px 10px rgba(255,255,255,0.5), inset 0 -5px 10px rgba(0,0,0,0.25), 0 10px 20px rgba(0,0,0,0.4); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 15px;">' +
-                        '<span id="' + machineKey + 'PotStrain" style="font-size: 1.2rem; font-weight: 700; color: #1a1a1a; line-height: 1.2; text-shadow: 0 1px 0 rgba(255,255,255,0.5);">Empty</span>' +
-                        '<span id="' + machineKey + 'PotRuns" style="font-size: 0.9rem; font-weight: 600; color: #444; margin-top: 4px;"></span></div>' +
-                        // Filter (bottom right corner) - 50px diameter
-                        '<div id="' + machineKey + 'FilterVisual" style="position: absolute; bottom: 10px; right: 0; width: 50px; height: 50px; border-radius: 50%; background: ' + steelGradient + '; border: ' + steelBorder + '; box-shadow: ' + steelShadow + '; display: flex; align-items: center; justify-content: center;">' +
-                        '<span id="' + machineKey + 'FilterRuns" style="font-size: 1.2rem; font-weight: 800; color: #1a1a1a; text-shadow: 0 1px 0 rgba(255,255,255,0.5);">0</span></div>' +
+                    // Button-based layout - clickable elements for each component
+                    statusHtml = '<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">' +
+                        // Top row: Column A and Column B
+                        '<div style="display: flex; gap: 8px;">' +
+                        // Column A button
+                        '<button id="' + machineKey + 'ColABtn" onclick="openComponentSelector(\'' + machineKey + '\', \'columnA\')" style="flex: 1; padding: 12px 8px; border-radius: 12px; border: 2px solid var(--accent-blue); background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.05) 100%); cursor: pointer; text-align: center;">' +
+                        '<div style="font-size: 0.7rem; color: var(--accent-blue); font-weight: 600; margin-bottom: 4px;">COLUMN A</div>' +
+                        '<div id="' + machineKey + 'ColAStrain" style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Empty</div></button>' +
+                        // Column B button
+                        '<button id="' + machineKey + 'ColBBtn" onclick="openComponentSelector(\'' + machineKey + '\', \'columnB\')" style="flex: 1; padding: 12px 8px; border-radius: 12px; border: 2px solid var(--accent-blue); background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.05) 100%); cursor: pointer; text-align: center;">' +
+                        '<div style="font-size: 0.7rem; color: var(--accent-blue); font-weight: 600; margin-bottom: 4px;">COLUMN B</div>' +
+                        '<div id="' + machineKey + 'ColBStrain" style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Empty</div></button>' +
+                        '</div>' +
+                        // Pot button (full width, larger)
+                        '<button id="' + machineKey + 'PotBtn" onclick="openComponentSelector(\'' + machineKey + '\', \'pot\')" style="width: 100%; padding: 16px 12px; border-radius: 16px; border: 3px solid var(--accent-purple); background: linear-gradient(135deg, rgba(147,51,234,0.2) 0%, rgba(147,51,234,0.05) 100%); cursor: pointer; text-align: center;">' +
+                        '<div style="font-size: 0.75rem; color: var(--accent-purple); font-weight: 600; margin-bottom: 6px;">POT</div>' +
+                        '<div id="' + machineKey + 'PotStrain" style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary);">Empty</div>' +
+                        '<div id="' + machineKey + 'PotRuns" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;"></div></button>' +
+                        // Filter button (smaller, right aligned)
+                        '<button id="' + machineKey + 'FilterBtn" onclick="openComponentSelector(\'' + machineKey + '\', \'filter\')" style="width: 50%; margin-left: auto; padding: 10px 8px; border-radius: 10px; border: 2px solid var(--accent-green); background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.05) 100%); cursor: pointer; text-align: center;">' +
+                        '<div style="font-size: 0.65rem; color: var(--accent-green); font-weight: 600; margin-bottom: 3px;">FILTER</div>' +
+                        '<div id="' + machineKey + 'FilterRuns" style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">0 runs</div></button>' +
                         '</div>';
                 } else if (machineType === 'rosin') {
                     statusHtml = '<div>Wash 1: <span id="' + machineKey + 'Wash1">Empty</span></div>';
@@ -9096,6 +9098,12 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             '</div>';
         }
 
+        // Open component selector - for now, opens the full machine modal
+        function openComponentSelector(machineKey, component) {
+            // Just open the machine modal for now - can be enhanced later for quick selection
+            openMachineModal(machineKey);
+        }
+
         function openMachineModal(machine) {
             currentMachine = machine;
 
@@ -10211,89 +10219,65 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     const machines = (CONFIG.machines.length > 0 ? CONFIG.machines : CONFIG_DEFAULTS.machines);
                     const machineKeys = machines.map(m => m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, ''));
 
-                    // Steel gradient for empty state
-                    const steelGradient = 'linear-gradient(145deg, #d4d4d4 0%, #a8a8a8 25%, #c0c0c0 50%, #888888 75%, #a0a0a0 100%)';
-                    const steelShadow = 'inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.3)';
-
                     machineKeys.forEach(machineKey => {
                         const machineStatus = machineStatuses.find(m => m.machine === machineKey) || {};
 
-                        // Update visual Column A
+                        // Update Column A button
                         const colAEl = document.getElementById(`${machineKey}ColAStrain`);
-                        const colAVisual = document.getElementById(`${machineKey}ColAVisual`);
+                        const colABtn = document.getElementById(`${machineKey}ColABtn`);
                         if (colAEl) {
                             if (machineStatus.column_batch) {
                                 const batchA = batches.find(b => b.id == machineStatus.column_batch);
                                 colAEl.textContent = batchA?.strain || 'Loading';
-                                if (colAVisual) {
-                                    colAVisual.style.borderColor = '#00d4ff';
-                                    colAVisual.style.boxShadow = steelShadow + ', 0 0 15px rgba(0, 212, 255, 0.6)';
-                                }
+                                if (colABtn) colABtn.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.3) 0%, rgba(59,130,246,0.15) 100%)';
                             } else {
                                 colAEl.textContent = 'Empty';
-                                if (colAVisual) {
-                                    colAVisual.style.borderColor = '#e8e8e8';
-                                    colAVisual.style.boxShadow = steelShadow;
-                                }
+                                if (colABtn) colABtn.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.05) 100%)';
                             }
                         }
 
-                        // Update visual Column B
+                        // Update Column B button
                         const colBEl = document.getElementById(`${machineKey}ColBStrain`);
-                        const colBVisual = document.getElementById(`${machineKey}ColBVisual`);
+                        const colBBtn = document.getElementById(`${machineKey}ColBBtn`);
                         if (colBEl) {
                             if (machineStatus.column_b_batch) {
                                 const batchB = batches.find(b => b.id == machineStatus.column_b_batch);
                                 colBEl.textContent = batchB?.strain || 'Loading';
-                                if (colBVisual) {
-                                    colBVisual.style.borderColor = '#00d4ff';
-                                    colBVisual.style.boxShadow = steelShadow + ', 0 0 15px rgba(0, 212, 255, 0.6)';
-                                }
+                                if (colBBtn) colBBtn.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.3) 0%, rgba(59,130,246,0.15) 100%)';
                             } else {
                                 colBEl.textContent = 'Empty';
-                                if (colBVisual) {
-                                    colBVisual.style.borderColor = '#e8e8e8';
-                                    colBVisual.style.boxShadow = steelShadow;
-                                }
+                                if (colBBtn) colBBtn.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.05) 100%)';
                             }
                         }
 
-                        // Update visual Pot
+                        // Update Pot button
                         const potStrainEl = document.getElementById(`${machineKey}PotStrain`);
                         const potRunsEl = document.getElementById(`${machineKey}PotRuns`);
-                        const potVisual = document.getElementById(`${machineKey}PotVisual`);
+                        const potBtn = document.getElementById(`${machineKey}PotBtn`);
                         if (potStrainEl) {
                             if (machineStatus.pot_batch) {
                                 const batch = batches.find(b => b.id == machineStatus.pot_batch);
                                 potStrainEl.textContent = batch?.strain || machineStatus.pot_batch;
                                 if (potRunsEl) potRunsEl.textContent = machineStatus.pot_runs ? `${machineStatus.pot_runs} runs` : '';
-                                if (potVisual) {
-                                    potVisual.style.borderColor = '#a855f7';
-                                    potVisual.style.boxShadow = 'inset 0 3px 6px rgba(255,255,255,0.5), inset 0 -3px 6px rgba(0,0,0,0.25), 0 6px 12px rgba(0,0,0,0.4), 0 0 20px rgba(168, 85, 247, 0.5)';
-                                }
+                                if (potBtn) potBtn.style.background = 'linear-gradient(135deg, rgba(147,51,234,0.35) 0%, rgba(147,51,234,0.15) 100%)';
                             } else {
                                 potStrainEl.textContent = 'Empty';
                                 if (potRunsEl) potRunsEl.textContent = '';
-                                if (potVisual) {
-                                    potVisual.style.borderColor = '#e8e8e8';
-                                    potVisual.style.boxShadow = 'inset 0 3px 6px rgba(255,255,255,0.5), inset 0 -3px 6px rgba(0,0,0,0.25), 0 6px 12px rgba(0,0,0,0.4)';
-                                }
+                                if (potBtn) potBtn.style.background = 'linear-gradient(135deg, rgba(147,51,234,0.2) 0%, rgba(147,51,234,0.05) 100%)';
                             }
                         }
 
-                        // Update visual Filter
+                        // Update Filter button
                         const filterRunsEl = document.getElementById(`${machineKey}FilterRuns`);
-                        const filterVisual = document.getElementById(`${machineKey}FilterVisual`);
+                        const filterBtn = document.getElementById(`${machineKey}FilterBtn`);
                         if (filterRunsEl) {
                             const runs = machineStatus.filter_runs || 0;
-                            filterRunsEl.textContent = runs;
-                            if (filterVisual) {
+                            filterRunsEl.textContent = runs > 0 ? `${runs} runs` : '0 runs';
+                            if (filterBtn) {
                                 if (runs > 0) {
-                                    filterVisual.style.borderColor = '#10b981';
-                                    filterVisual.style.boxShadow = steelShadow + ', 0 0 12px rgba(16, 185, 129, 0.5)';
+                                    filterBtn.style.background = 'linear-gradient(135deg, rgba(16,185,129,0.3) 0%, rgba(16,185,129,0.15) 100%)';
                                 } else {
-                                    filterVisual.style.borderColor = '#e8e8e8';
-                                    filterVisual.style.boxShadow = steelShadow;
+                                    filterBtn.style.background = 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.05) 100%)';
                                 }
                             }
                         }
