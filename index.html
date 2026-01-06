@@ -6231,9 +6231,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const selectedProducts = Array.from(document.querySelectorAll('input[name="products"]:checked')).map(cb => cb.value);
             const isLiveResin = selectedProducts.some(p => p.includes('Live Resin'));
             const materialType = isLiveResin ? 'Fresh Frozen' : 'Trim';
+            // Build strain name with product type(s)
+            const baseStrainName = document.getElementById('strainName').value;
+            const productSuffix = products.length > 0 ? ' ' + products.join('/') : '';
+            const fullStrainName = baseStrainName + productSuffix;
+
             const batch = {
                 id: `WM-${batchCounter}`,
-                strain: document.getElementById('strainName').value,
+                strain: fullStrainName,
                 strain_type: document.getElementById('strainType').value,
                 material_type: materialType,
                 expected_yield: getExpectedYield(materialType),
