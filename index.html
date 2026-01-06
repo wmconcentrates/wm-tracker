@@ -10188,9 +10188,46 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
         function clearMachineStatus() {
             if (!currentMachine) return;
 
-            if (!confirm(`Are you sure you want to clear all status for the ${currentMachine} machine?\n\nThis will reset column, pot, and filter information.`)) {
+            // Get current pot ledger to restore socks
+            const currentStatus = window.currentMachineStatus || {};
+            let potLedger = currentStatus.pot_ledger || [];
+            if (typeof potLedger === 'string') {
+                try { potLedger = JSON.parse(potLedger); } catch(e) { potLedger = []; }
+            }
+
+            // Build confirmation message
+            let confirmMsg = `Are you sure you want to clear all status for the ${currentMachine} machine?\n\nThis will reset column, pot, and filter information.`;
+            if (potLedger.length > 0) {
+                confirmMsg += `\n\n⚠️ The following socks will be returned to their batches:`;
+                potLedger.forEach(entry => {
+                    const batch = batches.find(b => b.id === entry.batch_id);
+                    confirmMsg += `\n• ${entry.socks} sock(s) → ${entry.batch_id} (${batch?.strain || 'Unknown'})`;
+                });
+            }
+
+            if (!confirm(confirmMsg)) {
                 return;
             }
+
+            // Restore socks to batches from pot_ledger
+            const restorePromises = potLedger.map(entry => {
+                const batch = batches.find(b => b.id === entry.batch_id);
+                if (!batch) return Promise.resolve();
+
+                const currentRemaining = batch.socks_remaining ?? 0;
+                const newRemaining = currentRemaining + entry.socks;
+
+                // Update local cache
+                batch.socks_remaining = newRemaining;
+
+                // In demo mode, just update local cache
+                if (DEMO_MODE) return Promise.resolve();
+
+                return supabaseClient
+                    .from('wm_batches')
+                    .update({ socks_remaining: newRemaining })
+                    .eq('id', entry.batch_id);
+            });
 
             // Build empty status with all columns A-F cleared
             const emptyStatus = {
@@ -10286,23 +10323,29 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 alert(`✅ ${machineName} Cleared!${DEMO_MODE ? ' (Demo Mode)' : ''}`);
             };
 
-            // In demo mode, save to localStorage
-            if (DEMO_MODE) {
-                demoSaveMachineStatus(currentMachine, emptyStatus);
-                clearFormElements();
-                return;
-            }
-
-            supabaseClient
-                .from('wm_machine_status')
-                .upsert(emptyStatus, { onConflict: 'machine' })
-                .then(({ error }) => {
-                    if (error) {
-                        console.error('Error clearing machine status:', error);
-                        return;
-                    }
+            // Wait for sock restoration, then clear machine status
+            Promise.all(restorePromises).then(() => {
+                // In demo mode, save to localStorage
+                if (DEMO_MODE) {
+                    demoSaveMachineStatus(currentMachine, emptyStatus);
                     clearFormElements();
-                });
+                    return;
+                }
+
+                return supabaseClient
+                    .from('wm_machine_status')
+                    .upsert(emptyStatus, { onConflict: 'machine' });
+            }).then((result) => {
+                if (DEMO_MODE) return; // Already handled above
+                if (result?.error) {
+                    console.error('Error clearing machine status:', result.error);
+                    return;
+                }
+                clearFormElements();
+            }).catch(err => {
+                console.error('Error during clear:', err);
+                alert('Error clearing machine status. Check console.');
+            });
         }
         
         function updateMachineDisplays() {
