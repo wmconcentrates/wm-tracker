@@ -6368,7 +6368,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             alert(`ZPL file downloaded: batch-label-${batch.id}.zpl\n\nTo print:\n1. Open Zebra Setup Utilities\n2. Go to Tools → Send File\n3. Select the .zpl file\n4. Click Send`);
         }
 
-        // Print label from Testing page - downloads ZPL file
+        // Print label from Testing page - direct IP printing
         window.printTestingLabel = async function() {
             const batchId = document.getElementById('testingBatchSelect').value;
             if (!batchId) {
@@ -6384,34 +6384,31 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
             const labelType = document.getElementById('testingLabelType').value;
             let zpl = '';
-            let filename = '';
 
             if (labelType === 'intake') {
                 zpl = generateIntakeBatchLabelZPL(batch);
-                filename = `intake-${batch.id}.zpl`;
             } else if (labelType === 'postprod') {
                 const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 const sampleWeight = parseFloat(batch.sample_weight) || 0;
                 zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
-                filename = `postprod-${batch.id}.zpl`;
             } else if (labelType === 'labeling') {
                 const labeledBy = currentRole ? currentRole.name : 'Test User';
                 zpl = generateLabelingCompletionZPL(batch, labeledBy);
-                filename = `labeling-${batch.id}.zpl`;
             }
 
-            // Download ZPL file
-            const blob = new Blob([zpl], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-
-            alert(`ZPL file downloaded: ${filename}\n\nTo print:\n1. Open Zebra Setup Utilities\n2. Go to Tools → Send File\n3. Select the .zpl file\n4. Click Send`);
+            // Print directly to Zebra IP
+            const printerIP = '10.1.10.95';
+            try {
+                await fetch(`http://${printerIP}:9100`, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: zpl
+                });
+                alert(`✅ Label sent to printer!`);
+            } catch (error) {
+                console.error('Print error:', error);
+                alert('Print error - check console');
+            }
         }
 
         // Print labeling completion label with alert (for testing)
