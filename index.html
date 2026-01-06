@@ -1491,6 +1491,7 @@
             <button id="complianceBtn" onclick="openComplianceModal()" style="display: none;">📋 Compliance</button>
             <button id="loginHistoryBtn" onclick="openLoginHistoryModal()" style="display: none;">📊 Login History</button>
             <button id="manageEmployeesBtn" onclick="openEmployeeManagement()" style="display: none;">👥 Manage Employees</button>
+            <button id="adminConfigBtn" onclick="window.open('admin-config.html', '_blank')" style="display: none;">⚙️ Admin Config</button>
         </div>
     </div>
 
@@ -1633,7 +1634,12 @@
                 <div class="header-logo">
                     <img src="https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w" alt="White Mousse">
                 </div>
+                <button id="demoModeBtn" onclick="toggleDemoMode()" style="position: absolute; top: 10px; right: 10px; padding: 8px 16px; background: var(--accent-purple); border: none; border-radius: 8px; color: white; font-size: 0.85rem; font-weight: 600; cursor: pointer;">🎮 Demo Mode</button>
             </div>
+        </div>
+        <!-- Demo Mode Indicator -->
+        <div id="demoIndicator" style="display: none; background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue)); color: white; text-align: center; padding: 8px; font-weight: 700; font-size: 0.9rem;">
+            🎮 DEMO MODE - No database changes will be saved
         </div>
 
         <div class="user-login" id="userLogin">
@@ -1858,36 +1864,14 @@
                     </button>
                 </div>
                 
-                <!-- Machine Status Buttons -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <button class="btn" style="background: transparent; border: 2px solid #C0C0C0; color: #E8E8E8; padding: 20px; text-align: left; box-shadow: 0 0 15px rgba(192, 192, 192, 0.4), 0 0 30px rgba(192, 192, 192, 0.2), inset 0 0 15px rgba(192, 192, 192, 0.05);" onclick="openMachineModal('left')">
-                        <div style="font-weight: 700; margin-bottom: 8px;">⚗️ Left Machine</div>
-                        <div id="leftMachineStatus" style="font-size: 0.85rem; opacity: 0.9;">
-                            <div>Col A: <span id="leftColumnBatch">Empty</span></div>
-                            <div>Col B: <span id="leftColumnBBatch">Empty</span></div>
-                            <div>Pot: <span id="leftPotBatch">Empty</span></div>
-                            <div>Filter: <span id="leftFilterStatus">Not loaded</span></div>
-                        </div>
-                    </button>
-                    <button class="btn" style="background: transparent; border: 2px solid #C0C0C0; color: #E8E8E8; padding: 20px; text-align: left; box-shadow: 0 0 15px rgba(192, 192, 192, 0.4), 0 0 30px rgba(192, 192, 192, 0.2), inset 0 0 15px rgba(192, 192, 192, 0.05);" onclick="openMachineModal('right')">
-                        <div style="font-weight: 700; margin-bottom: 8px;">⚗️ Right Machine</div>
-                        <div id="rightMachineStatus" style="font-size: 0.85rem; opacity: 0.9;">
-                            <div>Col A: <span id="rightColumnBatch">Empty</span></div>
-                            <div>Col B: <span id="rightColumnBBatch">Empty</span></div>
-                            <div>Pot: <span id="rightPotBatch">Empty</span></div>
-                            <div>Filter: <span id="rightFilterStatus">Not loaded</span></div>
-                        </div>
-                    </button>
+                <!-- Machine Status Buttons (Dynamic from CONFIG) -->
+                <div id="machineButtonsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                    <!-- Populated by renderMachineButtons() -->
                 </div>
-                
-                <!-- Pull Batch Buttons -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                    <button class="btn" style="background: transparent; border: 2px solid #FFD700; color: #FFD700; padding: 15px; font-weight: 600; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), 0 0 30px rgba(255, 215, 0, 0.2), inset 0 0 15px rgba(255, 215, 0, 0.05);" onclick="openPullBatchModal('left')">
-                        🫙 Pull Batch (Left)
-                    </button>
-                    <button class="btn" style="background: transparent; border: 2px solid #FFD700; color: #FFD700; padding: 15px; font-weight: 600; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), 0 0 30px rgba(255, 215, 0, 0.2), inset 0 0 15px rgba(255, 215, 0, 0.05);" onclick="openPullBatchModal('right')">
-                        🫙 Pull Batch (Right)
-                    </button>
+
+                <!-- Pull Batch Buttons (Dynamic from CONFIG) -->
+                <div id="pullBatchButtonsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <!-- Populated by renderMachineButtons() -->
                 </div>
 
                 <!-- Extraction Queue with Sock Counts -->
@@ -3550,78 +3534,13 @@
             </div>
             <div style="padding: 30px;">
                 <form id="machineForm" onsubmit="event.preventDefault(); saveMachineStatus();">
-                    <!-- Column A -->
-                    <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                        <h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">📦 Column A</h3>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Primary Batch</label>
-                                <select id="machineColumnBatch" onchange="updateColumnSockUI('A')">
-                                    <option value="">Empty / Not Loaded</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Socks</label>
-                                <select id="machineColumnASocks" onchange="updateColumnSockUI('A')">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                </select>
-                            </div>
-                        </div>
-                        <!-- Second sock from different batch (shows when 1 sock selected) -->
-                        <div id="columnASecondSock" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label style="color: var(--accent-orange);">+ Second Sock From</label>
-                                    <select id="machineColumnASecondBatch">
-                                        <option value="">None</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <button type="button" class="btn" style="background: var(--accent-orange); width: 100%; padding: 12px; margin-top: 15px;" onclick="runColumnToPot('A')">
-                            ⚗️ Run Column A to Pot
-                        </button>
+                    <!-- Dynamic Columns (generated based on machine config) -->
+                    <div id="machineColumnsContainer">
+                        <!-- Populated by openMachineModal() based on machine config -->
                     </div>
 
-                    <!-- Column B -->
-                    <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                        <h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">📦 Column B</h3>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Primary Batch</label>
-                                <select id="machineColumnBBatch" onchange="updateColumnSockUI('B')">
-                                    <option value="">Empty / Not Loaded</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Socks</label>
-                                <select id="machineColumnBSocks" onchange="updateColumnSockUI('B')">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                </select>
-                            </div>
-                        </div>
-                        <!-- Second sock from different batch (shows when 1 sock selected) -->
-                        <div id="columnBSecondSock" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label style="color: var(--accent-orange);">+ Second Sock From</label>
-                                    <select id="machineColumnBSecondBatch">
-                                        <option value="">None</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <button type="button" class="btn" style="background: var(--accent-orange); width: 100%; padding: 12px; margin-top: 15px;" onclick="runColumnToPot('B')">
-                            ⚗️ Run Column B to Pot
-                        </button>
-                    </div>
-
-                    <!-- Pot Status -->
-                    <div style="background: rgba(147, 51, 234, 0.1); border-left: 4px solid var(--accent-purple); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <!-- Pot Status (BHO only) -->
+                    <div id="machinePotSection" style="background: rgba(147, 51, 234, 0.1); border-left: 4px solid var(--accent-purple); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                         <h3 style="color: var(--accent-purple); margin: 0 0 15px 0;">🫙 Pot</h3>
                         <div id="potLedgerDisplay" style="display: none; background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem;">
                             <!-- Populated by JS -->
@@ -3638,9 +3557,9 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Filter Status -->
-                    <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--accent-green); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+
+                    <!-- Filter Status (BHO only) -->
+                    <div id="machineFilterSection" style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--accent-green); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                         <h3 style="color: var(--accent-green); margin: 0 0 15px 0;">🔬 Filter Column</h3>
                         <div class="form-grid">
                             <div class="form-group">
@@ -3659,7 +3578,7 @@
                         </div>
                     </div>
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div id="machineFormButtons" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <button type="button" class="btn" style="background: var(--accent-red);" onclick="clearMachineStatus()">🗑️ Clear All</button>
                         <button type="submit" class="btn" style="background: var(--accent-green);">✅ Save Status</button>
                     </div>
@@ -5049,6 +4968,203 @@
         let batchCounter = 1000;
         let realtimeChannel = null;
 
+        // ==================== DEMO MODE ====================
+        let DEMO_MODE = false;
+
+        const DEMO_BATCHES = [
+            { id: 'DEMO-001', strain: 'Blue Dream', partner: 'Demo Farm', status: 'intake', trim_weight: 500, socks_total: 10, socks_remaining: 10, material_type: 'Trim', metrc_source_tag: 'DEMO123456', pre_sift: 'no', created_at: new Date().toISOString() },
+            { id: 'DEMO-002', strain: 'OG Kush', partner: 'Demo Farm', status: 'intake', trim_weight: 750, socks_total: 15, socks_remaining: 15, material_type: 'Trim', metrc_source_tag: 'DEMO789012', pre_sift: 'yes', created_at: new Date().toISOString() },
+            { id: 'DEMO-003', strain: 'Gelato', partner: 'Test Partner', status: 'intake', trim_weight: 300, socks_total: 6, socks_remaining: 6, material_type: 'Trim', metrc_source_tag: 'DEMO345678', pre_sift: 'yes', created_at: new Date().toISOString() },
+            { id: 'DEMO-004', strain: 'Purple Punch', partner: 'Test Partner', status: 'intake', trim_weight: 1000, socks_total: 20, socks_remaining: 20, material_type: 'Whole Flower', metrc_source_tag: 'DEMO901234', pre_sift: 'no', created_at: new Date().toISOString() }
+        ];
+
+        function toggleDemoMode() {
+            DEMO_MODE = !DEMO_MODE;
+            const btn = document.getElementById('demoModeBtn');
+            const indicator = document.getElementById('demoIndicator');
+
+            if (DEMO_MODE) {
+                // Load demo data
+                batches = [...DEMO_BATCHES];
+                CONFIG.machines = [
+                    { id: 'demo-bho', name: 'Demo BHO', position: 'Left', machine_type: 'bho', config: { columns: 6, socks_per_run: 6 }, is_active: true },
+                    { id: 'demo-resinator', name: 'Demo Resinator', position: 'Resinator', machine_type: 'resinator', config: { second_sift: true }, is_active: true }
+                ];
+                CONFIG.loaded = true;
+
+                if (btn) {
+                    btn.textContent = '🔴 Exit Demo';
+                    btn.style.background = 'var(--accent-red)';
+                }
+                if (indicator) indicator.style.display = 'block';
+
+                // Re-render UI
+                renderMachineButtons();
+                populateExtractionQueue();
+                alert('🎮 DEMO MODE ACTIVE\n\nUsing mock data - no database changes will be made.\n\nDemo batches and machines loaded.');
+            } else {
+                if (btn) {
+                    btn.textContent = '🎮 Demo Mode';
+                    btn.style.background = 'var(--accent-purple)';
+                }
+                if (indicator) indicator.style.display = 'none';
+
+                alert('Demo mode disabled. Refresh to reconnect to live database.');
+                location.reload();
+            }
+        }
+
+        // Demo mode storage helpers
+        function demoGetMachineStatus(machineKey) {
+            const stored = localStorage.getItem(`demo_machine_${machineKey}`);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function demoSaveMachineStatus(machineKey, status) {
+            localStorage.setItem(`demo_machine_${machineKey}`, JSON.stringify(status));
+            return Promise.resolve({ error: null });
+        }
+
+        function demoUpdateBatch(batchId, updates) {
+            const batch = batches.find(b => b.id === batchId);
+            if (batch) {
+                Object.assign(batch, updates);
+            }
+            return Promise.resolve({ error: null });
+        }
+
+        // ==================== ADMIN CONFIG ====================
+        let CONFIG = {
+            machines: [],
+            productTypes: [],
+            materialTypes: [],
+            loaded: false
+        };
+
+        const CONFIG_DEFAULTS = {
+            machines: [
+                { id: 'default-1', name: 'Machine 1', position: 'Left', machine_type: 'bho', config: { columns: 6, socks_per_run: 6 }, is_active: true },
+                { id: 'default-2', name: 'Machine 2', position: 'Right', machine_type: 'bho', config: { columns: 6, socks_per_run: 6 }, is_active: true }
+            ],
+            productTypes: [
+                { name: 'Wax', category: 'concentrate', unit_sizes: [{size: 1, label: '1g'}, {size: 4, label: '4g'}], packaging_type: 'jar', is_live_resin: false },
+                { name: 'Sugar Wax', category: 'concentrate', unit_sizes: [{size: 1, label: '1g'}, {size: 4, label: '4g'}], packaging_type: 'jar', is_live_resin: false },
+                { name: 'Shatter', category: 'concentrate', unit_sizes: [{size: 1, label: '1g'}], packaging_type: 'slab', is_live_resin: false },
+                { name: 'Live Resin Carts', category: 'cart', unit_sizes: [{size: 1, label: '1g'}], packaging_type: 'cart', is_live_resin: true },
+                { name: 'Live Resin AIOs', category: 'cart', unit_sizes: [{size: 1, label: '1g'}], packaging_type: 'aio', is_live_resin: true },
+                { name: 'Brick Hash', category: 'concentrate', unit_sizes: [{size: 1, label: '1g'}, {size: 4, label: '4g'}], packaging_type: 'jar', is_live_resin: false }
+            ],
+            materialTypes: [
+                { name: 'Trim', expected_yield: 13.00 },
+                { name: 'Fresh Frozen', expected_yield: 3.50 },
+                { name: 'Whole Flower', expected_yield: 18.00 }
+            ]
+        };
+
+        async function loadConfig() {
+            if (!supabaseClient) return;
+            try {
+                const { data: machines } = await supabaseClient.from('wm_machines').select('*').eq('is_active', true).order('sort_order');
+                if (machines && machines.length > 0) {
+                    CONFIG.machines = machines.map(m => ({ ...m, config: typeof m.config === 'string' ? JSON.parse(m.config) : (m.config || {}) }));
+                } else { CONFIG.machines = CONFIG_DEFAULTS.machines; }
+
+                const { data: products } = await supabaseClient.from('wm_product_types').select('*').eq('is_active', true).order('sort_order');
+                if (products && products.length > 0) {
+                    CONFIG.productTypes = products.map(p => ({ ...p, unit_sizes: typeof p.unit_sizes === 'string' ? JSON.parse(p.unit_sizes) : (p.unit_sizes || []) }));
+                } else { CONFIG.productTypes = CONFIG_DEFAULTS.productTypes; }
+
+                const { data: materials } = await supabaseClient.from('wm_material_types').select('*').eq('is_active', true).order('sort_order');
+                if (materials && materials.length > 0) { CONFIG.materialTypes = materials; }
+                else { CONFIG.materialTypes = CONFIG_DEFAULTS.materialTypes; }
+
+                CONFIG.loaded = true;
+                console.log('Admin Config loaded:', CONFIG);
+                populateProductDropdowns();
+                renderMachineButtons();
+            } catch (err) {
+                console.error('Error loading config:', err);
+                CONFIG.machines = CONFIG_DEFAULTS.machines;
+                CONFIG.productTypes = CONFIG_DEFAULTS.productTypes;
+                CONFIG.materialTypes = CONFIG_DEFAULTS.materialTypes;
+                CONFIG.loaded = true;
+                // Still render buttons even with defaults
+                populateProductDropdowns();
+                renderMachineButtons();
+            }
+        }
+
+        function populateProductDropdowns() {
+            const selectors = ['#editFinalProductType', '#subBatchProductType', '#finalConsistency', '#packagingProductType'];
+            selectors.forEach(sel => {
+                const dd = document.querySelector(sel);
+                if (dd && CONFIG.productTypes.length > 0) {
+                    const val = dd.value;
+                    dd.innerHTML = CONFIG.productTypes.filter(p => p.is_active !== false).map(p => '<option value="' + p.name + '">' + p.name + '</option>').join('');
+                    if (val) dd.value = val;
+                }
+            });
+        }
+
+        function renderMachineButtons() {
+            const machineContainer = document.getElementById('machineButtonsContainer');
+            const pullContainer = document.getElementById('pullBatchButtonsContainer');
+
+            if (!machineContainer || !pullContainer) return;
+
+            // Use CONFIG.machines or defaults
+            const machines = CONFIG.machines.length > 0 ? CONFIG.machines : CONFIG_DEFAULTS.machines;
+
+            // Render machine status buttons
+            machineContainer.innerHTML = machines.map((machine, idx) => {
+                const machineKey = machine.position?.toLowerCase() || machine.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const machineType = machine.machine_type || 'bho';
+                const config = machine.config || {};
+
+                // Get icon based on machine type
+                const icon = machineType === 'bho' ? '⚗️' : machineType === 'rosin' ? '🫧' : '🌀';
+
+                // Build status display based on machine type
+                let statusHtml = '';
+                if (machineType === 'bho') {
+                    const cols = config.columns || 6;
+                    statusHtml = '<div>Columns: ' + cols + '</div>' +
+                        '<div>Pot: <span id="' + machineKey + 'PotBatch">Empty</span></div>' +
+                        '<div>Filter: <span id="' + machineKey + 'FilterStatus">Not loaded</span></div>';
+                } else if (machineType === 'rosin') {
+                    statusHtml = '<div>Wash 1: <span id="' + machineKey + 'Wash1">Empty</span></div>';
+                    if (config.second_wash === true) {
+                        statusHtml += '<div>Wash 2: <span id="' + machineKey + 'Wash2">Empty</span></div>';
+                    }
+                } else if (machineType === 'resinator') {
+                    statusHtml = '<div>Sift 1: <span id="' + machineKey + 'Sift1">Empty</span></div>';
+                    if (config.second_sift === true) {
+                        statusHtml += '<div>Sift 2: <span id="' + machineKey + 'Sift2">Empty</span></div>';
+                    }
+                }
+
+                return '<button class="btn" style="background: transparent; border: 2px solid #C0C0C0; color: #E8E8E8; padding: 20px; text-align: left; box-shadow: 0 0 15px rgba(192, 192, 192, 0.4), 0 0 30px rgba(192, 192, 192, 0.2), inset 0 0 15px rgba(192, 192, 192, 0.05);" onclick="openMachineModal(\'' + machineKey + '\')">' +
+                    '<div style="font-weight: 700; margin-bottom: 8px;">' + icon + ' ' + machine.name + '</div>' +
+                    '<div id="' + machineKey + 'MachineStatus" style="font-size: 0.85rem; opacity: 0.9;">' + statusHtml + '</div>' +
+                '</button>';
+            }).join('');
+
+            // Render pull batch buttons
+            pullContainer.innerHTML = machines.filter(m => (m.machine_type || 'bho') === 'bho').map(machine => {
+                const machineKey = machine.position?.toLowerCase() || machine.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                return '<button class="btn" style="background: transparent; border: 2px solid #FFD700; color: #FFD700; padding: 15px; font-weight: 600; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), 0 0 30px rgba(255, 215, 0, 0.2), inset 0 0 15px rgba(255, 215, 0, 0.05);" onclick="openPullBatchModal(\'' + machineKey + '\')">' +
+                    '🫙 Pull Batch (' + machine.name + ')' +
+                '</button>';
+            }).join('');
+        }
+
+        function getExpectedYieldFromConfig(materialType) {
+            const mat = CONFIG.materialTypes.find(m => m.name.toLowerCase() === materialType?.toLowerCase());
+            return mat ? parseFloat(mat.expected_yield) : 13;
+        }
+
+        
+
         // Initialize on load
         document.addEventListener('DOMContentLoaded', function() {
             // Setup PIN login
@@ -5075,7 +5191,7 @@
                     document.getElementById('userLogin').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
                     document.getElementById('myStatsBtn').style.display = 'block';
-                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} const isAdminUser = currentRole.isAdmin || currentRole.name.includes('Admin') || currentRole.name === 'Ryan' || currentRole.name === 'Alex'; if(isAdminUser){document.getElementById('viewTimecardsBtn').style.display = 'block'; document.getElementById('manageEmployeesBtn').style.display = 'block'; document.getElementById('loginHistoryBtn').style.display = 'block'; document.getElementById('viewTrashBtn').style.display = 'block';}
+                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} const isAdminUser = currentRole.isAdmin || currentRole.name.includes('Admin') || currentRole.name === 'Ryan' || currentRole.name === 'Alex'; if(isAdminUser){document.getElementById('viewTimecardsBtn').style.display = 'block'; document.getElementById('manageEmployeesBtn').style.display = 'block'; document.getElementById('adminConfigBtn').style.display = 'block'; document.getElementById('loginHistoryBtn').style.display = 'block'; document.getElementById('viewTrashBtn').style.display = 'block';}
                     document.getElementById('complianceBtn').style.display = 'block';
                     applyRolePermissions();
                     hidePINsForDemo(); // Hide PINs if in demo mode
@@ -5135,6 +5251,13 @@
                     console.error('Error loading employees:', empError);
                 }
 
+                // Load admin config (machines, products, materials)
+                try {
+                    await loadConfig();
+                } catch (configError) {
+                    console.error("Error loading config:", configError);
+                }
+
                 // Load batches
                 try {
                     await loadBatches();
@@ -5174,7 +5297,7 @@
                         const isAdminCheck = currentRole.isAdmin || currentRole.name.includes('Admin') || currentRole.name === 'Ryan' || currentRole.name === 'Alex';
                         if(isAdminCheck) {
                             document.getElementById('viewTimecardsBtn').style.display = 'block';
-                            document.getElementById('manageEmployeesBtn').style.display = 'block';
+                            document.getElementById('manageEmployeesBtn').style.display = 'block'; document.getElementById('adminConfigBtn').style.display = 'block';
                             document.getElementById('loginHistoryBtn').style.display = 'block';
                             document.getElementById('viewTrashBtn').style.display = 'block';
                         }
@@ -5709,7 +5832,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 document.getElementById('actionsMenu').style.display = 'block';
                 document.getElementById('userLogin').style.display = 'none';
                 document.getElementById('appContent').style.display = 'block';
-                document.getElementById('myStatsBtn').style.display = 'block'; document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} const isAdmin = currentRole.isAdmin || currentRole.name.includes('Admin') || currentRole.name === 'Ryan' || currentRole.name === 'Alex'; if(isAdmin){document.getElementById('viewTimecardsBtn').style.display = 'block'; document.getElementById('manageEmployeesBtn').style.display = 'block'; document.getElementById('loginHistoryBtn').style.display = 'block'; document.getElementById('viewTrashBtn').style.display = 'block';}
+                document.getElementById('myStatsBtn').style.display = 'block'; document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} const isAdmin = currentRole.isAdmin || currentRole.name.includes('Admin') || currentRole.name === 'Ryan' || currentRole.name === 'Alex'; if(isAdmin){document.getElementById('viewTimecardsBtn').style.display = 'block'; document.getElementById('manageEmployeesBtn').style.display = 'block'; document.getElementById('adminConfigBtn').style.display = 'block'; document.getElementById('loginHistoryBtn').style.display = 'block'; document.getElementById('viewTrashBtn').style.display = 'block';}
                 errorMsg.style.display = 'none';
 
                 // Log login to database with IP (including demo mode)
@@ -8797,50 +8920,200 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
         // Machine Status Tracking
         // ==========================================
 
+        function generateMachineColumns(machineKey) {
+            const container = document.getElementById('machineColumnsContainer');
+            if (!container) return;
+
+            // Find machine config
+            const machineConfig = CONFIG.machines.find(m => {
+                const key = m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                return key === machineKey;
+            }) || CONFIG.machines[0] || CONFIG_DEFAULTS.machines[0];
+
+            const config = machineConfig.config || {};
+            console.log("Machine config for", machineKey, ":", {
+                machineType: machineConfig.machine_type,
+                config: config,
+                second_wash: config.second_wash,
+                second_wash_type: typeof config.second_wash,
+                second_sift: config.second_sift,
+                second_sift_type: typeof config.second_sift
+            });
+            const numColumns = config.columns || 6;
+            const machineType = machineConfig.machine_type || 'bho';
+
+            // Generate columns HTML based on machine type
+            let columnsHtml = '';
+
+            if (machineType === 'bho') {
+                // For BHO, show Column A and B (or however many are configured, up to 2 for now)
+                const columnLabels = ['A', 'B'];
+                for (let i = 0; i < Math.min(2, numColumns); i++) {
+                    const col = columnLabels[i];
+                    columnsHtml += generateColumnHtml(col, i === 0 ? 'machineColumnBatch' : 'machineColumnBBatch');
+                }
+            } else if (machineType === 'rosin') {
+                // Rosin washer - show wash stages
+                columnsHtml += '<div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin-bottom: 20px;">';
+                columnsHtml += '<h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">🫧 Wash 1</h3>';
+                columnsHtml += '<div class="form-group"><label>Batch</label><select id="rosinWash1Batch"><option value="">Empty</option></select></div>';
+                columnsHtml += '</div>';
+                if (config.second_wash === true) {
+                    columnsHtml += '<div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin-bottom: 20px;">';
+                    columnsHtml += '<h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">🫧 Wash 2</h3>';
+                    columnsHtml += '<div class="form-group"><label>Batch</label><select id="rosinWash2Batch"><option value="">Empty</option></select></div>';
+                    columnsHtml += '</div>';
+                }
+            } else if (machineType === 'resinator') {
+                // Resinator - process large batch in multiple barrel loads
+                columnsHtml += '<div style="background: rgba(147, 51, 234, 0.1); border-left: 4px solid var(--accent-purple); padding: 20px; border-radius: 8px; margin-bottom: 20px;">';
+                columnsHtml += '<h3 style="color: var(--accent-purple); margin: 0 0 15px 0;">📦 Batch Selection</h3>';
+                columnsHtml += '<div class="form-group"><label>Batch to Process</label><select id="resinatorBatch" onchange="updateResinatorBatchInfo()"><option value="">Select Batch...</option></select></div>';
+                columnsHtml += '<div id="batchRemainingDisplay" style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-top: 10px; display: none;">';
+                columnsHtml += '<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span>Remaining to Run:</span><strong id="batchRemainingWeight">0g</strong></div>';
+                columnsHtml += '<div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.9rem;"><span>Trim for Socks:</span><strong id="batchTrimForSocks">0g</strong></div>';
+                columnsHtml += '</div>';
+                columnsHtml += '</div>';
+
+                // Current Barrel Load
+                columnsHtml += '<div id="barrelLoadSection" style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin-bottom: 20px;">';
+                columnsHtml += '<h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">🥁 Current Barrel Load</h3>';
+                columnsHtml += '<div class="form-group"><label>Material in Barrel (g)</label><input type="number" id="resinatorInputWeight" step="0.1" placeholder="Weight loaded in barrel"></div>';
+                columnsHtml += '<div class="form-grid" style="margin-top: 15px;">';
+                columnsHtml += '<div class="form-group"><label>1st Sift Hash (g)</label><input type="number" id="resinatorSift1Output" step="0.1" placeholder="First pass yield"></div>';
+                columnsHtml += '<div class="form-group"><label>2nd Sift Hash (g)</label><input type="number" id="resinatorSift2Output" step="0.1" placeholder="Second pass (optional)"></div>';
+                columnsHtml += '</div>';
+                columnsHtml += '<button type="button" class="btn" style="background: var(--accent-blue); width: 100%; padding: 12px; margin-top: 15px;" onclick="completeBarrelRun()">✅ Complete Barrel Run</button>';
+                columnsHtml += '</div>';
+
+                // Session totals - First sift vs Second sift
+                columnsHtml += '<div id="siftTotalsDisplay" style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">';
+                columnsHtml += '<h4 style="margin: 0 0 15px 0;">📊 Session Totals</h4>';
+                columnsHtml += '<div id="siftTotalsContent">';
+                columnsHtml += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center;">';
+                columnsHtml += '<div style="background: rgba(16, 185, 129, 0.2); padding: 15px; border-radius: 8px;"><div style="font-size: 0.85rem; color: var(--text-secondary);">1st Sift Total</div><div id="totalFirstSift" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green);">0g</div></div>';
+                columnsHtml += '<div style="background: rgba(245, 158, 11, 0.2); padding: 15px; border-radius: 8px;"><div style="font-size: 0.85rem; color: var(--text-secondary);">2nd Sift Total</div><div id="totalSecondSift" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-orange);">0g</div></div>';
+                columnsHtml += '</div>';
+                columnsHtml += '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);"><div style="display: flex; justify-content: space-between;"><span>Total Material Processed:</span><strong id="totalProcessed">0g</strong></div>';
+                columnsHtml += '<div style="display: flex; justify-content: space-between; margin-top: 5px;"><span>Barrel Runs:</span><strong id="totalRuns">0</strong></div></div>';
+                columnsHtml += '</div></div>';
+
+                // Run history
+                columnsHtml += '<div id="runHistorySection" style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">';
+                columnsHtml += '<h4 style="margin: 0 0 10px 0;">📋 Run History</h4>';
+                columnsHtml += '<div id="runHistoryContent" style="max-height: 200px; overflow-y: auto;"></div>';
+                columnsHtml += '</div>';
+
+                // Complete batch button
+                columnsHtml += '<button type="button" class="btn" style="background: var(--accent-green); width: 100%; padding: 12px;" onclick="completeResinatorBatch()">✅ Complete Batch & Start Next</button>';
+            }
+
+            // Add columns configured count display
+            if (machineType === 'bho') {
+                columnsHtml = '<div style="text-align: center; padding: 10px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 15px; color: var(--text-secondary);">' +
+                    '<strong>' + numColumns + ' Columns</strong> | ' + (config.socks_per_run || 6) + ' socks per run</div>' + columnsHtml;
+            }
+
+            container.innerHTML = columnsHtml;
+
+            return machineConfig;
+        }
+
+        function generateColumnHtml(col, selectId) {
+            return '<div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--accent-blue); padding: 20px; border-radius: 8px; margin-bottom: 20px;">' +
+                '<h3 style="color: var(--accent-blue); margin: 0 0 15px 0;">📦 Column ' + col + '</h3>' +
+                '<div class="form-grid">' +
+                    '<div class="form-group">' +
+                        '<label>Primary Batch</label>' +
+                        '<select id="' + selectId + '" onchange="updateColumnSockUI(\'' + col + '\')">' +
+                            '<option value="">Empty / Not Loaded</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="form-group">' +
+                        '<label>Socks</label>' +
+                        '<select id="machineColumn' + col + 'Socks" onchange="updateColumnSockUI(\'' + col + '\')">' +
+                            '<option value="0">0</option>' +
+                            '<option value="1">1</option>' +
+                            '<option value="2">2</option>' +
+                        '</select>' +
+                    '</div>' +
+                '</div>' +
+                '<div id="column' + col + 'SecondSock" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">' +
+                    '<div class="form-grid">' +
+                        '<div class="form-group">' +
+                            '<label style="color: var(--accent-orange);">+ Second Sock From</label>' +
+                            '<select id="machineColumn' + col + 'SecondBatch">' +
+                                '<option value="">None</option>' +
+                            '</select>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<button type="button" class="btn" style="background: var(--accent-orange); width: 100%; padding: 12px; margin-top: 15px;" onclick="runColumnToPot(\'' + col + '\')">' +
+                    '⚗️ Run Column ' + col + ' to Pot' +
+                '</button>' +
+            '</div>';
+        }
+
         function openMachineModal(machine) {
             currentMachine = machine;
-            const machineName = machine === 'left' ? 'Left Machine' : 'Right Machine';
-            document.getElementById('machineModalTitle').textContent = `⚗️ ${machineName}`;
 
-            // Load machine status from Supabase
-            supabaseClient
-                .from('wm_machine_status')
-                .select('*')
-                .eq('machine', machine)
-                .single()
-                .then(({ data: machineStatus, error }) => {
-                    if (error) {
+            // Generate columns based on machine config
+            const machineConfig = generateMachineColumns(machine);
+            const machineName = machineConfig?.name || (machine === 'left' ? 'Left Machine' : 'Right Machine');
+            const machineType = machineConfig?.machine_type || 'bho';
+            const icon = machineType === 'bho' ? '⚗️' : machineType === 'rosin' ? '🫧' : '🌀';
+            document.getElementById('machineModalTitle').textContent = icon + ' ' + machineName;
+
+            // Show/hide sections based on machine type
+            const potSection = document.getElementById('machinePotSection');
+            const filterSection = document.getElementById('machineFilterSection');
+            const formButtons = document.getElementById('machineFormButtons');
+            if (potSection) potSection.style.display = (machineType === 'bho' || machineType === 'rosin') ? 'block' : 'none';
+            if (filterSection) filterSection.style.display = machineType === 'bho' ? 'block' : 'none';
+            if (formButtons) formButtons.style.display = machineType === 'resinator' ? 'none' : 'grid';
+
+            // Load machine status - from localStorage in demo mode, Supabase otherwise
+            const loadStatus = DEMO_MODE
+                ? Promise.resolve({ data: demoGetMachineStatus(machine), error: null })
+                : supabaseClient.from('wm_machine_status').select('*').eq('machine', machine).single();
+
+            loadStatus.then(({ data: machineStatus, error }) => {
+                    if (error && !DEMO_MODE) {
                         console.error('Error loading machine status:', error);
                         machineStatus = {};
                     }
+                    machineStatus = machineStatus || {};
 
                     // Store current machine status for later use
                     window.currentMachineStatus = machineStatus;
 
-                    // Populate batch dropdowns with sock counts
+                    // Populate batch dropdowns with sock counts (for BHO machines)
                     const columnSelect = document.getElementById('machineColumnBatch');
                     const columnBSelect = document.getElementById('machineColumnBBatch');
 
-                    // Clear and repopulate with sock counts
-                    columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
-                    columnBSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+                    // Only populate if these elements exist (BHO machine type)
+                    if (columnSelect && columnBSelect) {
+                        // Clear and repopulate with sock counts
+                        columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+                        columnBSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
 
-                    batches.forEach(batch => {
-                        if (batch.status === 'intake') {
-                            // Skip batches with 0 socks remaining
-                            if (batch.socks_total != null && batch.socks_remaining === 0) return;
-                            const socksRemaining = batch.socks_remaining ?? batch.socks_total ?? '?';
-                            const socksTotal = batch.socks_total ?? '?';
-                            const sockDisplay = `(${socksRemaining}/${socksTotal} socks)`;
-                            const option = `<option value="${batch.id}">${batch.id} - ${batch.strain} ${sockDisplay}</option>`;
-                            columnSelect.innerHTML += option;
-                            columnBSelect.innerHTML += option;
-                        }
-                    });
+                        batches.forEach(batch => {
+                            if (batch.status === 'intake') {
+                                // Skip batches with 0 socks remaining
+                                if (batch.socks_total != null && batch.socks_remaining === 0) return;
+                                const socksRemaining = batch.socks_remaining ?? batch.socks_total ?? '?';
+                                const socksTotal = batch.socks_total ?? '?';
+                                const sockDisplay = `(${socksRemaining}/${socksTotal} socks)`;
+                                const option = `<option value="${batch.id}">${batch.id} - ${batch.strain} ${sockDisplay}</option>`;
+                                columnSelect.innerHTML += option;
+                                columnBSelect.innerHTML += option;
+                            }
+                        });
 
-                    // Set current values
-                    columnSelect.value = machineStatus.column_batch || '';
-                    columnBSelect.value = machineStatus.column_b_batch || '';
+                        // Set current values
+                        columnSelect.value = machineStatus.column_batch || '';
+                        columnBSelect.value = machineStatus.column_b_batch || '';
+                    }
 
                     // Set pot batch (hidden input and display)
                     const potBatchId = machineStatus.pot_batch || '';
@@ -8858,26 +9131,56 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     document.getElementById('machineFilterSilica').value = machineStatus.filter_silica || '';
                     document.getElementById('machineFilterRuns').value = machineStatus.filter_runs || '';
 
-                    // Set sock counts
-                    document.getElementById('machineColumnASocks').value = machineStatus.column_a_socks || 0;
-                    document.getElementById('machineColumnBSocks').value = machineStatus.column_b_socks || 0;
+                    // Set sock counts (for BHO machines only)
+                    const colASocks = document.getElementById('machineColumnASocks');
+                    const colBSocks = document.getElementById('machineColumnBSocks');
+                    if (colASocks) colASocks.value = machineStatus.column_a_socks || 0;
+                    if (colBSocks) colBSocks.value = machineStatus.column_b_socks || 0;
 
-                    // Handle secondary sock selectors visibility
-                    document.getElementById('columnASecondSock').style.display = 'none';
-                    document.getElementById('columnBSecondSock').style.display = 'none';
-                    document.getElementById('machineColumnASecondBatch').value = machineStatus.column_a_second_batch || '';
-                    document.getElementById('machineColumnBSecondBatch').value = machineStatus.column_b_second_batch || '';
+                    // Handle secondary sock selectors visibility (for BHO machines only)
+                    const colASecondSock = document.getElementById('columnASecondSock');
+                    const colBSecondSock = document.getElementById('columnBSecondSock');
+                    const colASecondBatch = document.getElementById('machineColumnASecondBatch');
+                    const colBSecondBatch = document.getElementById('machineColumnBSecondBatch');
+                    if (colASecondSock) colASecondSock.style.display = 'none';
+                    if (colBSecondSock) colBSecondSock.style.display = 'none';
+                    if (colASecondBatch) colASecondBatch.value = machineStatus.column_a_second_batch || '';
+                    if (colBSecondBatch) colBSecondBatch.value = machineStatus.column_b_second_batch || '';
 
-                    // Trigger UI update for each column if batch is set
-                    if (machineStatus.column_batch) {
+                    // Trigger UI update for each column if batch is set (BHO only)
+                    if (machineStatus.column_batch && colASocks) {
                         setTimeout(() => updateColumnSockUI('A'), 100);
                     }
-                    if (machineStatus.column_b_batch) {
+                    if (machineStatus.column_b_batch && colBSocks) {
                         setTimeout(() => updateColumnSockUI('B'), 100);
                     }
 
                     // Display pot ledger
                     displayPotLedger(machineStatus);
+
+                    // Populate resinator batch dropdown - only show pre-sift batches
+                    const resinatorBatchSelect = document.getElementById('resinatorBatch');
+                    if (resinatorBatchSelect) {
+                        resinatorBatchSelect.innerHTML = '<option value="">Select Batch...</option>';
+                        batches.forEach(batch => {
+                            // Only show intake batches with pre_sift: yes and remaining trim
+                            if (batch.status === 'intake' && batch.pre_sift === 'yes' && (batch.trim_weight || 0) > 0) {
+                                const option = `<option value="${batch.id}">${batch.id} - ${batch.strain} (${batch.trim_weight || 0}g)</option>`;
+                                resinatorBatchSelect.innerHTML += option;
+                            }
+                        });
+
+                        // Restore saved batch selection
+                        if (machineStatus.current_batch) {
+                            resinatorBatchSelect.value = machineStatus.current_batch;
+                        }
+
+                        // Update batch info display and totals
+                        setTimeout(() => {
+                            updateResinatorBatchInfo();
+                            updateResinatorTotals();
+                        }, 100);
+                    }
 
                     document.getElementById('machineModal').style.display = 'block';
                 });
@@ -8908,18 +9211,423 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             potLedgerDisplay.style.display = 'block';
         }
 
+        function displaySiftTotals(machineStatus) {
+            const display = document.getElementById('siftTotalsDisplay');
+            const content = document.getElementById('siftTotalsContent');
+            if (!display || !content) return;
+
+            const siftLedger = machineStatus?.sift_ledger || [];
+            if (siftLedger.length === 0) {
+                display.style.display = 'none';
+                return;
+            }
+
+            let totalInput = 0;
+            let totalOutput = 0;
+            let html = '';
+
+            siftLedger.forEach(entry => {
+                totalInput += entry.input_weight || 0;
+                totalOutput += entry.output_weight || 0;
+                const yieldPct = entry.input_weight > 0 ? ((entry.output_weight / entry.input_weight) * 100).toFixed(1) : 0;
+                html += `<div style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                    <strong>${entry.batch_id}</strong> - Sift ${entry.sift_number}: ${entry.input_weight}g → ${entry.output_weight}g hash (${yieldPct}% yield)
+                </div>`;
+            });
+
+            const totalYield = totalInput > 0 ? ((totalOutput / totalInput) * 100).toFixed(1) : 0;
+            html += `<div style="padding: 12px 0; font-weight: 700; color: var(--accent-green);">
+                Total: ${totalInput.toFixed(1)}g input → ${totalOutput.toFixed(1)}g hash (${totalYield}% yield)
+            </div>`;
+
+            content.innerHTML = html;
+            display.style.display = 'block';
+        }
+
+        function updateResinatorBatchInfo() {
+            const batchSelect = document.getElementById('resinatorBatch');
+            const remainingDisplay = document.getElementById('batchRemainingDisplay');
+            const remainingWeight = document.getElementById('batchRemainingWeight');
+            const trimForSocks = document.getElementById('batchTrimForSocks');
+
+            if (!batchSelect) return;
+
+            const batchId = batchSelect.value;
+            if (!batchId) {
+                if (remainingDisplay) remainingDisplay.style.display = 'none';
+                return;
+            }
+
+            const batch = batches.find(b => b.id === batchId);
+            if (batch && remainingDisplay && remainingWeight) {
+                // Calculate remaining to run = original trim minus total input processed
+                const status = window.currentMachineStatus || {};
+                let siftLedger = status.sift_ledger || [];
+                if (typeof siftLedger === 'string') {
+                    try { siftLedger = JSON.parse(siftLedger); } catch(e) { siftLedger = []; }
+                }
+
+                // Sum up input weights for this batch from the ledger
+                const totalInputProcessed = siftLedger
+                    .filter(r => r.batch_id === batchId)
+                    .reduce((sum, r) => sum + (r.input_weight || 0), 0);
+
+                // Original trim = current trim_weight + total sift collected (since sift reduces trim_weight)
+                const totalSiftCollected = siftLedger
+                    .filter(r => r.batch_id === batchId)
+                    .reduce((sum, r) => sum + (r.first_sift || 0) + (r.second_sift || 0), 0);
+
+                const originalTrim = (batch.trim_weight || 0) + totalSiftCollected;
+                const remainingToRun = Math.max(0, originalTrim - totalInputProcessed);
+                const trimForSocksWeight = batch.trim_weight || 0;
+
+                remainingWeight.textContent = `${remainingToRun.toFixed(0)}g`;
+                if (trimForSocks) trimForSocks.textContent = `${trimForSocksWeight.toFixed(0)}g`;
+                remainingDisplay.style.display = 'block';
+
+                // Store current batch in status
+                window.currentMachineStatus = window.currentMachineStatus || {};
+                window.currentMachineStatus.current_batch = batchId;
+            }
+        }
+
+        function completeBarrelRun() {
+            const batchSelect = document.getElementById('resinatorBatch');
+            const inputWeightEl = document.getElementById('resinatorInputWeight');
+            const sift1OutputEl = document.getElementById('resinatorSift1Output');
+            const sift2OutputEl = document.getElementById('resinatorSift2Output');
+
+            if (!batchSelect || !inputWeightEl) {
+                alert('Error: Form elements not found');
+                return;
+            }
+
+            const batchId = batchSelect.value;
+            const inputWeight = parseFloat(inputWeightEl.value) || 0;
+            const sift1Output = parseFloat(sift1OutputEl?.value) || 0;
+            const sift2Output = parseFloat(sift2OutputEl?.value) || 0;
+
+            if (!batchId) {
+                alert('Please select a batch to process');
+                return;
+            }
+            if (inputWeight <= 0) {
+                alert('Please enter the material weight loaded in the barrel');
+                return;
+            }
+            if (sift1Output <= 0 && sift2Output <= 0) {
+                alert('Please enter at least one sift yield');
+                return;
+            }
+
+            const batch = batches.find(b => b.id === batchId);
+            const totalOutput = sift1Output + sift2Output;
+            const yieldPct = ((totalOutput / inputWeight) * 100).toFixed(1);
+
+            let confirmMsg = `Complete Barrel Run?\n\nBatch: ${batchId} - ${batch?.strain || 'Unknown'}\nInput: ${inputWeight}g\n`;
+            if (sift1Output > 0) confirmMsg += `1st Sift: ${sift1Output}g\n`;
+            if (sift2Output > 0) confirmMsg += `2nd Sift: ${sift2Output}g\n`;
+            confirmMsg += `Total Yield: ${totalOutput}g (${yieldPct}%)`;
+
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            // Get current sift ledger
+            const currentStatus = window.currentMachineStatus || {};
+            let siftLedger = currentStatus.sift_ledger || [];
+            if (typeof siftLedger === 'string') {
+                try { siftLedger = JSON.parse(siftLedger); } catch(e) { siftLedger = []; }
+            }
+
+            // Add run to ledger
+            siftLedger.push({
+                batch_id: batchId,
+                strain: batch?.strain || '',
+                input_weight: inputWeight,
+                first_sift: sift1Output,
+                second_sift: sift2Output,
+                timestamp: new Date().toISOString()
+            });
+
+            // Update machine status
+            window.currentMachineStatus = window.currentMachineStatus || {};
+            window.currentMachineStatus.current_batch = batchId;
+            window.currentMachineStatus.sift_ledger = siftLedger;
+
+            // Update batch - subtract sift output from trim_weight (hash comes from the trim)
+            const newTrimWeight = Math.max(0, (batch?.trim_weight || 0) - totalOutput);
+            const newSiftWeight = (batch?.sift_weight || 0) + totalOutput;
+
+            const batchUpdatePromise = DEMO_MODE
+                ? demoUpdateBatch(batchId, { trim_weight: newTrimWeight, sift_weight: newSiftWeight })
+                : supabaseClient.from('wm_batches').update({ trim_weight: newTrimWeight, sift_weight: newSiftWeight }).eq('id', batchId);
+
+            batchUpdatePromise.then(() => {
+                if (batch) {
+                    batch.trim_weight = newTrimWeight;
+                    batch.sift_weight = newSiftWeight;
+                }
+            });
+
+            // Auto-save machine status
+            const statusData = {
+                machine: currentMachine,
+                current_batch: batchId,
+                sift_ledger: siftLedger,
+                last_updated: new Date().toISOString(),
+                updated_by: currentRole ? currentRole.name : 'Unknown'
+            };
+
+            const savePromise = DEMO_MODE
+                ? demoSaveMachineStatus(currentMachine, { ...window.currentMachineStatus, ...statusData })
+                : supabaseClient.from('wm_machine_status').upsert(statusData, { onConflict: 'machine' });
+
+            savePromise.then(({ error }) => {
+                if (error) {
+                    console.error('Error saving run:', error);
+                    alert('Error saving run data');
+                    return;
+                }
+
+                // Clear input fields for next run
+                if (inputWeightEl) inputWeightEl.value = '';
+                if (sift1OutputEl) sift1OutputEl.value = '';
+                if (sift2OutputEl) sift2OutputEl.value = '';
+
+                // Update displays
+                updateResinatorTotals(siftLedger);
+                updateResinatorBatchInfo();
+
+                // Calculate remaining to run through resinator
+                let updatedLedger = window.currentMachineStatus?.sift_ledger || [];
+                const totalInputProcessed = updatedLedger
+                    .filter(r => r.batch_id === batchId)
+                    .reduce((sum, r) => sum + (r.input_weight || 0), 0);
+                const totalSiftCollected = updatedLedger
+                    .filter(r => r.batch_id === batchId)
+                    .reduce((sum, r) => sum + (r.first_sift || 0) + (r.second_sift || 0), 0);
+                const originalTrim = newTrimWeight + totalSiftCollected;
+                const remainingToRun = Math.max(0, originalTrim - totalInputProcessed);
+
+                alert(`✅ Barrel run complete!\n\n${totalOutput}g hash collected (${yieldPct}% yield)\n\nRemaining to run: ${remainingToRun.toFixed(0)}g\nTrim for socks: ${newTrimWeight.toFixed(0)}g`);
+            });
+        }
+
+        function updateResinatorTotals(siftLedger) {
+            if (!siftLedger) {
+                const status = window.currentMachineStatus || {};
+                siftLedger = status.sift_ledger || [];
+                if (typeof siftLedger === 'string') {
+                    try { siftLedger = JSON.parse(siftLedger); } catch(e) { siftLedger = []; }
+                }
+            }
+
+            const totalFirstSift = siftLedger.reduce((sum, r) => sum + (r.first_sift || 0), 0);
+            const totalSecondSift = siftLedger.reduce((sum, r) => sum + (r.second_sift || 0), 0);
+            const totalProcessed = siftLedger.reduce((sum, r) => sum + (r.input_weight || 0), 0);
+            const totalRuns = siftLedger.length;
+
+            // Update display elements
+            const el1 = document.getElementById('totalFirstSift');
+            const el2 = document.getElementById('totalSecondSift');
+            const elProcessed = document.getElementById('totalProcessed');
+            const elRuns = document.getElementById('totalRuns');
+
+            if (el1) el1.textContent = `${totalFirstSift.toFixed(1)}g`;
+            if (el2) el2.textContent = `${totalSecondSift.toFixed(1)}g`;
+            if (elProcessed) elProcessed.textContent = `${totalProcessed.toFixed(0)}g`;
+            if (elRuns) elRuns.textContent = totalRuns;
+
+            // Update run history
+            const historySection = document.getElementById('runHistorySection');
+            const historyContent = document.getElementById('runHistoryContent');
+            if (historySection && historyContent && siftLedger.length > 0) {
+                historySection.style.display = 'block';
+                let html = '';
+                siftLedger.forEach((run, i) => {
+                    const yields = [];
+                    if (run.first_sift > 0) yields.push(`1st: ${run.first_sift}g`);
+                    if (run.second_sift > 0) yields.push(`2nd: ${run.second_sift}g`);
+                    html += `<div style="padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem;">
+                        <strong>Run ${i + 1}</strong> - ${run.batch_id}: ${run.input_weight}g → ${yields.join(', ')}
+                    </div>`;
+                });
+                historyContent.innerHTML = html;
+            }
+        }
+
+        function completeResinatorBatch() {
+            const batchSelect = document.getElementById('resinatorBatch');
+            const batchId = batchSelect?.value;
+
+            if (!batchId) {
+                alert('No batch selected.');
+                return;
+            }
+
+            // Get session totals for this batch
+            const status = window.currentMachineStatus || {};
+            let siftLedger = status.sift_ledger || [];
+            if (typeof siftLedger === 'string') {
+                try { siftLedger = JSON.parse(siftLedger); } catch(e) { siftLedger = []; }
+            }
+
+            const batchRuns = siftLedger.filter(r => r.batch_id === batchId);
+            if (batchRuns.length === 0) {
+                alert('No runs recorded for this batch. Complete at least one barrel run first.');
+                return;
+            }
+
+            const totalFirstSift = batchRuns.reduce((sum, r) => sum + (r.first_sift || 0), 0);
+            const totalSecondSift = batchRuns.reduce((sum, r) => sum + (r.second_sift || 0), 0);
+            const totalProcessed = batchRuns.reduce((sum, r) => sum + (r.input_weight || 0), 0);
+            const batch = batches.find(b => b.id === batchId);
+
+            const summary = `Complete batch ${batchId}?\n\n` +
+                `Strain: ${batch?.strain || 'Unknown'}\n` +
+                `Barrel Runs: ${batchRuns.length}\n` +
+                `Material Processed: ${totalProcessed.toFixed(0)}g\n` +
+                `1st Sift Total: ${totalFirstSift.toFixed(1)}g\n` +
+                `2nd Sift Total: ${totalSecondSift.toFixed(1)}g\n` +
+                `Total Hash: ${(totalFirstSift + totalSecondSift).toFixed(1)}g\n\n` +
+                `Trim for Socks: ${batch?.trim_weight?.toFixed(0) || 0}g`;
+
+            if (!confirm(summary)) {
+                return;
+            }
+
+            // Create sub-batches for sift output
+            const subBatchesCreated = [];
+            const now = new Date().toISOString();
+
+            // A-Sift sub-batch (1st sift / higher quality)
+            if (totalFirstSift > 0) {
+                const aSiftBatch = {
+                    id: `${batchId}-A-Sift`,
+                    strain: batch?.strain || 'Unknown',
+                    partner: batch?.partner || 'Unknown',
+                    status: 'sift_complete',
+                    material_type: 'Dry Sift',
+                    sift_weight: totalFirstSift,
+                    trim_weight: 0,
+                    socks_total: 0,
+                    socks_remaining: 0,
+                    parent_batch: batchId,
+                    sift_grade: 'A',
+                    metrc_source_tag: batch?.metrc_source_tag || '',
+                    pre_sift: 'no',
+                    created_at: now,
+                    notes: `A-grade sift from ${batchRuns.length} barrel run(s)`
+                };
+                subBatchesCreated.push(aSiftBatch);
+            }
+
+            // B-Sift sub-batch (2nd sift / higher yield)
+            if (totalSecondSift > 0) {
+                const bSiftBatch = {
+                    id: `${batchId}-B-Sift`,
+                    strain: batch?.strain || 'Unknown',
+                    partner: batch?.partner || 'Unknown',
+                    status: 'sift_complete',
+                    material_type: 'Dry Sift',
+                    sift_weight: totalSecondSift,
+                    trim_weight: 0,
+                    socks_total: 0,
+                    socks_remaining: 0,
+                    parent_batch: batchId,
+                    sift_grade: 'B',
+                    metrc_source_tag: batch?.metrc_source_tag || '',
+                    pre_sift: 'no',
+                    created_at: now,
+                    notes: `B-grade sift from ${batchRuns.length} barrel run(s)`
+                };
+                subBatchesCreated.push(bSiftBatch);
+            }
+
+            // Save sub-batches
+            const createSubBatches = async () => {
+                if (DEMO_MODE) {
+                    // Add to local batches array for demo mode
+                    subBatchesCreated.forEach(sb => batches.push(sb));
+                    return { error: null };
+                } else {
+                    // Insert into Supabase
+                    const { error } = await supabaseClient.from('wm_batches').insert(subBatchesCreated);
+                    if (!error) {
+                        // Also add to local batches array
+                        subBatchesCreated.forEach(sb => batches.push(sb));
+                    }
+                    return { error };
+                }
+            };
+
+            createSubBatches().then(({ error }) => {
+                if (error) {
+                    console.error('Error creating sub-batches:', error);
+                    alert('Warning: Sub-batches could not be saved to database. Check console for details.');
+                }
+
+                // Clear session data but keep ledger history for records
+                window.currentMachineStatus = window.currentMachineStatus || {};
+                window.currentMachineStatus.sift_ledger = [];
+                window.currentMachineStatus.current_batch = null;
+
+                // Clear form
+                const inputWeightEl = document.getElementById('resinatorInputWeight');
+                const sift1OutputEl = document.getElementById('resinatorSift1Output');
+                const sift2OutputEl = document.getElementById('resinatorSift2Output');
+                const historySection = document.getElementById('runHistorySection');
+                const remainingDisplay = document.getElementById('batchRemainingDisplay');
+
+                if (batchSelect) batchSelect.value = '';
+                if (inputWeightEl) inputWeightEl.value = '';
+                if (sift1OutputEl) sift1OutputEl.value = '';
+                if (sift2OutputEl) sift2OutputEl.value = '';
+                if (historySection) historySection.style.display = 'none';
+                if (remainingDisplay) remainingDisplay.style.display = 'none';
+
+                // Reset totals display
+                updateResinatorTotals([]);
+
+                // Save cleared machine state
+                const clearedStatus = {
+                    machine: currentMachine,
+                    current_batch: null,
+                    sift_ledger: [],
+                    last_updated: new Date().toISOString(),
+                    updated_by: currentRole ? currentRole.name : 'Unknown'
+                };
+
+                const savePromise = DEMO_MODE
+                    ? demoSaveMachineStatus(currentMachine, clearedStatus)
+                    : supabaseClient.from('wm_machine_status').upsert(clearedStatus, { onConflict: 'machine' });
+
+                savePromise.then(() => {
+                    const subBatchList = subBatchesCreated.map(sb => `  • ${sb.id}: ${sb.sift_weight.toFixed(1)}g`).join('\n');
+                    alert(`✅ Batch ${batchId} complete!\n\nSub-batches created:\n${subBatchList}\n\nReady for next batch.`);
+
+                    // Refresh the extraction queue to show new sub-batches
+                    populateExtractionQueue();
+                });
+            });
+        }
+
         function updateColumnSockUI(column) {
             const batchSelect = column === 'A' ? document.getElementById('machineColumnBatch') : document.getElementById('machineColumnBBatch');
             const socksSelect = column === 'A' ? document.getElementById('machineColumnASocks') : document.getElementById('machineColumnBSocks');
             const secondSockDiv = document.getElementById(`column${column}SecondSock`);
             const secondBatchSelect = document.getElementById(`machineColumn${column}SecondBatch`);
 
+            // Null safety check
+            if (!batchSelect || !socksSelect) return;
+
             const batchId = batchSelect.value;
             const sockCount = parseInt(socksSelect.value) || 0;
 
             if (!batchId) {
                 socksSelect.value = '0';
-                secondSockDiv.style.display = 'none';
+                if (secondSockDiv) secondSockDiv.style.display = 'none';
                 return;
             }
 
@@ -8935,12 +9643,12 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             const actualSockCount = parseInt(socksSelect.value) || 0;
 
             // Show second sock selector when exactly 1 sock is selected
-            if (actualSockCount === 1 && batch) {
+            if (actualSockCount === 1 && batch && secondSockDiv && secondBatchSelect) {
                 secondSockDiv.style.display = 'block';
                 populateCompatibleBatches(secondBatchSelect, batch, batchId);
             } else {
-                secondSockDiv.style.display = 'none';
-                secondBatchSelect.value = '';
+                if (secondSockDiv) secondSockDiv.style.display = 'none';
+                if (secondBatchSelect) secondBatchSelect.value = '';
             }
         }
 
@@ -8982,18 +9690,29 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
         }
 
         function runColumnToPot(column) {
-            // Get socks from the specified column only
+            // Get socks from the specified column only (with null safety)
             let columnBatch, columnSocks, columnSecondBatch;
+            let batchEl, socksEl, secondBatchEl;
 
             if (column === 'A') {
-                columnBatch = document.getElementById('machineColumnBatch').value;
-                columnSocks = parseInt(document.getElementById('machineColumnASocks').value) || 0;
-                columnSecondBatch = document.getElementById('machineColumnASecondBatch').value;
+                batchEl = document.getElementById('machineColumnBatch');
+                socksEl = document.getElementById('machineColumnASocks');
+                secondBatchEl = document.getElementById('machineColumnASecondBatch');
             } else {
-                columnBatch = document.getElementById('machineColumnBBatch').value;
-                columnSocks = parseInt(document.getElementById('machineColumnBSocks').value) || 0;
-                columnSecondBatch = document.getElementById('machineColumnBSecondBatch').value;
+                batchEl = document.getElementById('machineColumnBBatch');
+                socksEl = document.getElementById('machineColumnBSocks');
+                secondBatchEl = document.getElementById('machineColumnBSecondBatch');
             }
+
+            // If elements don't exist, can't proceed
+            if (!batchEl || !socksEl) {
+                alert(`Error: Column ${column} form elements not found. Please refresh the page.`);
+                return;
+            }
+
+            columnBatch = batchEl.value;
+            columnSocks = parseInt(socksEl.value) || 0;
+            columnSecondBatch = secondBatchEl ? secondBatchEl.value : '';
 
             // Build list of contributions for this column
             let contributions = [];
@@ -9092,17 +9811,19 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             // Update pot ledger display
             displayPotLedger({ pot_ledger: potLedger });
 
-            // Clear only the column that was run
+            // Clear only the column that was run (with null safety)
             if (column === 'A') {
-                document.getElementById('machineColumnBatch').value = '';
-                document.getElementById('machineColumnASocks').value = '0';
-                document.getElementById('machineColumnASecondBatch').value = '';
-                document.getElementById('columnASecondSock').style.display = 'none';
+                if (batchEl) batchEl.value = '';
+                if (socksEl) socksEl.value = '0';
+                if (secondBatchEl) secondBatchEl.value = '';
+                const secondSockDiv = document.getElementById('columnASecondSock');
+                if (secondSockDiv) secondSockDiv.style.display = 'none';
             } else {
-                document.getElementById('machineColumnBBatch').value = '';
-                document.getElementById('machineColumnBSocks').value = '0';
-                document.getElementById('machineColumnBSecondBatch').value = '';
-                document.getElementById('columnBSecondSock').style.display = 'none';
+                if (batchEl) batchEl.value = '';
+                if (socksEl) socksEl.value = '0';
+                if (secondBatchEl) secondBatchEl.value = '';
+                const secondSockDiv = document.getElementById('columnBSecondSock');
+                if (secondSockDiv) secondSockDiv.style.display = 'none';
             }
 
             // Decrement socks from batches in database
@@ -9148,6 +9869,19 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             console.log('Logged extraction run:', extractionRun);
 
             Promise.all(decrementPromises).then(() => {
+                // Auto-save pot status to database (so it persists if modal is closed)
+                const potRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
+                return supabaseClient
+                    .from('wm_machine_status')
+                    .upsert({
+                        machine: currentMachine,
+                        pot_batch: majorityBatchId,
+                        pot_runs: potRuns,
+                        pot_ledger: potLedger,
+                        last_updated: new Date().toISOString(),
+                        updated_by: currentRole ? currentRole.name : 'Unknown'
+                    }, { onConflict: 'machine' });
+            }).then(() => {
                 // Refresh extraction queue and column dropdowns
                 populateExtractionQueue();
                 refreshColumnDropdowns();
@@ -9160,8 +9894,8 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     alert(`✅ Column ${column} run added to pot!\n⚠️ Auto-save failed - click "Save Status" manually.`);
                 });
             }).catch(err => {
-                console.error('Error updating sock counts:', err);
-                alert('⚠️ Run added to pot but error updating sock counts. Check console.');
+                console.error('Error updating machine status:', err);
+                alert('⚠️ Run added to pot but error saving. Check console.');
             });
         }
 
@@ -9256,12 +9990,20 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
         function saveMachineStatus() {
             if (!currentMachine) return;
 
-            const columnBatch = document.getElementById('machineColumnBatch').value;
-            const columnBBatch = document.getElementById('machineColumnBBatch').value;
-            const columnASocks = parseInt(document.getElementById('machineColumnASocks').value) || 0;
-            const columnBSocks = parseInt(document.getElementById('machineColumnBSocks').value) || 0;
-            const columnASecondBatch = document.getElementById('machineColumnASecondBatch').value;
-            const columnBSecondBatch = document.getElementById('machineColumnBSecondBatch').value;
+            // Get element values with null safety (for BHO-specific fields)
+            const colBatchEl = document.getElementById('machineColumnBatch');
+            const colBBatchEl = document.getElementById('machineColumnBBatch');
+            const colASocksEl = document.getElementById('machineColumnASocks');
+            const colBSocksEl = document.getElementById('machineColumnBSocks');
+            const colASecondEl = document.getElementById('machineColumnASecondBatch');
+            const colBSecondEl = document.getElementById('machineColumnBSecondBatch');
+
+            const columnBatch = colBatchEl ? colBatchEl.value : '';
+            const columnBBatch = colBBatchEl ? colBBatchEl.value : '';
+            const columnASocks = colASocksEl ? (parseInt(colASocksEl.value) || 0) : 0;
+            const columnBSocks = colBSocksEl ? (parseInt(colBSocksEl.value) || 0) : 0;
+            const columnASecondBatch = colASecondEl ? colASecondEl.value : '';
+            const columnBSecondBatch = colBSecondEl ? colBSecondEl.value : '';
             const potBatch = document.getElementById('machinePotBatch').value;
             const potRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
             const filterClay = parseFloat(document.getElementById('machineFilterClay').value) || 0;
@@ -9304,7 +10046,13 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     updateMachineDisplays();
                     closeMachineModal();
 
-                    alert(`✅ ${currentMachine === 'left' ? 'Left' : 'Right'} Machine Status Saved!`);
+                    // Find machine name from config for the alert
+                    const machineInfo = CONFIG.machines.find(m => {
+                        const key = m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        return key === currentMachine;
+                    });
+                    const machineName = machineInfo?.name || (currentMachine === 'left' ? 'Left' : currentMachine === 'right' ? 'Right' : currentMachine);
+                    alert(`✅ ${machineName} Status Saved!`);
                 });
         }
         
@@ -9329,6 +10077,13 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 filter_clay: 0,
                 filter_silica: 0,
                 filter_runs: 0,
+                sift_ledger: [],
+                barrel_batch: null,
+                barrel_input_weight: 0,
+                sift1_output: 0,
+                sift1_complete: false,
+                sift2_output: 0,
+                sift2_complete: false,
                 last_updated: new Date().toISOString(),
                 updated_by: currentRole ? currentRole.name : 'Unknown'
             };
@@ -9342,25 +10097,61 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                         return;
                     }
 
-                    // Clear form
-                    document.getElementById('machineColumnBatch').value = '';
-                    document.getElementById('machineColumnBBatch').value = '';
-                    document.getElementById('machineColumnASocks').value = '0';
-                    document.getElementById('machineColumnBSocks').value = '0';
-                    document.getElementById('machineColumnASecondBatch').value = '';
-                    document.getElementById('machineColumnBSecondBatch').value = '';
-                    document.getElementById('columnASecondSock').style.display = 'none';
-                    document.getElementById('columnBSecondSock').style.display = 'none';
-                    document.getElementById('machinePotBatch').value = '';
-                    document.getElementById('machinePotBatchDisplay').value = '';
-                    document.getElementById('machinePotRuns').value = '';
-                    document.getElementById('machineFilterClay').value = '';
-                    document.getElementById('machineFilterSilica').value = '';
-                    document.getElementById('machineFilterRuns').value = '';
-                    
+                    // Clear form (with null safety for different machine types)
+                    const clearEl = (id, val = '') => {
+                        const el = document.getElementById(id);
+                        if (el) el.value = val;
+                    };
+                    const hideEl = (id) => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    };
+
+                    // BHO elements
+                    clearEl('machineColumnBatch');
+                    clearEl('machineColumnBBatch');
+                    clearEl('machineColumnASocks', '0');
+                    clearEl('machineColumnBSocks', '0');
+                    clearEl('machineColumnASecondBatch');
+                    clearEl('machineColumnBSecondBatch');
+                    hideEl('columnASecondSock');
+                    hideEl('columnBSecondSock');
+                    clearEl('machinePotBatch');
+                    clearEl('machinePotBatchDisplay');
+                    clearEl('machinePotRuns');
+                    clearEl('machineFilterClay');
+                    clearEl('machineFilterSilica');
+                    clearEl('machineFilterRuns');
+
+                    // Resinator elements
+                    clearEl('resinatorBatch');
+                    clearEl('resinatorInputWeight');
+                    clearEl('resinatorSift1Output');
+                    clearEl('resinatorSift2Output');
+                    hideEl('siftTotalsDisplay');
+                    hideEl('siftRun2Section');
+                    // Reset sift status displays
+                    const sift1Status = document.getElementById('sift1Status');
+                    const sift2Status = document.getElementById('sift2Status');
+                    const sift1Btn = document.getElementById('sift1Btn');
+                    const sift2Btn = document.getElementById('sift2Btn');
+                    if (sift1Status) sift1Status.style.display = 'none';
+                    if (sift2Status) sift2Status.style.display = 'none';
+                    if (sift1Btn) sift1Btn.style.display = 'block';
+                    if (sift2Btn) sift2Btn.style.display = 'block';
+
+                    // Clear pot ledger display
+                    hideEl('potLedgerDisplay');
+
                     updateMachineDisplays();
-                    
-                    alert(`✅ ${currentMachine === 'left' ? 'Left' : 'Right'} Machine Cleared!`);
+
+                    // Get machine name for alert
+                    const machineInfo = CONFIG.machines.find(m => {
+                        const key = m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        return key === currentMachine;
+                    });
+                    const machineName = machineInfo?.name || currentMachine;
+                    alert(`✅ ${machineName} Cleared!`);
                 });
         }
         
@@ -9373,25 +10164,16 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                         console.error('Error loading machine statuses:', error);
                         return;
                     }
-                    
-                    ['left', 'right'].forEach(machine => {
-                        const machineStatus = machineStatuses.find(m => m.machine === machine) || {};
-                        
-                        // Get batch info for Column A
-                        let columnText = 'Empty';
-                        let columnBText = 'Empty';
+
+                    // Get machine keys from CONFIG (or use defaults)
+                    const machines = (CONFIG.machines.length > 0 ? CONFIG.machines : CONFIG_DEFAULTS.machines);
+                    const machineKeys = machines.map(m => m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, ''));
+
+                    machineKeys.forEach(machineKey => {
+                        const machineStatus = machineStatuses.find(m => m.machine === machineKey) || {};
+
+                        // Get pot text
                         let potText = 'Empty';
-                        
-                        if (machineStatus.column_batch) {
-                            const batch = batches.find(b => b.id == machineStatus.column_batch);
-                            columnText = batch ? `${batch.id}` : 'Unknown';
-                        }
-                        
-                        if (machineStatus.column_b_batch) {
-                            const batch = batches.find(b => b.id == machineStatus.column_b_batch);
-                            columnBText = batch ? `${batch.id}` : 'Unknown';
-                        }
-                        
                         if (machineStatus.pot_batch) {
                             const batch = batches.find(b => b.id == machineStatus.pot_batch);
                             if (batch) {
@@ -9400,10 +10182,13 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                                     potText += ` (${machineStatus.pot_runs} runs)`;
                                 }
                             } else {
-                                potText = 'Unknown';
+                                potText = machineStatus.pot_batch;
+                                if (machineStatus.pot_runs) {
+                                    potText += ` (${machineStatus.pot_runs} runs)`;
+                                }
                             }
                         }
-                        
+
                         // Filter status
                         let filterText = 'Not loaded';
                         if (machineStatus.filter_clay || machineStatus.filter_silica || machineStatus.filter_runs) {
@@ -9413,12 +10198,32 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                             if (machineStatus.filter_runs) parts.push(`${machineStatus.filter_runs} runs`);
                             filterText = parts.join(', ');
                         }
-                        
-                        // Update display
-                        document.getElementById(`${machine}ColumnBatch`).textContent = columnText;
-                        document.getElementById(`${machine}ColumnBBatch`).textContent = columnBText;
-                        document.getElementById(`${machine}PotBatch`).textContent = potText;
-                        document.getElementById(`${machine}FilterStatus`).textContent = filterText;
+
+                        // Update display elements (with null safety)
+                        const potEl = document.getElementById(`${machineKey}PotBatch`);
+                        const filterEl = document.getElementById(`${machineKey}FilterStatus`);
+                        if (potEl) potEl.textContent = potText;
+                        if (filterEl) filterEl.textContent = filterText;
+
+                        // Update resinator sift displays
+                        const sift1El = document.getElementById(`${machineKey}Sift1`);
+                        const sift2El = document.getElementById(`${machineKey}Sift2`);
+                        if (sift1El || sift2El) {
+                            // This is a resinator - show sift totals
+                            let siftLedger = machineStatus.sift_ledger || [];
+                            if (typeof siftLedger === 'string') {
+                                try { siftLedger = JSON.parse(siftLedger); } catch(e) { siftLedger = []; }
+                            }
+
+                            if (siftLedger.length > 0) {
+                                const totalOutput = siftLedger.reduce((sum, s) => sum + (s.output_weight || 0), 0);
+                                const siftCount = siftLedger.length;
+                                if (sift1El) sift1El.textContent = `${totalOutput.toFixed(1)}g (${siftCount} runs)`;
+                            } else {
+                                if (sift1El) sift1El.textContent = 'Empty';
+                            }
+                            if (sift2El && !machineStatus.sift_ledger) sift2El.textContent = 'Empty';
+                        }
                     });
                 });
         }
