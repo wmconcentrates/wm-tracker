@@ -3474,8 +3474,19 @@
                 <!-- Current Pot Info -->
                 <div id="pullBatchInfo" style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 25px; text-align: center;">
                     <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 5px;">Batch in Pot</div>
-                    <div id="pullBatchNumber" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 10px;">-</div>
-                    <div id="pullBatchRuns" style="font-size: 1.2rem; color: var(--text-primary);">0 runs collected</div>
+                    <div id="pullBatchNumber" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 5px;">-</div>
+                    <div id="pullBatchStrain" style="font-size: 1.3rem; font-weight: 600; color: var(--accent-purple); margin-bottom: 10px;">-</div>
+                    <div id="pullBatchRuns" style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 15px;">0 runs collected</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; padding-top: 15px; border-top: 1px solid var(--border);">
+                        <div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Trim in Pot</div>
+                            <div id="pullBatchTrimWeight" style="font-size: 1.4rem; font-weight: 700; color: var(--text-primary);">0g</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Projected Yield</div>
+                            <div id="pullBatchProjectedYield" style="font-size: 1.4rem; font-weight: 700; color: var(--accent-green);">0g</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <form id="pullBatchForm" onsubmit="event.preventDefault(); submitPullBatch();">
@@ -8627,6 +8638,20 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     const batch = batches.find(b => b.id == machineStatus.pot_batch);
                     if (batch) {
                         document.getElementById('pullBatchNumber').textContent = batch.id;
+                        document.getElementById('pullBatchStrain').textContent = batch.strain || 'Unknown Strain';
+
+                        // Calculate total trim weight from pot ledger
+                        let totalTrimWeight = 0;
+                        if (potLedger.length > 0) {
+                            totalTrimWeight = potLedger.reduce((sum, p) => sum + (p.trim_weight || 0), 0);
+                        }
+
+                        // Calculate projected yield based on material type
+                        const expectedYield = getExpectedYieldFromConfig(batch.material_type) / 100;
+                        const projectedYield = totalTrimWeight * expectedYield;
+
+                        document.getElementById('pullBatchTrimWeight').textContent = `${Math.round(totalTrimWeight)}g`;
+                        document.getElementById('pullBatchProjectedYield').textContent = `${projectedYield.toFixed(1)}g`;
 
                         // Show pot contents with source breakdown
                         let runsText = `${machineStatus.pot_runs || 0} runs collected`;
