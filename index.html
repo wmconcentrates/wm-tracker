@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>White Mousse Production Tracker - Cloud Sync</title>
 
@@ -1634,8 +1637,7 @@
                 <div class="header-logo">
                     <img src="https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w" alt="White Mousse">
                 </div>
-                <button id="demoModeBtn" onclick="toggleDemoMode()" style="position: absolute; top: 10px; right: 10px; padding: 8px 16px; background: var(--accent-purple); border: none; border-radius: 8px; color: white; font-size: 0.85rem; font-weight: 600; cursor: pointer;">🎮 Demo Mode</button>
-            </div>
+                            </div>
         </div>
         <!-- Demo Mode Indicator -->
         <div id="demoIndicator" style="display: none; background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue)); color: white; text-align: center; padding: 8px; font-weight: 700; font-size: 0.9rem;">
@@ -5125,7 +5127,7 @@
 
             // Render machine status buttons
             machineContainer.innerHTML = machines.map((machine, idx) => {
-                const machineKey = machine.position?.toLowerCase() || machine.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const machineKey = (machine.position?.toLowerCase() || machine.name.toLowerCase()).replace(/[^a-z0-9]/g, '');
                 const machineType = machine.machine_type || 'bho';
                 const config = machine.config || {};
 
@@ -8992,7 +8994,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
             // Find machine config
             const machineConfig = CONFIG.machines.find(m => {
-                const key = m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const key = (m.position?.toLowerCase() || m.name.toLowerCase()).replace(/[^a-z0-9]/g, '');
                 return key === machineKey;
             }) || CONFIG.machines[0] || CONFIG_DEFAULTS.machines[0];
 
@@ -9974,11 +9976,13 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
                 // Auto-save machine status (skip in demo mode - already saved above)
                 if (DEMO_MODE) {
+                    updateMachineDisplays(); // Refresh the machine cards
                     alert(`✅ Column ${column} run added to pot! (Demo Mode)`);
                     return;
                 }
 
                 autoSaveMachineStatus().then(() => {
+                    updateMachineDisplays(); // Refresh the machine cards
                     alert(`✅ Column ${column} run added to pot and saved!`);
                 }).catch(err => {
                     console.error('Error auto-saving machine status:', err);
@@ -10177,7 +10181,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
                     // Find machine name from config for the alert
                     const machineInfo = CONFIG.machines.find(m => {
-                        const key = m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const key = (m.position?.toLowerCase() || m.name.toLowerCase()).replace(/[^a-z0-9]/g, '');
                         return key === currentMachine;
                     });
                     const machineName = machineInfo?.name || (currentMachine === 'left' ? 'Left' : currentMachine === 'right' ? 'Right' : currentMachine);
@@ -10195,15 +10199,18 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 try { potLedger = JSON.parse(potLedger); } catch(e) { potLedger = []; }
             }
 
-            // Build confirmation message
-            let confirmMsg = `Are you sure you want to clear all status for the ${currentMachine} machine?\n\nThis will reset column, pot, and filter information.`;
-            if (potLedger.length > 0) {
-                confirmMsg += `\n\n⚠️ The following socks will be returned to their batches:`;
-                potLedger.forEach(entry => {
-                    const batch = batches.find(b => b.id === entry.batch_id);
-                    confirmMsg += `\n• ${entry.socks} sock(s) → ${entry.batch_id} (${batch?.strain || 'Unknown'})`;
-                });
+            // Check if there's anything in the pot to clear
+            if (potLedger.length === 0) {
+                alert('The pot is already empty.');
+                return;
             }
+
+            // Build confirmation message - only about pot contents
+            let confirmMsg = `Clear the pot and return socks to their batches?\n\n⚠️ The following socks will be returned:`;
+            potLedger.forEach(entry => {
+                const batch = batches.find(b => b.id === entry.batch_id);
+                confirmMsg += `\n• ${entry.socks} sock(s) → ${entry.batch_id} (${batch?.strain || 'Unknown'})`;
+            });
 
             if (!confirm(confirmMsg)) {
                 return;
@@ -10240,46 +10247,18 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     .eq('id', entry.batch_id);
             });
 
-            // Build empty status with all columns A-F cleared
-            const emptyStatus = {
+            // Only clear pot-related fields, preserve columns and filter
+            const potClearStatus = {
                 machine: currentMachine,
-                column_batch: null, // Legacy column A
-                column_a_socks: 0,
-                column_a_second_batch: null,
-                column_b_batch: null,
-                column_b_socks: 0,
-                column_b_second_batch: null,
-                column_c_batch: null,
-                column_c_socks: 0,
-                column_c_second_batch: null,
-                column_d_batch: null,
-                column_d_socks: 0,
-                column_d_second_batch: null,
-                column_e_batch: null,
-                column_e_socks: 0,
-                column_e_second_batch: null,
-                column_f_batch: null,
-                column_f_socks: 0,
-                column_f_second_batch: null,
                 pot_batch: null,
                 pot_runs: 0,
                 pot_ledger: [],
-                filter_clay: 0,
-                filter_silica: 0,
-                filter_runs: 0,
-                sift_ledger: [],
-                barrel_batch: null,
-                barrel_input_weight: 0,
-                sift1_output: 0,
-                sift1_complete: false,
-                sift2_output: 0,
-                sift2_complete: false,
                 last_updated: new Date().toISOString(),
                 updated_by: currentRole ? currentRole.name : 'Unknown'
             };
 
-            // Helper to clear form elements after save
-            const clearFormElements = () => {
+            // Helper to clear pot form elements only
+            const clearPotElements = () => {
                 const clearEl = (id, val = '') => {
                     const el = document.getElementById(id);
                     if (el) el.value = val;
@@ -10289,42 +10268,18 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     if (el) el.style.display = 'none';
                 };
 
-                // BHO elements - clear all columns A-F dynamically
-                ['A', 'B', 'C', 'D', 'E', 'F'].forEach(col => {
-                    clearEl('machineColumn' + col + 'Batch');
-                    clearEl('machineColumn' + col + 'Socks', '0');
-                    clearEl('machineColumn' + col + 'SecondBatch');
-                    hideEl('column' + col + 'SecondSock');
-                });
+                // Only clear pot-related elements
                 clearEl('machinePotBatch');
                 clearEl('machinePotBatchDisplay');
                 clearEl('machinePotRuns');
-                clearEl('machineFilterClay');
-                clearEl('machineFilterSilica');
-                clearEl('machineFilterRuns');
-
-                // Resinator elements
-                clearEl('resinatorBatch');
-                clearEl('resinatorInputWeight');
-                clearEl('resinatorSift1Output');
-                clearEl('resinatorSift2Output');
-                hideEl('siftTotalsDisplay');
-                hideEl('siftRun2Section');
-                // Reset sift status displays
-                const sift1Status = document.getElementById('sift1Status');
-                const sift2Status = document.getElementById('sift2Status');
-                const sift1Btn = document.getElementById('sift1Btn');
-                const sift2Btn = document.getElementById('sift2Btn');
-                if (sift1Status) sift1Status.style.display = 'none';
-                if (sift2Status) sift2Status.style.display = 'none';
-                if (sift1Btn) sift1Btn.style.display = 'block';
-                if (sift2Btn) sift2Btn.style.display = 'block';
-
-                // Clear pot ledger display
                 hideEl('potLedgerDisplay');
 
-                // Clear the cached machine status
-                window.currentMachineStatus = {};
+                // Update cached machine status - only clear pot fields
+                if (window.currentMachineStatus) {
+                    window.currentMachineStatus.pot_batch = null;
+                    window.currentMachineStatus.pot_runs = 0;
+                    window.currentMachineStatus.pot_ledger = [];
+                }
 
                 // Hide pull batch button since pot is now empty
                 const pullBatchBtn = document.getElementById('modalPullBatchBtn');
@@ -10337,35 +10292,40 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
                 // Get machine name for alert
                 const machineInfo = CONFIG.machines.find(m => {
-                    const key = m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const key = (m.position?.toLowerCase() || m.name.toLowerCase()).replace(/[^a-z0-9]/g, '');
                     return key === currentMachine;
                 });
                 const machineName = machineInfo?.name || currentMachine;
-                alert(`✅ ${machineName} Cleared!${DEMO_MODE ? ' (Demo Mode)' : ''}`);
+                alert(`✅ ${machineName} pot cleared! Socks returned to batches.${DEMO_MODE ? ' (Demo Mode)' : ''}`);
             };
 
-            // Wait for sock restoration, then clear machine status
+            // Wait for sock restoration, then clear pot status only
             Promise.all(restorePromises).then(() => {
-                // In demo mode, save to localStorage
+                // In demo mode, update localStorage (preserve other fields)
                 if (DEMO_MODE) {
-                    demoSaveMachineStatus(currentMachine, emptyStatus);
-                    clearFormElements();
-                    return;
+                    const existingStatus = demoGetMachineStatus(currentMachine) || {};
+                    demoSaveMachineStatus(currentMachine, { ...existingStatus, ...potClearStatus });
+                    clearPotElements();
+                    return Promise.resolve();
                 }
 
+                // Use update instead of upsert to only modify pot fields
                 return supabaseClient
                     .from('wm_machine_status')
-                    .upsert(emptyStatus, { onConflict: 'machine' });
-            }).then((result) => {
-                if (DEMO_MODE) return; // Already handled above
-                if (result?.error) {
-                    console.error('Error clearing machine status:', result.error);
-                    return;
-                }
-                clearFormElements();
+                    .update(potClearStatus)
+                    .eq('machine', currentMachine)
+                    .then((result) => {
+                        if (result?.error) {
+                            console.error('Error clearing pot in DB:', result.error);
+                            alert('Error clearing pot in database. Check console.');
+                            return;
+                        }
+                        console.log('Pot cleared in database, updating UI...');
+                        clearPotElements();
+                    });
             }).catch(err => {
                 console.error('Error during clear:', err);
-                alert('Error clearing machine status. Check console.');
+                alert('Error clearing pot. Check console.');
             });
         }
         
@@ -10381,10 +10341,16 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
                     // Get machine keys from CONFIG (or use defaults)
                     const machines = (CONFIG.machines.length > 0 ? CONFIG.machines : CONFIG_DEFAULTS.machines);
-                    const machineKeys = machines.map(m => m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                    const machineKeys = machines.map(m => (m.position?.toLowerCase() || m.name.toLowerCase()).replace(/[^a-z0-9]/g, ''));
 
                     machineKeys.forEach(machineKey => {
-                        const machineStatus = machineStatuses.find(m => m.machine === machineKey) || {};
+                        // In demo mode, use demo data from localStorage instead
+                        let machineStatus;
+                        if (DEMO_MODE) {
+                            machineStatus = demoGetMachineStatus(machineKey) || {};
+                        } else {
+                            machineStatus = machineStatuses.find(m => m.machine === machineKey) || {};
+                        }
 
                         // Update all columns A-F dynamically
                         const columnLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
