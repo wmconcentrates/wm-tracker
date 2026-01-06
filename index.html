@@ -6768,38 +6768,31 @@ ${growerName ? `^FO300,340^FD${growerName.substring(0, 30)}^FS` : ''}
 ^PW${width}
 ^LL${height}
 ^LS0
-~SD25
+~SD20
 
-^FO0,0^GB${width},${height},4^FS
+^CF0,35
+^FO20,20^FDINTAKE^FS
 
-^FO15,15^GB150,70,70^FS
-^CF0,40
-^FO30,35^FR^FD INTAKE ^FS
+^CF0,45
+^FO20,70^FD${(batch.strain || 'Unknown').toUpperCase().substring(0, 25)}^FS
 
-^CF0,40
-^FO15,100^FD${(batch.strain || 'Unknown').toUpperCase().substring(0, 28)}^FS
+^CF0,30
+^FO20,130^FDBatch: ${batch.id}^FS
+^FO400,130^FD${batch.strain_type || 'Hybrid'}^FS
 
-^CF0,28
-^FO15,150^FDBatch: ${batch.id}^FS
-^FO300,150^FDType: ${batch.strain_type || 'Hybrid'}^FS
+^CF0,50
+^FO20,180^FD${batch.trim_weight}g^FS
+^CF0,25
+^FO20,240^FDTRIM WEIGHT^FS
 
-^FO0,190^GB${width},3,3^FS
+^CF0,25
+^FO400,180^FDDate: ${date}^FS
+^FO400,220^FDGrower: ${batch.cultivation_license || 'N/A'}^FS
+^FO400,260^FD${agreement}^FS
 
-^CF0,55
-^FO15,210^FD${batch.trim_weight}g^FS
-^CF0,24
-^FO180,225^FDTRIM WEIGHT^FS
-
-^CF0,28
-^FO350,210^FDDate: ${date}^FS
-^FO350,245^FDProducts: ${plannedProducts.substring(0, 20)}^FS
-
-^FO0,285^GB${width},3,3^FS
-
-^CF0,24
-^FO15,300^FDGrower: ${batch.cultivation_license || 'N/A'}^FS
-${growerName ? `^FO300,300^FD${growerName.substring(0, 25)}^FS` : ''}
-^FO15,340^FDAgreement: ${agreement}^FS
+^CF0,22
+^FO20,300^FDProducts: ${plannedProducts.substring(0, 40)}^FS
+${growerName ? `^FO20,340^FD${growerName.substring(0, 40)}^FS` : ''}
 
 ^XZ`;
 
