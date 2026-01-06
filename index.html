@@ -5139,8 +5139,9 @@
                 let statusHtml = '';
                 if (machineType === 'bho') {
                     const cols = config.columns || 6;
-                    statusHtml = '<div>Columns: ' + cols + '</div>' +
+                    statusHtml = '<div style="margin-bottom: 8px;"><span id="' + machineKey + 'ColumnStatus" style="color: var(--accent-blue);">Columns empty</span></div>' +
                         '<div>Pot: <span id="' + machineKey + 'PotBatch">Empty</span></div>' +
+                        '<div style="font-size: 0.8rem; color: var(--accent-purple);" id="' + machineKey + 'PotStrain"></div>' +
                         '<div>Filter: <span id="' + machineKey + 'FilterStatus">Not loaded</span></div>';
                 } else if (machineType === 'rosin') {
                     statusHtml = '<div>Wash 1: <span id="' + machineKey + 'Wash1">Empty</span></div>';
@@ -10197,12 +10198,33 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     machineKeys.forEach(machineKey => {
                         const machineStatus = machineStatuses.find(m => m.machine === machineKey) || {};
 
-                        // Get pot text
+                        // Get column status - show strains loaded
+                        let columnStrains = [];
+                        if (machineStatus.column_batch) {
+                            const batchA = batches.find(b => b.id == machineStatus.column_batch);
+                            if (batchA) columnStrains.push(batchA.strain);
+                        }
+                        if (machineStatus.column_b_batch) {
+                            const batchB = batches.find(b => b.id == machineStatus.column_b_batch);
+                            if (batchB && !columnStrains.includes(batchB.strain)) columnStrains.push(batchB.strain);
+                        }
+                        const columnStatusEl = document.getElementById(`${machineKey}ColumnStatus`);
+                        if (columnStatusEl) {
+                            if (columnStrains.length > 0) {
+                                columnStatusEl.textContent = columnStrains.join(', ');
+                            } else {
+                                columnStatusEl.textContent = 'Columns empty';
+                            }
+                        }
+
+                        // Get pot text and strain
                         let potText = 'Empty';
+                        let potStrain = '';
                         if (machineStatus.pot_batch) {
                             const batch = batches.find(b => b.id == machineStatus.pot_batch);
                             if (batch) {
                                 potText = `${batch.id}`;
+                                potStrain = batch.strain || '';
                                 if (machineStatus.pot_runs) {
                                     potText += ` (${machineStatus.pot_runs} runs)`;
                                 }
@@ -10226,8 +10248,10 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
                         // Update display elements (with null safety)
                         const potEl = document.getElementById(`${machineKey}PotBatch`);
+                        const potStrainEl = document.getElementById(`${machineKey}PotStrain`);
                         const filterEl = document.getElementById(`${machineKey}FilterStatus`);
                         if (potEl) potEl.textContent = potText;
+                        if (potStrainEl) potStrainEl.textContent = potStrain;
                         if (filterEl) filterEl.textContent = filterText;
 
                         // Update resinator sift displays
