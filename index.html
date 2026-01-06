@@ -9899,7 +9899,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             const secondSockDiv = document.getElementById('column' + column + 'SecondSock');
             if (secondSockDiv) secondSockDiv.style.display = 'none';
 
-            // Decrement socks from batches in database
+            // Decrement socks from batches in database (skip in demo mode)
             const decrementPromises = Object.entries(socksToDecrement).map(([batchId, sockCount]) => {
                 const batch = batches.find(b => b.id === batchId);
                 if (!batch) return Promise.resolve();
@@ -9909,6 +9909,9 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
                 // Update local cache
                 batch.socks_remaining = newRemaining;
+
+                // In demo mode, just update local cache, don't touch database
+                if (DEMO_MODE) return Promise.resolve();
 
                 return supabaseClient
                     .from('wm_batches')
@@ -9944,6 +9947,16 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             Promise.all(decrementPromises).then(() => {
                 // Auto-save pot status to database (so it persists if modal is closed)
                 const potRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
+
+                // In demo mode, save to localStorage instead of database
+                if (DEMO_MODE) {
+                    const demoStatus = demoGetMachineStatus(currentMachine);
+                    demoStatus.pot_batch = majorityBatchId;
+                    demoStatus.pot_runs = potRuns;
+                    demoStatus.pot_ledger = potLedger;
+                    return demoSaveMachineStatus(currentMachine, demoStatus);
+                }
+
                 return supabaseClient
                     .from('wm_machine_status')
                     .upsert({
@@ -9959,7 +9972,12 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 populateExtractionQueue();
                 refreshColumnDropdowns();
 
-                // Auto-save machine status to database
+                // Auto-save machine status (skip in demo mode - already saved above)
+                if (DEMO_MODE) {
+                    alert(`✅ Column ${column} run added to pot! (Demo Mode)`);
+                    return;
+                }
+
                 autoSaveMachineStatus().then(() => {
                     alert(`✅ Column ${column} run added to pot and saved!`);
                 }).catch(err => {
@@ -10019,6 +10037,14 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             };
 
             console.log('autoSaveMachineStatus - saving:', machineStatus);
+
+            // In demo mode, save to localStorage instead
+            if (DEMO_MODE) {
+                demoSaveMachineStatus(currentMachine, machineStatus);
+                console.log('autoSaveMachineStatus - saved to demo storage');
+                updateMachineDisplays();
+                return;
+            }
 
             const { error } = await supabaseClient
                 .from('wm_machine_status')
@@ -10126,6 +10152,15 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 updated_by: currentRole ? currentRole.name : 'Unknown'
             };
 
+            // In demo mode, save to localStorage instead
+            if (DEMO_MODE) {
+                demoSaveMachineStatus(currentMachine, machineStatus);
+                updateMachineDisplays();
+                closeMachineModal();
+                alert(`✅ Machine Status Saved! (Demo Mode)`);
+                return;
+            }
+
             // Save to Supabase
             supabaseClient
                 .from('wm_machine_status')
@@ -10195,6 +10230,69 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 updated_by: currentRole ? currentRole.name : 'Unknown'
             };
 
+            // Helper to clear form elements after save
+            const clearFormElements = () => {
+                const clearEl = (id, val = '') => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = val;
+                };
+                const hideEl = (id) => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                };
+
+                // BHO elements - clear all columns A-F dynamically
+                ['A', 'B', 'C', 'D', 'E', 'F'].forEach(col => {
+                    clearEl('machineColumn' + col + 'Batch');
+                    clearEl('machineColumn' + col + 'Socks', '0');
+                    clearEl('machineColumn' + col + 'SecondBatch');
+                    hideEl('column' + col + 'SecondSock');
+                });
+                clearEl('machinePotBatch');
+                clearEl('machinePotBatchDisplay');
+                clearEl('machinePotRuns');
+                clearEl('machineFilterClay');
+                clearEl('machineFilterSilica');
+                clearEl('machineFilterRuns');
+
+                // Resinator elements
+                clearEl('resinatorBatch');
+                clearEl('resinatorInputWeight');
+                clearEl('resinatorSift1Output');
+                clearEl('resinatorSift2Output');
+                hideEl('siftTotalsDisplay');
+                hideEl('siftRun2Section');
+                // Reset sift status displays
+                const sift1Status = document.getElementById('sift1Status');
+                const sift2Status = document.getElementById('sift2Status');
+                const sift1Btn = document.getElementById('sift1Btn');
+                const sift2Btn = document.getElementById('sift2Btn');
+                if (sift1Status) sift1Status.style.display = 'none';
+                if (sift2Status) sift2Status.style.display = 'none';
+                if (sift1Btn) sift1Btn.style.display = 'block';
+                if (sift2Btn) sift2Btn.style.display = 'block';
+
+                // Clear pot ledger display
+                hideEl('potLedgerDisplay');
+
+                updateMachineDisplays();
+
+                // Get machine name for alert
+                const machineInfo = CONFIG.machines.find(m => {
+                    const key = m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return key === currentMachine;
+                });
+                const machineName = machineInfo?.name || currentMachine;
+                alert(`✅ ${machineName} Cleared!${DEMO_MODE ? ' (Demo Mode)' : ''}`);
+            };
+
+            // In demo mode, save to localStorage
+            if (DEMO_MODE) {
+                demoSaveMachineStatus(currentMachine, emptyStatus);
+                clearFormElements();
+                return;
+            }
+
             supabaseClient
                 .from('wm_machine_status')
                 .upsert(emptyStatus, { onConflict: 'machine' })
@@ -10203,60 +10301,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                         console.error('Error clearing machine status:', error);
                         return;
                     }
-
-                    // Clear form (with null safety for different machine types)
-                    const clearEl = (id, val = '') => {
-                        const el = document.getElementById(id);
-                        if (el) el.value = val;
-                    };
-                    const hideEl = (id) => {
-                        const el = document.getElementById(id);
-                        if (el) el.style.display = 'none';
-                    };
-
-                    // BHO elements - clear all columns A-F dynamically
-                    ['A', 'B', 'C', 'D', 'E', 'F'].forEach(col => {
-                        clearEl('machineColumn' + col + 'Batch');
-                        clearEl('machineColumn' + col + 'Socks', '0');
-                        clearEl('machineColumn' + col + 'SecondBatch');
-                        hideEl('column' + col + 'SecondSock');
-                    });
-                    clearEl('machinePotBatch');
-                    clearEl('machinePotBatchDisplay');
-                    clearEl('machinePotRuns');
-                    clearEl('machineFilterClay');
-                    clearEl('machineFilterSilica');
-                    clearEl('machineFilterRuns');
-
-                    // Resinator elements
-                    clearEl('resinatorBatch');
-                    clearEl('resinatorInputWeight');
-                    clearEl('resinatorSift1Output');
-                    clearEl('resinatorSift2Output');
-                    hideEl('siftTotalsDisplay');
-                    hideEl('siftRun2Section');
-                    // Reset sift status displays
-                    const sift1Status = document.getElementById('sift1Status');
-                    const sift2Status = document.getElementById('sift2Status');
-                    const sift1Btn = document.getElementById('sift1Btn');
-                    const sift2Btn = document.getElementById('sift2Btn');
-                    if (sift1Status) sift1Status.style.display = 'none';
-                    if (sift2Status) sift2Status.style.display = 'none';
-                    if (sift1Btn) sift1Btn.style.display = 'block';
-                    if (sift2Btn) sift2Btn.style.display = 'block';
-
-                    // Clear pot ledger display
-                    hideEl('potLedgerDisplay');
-
-                    updateMachineDisplays();
-
-                    // Get machine name for alert
-                    const machineInfo = CONFIG.machines.find(m => {
-                        const key = m.position?.toLowerCase() || m.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                        return key === currentMachine;
-                    });
-                    const machineName = machineInfo?.name || currentMachine;
-                    alert(`✅ ${machineName} Cleared!`);
+                    clearFormElements();
                 });
         }
         
