@@ -5166,6 +5166,13 @@
                     }
                 }
 
+                // For BHO machines with circular buttons, use a div container instead of button
+                if (machineType === 'bho') {
+                    return '<div class="btn" style="background: var(--bg-secondary); border: 2px solid #C0C0C0; color: #E8E8E8; padding: 15px; text-align: left; box-shadow: 0 0 15px rgba(192, 192, 192, 0.4), 0 0 30px rgba(192, 192, 192, 0.2), inset 0 0 15px rgba(192, 192, 192, 0.05); border-radius: 16px;">' +
+                        '<div style="font-weight: 700; margin-bottom: 5px; text-align: center;">' + icon + ' ' + machine.name + '</div>' +
+                        '<div id="' + machineKey + 'MachineStatus" style="font-size: 0.85rem;">' + statusHtml + '</div>' +
+                    '</div>';
+                }
                 return '<button class="btn" style="background: transparent; border: 2px solid #C0C0C0; color: #E8E8E8; padding: 20px; text-align: left; box-shadow: 0 0 15px rgba(192, 192, 192, 0.4), 0 0 30px rgba(192, 192, 192, 0.2), inset 0 0 15px rgba(192, 192, 192, 0.05);" onclick="openMachineModal(\'' + machineKey + '\')">' +
                     '<div style="font-weight: 700; margin-bottom: 8px;">' + icon + ' ' + machine.name + '</div>' +
                     '<div id="' + machineKey + 'MachineStatus" style="font-size: 0.85rem; opacity: 0.9;">' + statusHtml + '</div>' +
