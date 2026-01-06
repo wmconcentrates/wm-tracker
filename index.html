@@ -15650,7 +15650,7 @@ ${employeeReport || 'No activity recorded today'}
                                 type: 'packaging',
                                 batchId: batch.id,
                                 strain: batch.strain || batch.strain_name || 'Unknown',
-                                weight: batch.trim_weight || batch.weight || 0,
+                                weight: batch.final_weight || batch.net_weight || batch.bulk_weight || 0,
                                 paused: batch.packaging_paused || false
                             };
                         }
@@ -15667,7 +15667,7 @@ ${employeeReport || 'No activity recorded today'}
                                 type: 'labeling',
                                 batchId: batch.id,
                                 strain: batch.strain || batch.strain_name || 'Unknown',
-                                weight: batch.trim_weight || batch.weight || 0,
+                                weight: batch.final_weight || batch.net_weight || batch.bulk_weight || 0,
                                 paused: batch.labeling_paused || false
                             };
                         }
