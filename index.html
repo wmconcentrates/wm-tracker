@@ -6438,6 +6438,89 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
         }
 
+        // Generate ZPL for labeling completion label (2" x 1.5" horizontal)
+        function generateLabelingCompletionZPL(batch, labeledBy) {
+            // 2" x 1.5" label at 203dpi = 406 x 305 dots (horizontal)
+            const width = 406;
+            const height = 305;
+
+            // Get data
+            const strainName = (batch.strain || batch.strain_name || 'Unknown').toUpperCase();
+            const batchId = batch.id || '';
+            const totalUnits = batch.units_packaged || 0;
+            const units1g = batch.units_1g || 0;
+            const units4g = batch.units_4g || 0;
+            const handler = labeledBy || 'Unknown';
+
+            // Material agreement - shorten if needed
+            let agreement = batch.material_agreement || 'Wholesale';
+            if (agreement === '50-50 Split') agreement = '50/50';
+            if (agreement === 'Custom Buyback') agreement = 'Buyback';
+
+            // Date
+            const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+
+            const zpl = `^XA
+^MMT
+^PW${width}
+^LL${height}
+^LS0
+
+~SD20
+
+^FO0,0^GB${width},${height},3^FS
+
+^CF0,28
+^FO10,10^FD${strainName.substring(0, 18)}^FS
+
+^CF0,22
+^FO10,45^FDBatch: ${batchId}^FS
+
+^FO10,75^GB386,2,2^FS
+
+^CF0,24
+^FO10,85^FDTotal Units: ${totalUnits}^FS
+
+^CF0,20
+^FO10,115^FD1g: ${units1g}^FS
+^FO120,115^FD4g: ${units4g}^FS
+
+^FO10,145^GB386,2,2^FS
+
+^CF0,18
+^FO10,155^FDLabeled by: ${handler.substring(0, 20)}^FS
+
+^FO10,180^FDAgreement: ${agreement}^FS
+
+^FO10,205^FDDate: ${today}^FS
+
+^XZ`;
+
+            return zpl;
+        }
+
+        // Print labeling completion label directly to Zebra IP
+        async function printLabelingCompletionLabel(batch, labeledBy) {
+            const printerIP = '10.1.10.95'; // Static IP for Zebra ZT230
+            const zpl = generateLabelingCompletionZPL(batch, labeledBy);
+
+            try {
+                const response = await fetch(`http://${printerIP}:9100`, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: zpl
+                });
+
+                console.log('Labeling completion label sent to printer');
+            } catch (error) {
+                console.error('Print error for labeling completion:', error);
+                // Silent fail - don't interrupt the completion flow
+            }
+        }
+
         // Open printable intake batch label
         function openPrintableIntakeLabel(batch) {
             // Format date
@@ -14411,7 +14494,10 @@ ${employeeReport || 'No activity recorded today'}
                 alert('Error saving labeling status. Please try again.');
                 return;
             }
-            
+
+            // Print labeling completion label
+            printLabelingCompletionLabel(batch, currentRole ? currentRole.name : 'Unknown');
+
             showCelebration({
                 emoji: '🏆',
                 title: 'Batch Complete!',
