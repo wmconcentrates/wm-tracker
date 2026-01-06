@@ -5135,22 +5135,32 @@
                 // Build status display based on machine type
                 let statusHtml = '';
                 if (machineType === 'bho') {
-                    // Circular button layout - positioned like the machine
-                    statusHtml = '<div style="position: relative; width: 100%; height: 240px; margin-top: 10px;">' +
-                        // Column A circle button (top left)
-                        '<button id="' + machineKey + 'ColABtn" onclick="event.stopPropagation(); openComponentSelector(\'' + machineKey + '\', \'columnA\')" style="position: absolute; top: 0; left: 5px; width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent-blue); background: linear-gradient(145deg, rgba(59,130,246,0.25) 0%, rgba(59,130,246,0.1) 100%); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5px; box-shadow: 0 4px 12px rgba(59,130,246,0.3);">' +
-                        '<div id="' + machineKey + 'ColAStrain" style="font-size: 0.75rem; font-weight: 700; color: var(--text-primary); text-align: center; line-height: 1.2;">Empty</div></button>' +
-                        // Column B circle button (top right)
-                        '<button id="' + machineKey + 'ColBBtn" onclick="event.stopPropagation(); openComponentSelector(\'' + machineKey + '\', \'columnB\')" style="position: absolute; top: 0; right: 5px; width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent-blue); background: linear-gradient(145deg, rgba(59,130,246,0.25) 0%, rgba(59,130,246,0.1) 100%); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5px; box-shadow: 0 4px 12px rgba(59,130,246,0.3);">' +
-                        '<div id="' + machineKey + 'ColBStrain" style="font-size: 0.75rem; font-weight: 700; color: var(--text-primary); text-align: center; line-height: 1.2;">Empty</div></button>' +
-                        // Pot circle button (center, below columns) - BIGGER
-                        '<button id="' + machineKey + 'PotBtn" onclick="event.stopPropagation(); openComponentSelector(\'' + machineKey + '\', \'pot\')" style="position: absolute; top: 80px; left: 50%; transform: translateX(-50%); width: 130px; height: 130px; border-radius: 50%; border: 4px solid var(--accent-purple); background: linear-gradient(145deg, rgba(147,51,234,0.3) 0%, rgba(147,51,234,0.1) 100%); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; box-shadow: 0 6px 20px rgba(147,51,234,0.4);">' +
-                        '<div id="' + machineKey + 'PotStrain" style="font-size: 1rem; font-weight: 700; color: var(--text-primary); text-align: center; line-height: 1.2;">Empty</div>' +
-                        '<div id="' + machineKey + 'PotRuns" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;"></div></button>' +
-                        // Filter circle button (right side, lower)
-                        '<button id="' + machineKey + 'FilterBtn" onclick="event.stopPropagation(); openComponentSelector(\'' + machineKey + '\', \'filter\')" style="position: absolute; top: 150px; right: 0; width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--accent-green); background: linear-gradient(145deg, rgba(16,185,129,0.25) 0%, rgba(16,185,129,0.1) 100%); cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">' +
-                        '<div id="' + machineKey + 'FilterRuns" style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">0</div></button>' +
-                        '</div>';
+                    // Dynamic column layout based on config
+                    const numCols = Math.min(6, Math.max(2, config.columns || 6));
+                    const columnLabels = ['A', 'B', 'C', 'D', 'E', 'F'].slice(0, numCols);
+                    const colSize = numCols <= 3 ? 50 : (numCols <= 4 ? 45 : 40);
+                    const colGap = numCols <= 3 ? 8 : 5;
+
+                    // Build column circles in a flex row
+                    let columnsRow = '<div style="display: flex; justify-content: center; gap: ' + colGap + 'px; margin-bottom: 10px;">';
+                    columnLabels.forEach(col => {
+                        columnsRow += '<button id="' + machineKey + 'Col' + col + 'Btn" onclick="event.stopPropagation(); openComponentSelector(\'' + machineKey + '\', \'column' + col + '\')" style="width: ' + colSize + 'px; height: ' + colSize + 'px; border-radius: 50%; border: 2px solid var(--accent-blue); background: linear-gradient(145deg, rgba(59,130,246,0.25) 0%, rgba(59,130,246,0.1) 100%); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px; box-shadow: 0 3px 8px rgba(59,130,246,0.3); font-size: 0.6rem;">' +
+                            '<div style="font-weight: 700; color: var(--text-secondary); font-size: 0.55rem;">' + col + '</div>' +
+                            '<div id="' + machineKey + 'Col' + col + 'Strain" style="font-size: 0.5rem; font-weight: 600; color: var(--text-primary); text-align: center; line-height: 1.1; overflow: hidden; max-height: 20px;">-</div></button>';
+                    });
+                    columnsRow += '</div>';
+
+                    // Pot and filter row
+                    statusHtml = '<div style="margin-top: 10px;">' + columnsRow +
+                        '<div style="display: flex; justify-content: center; align-items: center; gap: 15px;">' +
+                        // Pot circle
+                        '<button id="' + machineKey + 'PotBtn" onclick="event.stopPropagation(); openComponentSelector(\'' + machineKey + '\', \'pot\')" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent-purple); background: linear-gradient(145deg, rgba(147,51,234,0.3) 0%, rgba(147,51,234,0.1) 100%); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; box-shadow: 0 5px 15px rgba(147,51,234,0.4);">' +
+                        '<div id="' + machineKey + 'PotStrain" style="font-size: 0.75rem; font-weight: 700; color: var(--text-primary); text-align: center; line-height: 1.2;">Empty</div>' +
+                        '<div id="' + machineKey + 'PotRuns" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;"></div></button>' +
+                        // Filter circle
+                        '<button id="' + machineKey + 'FilterBtn" onclick="event.stopPropagation(); openComponentSelector(\'' + machineKey + '\', \'filter\')" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent-green); background: linear-gradient(145deg, rgba(16,185,129,0.25) 0%, rgba(16,185,129,0.1) 100%); cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(16,185,129,0.3);">' +
+                        '<div id="' + machineKey + 'FilterRuns" style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">0</div></button>' +
+                        '</div></div>';
                 } else if (machineType === 'rosin') {
                     statusHtml = '<div>Wash 1: <span id="' + machineKey + 'Wash1">Empty</span></div>';
                     if (config.second_wash === true) {
@@ -8979,11 +8989,12 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             let columnsHtml = '';
 
             if (machineType === 'bho') {
-                // For BHO, show Column A and B (or however many are configured, up to 2 for now)
-                const columnLabels = ['A', 'B'];
-                for (let i = 0; i < Math.min(2, numColumns); i++) {
+                // For BHO, show columns A-F based on config (2-6 columns)
+                const columnLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+                const colCount = Math.min(6, Math.max(2, numColumns));
+                for (let i = 0; i < colCount; i++) {
                     const col = columnLabels[i];
-                    columnsHtml += generateColumnHtml(col, i === 0 ? 'machineColumnBatch' : 'machineColumnBBatch');
+                    columnsHtml += generateColumnHtml(col, 'machineColumn' + col + 'Batch');
                 }
             } else if (machineType === 'rosin') {
                 // Rosin washer - show wash stages
@@ -9136,32 +9147,43 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     window.currentMachineStatus = machineStatus;
 
                     // Populate batch dropdowns with sock counts (for BHO machines)
-                    const columnSelect = document.getElementById('machineColumnBatch');
-                    const columnBSelect = document.getElementById('machineColumnBBatch');
+                    // Dynamically handle columns A-F
+                    const columnLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+                    columnLabels.forEach(col => {
+                        const columnSelect = document.getElementById('machineColumn' + col + 'Batch');
+                        const secondBatchSelect = document.getElementById('machineColumn' + col + 'SecondBatch');
+                        const socksSelect = document.getElementById('machineColumn' + col + 'Socks');
 
-                    // Only populate if these elements exist (BHO machine type)
-                    if (columnSelect && columnBSelect) {
-                        // Clear and repopulate with sock counts
-                        columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
-                        columnBSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+                        if (columnSelect) {
+                            // Clear and repopulate with sock counts
+                            columnSelect.innerHTML = '<option value="">Empty / Not Loaded</option>';
+                            if (secondBatchSelect) secondBatchSelect.innerHTML = '<option value="">None</option>';
 
-                        batches.forEach(batch => {
-                            if (batch.status === 'intake') {
-                                // Skip batches with 0 socks remaining
-                                if (batch.socks_total != null && batch.socks_remaining === 0) return;
-                                const socksRemaining = batch.socks_remaining ?? batch.socks_total ?? '?';
-                                const socksTotal = batch.socks_total ?? '?';
-                                const sockDisplay = `(${socksRemaining}/${socksTotal} socks)`;
-                                const option = `<option value="${batch.id}">${batch.id} - ${batch.strain} ${sockDisplay}</option>`;
-                                columnSelect.innerHTML += option;
-                                columnBSelect.innerHTML += option;
-                            }
-                        });
+                            batches.forEach(batch => {
+                                if (batch.status === 'intake') {
+                                    // Skip batches with 0 socks remaining
+                                    if (batch.socks_total != null && batch.socks_remaining === 0) return;
+                                    const socksRemaining = batch.socks_remaining ?? batch.socks_total ?? '?';
+                                    const socksTotal = batch.socks_total ?? '?';
+                                    const sockDisplay = `(${socksRemaining}/${socksTotal} socks)`;
+                                    const option = `<option value="${batch.id}">${batch.id} - ${batch.strain} ${sockDisplay}</option>`;
+                                    columnSelect.innerHTML += option;
+                                    if (secondBatchSelect) secondBatchSelect.innerHTML += option;
+                                }
+                            });
 
-                        // Set current values
-                        columnSelect.value = machineStatus.column_batch || '';
-                        columnBSelect.value = machineStatus.column_b_batch || '';
-                    }
+                            // Set current values from machine status
+                            const colKey = col.toLowerCase();
+                            // Handle legacy format (column_batch for A, column_b_batch for B) and new format
+                            const batchKey = col === 'A' ? 'column_batch' : `column_${colKey}_batch`;
+                            const socksKey = `column_${colKey}_socks`;
+                            const secondBatchKey = `column_${colKey}_second_batch`;
+
+                            columnSelect.value = machineStatus[batchKey] || '';
+                            if (socksSelect) socksSelect.value = machineStatus[socksKey] || 0;
+                            if (secondBatchSelect) secondBatchSelect.value = machineStatus[secondBatchKey] || '';
+                        }
+                    });
 
                     // Set pot batch (hidden input and display)
                     const potBatchId = machineStatus.pot_batch || '';
@@ -9186,29 +9208,18 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     document.getElementById('machineFilterSilica').value = machineStatus.filter_silica || '';
                     document.getElementById('machineFilterRuns').value = machineStatus.filter_runs || '';
 
-                    // Set sock counts (for BHO machines only)
-                    const colASocks = document.getElementById('machineColumnASocks');
-                    const colBSocks = document.getElementById('machineColumnBSocks');
-                    if (colASocks) colASocks.value = machineStatus.column_a_socks || 0;
-                    if (colBSocks) colBSocks.value = machineStatus.column_b_socks || 0;
+                    // Handle secondary sock selectors visibility and trigger UI updates (for BHO machines)
+                    columnLabels.forEach(col => {
+                        const colKey = col.toLowerCase();
+                        const secondSockDiv = document.getElementById('column' + col + 'SecondSock');
+                        if (secondSockDiv) secondSockDiv.style.display = 'none';
 
-                    // Handle secondary sock selectors visibility (for BHO machines only)
-                    const colASecondSock = document.getElementById('columnASecondSock');
-                    const colBSecondSock = document.getElementById('columnBSecondSock');
-                    const colASecondBatch = document.getElementById('machineColumnASecondBatch');
-                    const colBSecondBatch = document.getElementById('machineColumnBSecondBatch');
-                    if (colASecondSock) colASecondSock.style.display = 'none';
-                    if (colBSecondSock) colBSecondSock.style.display = 'none';
-                    if (colASecondBatch) colASecondBatch.value = machineStatus.column_a_second_batch || '';
-                    if (colBSecondBatch) colBSecondBatch.value = machineStatus.column_b_second_batch || '';
-
-                    // Trigger UI update for each column if batch is set (BHO only)
-                    if (machineStatus.column_batch && colASocks) {
-                        setTimeout(() => updateColumnSockUI('A'), 100);
-                    }
-                    if (machineStatus.column_b_batch && colBSocks) {
-                        setTimeout(() => updateColumnSockUI('B'), 100);
-                    }
+                        // Trigger UI update for each column if batch is set
+                        const batchKey = col === 'A' ? 'column_batch' : `column_${colKey}_batch`;
+                        if (machineStatus[batchKey]) {
+                            setTimeout(() => updateColumnSockUI(col), 100);
+                        }
+                    });
 
                     // Display pot ledger
                     displayPotLedger(machineStatus);
@@ -9669,10 +9680,11 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
         }
 
         function updateColumnSockUI(column) {
-            const batchSelect = column === 'A' ? document.getElementById('machineColumnBatch') : document.getElementById('machineColumnBBatch');
-            const socksSelect = column === 'A' ? document.getElementById('machineColumnASocks') : document.getElementById('machineColumnBSocks');
-            const secondSockDiv = document.getElementById(`column${column}SecondSock`);
-            const secondBatchSelect = document.getElementById(`machineColumn${column}SecondBatch`);
+            // Dynamic element IDs for any column A-F
+            const batchSelect = document.getElementById('machineColumn' + column + 'Batch');
+            const socksSelect = document.getElementById('machineColumn' + column + 'Socks');
+            const secondSockDiv = document.getElementById('column' + column + 'SecondSock');
+            const secondBatchSelect = document.getElementById('machineColumn' + column + 'SecondBatch');
 
             // Null safety check
             if (!batchSelect || !socksSelect) return;
@@ -9745,19 +9757,10 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
         }
 
         function runColumnToPot(column) {
-            // Get socks from the specified column only (with null safety)
-            let columnBatch, columnSocks, columnSecondBatch;
-            let batchEl, socksEl, secondBatchEl;
-
-            if (column === 'A') {
-                batchEl = document.getElementById('machineColumnBatch');
-                socksEl = document.getElementById('machineColumnASocks');
-                secondBatchEl = document.getElementById('machineColumnASecondBatch');
-            } else {
-                batchEl = document.getElementById('machineColumnBBatch');
-                socksEl = document.getElementById('machineColumnBSocks');
-                secondBatchEl = document.getElementById('machineColumnBSecondBatch');
-            }
+            // Get socks from the specified column (A-F) with dynamic element IDs
+            const batchEl = document.getElementById('machineColumn' + column + 'Batch');
+            const socksEl = document.getElementById('machineColumn' + column + 'Socks');
+            const secondBatchEl = document.getElementById('machineColumn' + column + 'SecondBatch');
 
             // If elements don't exist, can't proceed
             if (!batchEl || !socksEl) {
@@ -9765,9 +9768,9 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 return;
             }
 
-            columnBatch = batchEl.value;
-            columnSocks = parseInt(socksEl.value) || 0;
-            columnSecondBatch = secondBatchEl ? secondBatchEl.value : '';
+            const columnBatch = batchEl.value;
+            const columnSocks = parseInt(socksEl.value) || 0;
+            const columnSecondBatch = secondBatchEl ? secondBatchEl.value : '';
 
             // Build list of contributions for this column
             let contributions = [];
@@ -9866,20 +9869,12 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             // Update pot ledger display
             displayPotLedger({ pot_ledger: potLedger });
 
-            // Clear only the column that was run (with null safety)
-            if (column === 'A') {
-                if (batchEl) batchEl.value = '';
-                if (socksEl) socksEl.value = '0';
-                if (secondBatchEl) secondBatchEl.value = '';
-                const secondSockDiv = document.getElementById('columnASecondSock');
-                if (secondSockDiv) secondSockDiv.style.display = 'none';
-            } else {
-                if (batchEl) batchEl.value = '';
-                if (socksEl) socksEl.value = '0';
-                if (secondBatchEl) secondBatchEl.value = '';
-                const secondSockDiv = document.getElementById('columnBSecondSock');
-                if (secondSockDiv) secondSockDiv.style.display = 'none';
-            }
+            // Clear the column that was run
+            if (batchEl) batchEl.value = '';
+            if (socksEl) socksEl.value = '0';
+            if (secondBatchEl) secondBatchEl.value = '';
+            const secondSockDiv = document.getElementById('column' + column + 'SecondSock');
+            if (secondSockDiv) secondSockDiv.style.display = 'none';
 
             // Decrement socks from batches in database
             const decrementPromises = Object.entries(socksToDecrement).map(([batchId, sockCount]) => {
@@ -10045,20 +10040,27 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
         function saveMachineStatus() {
             if (!currentMachine) return;
 
-            // Get element values with null safety (for BHO-specific fields)
-            const colBatchEl = document.getElementById('machineColumnBatch');
-            const colBBatchEl = document.getElementById('machineColumnBBatch');
-            const colASocksEl = document.getElementById('machineColumnASocks');
-            const colBSocksEl = document.getElementById('machineColumnBSocks');
-            const colASecondEl = document.getElementById('machineColumnASecondBatch');
-            const colBSecondEl = document.getElementById('machineColumnBSecondBatch');
+            // Dynamically get column values for A-F
+            const columnLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+            const columnData = {};
+            columnLabels.forEach(col => {
+                const colKey = col.toLowerCase();
+                const batchEl = document.getElementById('machineColumn' + col + 'Batch');
+                const socksEl = document.getElementById('machineColumn' + col + 'Socks');
+                const secondEl = document.getElementById('machineColumn' + col + 'SecondBatch');
 
-            const columnBatch = colBatchEl ? colBatchEl.value : '';
-            const columnBBatch = colBBatchEl ? colBBatchEl.value : '';
-            const columnASocks = colASocksEl ? (parseInt(colASocksEl.value) || 0) : 0;
-            const columnBSocks = colBSocksEl ? (parseInt(colBSocksEl.value) || 0) : 0;
-            const columnASecondBatch = colASecondEl ? colASecondEl.value : '';
-            const columnBSecondBatch = colBSecondEl ? colBSecondEl.value : '';
+                if (batchEl) {
+                    // Use legacy key names for A (column_batch) to maintain backwards compatibility
+                    const batchKey = col === 'A' ? 'column_batch' : `column_${colKey}_batch`;
+                    const socksKey = `column_${colKey}_socks`;
+                    const secondKey = `column_${colKey}_second_batch`;
+
+                    columnData[batchKey] = batchEl.value || '';
+                    columnData[socksKey] = socksEl ? (parseInt(socksEl.value) || 0) : 0;
+                    columnData[secondKey] = secondEl ? secondEl.value : '';
+                }
+            });
+
             const potBatch = document.getElementById('machinePotBatch').value;
             const potRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
             const filterClay = parseFloat(document.getElementById('machineFilterClay').value) || 0;
@@ -10071,12 +10073,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
             const machineStatus = {
                 machine: currentMachine,
-                column_batch: columnBatch,
-                column_b_batch: columnBBatch,
-                column_a_socks: columnASocks,
-                column_b_socks: columnBSocks,
-                column_a_second_batch: columnASecondBatch,
-                column_b_second_batch: columnBSecondBatch,
+                ...columnData,
                 pot_batch: potBatch,
                 pot_runs: potRuns,
                 pot_ledger: potLedger,
@@ -10118,14 +10115,27 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 return;
             }
 
+            // Build empty status with all columns A-F cleared
             const emptyStatus = {
                 machine: currentMachine,
-                column_batch: null,
-                column_b_batch: null,
+                column_batch: null, // Legacy column A
                 column_a_socks: 0,
-                column_b_socks: 0,
                 column_a_second_batch: null,
+                column_b_batch: null,
+                column_b_socks: 0,
                 column_b_second_batch: null,
+                column_c_batch: null,
+                column_c_socks: 0,
+                column_c_second_batch: null,
+                column_d_batch: null,
+                column_d_socks: 0,
+                column_d_second_batch: null,
+                column_e_batch: null,
+                column_e_socks: 0,
+                column_e_second_batch: null,
+                column_f_batch: null,
+                column_f_socks: 0,
+                column_f_second_batch: null,
                 pot_batch: null,
                 pot_runs: 0,
                 pot_ledger: [],
@@ -10162,15 +10172,13 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                         if (el) el.style.display = 'none';
                     };
 
-                    // BHO elements
-                    clearEl('machineColumnBatch');
-                    clearEl('machineColumnBBatch');
-                    clearEl('machineColumnASocks', '0');
-                    clearEl('machineColumnBSocks', '0');
-                    clearEl('machineColumnASecondBatch');
-                    clearEl('machineColumnBSecondBatch');
-                    hideEl('columnASecondSock');
-                    hideEl('columnBSecondSock');
+                    // BHO elements - clear all columns A-F dynamically
+                    ['A', 'B', 'C', 'D', 'E', 'F'].forEach(col => {
+                        clearEl('machineColumn' + col + 'Batch');
+                        clearEl('machineColumn' + col + 'Socks', '0');
+                        clearEl('machineColumn' + col + 'SecondBatch');
+                        hideEl('column' + col + 'SecondSock');
+                    });
                     clearEl('machinePotBatch');
                     clearEl('machinePotBatchDisplay');
                     clearEl('machinePotRuns');
@@ -10227,33 +10235,28 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                     machineKeys.forEach(machineKey => {
                         const machineStatus = machineStatuses.find(m => m.machine === machineKey) || {};
 
-                        // Update Column A button
-                        const colAEl = document.getElementById(`${machineKey}ColAStrain`);
-                        const colABtn = document.getElementById(`${machineKey}ColABtn`);
-                        if (colAEl) {
-                            if (machineStatus.column_batch) {
-                                const batchA = batches.find(b => b.id == machineStatus.column_batch);
-                                colAEl.textContent = batchA?.strain || 'Loading';
-                                if (colABtn) colABtn.style.background = 'linear-gradient(145deg, rgba(59,130,246,0.4) 0%, rgba(59,130,246,0.2) 100%)';
-                            } else {
-                                colAEl.textContent = 'Empty';
-                                if (colABtn) colABtn.style.background = 'linear-gradient(145deg, rgba(59,130,246,0.25) 0%, rgba(59,130,246,0.1) 100%)';
+                        // Update all columns A-F dynamically
+                        const columnLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+                        columnLabels.forEach(col => {
+                            const colEl = document.getElementById(`${machineKey}Col${col}Strain`);
+                            const colBtn = document.getElementById(`${machineKey}Col${col}Btn`);
+                            if (colEl) {
+                                const colKey = col.toLowerCase();
+                                // Handle legacy format (column_batch for A) and new format
+                                const batchKey = col === 'A' ? 'column_batch' : `column_${colKey}_batch`;
+                                const batchId = machineStatus[batchKey];
+                                if (batchId) {
+                                    const batch = batches.find(b => b.id == batchId);
+                                    // Truncate strain name for small circles
+                                    const strainName = batch?.strain || 'Load';
+                                    colEl.textContent = strainName.length > 8 ? strainName.substring(0, 7) + '…' : strainName;
+                                    if (colBtn) colBtn.style.background = 'linear-gradient(145deg, rgba(59,130,246,0.4) 0%, rgba(59,130,246,0.2) 100%)';
+                                } else {
+                                    colEl.textContent = '-';
+                                    if (colBtn) colBtn.style.background = 'linear-gradient(145deg, rgba(59,130,246,0.25) 0%, rgba(59,130,246,0.1) 100%)';
+                                }
                             }
-                        }
-
-                        // Update Column B button
-                        const colBEl = document.getElementById(`${machineKey}ColBStrain`);
-                        const colBBtn = document.getElementById(`${machineKey}ColBBtn`);
-                        if (colBEl) {
-                            if (machineStatus.column_b_batch) {
-                                const batchB = batches.find(b => b.id == machineStatus.column_b_batch);
-                                colBEl.textContent = batchB?.strain || 'Loading';
-                                if (colBBtn) colBBtn.style.background = 'linear-gradient(145deg, rgba(59,130,246,0.4) 0%, rgba(59,130,246,0.2) 100%)';
-                            } else {
-                                colBEl.textContent = 'Empty';
-                                if (colBBtn) colBBtn.style.background = 'linear-gradient(145deg, rgba(59,130,246,0.25) 0%, rgba(59,130,246,0.1) 100%)';
-                            }
-                        }
+                        });
 
                         // Update Pot button
                         const potStrainEl = document.getElementById(`${machineKey}PotStrain`);
