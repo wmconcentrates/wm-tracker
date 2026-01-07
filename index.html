@@ -20134,6 +20134,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             if (periodType === 'previous') {
                 periodNumber -= 1;
+            } else if (periodType.startsWith('previous-')) {
+                const offset = parseInt(periodType.split('-')[1]);
+                periodNumber -= offset;
             }
 
             // Calculate payday for this period
@@ -20682,6 +20685,30 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // ============================================
 
         // Open Timecards Modal (Admin only)
+        // Populate pay period dropdown with historical periods
+        function populatePayPeriodDropdown() {
+            const select = document.getElementById('timecardPayPeriodSelect');
+            select.innerHTML = '';
+
+            // Add current and previous
+            const currentPeriod = getPayPeriodDates('current');
+            const prevPeriod = getPayPeriodDates('previous');
+
+            const formatRange = (period) => {
+                return period.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+                    ' - ' + period.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            };
+
+            select.innerHTML += `<option value="current">Current (${formatRange(currentPeriod)})</option>`;
+            select.innerHTML += `<option value="previous">Previous (${formatRange(prevPeriod)})</option>`;
+
+            // Add historical periods (go back 26 periods = ~1 year)
+            for (let i = 2; i <= 26; i++) {
+                const period = getPayPeriodDates(`previous-${i}`);
+                select.innerHTML += `<option value="previous-${i}">${formatRange(period)}</option>`;
+            }
+        }
+
         async function openTimecardsModal() {
             // Check if user is admin (Ryan)
             if (!currentRole || !currentRole.name.includes('Ryan')) {
@@ -20703,6 +20730,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 option.textContent = role.name;
                 select.appendChild(option);
             }
+
+            // Populate pay period dropdown with historical options
+            populatePayPeriodDropdown();
 
             // Update pay period display
             updatePayPeriodDisplay();
