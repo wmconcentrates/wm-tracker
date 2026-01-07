@@ -21482,13 +21482,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         employeeTotalHours += dayHours;
                     }
 
-                    const regularHours = Math.min(employeeTotalHours, 40);
-                    const overtimeHours = Math.max(employeeTotalHours - 40, 0);
+                    const regularHours = Math.min(employeeTotalHours, 80);
+                    const overtimeHours = Math.max(employeeTotalHours - 80, 0);
 
                     csv += '\n';
                     csv += 'TOTAL HOURS,' + employeeTotalHours.toFixed(2) + '\n';
-                    csv += 'Regular (up to 40),' + regularHours.toFixed(2) + '\n';
-                    csv += 'Overtime (over 40),' + overtimeHours.toFixed(2) + '\n';
+                    csv += 'Regular (up to 80),' + regularHours.toFixed(2) + '\n';
+                    csv += 'Overtime (over 80),' + overtimeHours.toFixed(2) + '\n';
 
                     grandTotalRegular += regularHours;
                     grandTotalOvertime += overtimeHours;
