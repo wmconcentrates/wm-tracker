@@ -6404,20 +6404,51 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             printIntakeLabelDirectly(testBatch);
         }
 
+        // Check if direct IP printing is available (only works on HTTP or localhost)
+        function canDirectPrint() {
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const isHTTP = window.location.protocol === 'http:';
+            return isLocalhost || isHTTP;
+        }
+
+        // Send ZPL to printer with automatic fallback to download if on HTTPS
+        async function sendZPLToPrinter(zpl, filename) {
+            const printerIP = '10.1.10.95';
+
+            if (canDirectPrint()) {
+                try {
+                    await fetch(`http://${printerIP}:9100`, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: zpl
+                    });
+                    return { success: true, method: 'direct' };
+                } catch (error) {
+                    console.error('Direct print failed:', error);
+                }
+            }
+
+            // Fallback: download ZPL file
+            const blob = new Blob([zpl], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename || 'label.zpl';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            return { success: true, method: 'download' };
+        }
+
         // Print directly to Zebra printer via IP
         async function printIntakeLabelDirectly(batch) {
-            const printerIP = '10.1.10.95';
             const zpl = generateIntakeBatchLabelZPL(batch);
-
-            try {
-                await fetch(`http://${printerIP}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: zpl
-                });
+            const result = await sendZPLToPrinter(zpl, `intake-${batch.id}.zpl`);
+            if (result.method === 'download') {
+                console.log('ZPL downloaded (direct print not available on HTTPS)');
+            } else {
                 console.log(`Label sent to printer: ${batch.id}`);
-            } catch (error) {
-                console.error('Print error:', error);
             }
         }
 
@@ -6439,7 +6470,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             alert(`ZPL file downloaded: batch-label-${batch.id}.zpl\n\nTo print:\n1. Open Zebra Setup Utilities\n2. Go to Tools → Send File\n3. Select the .zpl file\n4. Click Send`);
         }
 
-        // Print label from Testing page - direct IP printing
+        // Print label from Testing page - uses sendZPLToPrinter with HTTPS fallback
         window.printTestingLabel = async function() {
             const batchId = document.getElementById('testingBatchSelect').value;
             if (!batchId) {
@@ -6454,17 +6485,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
 
             const labelType = document.getElementById('testingLabelType').value;
-            const printerIP = '10.1.10.95';
+            let downloadMethod = false;
 
             if (labelType === 'intake') {
                 const zpl = generateIntakeBatchLabelZPL(batch);
-                try {
-                    await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl });
-                    alert(`✅ Intake label sent to printer!`);
-                } catch (error) {
-                    console.error('Print error:', error);
-                    alert('Print error - check console');
-                }
+                const result = await sendZPLToPrinter(zpl, `intake-${batch.id}.zpl`);
+                downloadMethod = result.method === 'download';
+                alert(downloadMethod ? `📥 Intake label downloaded!` : `✅ Intake label sent to printer!`);
             } else if (labelType === 'postprod') {
                 const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 const sampleWeight = parseFloat(batch.sample_weight) || 0;
@@ -6472,100 +6499,78 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
                 for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
                     const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
-                    try {
-                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl });
-                        console.log(`Post-production label ${bowlNum}/${totalBowls} sent`);
-                    } catch (error) {
-                        console.error('Print error:', error);
-                    }
+                    const result = await sendZPLToPrinter(zpl, `postprod-${batch.id}-bowl${bowlNum}.zpl`);
+                    if (result.method === 'download') downloadMethod = true;
                 }
-                alert(`✅ ${totalBowls} post-production label(s) sent to printer!`);
+                alert(downloadMethod ? `📥 ${totalBowls} post-production label(s) downloaded!` : `✅ ${totalBowls} post-production label(s) sent to printer!`);
             } else if (labelType === 'labeling') {
                 const labeledBy = currentRole ? currentRole.name : 'Test User';
                 const units1g = batch.units_1g || 0;
                 const units4g = batch.units_4g || 0;
                 let labelsPrinted = 0;
 
-                // Print 1g label if there are 1g units
                 if (units1g > 0) {
                     const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
-                    try {
-                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl1g });
-                        labelsPrinted++;
-                    } catch (error) {
-                        console.error('Print error:', error);
-                    }
+                    const result = await sendZPLToPrinter(zpl1g, `labeling-${batch.id}-1g.zpl`);
+                    if (result.method === 'download') downloadMethod = true;
+                    labelsPrinted++;
                 }
 
-                // Print 4g label if there are 4g units
                 if (units4g > 0) {
                     const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
-                    try {
-                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl4g });
-                        labelsPrinted++;
-                    } catch (error) {
-                        console.error('Print error:', error);
-                    }
+                    const result = await sendZPLToPrinter(zpl4g, `labeling-${batch.id}-4g.zpl`);
+                    if (result.method === 'download') downloadMethod = true;
+                    labelsPrinted++;
                 }
-                alert(`✅ ${labelsPrinted} labeling label(s) sent to printer!`);
+                alert(downloadMethod ? `📥 ${labelsPrinted} labeling label(s) downloaded!` : `✅ ${labelsPrinted} labeling label(s) sent to printer!`);
             }
         }
 
         // Print labeling completion labels with alert (for testing) - one for 1g, one for 4g
         async function printLabelingCompletionLabelWithAlert(batch, labeledBy) {
-            const printerIP = '10.1.10.95';
             const units1g = batch.units_1g || 0;
             const units4g = batch.units_4g || 0;
             let labelsPrinted = 0;
+            let downloadMethod = false;
 
-            // Print 1g label if there are 1g units
             if (units1g > 0) {
                 const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
-                try {
-                    await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl1g });
-                    labelsPrinted++;
-                } catch (error) {
-                    console.error('Print error for 1g label:', error);
-                }
+                const result = await sendZPLToPrinter(zpl1g, `labeling-${batch.id}-1g.zpl`);
+                if (result.method === 'download') downloadMethod = true;
+                labelsPrinted++;
             }
 
-            // Print 4g label if there are 4g units
             if (units4g > 0) {
                 const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
-                try {
-                    await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl4g });
-                    labelsPrinted++;
-                } catch (error) {
-                    console.error('Print error for 4g label:', error);
-                }
+                const result = await sendZPLToPrinter(zpl4g, `labeling-${batch.id}-4g.zpl`);
+                if (result.method === 'download') downloadMethod = true;
+                labelsPrinted++;
             }
 
             if (labelsPrinted > 0) {
-                alert(`✅ ${labelsPrinted} label(s) sent to printer!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\n1g: ${units1g} units  |  4g: ${units4g} units`);
+                const msg = downloadMethod
+                    ? `📥 ${labelsPrinted} label(s) downloaded!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\n1g: ${units1g} units  |  4g: ${units4g} units`
+                    : `✅ ${labelsPrinted} label(s) sent to printer!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\n1g: ${units1g} units  |  4g: ${units4g} units`;
+                alert(msg);
             } else {
-                alert('Print error - no labels printed');
+                alert('No labels to print (no 1g or 4g units)');
             }
         }
 
-        // Print post-production label directly to Zebra IP (one per bowl)
+        // Print post-production label (one per bowl) with HTTPS fallback
         async function printPostProductionLabelDirectly(batch, finalWeight, sampleWeight) {
-            const printerIP = '10.1.10.95';
             const totalBowls = batch.extraction_bowls || 1;
+            let downloadMethod = false;
 
             for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
                 const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
-                try {
-                    await fetch(`http://${printerIP}:9100`, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        body: zpl
-                    });
-                    console.log(`Post-production label ${bowlNum}/${totalBowls} sent`);
-                } catch (error) {
-                    console.error('Print error:', error);
-                }
+                const result = await sendZPLToPrinter(zpl, `postprod-${batch.id}-bowl${bowlNum}.zpl`);
+                if (result.method === 'download') downloadMethod = true;
             }
-            alert(`✅ ${totalBowls} post-production label(s) sent to printer!\n\nBatch: ${batch.id}`);
+            const msg = downloadMethod
+                ? `📥 ${totalBowls} post-production label(s) downloaded!\n\nBatch: ${batch.id}`
+                : `✅ ${totalBowls} post-production label(s) sent to printer!\n\nBatch: ${batch.id}`;
+            alert(msg);
         }
 
         // Generate ZPL for labeling completion label (4" x 2" landscape)
@@ -6646,38 +6651,21 @@ ${growerName ? `^FO200,370^FD${growerName.substring(0, 35)}^FS` : ''}
 
         // Print labeling completion labels directly to Zebra IP (one for 1g, one for 4g)
         async function printLabelingCompletionLabel(batch, labeledBy) {
-            const printerIP = '10.1.10.95';
             const units1g = batch.units_1g || 0;
             const units4g = batch.units_4g || 0;
 
             // Print 1g label if there are 1g units
             if (units1g > 0) {
                 const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
-                try {
-                    await fetch(`http://${printerIP}:9100`, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        body: zpl1g
-                    });
-                    console.log('1g labeling completion label sent to printer');
-                } catch (error) {
-                    console.error('Print error for 1g label:', error);
-                }
+                const result = await sendZPLToPrinter(zpl1g, `labeling-${batch.id}-1g.zpl`);
+                console.log(`1g labeling label ${result.method === 'download' ? 'downloaded' : 'sent to printer'}`);
             }
 
             // Print 4g label if there are 4g units
             if (units4g > 0) {
                 const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
-                try {
-                    await fetch(`http://${printerIP}:9100`, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        body: zpl4g
-                    });
-                    console.log('4g labeling completion label sent to printer');
-                } catch (error) {
-                    console.error('Print error for 4g label:', error);
-                }
+                const result = await sendZPLToPrinter(zpl4g, `labeling-${batch.id}-4g.zpl`);
+                console.log(`4g labeling label ${result.method === 'download' ? 'downloaded' : 'sent to printer'}`);
             }
         }
 
@@ -7097,61 +7085,14 @@ ${growerName ? `^FO530,360^FD${growerName.substring(0, 18)}^FS` : ''}
             return zpl;
         }
 
-        // Print post-production labels - one per bowl with numbering
+        // Print post-production labels - one per bowl with numbering, HTTPS fallback
         async function printPostProductionLabels(batch, finalWeight, sampleWeight, copies) {
             const totalBowls = batch.extraction_bowls || 1;
-            const printServerURL = localStorage.getItem("printServerURL") || "http://localhost:3000/print";
-            const printerIP = '10.1.10.95';
 
             for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
                 const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
-                let printed = false;
-
-                // Try direct Zebra IP print first
-                try {
-                    await fetch(`http://${printerIP}:9100`, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        body: zpl
-                    });
-                    printed = true;
-                    console.log(`Post-production label ${bowlNum}/${totalBowls} sent to printer`);
-                } catch (e) { }
-
-                // Fallback to print server
-                if (!printed) {
-                    try {
-                        const response = await fetch(printServerURL, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ zpl: zpl })
-                        });
-                        if (response.ok) printed = true;
-                    } catch (e) { }
-                }
-
-                // Fallback to BrowserPrint
-                if (!printed && window.BrowserPrint) {
-                    try {
-                        const printer = await window.BrowserPrint.getDefaultDevice("printer");
-                        printer.send(zpl);
-                        printed = true;
-                    } catch (e) { }
-                }
-
-                // Last resort - download ZPL
-                if (!printed && bowlNum === 1) {
-                    const blob = new Blob([zpl], { type: "text/plain" });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "label-" + batch.id + ".zpl";
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    alert("Downloaded ZPL file. Use Zebra Setup Utilities to print.");
-                    break;
-                }
+                const result = await sendZPLToPrinter(zpl, `postprod-${batch.id}-bowl${bowlNum}.zpl`);
+                console.log(`Post-production label ${bowlNum}/${totalBowls} ${result.method === 'download' ? 'downloaded' : 'sent to printer'}`);
             }
         }
 
@@ -11684,17 +11625,13 @@ ${growerName ? `^FO530,360^FD${growerName.substring(0, 18)}^FS` : ''}
             }
 
             const labelType = document.getElementById('printLabelsLabelType').value;
-            const printerIP = '10.1.10.95';
+            let downloadMethod = false;
 
             if (labelType === 'intake') {
                 const zpl = generateIntakeBatchLabelZPL(batch);
-                try {
-                    await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl });
-                    alert(`✅ Intake label sent to printer!`);
-                } catch (error) {
-                    console.error('Print error:', error);
-                    alert('Print error - check console');
-                }
+                const result = await sendZPLToPrinter(zpl, `intake-${batch.id}.zpl`);
+                downloadMethod = result.method === 'download';
+                alert(downloadMethod ? `📥 Intake label downloaded!` : `✅ Intake label sent to printer!`);
             } else if (labelType === 'postprod') {
                 const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 const sampleWeight = parseFloat(batch.sample_weight) || 0;
@@ -11702,42 +11639,30 @@ ${growerName ? `^FO530,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
                 for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
                     const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
-                    try {
-                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl });
-                        console.log(`Post-production label ${bowlNum}/${totalBowls} sent`);
-                    } catch (error) {
-                        console.error('Print error:', error);
-                    }
+                    const result = await sendZPLToPrinter(zpl, `postprod-${batch.id}-bowl${bowlNum}.zpl`);
+                    if (result.method === 'download') downloadMethod = true;
                 }
-                alert(`✅ ${totalBowls} post-production label(s) sent to printer!`);
+                alert(downloadMethod ? `📥 ${totalBowls} post-production label(s) downloaded!` : `✅ ${totalBowls} post-production label(s) sent to printer!`);
             } else if (labelType === 'labeling') {
                 const labeledBy = currentRole ? currentRole.name : 'Unknown';
                 const units1g = batch.units_1g || 0;
                 const units4g = batch.units_4g || 0;
                 let labelsPrinted = 0;
 
-                // Print 1g label if there are 1g units
                 if (units1g > 0) {
                     const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
-                    try {
-                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl1g });
-                        labelsPrinted++;
-                    } catch (error) {
-                        console.error('Print error:', error);
-                    }
+                    const result = await sendZPLToPrinter(zpl1g, `labeling-${batch.id}-1g.zpl`);
+                    if (result.method === 'download') downloadMethod = true;
+                    labelsPrinted++;
                 }
 
-                // Print 4g label if there are 4g units
                 if (units4g > 0) {
                     const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
-                    try {
-                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl4g });
-                        labelsPrinted++;
-                    } catch (error) {
-                        console.error('Print error:', error);
-                    }
+                    const result = await sendZPLToPrinter(zpl4g, `labeling-${batch.id}-4g.zpl`);
+                    if (result.method === 'download') downloadMethod = true;
+                    labelsPrinted++;
                 }
-                alert(`✅ ${labelsPrinted} labeling label(s) sent to printer!`);
+                alert(downloadMethod ? `📥 ${labelsPrinted} labeling label(s) downloaded!` : `✅ ${labelsPrinted} labeling label(s) sent to printer!`);
             }
         }
 
