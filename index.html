@@ -22025,13 +22025,44 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
 
             // Extract common IDs from first product
-            // Note: Some fields are nested objects {id: x}, others are direct IDs
+            // Note: Some fields are nested objects {id: x}, others are direct IDs or strings
             const firstProduct = products[0];
+            console.log('First product raw data:', JSON.stringify(firstProduct, null, 2));
+
+            // UOM string to ID mapping (LeafLink returns strings but requires IDs for POST)
+            // These IDs may need adjustment based on your LeafLink account
+            const UOM_STRING_TO_ID = {
+                'Gram': 2,
+                'gram': 2,
+                'g': 2,
+                'Unit': 1,
+                'Each': 1,
+                'Milligram': 3,
+                'mg': 3,
+                'Ounce': 4,
+                'oz': 4
+            };
+
+            // Get UOM ID - handle string, object with id, or direct ID
+            let uomId = null;
+            const uom = firstProduct.unit_of_measure;
+            if (typeof uom === 'string') {
+                uomId = UOM_STRING_TO_ID[uom] || 2; // Default to Gram (2) if unknown
+                console.log(`UOM string "${uom}" mapped to ID: ${uomId}`);
+            } else if (uom?.id) {
+                uomId = uom.id;
+            } else if (typeof uom === 'number') {
+                uomId = uom;
+            } else {
+                uomId = 2; // Default to Gram
+                console.log('Could not determine UOM ID, defaulting to 2 (Gram)');
+            }
+
             leafLinkConfig = {
                 seller_id: firstProduct.seller?.id || firstProduct.seller,
                 brand_id: firstProduct.brand?.id || firstProduct.brand,
                 license_id: firstProduct.license?.id || firstProduct.license,
-                unit_of_measure_id: firstProduct.unit_of_measure?.id || firstProduct.unit_of_measure,
+                unit_of_measure_id: uomId,
                 unit_denomination_id: firstProduct.unit_denomination?.id || firstProduct.unit_denomination,
                 category_id: firstProduct.category?.id || firstProduct.category,
                 product_lines: {},
