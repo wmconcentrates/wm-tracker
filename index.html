@@ -22172,15 +22172,17 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             sku: batch.id, // Use batch ID as SKU (e.g., "9.23.5447")
             name: batch.strain || 'Unknown Strain',
             description: `${batch.strain} ${productType}`,
-            seller_id: leafLinkConfig.seller_id,
-            brand_id: leafLinkConfig.brand_id,
-            license_id: leafLinkConfig.license_id,
-            category_id: productLineConfig.category_id || leafLinkConfig.category_id,
-            product_line_id: productLineConfig.product_line_id,
+            // API wants field names without _id suffix
+            seller: leafLinkConfig.seller_id,
+            brand: leafLinkConfig.brand_id,
+            license: leafLinkConfig.license_id,
+            category: productLineConfig.category_id || leafLinkConfig.category_id,
+            product_line: productLineConfig.product_line_id,
+            manufacturer: leafLinkConfig.seller_id, // Same as seller
             unit_of_measure: 'Gram',
             sell_in_unit_of_measure: 'Case',
             unit_multiplier: 10, // 10 units per case
-            unit_denomination_id: leafLinkConfig.unit_denomination_id,
+            unit_denomination: leafLinkConfig.unit_denomination_id,
             listing_state: 'Internal', // TODO: Change to 'Available' after testing
             strain_classification: (batch.strain_type || 'hybrid').toLowerCase(),
             inventory_management: 1, // 1 = track inventory
