@@ -22194,6 +22194,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             listing_state: 'Internal', // TODO: Change to 'Available' after testing
             strain_classification: (batch.strain_type || 'hybrid').toLowerCase(),
             inventory_management: 1, // 1 = track inventory
+            quantity: quantity.toFixed(4), // Initial inventory quantity
             minimum_order: '1.0000', // 1 case minimum
             maximum_order: null,
             wholesale_price: {
