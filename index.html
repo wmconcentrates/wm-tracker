@@ -22070,27 +22070,37 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             };
 
             // Build product line mapping from parent products
+            // Match specific LeafLink product lines by name
             products.forEach(product => {
                 const name = (product.name || '').toLowerCase();
-                let category = null;
+                const productData = {
+                    parent_id: product.id,
+                    product_line_id: product.product_line?.id || product.product_line,
+                    category_id: product.category?.id || product.category,
+                    name: product.name
+                };
 
-                // Map to our internal categories
-                if (name.includes('shatter')) category = 'Shatter';
-                else if (name.includes('sugar')) category = 'Sugar Wax';
-                else if (name.includes('disposable') || name.includes('all in one') || name.includes('aio')) category = 'Live Resin AIOs';
-                else if (name.includes('cartridge') || name.includes('cart')) category = 'Live Resin Carts';
-                else if (name.includes('brick') || name.includes('hash')) category = 'Brick Hash';
-                else if (name.includes('wax')) category = 'Wax';
-
-                if (category && product.id) {
-                    leafLinkConfig.product_lines[category] = {
-                        parent_id: product.id,
-                        product_line_id: product.product_line?.id || product.product_line,
-                        category_id: product.category?.id || product.category,
-                        name: product.name
-                    };
+                // Map to our internal categories - match specific product lines
+                if (name.includes('sugar wax') && name.includes('1 gram')) {
+                    leafLinkConfig.product_lines['Sugar Wax'] = productData;
+                } else if (name.includes('sugar wax') && name.includes('4 gram')) {
+                    leafLinkConfig.product_lines['Sugar Wax 4g'] = productData;
+                } else if (name === 'shatter' || (name.includes('shatter') && !name.includes('sugar'))) {
+                    leafLinkConfig.product_lines['Shatter'] = productData;
+                } else if (name.includes('wax') && name.includes('1 gram') && !name.includes('sugar')) {
+                    leafLinkConfig.product_lines['Wax'] = productData;
+                } else if (name.includes('wax') && name.includes('4 gram') && !name.includes('sugar')) {
+                    leafLinkConfig.product_lines['Wax 4g'] = productData;
+                } else if (name.includes('disposable') || name.includes('all in one')) {
+                    leafLinkConfig.product_lines['Live Resin AIOs'] = productData;
+                } else if (name.includes('cartridge')) {
+                    leafLinkConfig.product_lines['Live Resin Carts'] = productData;
+                } else if (name.includes('brick hash')) {
+                    leafLinkConfig.product_lines['Brick Hash'] = productData;
                 }
             });
+
+            console.log('Mapped product lines:', leafLinkConfig.product_lines);
 
             // Cache the config
             localStorage.setItem('leaflink_config', JSON.stringify(leafLinkConfig));
