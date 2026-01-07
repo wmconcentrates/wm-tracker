@@ -73,6 +73,39 @@ app.get('/api/orders', async (req, res) => {
     }
 });
 
+// Generic POST proxy for LeafLink (create products, etc.)
+app.post('/api/*', async (req, res) => {
+    try {
+        const endpoint = req.params[0];
+        const url = `${LEAFLINK_API_URL}/${endpoint}/`;
+
+        console.log(`POST to: ${url}`);
+        console.log('Payload:', JSON.stringify(req.body, null, 2));
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `App ${LEAFLINK_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(req.body)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('LeafLink POST error:', response.status, data);
+            return res.status(response.status).json(data);
+        }
+
+        console.log('LeafLink POST success:', data.id || data);
+        res.status(response.status).json(data);
+    } catch (error) {
+        console.error('POST proxy error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Generic proxy for any LeafLink endpoint
 app.get('/api/*', async (req, res) => {
     try {

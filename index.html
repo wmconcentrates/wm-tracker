@@ -1493,6 +1493,7 @@
             <button id="viewTrashBtn" onclick="openTrashModal()" style="display: none;">🗑️ Deleted Batches</button>
             <button id="complianceBtn" onclick="openComplianceModal()" style="display: none;">📋 Compliance</button>
             <button id="loginHistoryBtn" onclick="openLoginHistoryModal()" style="display: none;">📊 Login History</button>
+            <button id="leaflinkApprovalsBtn" onclick="openLeafLinkApprovalsModal()" style="display: none;">🛒 LeafLink Queue</button>
             <button id="manageEmployeesBtn" onclick="openEmployeeManagement()" style="display: none;">👥 Manage Employees</button>
             <button id="adminConfigBtn" onclick="window.open('admin-config.html', '_blank')" style="display: none;">⚙️ Admin Config</button>
         </div>
@@ -1507,6 +1508,24 @@
             </div>
             <div style="padding: 25px;">
                 <div id="loginHistoryContent" style="max-height: 500px; overflow-y: auto;">
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LeafLink Approvals Modal -->
+    <div id="leaflinkApprovalsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10005; overflow-y: auto;">
+        <div style="max-width: 600px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #10B981, #059669); padding: 25px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: white;">🛒 LeafLink Approval Queue</h2>
+                <button onclick="closeLeafLinkApprovalsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 15px; border-radius: 8px;">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9em;">
+                    Batches awaiting approval before being pushed to LeafLink inventory.
+                </p>
+                <div id="leaflinkApprovalQueue" style="max-height: 500px; overflow-y: auto;">
                     Loading...
                 </div>
             </div>
@@ -5355,6 +5374,7 @@
                             document.getElementById('manageEmployeesBtn').style.display = 'block'; document.getElementById('adminConfigBtn').style.display = 'block';
                             document.getElementById('loginHistoryBtn').style.display = 'block';
                             document.getElementById('viewTrashBtn').style.display = 'block';
+                            document.getElementById('leaflinkApprovalsBtn').style.display = 'block';
                         }
                         document.getElementById('complianceBtn').style.display = 'block';
                         applyRolePermissions();
@@ -11403,6 +11423,16 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             document.getElementById('loginHistoryModal').style.display = 'none';
         }
 
+        // LeafLink Approvals Modal functions
+        function openLeafLinkApprovalsModal() {
+            document.getElementById('leaflinkApprovalsModal').style.display = 'block';
+            renderLeafLinkApprovalQueue();
+        }
+
+        function closeLeafLinkApprovalsModal() {
+            document.getElementById('leaflinkApprovalsModal').style.display = 'none';
+        }
+
         async function loadLoginHistory() {
             const contentEl = document.getElementById('loginHistoryContent');
             contentEl.innerHTML = 'Loading...';
@@ -14536,10 +14566,22 @@ ${employeeReport || 'No activity recorded today'}
             // Print labeling completion label
             printLabelingCompletionLabel(batch, currentRole ? currentRole.name : 'Unknown');
 
+            // Queue for LeafLink approval (skip buyback batches)
+            let leafLinkMsg = '';
+            if (batch.material_agreement !== 'Custom Buyback') {
+                await queueForLeafLinkApproval({
+                    ...batch,
+                    grams_labeled: gramsLabeled || batch.grams_labeled
+                });
+                leafLinkMsg = '📋 Queued for LeafLink approval';
+            } else {
+                leafLinkMsg = '(Buyback - not listed)';
+            }
+
             showCelebration({
                 emoji: '🏆',
                 title: 'Batch Complete!',
-                message: `${batchId} is fully labeled and ready for sale!`,
+                message: `${batchId} is fully labeled and ready for sale! ${leafLinkMsg}`,
                 stats: [
                     { value: quantity, label: 'Labels Applied' },
                     { value: gramsLabeled ? `${gramsLabeled.toFixed(1)}g` : batch.product_made || 'N/A', label: gramsLabeled ? 'Total Weight' : 'Product' }
@@ -21794,6 +21836,335 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
         });
         return products;
+    }
+
+    // ============================================
+    // LEAFLINK PRODUCT PUSH INTEGRATION
+    // ============================================
+
+    // LeafLink configuration - will be populated from existing products
+    let leafLinkConfig = null;
+
+    // Pending LeafLink approvals (stored on batch records in Supabase)
+
+    async function queueForLeafLinkApproval(batch) {
+        // Calculate quantity based on material agreement
+        const multiplier = batch.material_agreement === '50-50 Split' ? 0.5 : 1.0;
+        const quantity = Math.floor((batch.grams_labeled || batch.final_weight || 0) * multiplier);
+
+        // Update batch with pending LeafLink flag
+        const { error } = await supabaseClient
+            .from('wm_batches')
+            .update({
+                leaflink_pending: true,
+                leaflink_quantity: quantity,
+                leaflink_queued_at: new Date().toISOString(),
+                leaflink_queued_by: currentRole?.name || 'Unknown'
+            })
+            .eq('id', batch.id);
+
+        if (error) {
+            console.error('Error queueing batch for LeafLink:', error);
+        } else {
+            console.log('Batch queued for LeafLink approval:', batch.id);
+        }
+    }
+
+    async function renderLeafLinkApprovalQueue() {
+        const container = document.getElementById('leaflinkApprovalQueue');
+        if (!container) return;
+
+        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Loading...</p>';
+
+        // Fetch batches pending LeafLink approval from Supabase
+        const { data: pendingBatches, error } = await supabaseClient
+            .from('wm_batches')
+            .select('*')
+            .eq('leaflink_pending', true)
+            .order('leaflink_queued_at', { ascending: false });
+
+        if (error) {
+            console.error('Error loading LeafLink queue:', error);
+            container.innerHTML = '<p style="color: var(--accent-red);">Error loading queue</p>';
+            return;
+        }
+
+        if (!pendingBatches || pendingBatches.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No pending approvals</p>';
+            return;
+        }
+
+        const html = pendingBatches.map(batch => {
+            const productType = batch.packaged_product_type || batch.product_made || 'Unknown';
+            const quantity = batch.leaflink_quantity || batch.grams_labeled || 0;
+            return `
+            <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong style="color: var(--accent-green);">${batch.strain}</strong>
+                    <span style="font-size: 0.85em; color: var(--text-secondary);">${batch.id}</span>
+                </div>
+                <div style="font-size: 0.9em; color: var(--text-secondary); margin-bottom: 10px;">
+                    <div>${productType} • ${batch.strain_type || 'Hybrid'}</div>
+                    <div>${quantity}g to LeafLink (${batch.material_agreement})</div>
+                    <div>THC: ${batch.test_thc_percent || 'N/A'}% • Price: $${batch.wholesale_price || 0}</div>
+                    <div style="font-size: 0.8em; margin-top: 5px;">Queued: ${batch.leaflink_queued_at ? new Date(batch.leaflink_queued_at).toLocaleString() : 'N/A'} by ${batch.leaflink_queued_by || 'Unknown'}</div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="approveLeafLinkPush('${batch.id}')" style="flex: 1; padding: 8px; background: var(--accent-green); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        ✓ Approve & Push
+                    </button>
+                    <button onclick="rejectLeafLinkPush('${batch.id}')" style="flex: 1; padding: 8px; background: var(--accent-red, #ef4444); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        ✗ Reject
+                    </button>
+                </div>
+            </div>
+        `}).join('');
+
+        container.innerHTML = html;
+    }
+
+    async function approveLeafLinkPush(batchId) {
+        // Get the full batch data from Supabase
+        const { data: batch, error } = await supabaseClient
+            .from('wm_batches')
+            .select('*')
+            .eq('id', batchId)
+            .single();
+
+        if (error || !batch) {
+            alert('Error loading batch data: ' + (error?.message || 'Not found'));
+            return;
+        }
+
+        const productType = batch.packaged_product_type || batch.product_made || 'Unknown';
+        const quantity = batch.leaflink_quantity || batch.grams_labeled || 0;
+
+        if (!confirm(`Push ${batch.strain} (${productType}) to LeafLink?\n\nQuantity: ${quantity}g\nTHC: ${batch.test_thc_percent}%`)) {
+            return;
+        }
+
+        // Push to LeafLink
+        const result = await pushBatchToLeafLink(batch);
+
+        if (result.success) {
+            // Clear pending flag
+            await supabaseClient
+                .from('wm_batches')
+                .update({
+                    leaflink_pending: false,
+                    leaflink_product_id: result.product_id,
+                    leaflink_pushed_at: new Date().toISOString(),
+                    leaflink_pushed_by: currentRole?.name || 'Unknown'
+                })
+                .eq('id', batchId);
+
+            alert(`✅ Successfully pushed to LeafLink!\n\nProduct ID: ${result.product_id}`);
+            renderLeafLinkApprovalQueue();
+        } else {
+            alert(`❌ LeafLink push failed:\n\n${result.error}\n\n${JSON.stringify(result.details, null, 2)}`);
+        }
+    }
+
+    async function rejectLeafLinkPush(batchId) {
+        if (!confirm('Remove this batch from the LeafLink queue?\n\nThis will NOT delete the batch, just remove it from the approval queue.')) {
+            return;
+        }
+
+        // Clear pending flag
+        await supabaseClient
+            .from('wm_batches')
+            .update({ leaflink_pending: false })
+            .eq('id', batchId);
+
+        renderLeafLinkApprovalQueue();
+    }
+
+    async function initLeafLinkConfig() {
+        // Check cache first
+        const cached = localStorage.getItem('leaflink_config');
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                // Use cache if less than 24 hours old
+                if (parsed.timestamp && Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+                    leafLinkConfig = parsed;
+                    console.log('Using cached LeafLink config:', leafLinkConfig);
+                    return leafLinkConfig;
+                }
+            } catch (e) {
+                console.log('LeafLink config cache parse error');
+            }
+        }
+
+        console.log('Fetching LeafLink config from products...');
+
+        try {
+            // Fetch products to extract IDs
+            const response = await fetch(LEAFLINK_PROXY_URL + '/products/?page_size=100&has_children=true');
+            if (!response.ok) {
+                console.error('Failed to fetch LeafLink products for config');
+                return null;
+            }
+
+            const data = await response.json();
+            const products = data.results || [];
+
+            if (products.length === 0) {
+                console.error('No LeafLink products found');
+                return null;
+            }
+
+            // Extract common IDs from first product
+            const firstProduct = products[0];
+            leafLinkConfig = {
+                seller_id: firstProduct.seller?.id,
+                brand_id: firstProduct.brand?.id,
+                license_id: firstProduct.license?.id,
+                unit_of_measure_id: firstProduct.unit_of_measure?.id,
+                unit_denomination_id: firstProduct.unit_denomination?.id,
+                category_id: firstProduct.category?.id,
+                product_lines: {},
+                timestamp: Date.now()
+            };
+
+            // Build product line mapping from parent products
+            products.forEach(product => {
+                const name = (product.name || '').toLowerCase();
+                let category = null;
+
+                // Map to our internal categories
+                if (name.includes('shatter')) category = 'Shatter';
+                else if (name.includes('sugar')) category = 'Sugar Wax';
+                else if (name.includes('disposable') || name.includes('all in one') || name.includes('aio')) category = 'Live Resin AIOs';
+                else if (name.includes('cartridge') || name.includes('cart')) category = 'Live Resin Carts';
+                else if (name.includes('brick') || name.includes('hash')) category = 'Brick Hash';
+                else if (name.includes('wax')) category = 'Wax';
+
+                if (category && product.id) {
+                    leafLinkConfig.product_lines[category] = {
+                        parent_id: product.id,
+                        product_line_id: product.product_line?.id || product.product_line,
+                        category_id: product.category?.id || product.category,
+                        name: product.name
+                    };
+                }
+            });
+
+            // Cache the config
+            localStorage.setItem('leaflink_config', JSON.stringify(leafLinkConfig));
+            console.log('LeafLink config initialized:', leafLinkConfig);
+
+            return leafLinkConfig;
+        } catch (error) {
+            console.error('Error initializing LeafLink config:', error);
+            return null;
+        }
+    }
+
+    async function pushBatchToLeafLink(batch) {
+        // Skip if no batch or buyback agreement
+        if (!batch) return { success: false, error: 'No batch provided' };
+        if (batch.material_agreement === 'Custom Buyback') {
+            console.log('Skipping LeafLink push for buyback batch:', batch.id);
+            return { success: false, error: 'Buyback - not pushed to LeafLink' };
+        }
+
+        // Ensure config is loaded
+        if (!leafLinkConfig) {
+            await initLeafLinkConfig();
+        }
+
+        if (!leafLinkConfig) {
+            console.error('Could not initialize LeafLink config');
+            return { success: false, error: 'LeafLink config not available' };
+        }
+
+        // Get product type mapping
+        const productType = batch.packaged_product_type || batch.product_made || '';
+        const productLineConfig = leafLinkConfig.product_lines[productType];
+
+        if (!productLineConfig) {
+            console.error('Unknown product type for LeafLink:', productType);
+            return { success: false, error: `Unknown product type: ${productType}` };
+        }
+
+        // Calculate quantity based on material agreement
+        // Wholesale = 100%, 50-50 Split = 50%
+        const multiplier = batch.material_agreement === '50-50 Split' ? 0.5 : 1.0;
+        const quantity = Math.floor((batch.grams_labeled || batch.final_weight || 0) * multiplier);
+
+        if (quantity <= 0) {
+            console.error('No sellable quantity for batch:', batch.id);
+            return { success: false, error: 'No sellable quantity' };
+        }
+
+        // Build LeafLink product payload
+        const payload = {
+            name: batch.strain || 'Unknown Strain',
+            description: `${batch.strain} ${productType}`,
+            seller_id: leafLinkConfig.seller_id,
+            brand_id: leafLinkConfig.brand_id,
+            license_id: leafLinkConfig.license_id,
+            category_id: productLineConfig.category_id || leafLinkConfig.category_id,
+            product_line_id: productLineConfig.product_line_id,
+            unit_of_measure_id: leafLinkConfig.unit_of_measure_id,
+            unit_denomination_id: leafLinkConfig.unit_denomination_id,
+            listing_state: 'Available',
+            strain_classification: (batch.strain_type || 'hybrid').toLowerCase(),
+            wholesale_price: {
+                amount: batch.wholesale_price || 0,
+                currency: 'USD'
+            }
+        };
+
+        // Add test results if available
+        if (batch.test_thc_percent) {
+            payload.product_specification_items = [
+                {
+                    product_specification_id: 1, // THC
+                    decimal_value: batch.test_thc_percent.toString()
+                }
+            ];
+            if (batch.test_cbd_percent) {
+                payload.product_specification_items.push({
+                    product_specification_id: 2, // CBD
+                    decimal_value: batch.test_cbd_percent.toString()
+                });
+            }
+        }
+
+        console.log('Pushing batch to LeafLink:', batch.id, payload);
+
+        try {
+            const response = await fetch(LEAFLINK_PROXY_URL + '/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                console.error('LeafLink API error:', result);
+                return { success: false, error: result.detail || 'API error', details: result };
+            }
+
+            console.log('LeafLink product created:', result.id);
+
+            // Store LeafLink product ID on batch
+            try {
+                await supabaseClient.from('wm_batches')
+                    .update({ leaflink_product_id: result.id })
+                    .eq('id', batch.id);
+            } catch (dbError) {
+                console.error('Error saving LeafLink ID to batch:', dbError);
+            }
+
+            return { success: true, product_id: result.id, data: result };
+        } catch (error) {
+            console.error('Error pushing to LeafLink:', error);
+            return { success: false, error: error.message };
+        }
     }
 
     function renderInventoryCategories() {
