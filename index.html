@@ -2077,7 +2077,8 @@
                                 <option value="">Select Type</option>
                                 <option value="Live Resin Carts">Live Resin Carts (1g)</option>
                                 <option value="Live Resin AIOs">Live All-In-One (1g)</option>
-                                <option value="Wax/Sugar">Wax/Sugar Wax (1g & 4g)</option>
+                                <option value="Wax">Wax (1g & 4g)</option>
+                                <option value="Sugar Wax">Sugar Wax (1g & 4g)</option>
                                 <option value="Shatter">Shatter (1g)</option>
                                 <option value="Brick Hash">Brick Hash (1g & 4g)</option>
                                 <option value="Hash Hits">Hash Hits (2-pack & 5-pack)</option>
@@ -3535,7 +3536,7 @@
                         </div>
                     </div>
                     
-                    <!-- Wax/Sugar Wax Fields -->
+                    <!-- Wax / Sugar Wax Fields (1g & 4g) -->
                     <div id="waxFields" style="display: none;">
                         <div class="form-group">
                             <label>Number of Bowls</label>
@@ -7540,7 +7541,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                 bulkSaleAlert.style.display = 'none';
             }
             
-            if (this.value === 'Wax/Sugar' || this.value === 'Brick Hash') {
+            if (this.value === 'Wax' || this.value === 'Sugar Wax' || this.value === 'Brick Hash') {
                 multiSize.style.display = 'block';
                 singleSize.style.display = 'none';
                 document.getElementById('unitsPackaged').required = false;
@@ -7759,7 +7760,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             const wholesalePrice = 0;
             
             // Handle multi-size packaging
-            if (packagedProductType === 'Wax/Sugar' || packagedProductType === 'Brick Hash' || packagedProductType === 'Hash Hits') {
+            if (packagedProductType === 'Wax' || packagedProductType === 'Sugar Wax' || packagedProductType === 'Brick Hash' || packagedProductType === 'Hash Hits') {
                 const units1g = parseInt(document.getElementById('units1g').value) || 0;
                 const units4g = parseInt(document.getElementById('units4g').value) || 0;
                 
@@ -7781,7 +7782,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
                         packaging_breakdown: `${units1g}x 2-pack, ${units4g}x 5-pack`
                     };
                 } else {
-                    // Wax/Sugar or Brick Hash
+                    // Wax, Sugar Wax, or Brick Hash
                     totalGrams = (units1g * 1) + (units4g * 4);
                     unitsPackaged = units1g + units4g;
                     
@@ -7814,7 +7815,7 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             // Check if this is a bulk sale
             const isBulkSale = packagedProductType === 'Bulk Sale';
             
-            if (packagedProductType === 'Wax/Sugar' || packagedProductType === 'Brick Hash') {
+            if (packagedProductType === 'Wax' || packagedProductType === 'Sugar Wax' || packagedProductType === 'Brick Hash') {
                 timeline.push({
                     stage: 'packaging',
                     user: currentRole ? currentRole.name : "Unknown",
@@ -22094,7 +22095,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Normalize product types that don't match LeafLink categories exactly
         const productTypeNormalization = {
-            'Wax/Sugar': 'Sugar Wax',  // Map combo type to Sugar Wax
             'Sugar': 'Sugar Wax',
             'Live Resin': 'Wax',
             'Badder': 'Wax',
