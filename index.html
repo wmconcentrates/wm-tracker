@@ -6520,7 +6520,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 ^CF0,28
 ^FO15,150^FDBatch: ${batchId}^FS
 
-^FO0,190^GB${width},3,3^FS
+^FO15,190^GB${width - 30},3,3^FS
 
 ^CF0,60
 ^FO15,210^FD${totalUnits} UNITS^FS
@@ -6530,7 +6530,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 ^FO400,215^FD4g: ${units4g}^FS
 ^FO550,215^FD${parseFloat(gramsLabeled).toFixed(1)}g^FS
 
-^FO0,280^GB${width},3,3^FS
+^FO15,280^GB${width - 30},3,3^FS
 
 ^CF0,24
 ^FO15,295^FDLabeled by: ${handler.substring(0, 15)}^FS
@@ -6937,7 +6937,7 @@ ${growerName ? `^FO20,340^FD${growerName.substring(0, 40)}^FS` : ''}
 ^CF0,28
 ^FO15,150^FDBatch: ${batchId}^FS
 
-^FO0,190^GB${width},3,3^FS
+^FO15,190^GB${width - 30},3,3^FS
 
 ^CF0,50
 ^FO15,205^FD${finalWt.toFixed(1)}g^FS
@@ -6953,7 +6953,7 @@ ${growerName ? `^FO20,340^FD${growerName.substring(0, 40)}^FS` : ''}
 ^CF0,24
 ^FO450,245^FD${today}^FS
 
-^FO0,285^GB${width},3,3^FS
+^FO15,285^GB${width - 30},3,3^FS
 
 ^CF0,22
 ^FO15,300^FDMETRC: ${metrcTags || 'N/A'}^FS
