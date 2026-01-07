@@ -6454,72 +6454,123 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
 
             const labelType = document.getElementById('testingLabelType').value;
-            let zpl = '';
+            const printerIP = '10.1.10.95';
 
             if (labelType === 'intake') {
-                zpl = generateIntakeBatchLabelZPL(batch);
+                const zpl = generateIntakeBatchLabelZPL(batch);
+                try {
+                    await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl });
+                    alert(`✅ Intake label sent to printer!`);
+                } catch (error) {
+                    console.error('Print error:', error);
+                    alert('Print error - check console');
+                }
             } else if (labelType === 'postprod') {
                 const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 const sampleWeight = parseFloat(batch.sample_weight) || 0;
-                zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
+                const totalBowls = batch.extraction_bowls || 1;
+
+                for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
+                    const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
+                    try {
+                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl });
+                        console.log(`Post-production label ${bowlNum}/${totalBowls} sent`);
+                    } catch (error) {
+                        console.error('Print error:', error);
+                    }
+                }
+                alert(`✅ ${totalBowls} post-production label(s) sent to printer!`);
             } else if (labelType === 'labeling') {
                 const labeledBy = currentRole ? currentRole.name : 'Test User';
-                zpl = generateLabelingCompletionZPL(batch, labeledBy);
-            }
+                const units1g = batch.units_1g || 0;
+                const units4g = batch.units_4g || 0;
+                let labelsPrinted = 0;
 
-            // Print directly to Zebra IP
-            const printerIP = '10.1.10.95';
-            try {
-                await fetch(`http://${printerIP}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: zpl
-                });
-                alert(`✅ Label sent to printer!`);
-            } catch (error) {
-                console.error('Print error:', error);
-                alert('Print error - check console');
+                // Print 1g label if there are 1g units
+                if (units1g > 0) {
+                    const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
+                    try {
+                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl1g });
+                        labelsPrinted++;
+                    } catch (error) {
+                        console.error('Print error:', error);
+                    }
+                }
+
+                // Print 4g label if there are 4g units
+                if (units4g > 0) {
+                    const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
+                    try {
+                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl4g });
+                        labelsPrinted++;
+                    } catch (error) {
+                        console.error('Print error:', error);
+                    }
+                }
+                alert(`✅ ${labelsPrinted} labeling label(s) sent to printer!`);
             }
         }
 
-        // Print labeling completion label with alert (for testing)
+        // Print labeling completion labels with alert (for testing) - one for 1g, one for 4g
         async function printLabelingCompletionLabelWithAlert(batch, labeledBy) {
             const printerIP = '10.1.10.95';
-            const zpl = generateLabelingCompletionZPL(batch, labeledBy);
+            const units1g = batch.units_1g || 0;
+            const units4g = batch.units_4g || 0;
+            let labelsPrinted = 0;
 
-            try {
-                await fetch(`http://${printerIP}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: zpl
-                });
-                alert(`✅ Label sent to printer!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\nTotal Units: ${batch.units_packaged || 0}\n1g: ${batch.units_1g || 0}  |  4g: ${batch.units_4g || 0}`);
-            } catch (error) {
-                console.error('Print error:', error);
-                alert('Print error - check console for details');
+            // Print 1g label if there are 1g units
+            if (units1g > 0) {
+                const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
+                try {
+                    await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl1g });
+                    labelsPrinted++;
+                } catch (error) {
+                    console.error('Print error for 1g label:', error);
+                }
+            }
+
+            // Print 4g label if there are 4g units
+            if (units4g > 0) {
+                const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
+                try {
+                    await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl4g });
+                    labelsPrinted++;
+                } catch (error) {
+                    console.error('Print error for 4g label:', error);
+                }
+            }
+
+            if (labelsPrinted > 0) {
+                alert(`✅ ${labelsPrinted} label(s) sent to printer!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\n1g: ${units1g} units  |  4g: ${units4g} units`);
+            } else {
+                alert('Print error - no labels printed');
             }
         }
 
-        // Print post-production label directly to Zebra IP
+        // Print post-production label directly to Zebra IP (one per bowl)
         async function printPostProductionLabelDirectly(batch, finalWeight, sampleWeight) {
             const printerIP = '10.1.10.95';
-            const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
+            const totalBowls = batch.extraction_bowls || 1;
 
-            try {
-                await fetch(`http://${printerIP}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: zpl
-                });
-                alert(`✅ Post-production label sent to printer!\n\nBatch: ${batch.id}`);
-            } catch (error) {
-                console.error('Print error:', error);
-                alert('Print error - check console for details');
+            for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
+                const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
+                try {
+                    await fetch(`http://${printerIP}:9100`, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: zpl
+                    });
+                    console.log(`Post-production label ${bowlNum}/${totalBowls} sent`);
+                } catch (error) {
+                    console.error('Print error:', error);
+                }
             }
+            alert(`✅ ${totalBowls} post-production label(s) sent to printer!\n\nBatch: ${batch.id}`);
         }
 
         // Generate ZPL for labeling completion label (4" x 2" landscape)
-        function generateLabelingCompletionZPL(batch, labeledBy) {
+        // unitSize: 1 for 1g labels, 4 for 4g labels
+        function generateLabelingCompletionZPL(batch, labeledBy, unitSize) {
             // 4" x 2" label at 203dpi = 812 x 406 dots
             const width = 812;
             const height = 406;
@@ -6527,11 +6578,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             // Get data
             const strainName = (batch.strain || batch.strain_name || 'Unknown').toUpperCase();
             const batchId = batch.id || '';
-            const totalUnits = batch.units_packaged || 0;
             const units1g = batch.units_1g || 0;
             const units4g = batch.units_4g || 0;
             const handler = labeledBy || 'Unknown';
-            const gramsLabeled = batch.grams_labeled || batch.total_grams_packaged || 0;
+
+            // Determine unit count and label based on unitSize
+            const unitCount = unitSize === 4 ? units4g : units1g;
+            const unitLabel = unitSize === 4 ? '4 GRAM' : '1 GRAM';
+            const gramsForSize = unitSize === 4 ? (units4g * 4) : units1g;
 
             // Material agreement
             let agreement = batch.material_agreement || 'Wholesale';
@@ -6556,6 +6610,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 ^CF0,38
 ^FO25,30^FR^FD LABELING COMPLETE ^FS
 
+^CF0,70
+^FO580,20^FD${unitLabel}^FS
+
 ^CF0,50
 ^FO15,105^FD${strainName.substring(0, 25)}^FS
 
@@ -6565,44 +6622,62 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 
 ^FO15,200^GB${width - 30},3,3^FS
 
-^CF0,70
-^FO15,220^FD${totalUnits} UNITS^FS
+^CF0,90
+^FO15,215^FD${unitCount} UNITS^FS
 
-^CF0,40
-^FO320,225^FD1g: ${units1g}^FS
-^FO480,225^FD4g: ${units4g}^FS
-^FO640,225^FD${parseFloat(gramsLabeled).toFixed(1)}g^FS
+^CF0,45
+^FO420,230^FD${gramsForSize}g total^FS
 
-^FO15,295^GB${width - 30},3,3^FS
+^FO15,310^GB${width - 30},3,3^FS
 
 ^CF0,30
-^FO15,315^FDLabeled: ${handler.substring(0, 12)}^FS
-^FO280,315^FD${agreement}^FS
-^FO480,315^FDGrower: ${license}^FS
+^FO15,330^FDLabeled: ${handler.substring(0, 12)}^FS
+^FO280,330^FD${agreement}^FS
+^FO480,330^FDGrower: ${license}^FS
 
 ^CF0,28
-^FO15,355^FD${today}^FS
-${growerName ? `^FO200,355^FD${growerName.substring(0, 35)}^FS` : ''}
+^FO15,370^FD${today}^FS
+${growerName ? `^FO200,370^FD${growerName.substring(0, 35)}^FS` : ''}
 
 ^XZ`;
 
             return zpl;
         }
 
-        // Print labeling completion label directly to Zebra IP
+        // Print labeling completion labels directly to Zebra IP (one for 1g, one for 4g)
         async function printLabelingCompletionLabel(batch, labeledBy) {
             const printerIP = '10.1.10.95';
-            const zpl = generateLabelingCompletionZPL(batch, labeledBy);
+            const units1g = batch.units_1g || 0;
+            const units4g = batch.units_4g || 0;
 
-            try {
-                await fetch(`http://${printerIP}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: zpl
-                });
-                console.log('Labeling completion label sent to printer');
-            } catch (error) {
-                console.error('Print error for labeling completion:', error);
+            // Print 1g label if there are 1g units
+            if (units1g > 0) {
+                const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
+                try {
+                    await fetch(`http://${printerIP}:9100`, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: zpl1g
+                    });
+                    console.log('1g labeling completion label sent to printer');
+                } catch (error) {
+                    console.error('Print error for 1g label:', error);
+                }
+            }
+
+            // Print 4g label if there are 4g units
+            if (units4g > 0) {
+                const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
+                try {
+                    await fetch(`http://${printerIP}:9100`, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: zpl4g
+                    });
+                    console.log('4g labeling completion label sent to printer');
+                } catch (error) {
+                    console.error('Print error for 4g label:', error);
+                }
             }
         }
 
@@ -6856,6 +6931,11 @@ ${growerName ? `^FO200,355^FD${growerName.substring(0, 35)}^FS` : ''}
 ^CF0,30
 ^FO15,275^FDTRIM WEIGHT^FS
 
+^CF0,55
+^FO220,205^FD${batch.socks_total || 1}^FS
+^CF0,30
+^FO220,275^FDSOCKS^FS
+
 ^CF0,32
 ^FO350,205^FDDate: ${date}^FS
 ^FO350,245^FDGrower: ${batch.cultivation_license || 'N/A'}^FS
@@ -6912,7 +6992,7 @@ ${growerName ? `^FO450,325^FD${growerName.substring(0, 25)}^FS` : ''}
         }
 
         // Generate ZPL for post-production label (4" x 2" landscape)
-        function generatePostProductionLabelZPL(batch, finalWeight, sampleWeight) {
+        function generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNumber, totalBowls) {
             // 4" x 2" label at 203dpi = 812 x 406 dots
             const width = 812;
             const height = 406;
@@ -6920,6 +7000,9 @@ ${growerName ? `^FO450,325^FD${growerName.substring(0, 25)}^FS` : ''}
             // Get product name and batch ID
             const productName = (batch.strain || 'Unknown').toUpperCase();
             const batchId = batch.id || '';
+
+            // Bowl numbering (e.g., "1/2", "2/2")
+            const bowlLabel = totalBowls > 1 ? `${bowlNumber}/${totalBowls}` : '';
 
             // Weights
             const trimWeight = parseFloat(batch.trim_weight) || 0;
@@ -6972,6 +7055,8 @@ ${growerName ? `^FO450,325^FD${growerName.substring(0, 25)}^FS` : ''}
 ^FO15,10^GB330,75,75^FS
 ^CF0,36
 ^FO25,27^FR^FD POST-PRODUCTION ^FS
+${bowlLabel ? `^CF0,70
+^FO680,15^FD${bowlLabel}^FS` : ''}
 
 ^CF0,50
 ^FO15,100^FD${productName.substring(0, 25)}^FS
@@ -7012,9 +7097,62 @@ ${growerName ? `^FO530,360^FD${growerName.substring(0, 18)}^FS` : ''}
             return zpl;
         }
 
-        // Print post-production labels (multiple copies) - direct to Zebra IP
+        // Print post-production labels - one per bowl with numbering
         async function printPostProductionLabels(batch, finalWeight, sampleWeight, copies) {
-const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);            const printServerURL = localStorage.getItem("printServerURL") || "http://localhost:3000/print";            for (let i = 0; i < copies; i++) {                let printed = false;                try {                    const response = await fetch(printServerURL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ zpl: zpl }) });                    if (response.ok) printed = true;                } catch (e) { }                if (!printed && window.BrowserPrint) {                    try { const printer = await window.BrowserPrint.getDefaultDevice("printer"); printer.send(zpl); printed = true; } catch (e) { }                }                if (!printed && i === 0) {                    const blob = new Blob([zpl], { type: "text/plain" });                    const url = window.URL.createObjectURL(blob);                    const a = document.createElement("a"); a.href = url; a.download = "label-" + batch.id + ".zpl";                    document.body.appendChild(a); a.click(); document.body.removeChild(a);                    alert("Downloaded ZPL file. Use Zebra Setup Utilities to print."); break;                }            }
+            const totalBowls = batch.extraction_bowls || 1;
+            const printServerURL = localStorage.getItem("printServerURL") || "http://localhost:3000/print";
+            const printerIP = '10.1.10.95';
+
+            for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
+                const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
+                let printed = false;
+
+                // Try direct Zebra IP print first
+                try {
+                    await fetch(`http://${printerIP}:9100`, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: zpl
+                    });
+                    printed = true;
+                    console.log(`Post-production label ${bowlNum}/${totalBowls} sent to printer`);
+                } catch (e) { }
+
+                // Fallback to print server
+                if (!printed) {
+                    try {
+                        const response = await fetch(printServerURL, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ zpl: zpl })
+                        });
+                        if (response.ok) printed = true;
+                    } catch (e) { }
+                }
+
+                // Fallback to BrowserPrint
+                if (!printed && window.BrowserPrint) {
+                    try {
+                        const printer = await window.BrowserPrint.getDefaultDevice("printer");
+                        printer.send(zpl);
+                        printed = true;
+                    } catch (e) { }
+                }
+
+                // Last resort - download ZPL
+                if (!printed && bowlNum === 1) {
+                    const blob = new Blob([zpl], { type: "text/plain" });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "label-" + batch.id + ".zpl";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    alert("Downloaded ZPL file. Use Zebra Setup Utilities to print.");
+                    break;
+                }
+            }
         }
 
         // Extraction functions
@@ -11546,31 +11684,60 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
             }
 
             const labelType = document.getElementById('printLabelsLabelType').value;
-            let zpl = '';
+            const printerIP = '10.1.10.95';
 
             if (labelType === 'intake') {
-                zpl = generateIntakeBatchLabelZPL(batch);
+                const zpl = generateIntakeBatchLabelZPL(batch);
+                try {
+                    await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl });
+                    alert(`✅ Intake label sent to printer!`);
+                } catch (error) {
+                    console.error('Print error:', error);
+                    alert('Print error - check console');
+                }
             } else if (labelType === 'postprod') {
                 const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 const sampleWeight = parseFloat(batch.sample_weight) || 0;
-                zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
+                const totalBowls = batch.extraction_bowls || 1;
+
+                for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
+                    const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
+                    try {
+                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl });
+                        console.log(`Post-production label ${bowlNum}/${totalBowls} sent`);
+                    } catch (error) {
+                        console.error('Print error:', error);
+                    }
+                }
+                alert(`✅ ${totalBowls} post-production label(s) sent to printer!`);
             } else if (labelType === 'labeling') {
                 const labeledBy = currentRole ? currentRole.name : 'Unknown';
-                zpl = generateLabelingCompletionZPL(batch, labeledBy);
-            }
+                const units1g = batch.units_1g || 0;
+                const units4g = batch.units_4g || 0;
+                let labelsPrinted = 0;
 
-            // Print directly to Zebra IP
-            const printerIP = '10.1.10.95';
-            try {
-                await fetch(`http://${printerIP}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: zpl
-                });
-                alert(`✅ Label sent to printer!`);
-            } catch (error) {
-                console.error('Print error:', error);
-                alert('Print error - check console');
+                // Print 1g label if there are 1g units
+                if (units1g > 0) {
+                    const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
+                    try {
+                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl1g });
+                        labelsPrinted++;
+                    } catch (error) {
+                        console.error('Print error:', error);
+                    }
+                }
+
+                // Print 4g label if there are 4g units
+                if (units4g > 0) {
+                    const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
+                    try {
+                        await fetch(`http://${printerIP}:9100`, { method: 'POST', mode: 'no-cors', body: zpl4g });
+                        labelsPrinted++;
+                    } catch (error) {
+                        console.error('Print error:', error);
+                    }
+                }
+                alert(`✅ ${labelsPrinted} labeling label(s) sent to printer!`);
             }
         }
 
