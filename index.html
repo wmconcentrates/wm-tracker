@@ -1494,6 +1494,7 @@
             <button id="complianceBtn" onclick="openComplianceModal()" style="display: none;">📋 Compliance</button>
             <button id="loginHistoryBtn" onclick="openLoginHistoryModal()" style="display: none;">📊 Login History</button>
             <button id="leaflinkApprovalsBtn" onclick="openLeafLinkApprovalsModal()" style="display: none;">🛒 LeafLink Queue</button>
+            <button id="printLabelsBtn" onclick="openPrintLabelsModal()">🖨️ Print Labels</button>
             <button id="manageEmployeesBtn" onclick="openEmployeeManagement()" style="display: none;">👥 Manage Employees</button>
             <button id="adminConfigBtn" onclick="window.open('admin-config.html', '_blank')" style="display: none;">⚙️ Admin Config</button>
         </div>
@@ -1528,6 +1529,37 @@
                 <div id="leaflinkApprovalQueue" style="max-height: 500px; overflow-y: auto;">
                     Loading...
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Labels Modal -->
+    <div id="printLabelsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10005; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #8B5CF6, #6366F1); padding: 25px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: white;">🖨️ Print Labels</h2>
+                <button onclick="closePrintLabelsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px 15px; border-radius: 8px;">&times;</button>
+            </div>
+            <div style="padding: 25px;">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="color: var(--text-secondary); margin-bottom: 8px; display: block;">Select Batch</label>
+                    <select id="printLabelsBatchSelect" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); font-size: 1rem;">
+                        <option value="">Select a batch...</option>
+                    </select>
+                </div>
+                <div id="printLabelsBatchInfo" style="display: none; background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="color: var(--text-secondary); margin-bottom: 8px; display: block;">Label Type</label>
+                    <select id="printLabelsLabelType" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); font-size: 1rem;">
+                        <option value="intake">📥 Intake Label</option>
+                        <option value="postprod">📦 Post-Production Label</option>
+                        <option value="labeling">🏷️ Labeling Complete Label</option>
+                    </select>
+                </div>
+                <button onclick="printFromActionsModal()" style="width: 100%; background: linear-gradient(135deg, #8B5CF6, #6366F1); color: white; border: none; padding: 15px; border-radius: 10px; font-size: 1.1rem; cursor: pointer; font-weight: 600;">
+                    🖨️ Print Label
+                </button>
             </div>
         </div>
     </div>
@@ -11432,6 +11464,99 @@ const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);   
 
         function closeLeafLinkApprovalsModal() {
             document.getElementById('leaflinkApprovalsModal').style.display = 'none';
+        }
+
+        // Print Labels Modal functions
+        function openPrintLabelsModal() {
+            document.getElementById('printLabelsModal').style.display = 'block';
+            populatePrintLabelsBatchSelect();
+        }
+
+        function closePrintLabelsModal() {
+            document.getElementById('printLabelsModal').style.display = 'none';
+        }
+
+        function populatePrintLabelsBatchSelect() {
+            const select = document.getElementById('printLabelsBatchSelect');
+            select.innerHTML = '<option value="">Select a batch...</option>';
+
+            // Sort batches by intake_date descending (newest first)
+            const sortedBatches = [...batches].sort((a, b) => {
+                const dateA = new Date(a.intake_date || 0);
+                const dateB = new Date(b.intake_date || 0);
+                return dateB - dateA;
+            });
+
+            sortedBatches.forEach(batch => {
+                const option = document.createElement('option');
+                option.value = batch.id;
+                option.textContent = `${batch.id} - ${batch.strain || 'Unknown'}`;
+                select.appendChild(option);
+            });
+
+            // Add change listener to show batch info
+            select.onchange = function() {
+                const batchId = this.value;
+                const infoDiv = document.getElementById('printLabelsBatchInfo');
+                if (batchId) {
+                    const batch = batches.find(b => b.id === batchId);
+                    if (batch) {
+                        infoDiv.style.display = 'block';
+                        infoDiv.innerHTML = `
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div><strong style="color: var(--text-secondary);">Strain:</strong> ${batch.strain || 'N/A'}</div>
+                                <div><strong style="color: var(--text-secondary);">Type:</strong> ${batch.strain_type || 'N/A'}</div>
+                                <div><strong style="color: var(--text-secondary);">Trim:</strong> ${batch.trim_weight || 0}g</div>
+                                <div><strong style="color: var(--text-secondary);">Final:</strong> ${batch.final_weight || batch.net_weight || 'N/A'}g</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    infoDiv.style.display = 'none';
+                }
+            };
+        }
+
+        async function printFromActionsModal() {
+            const batchId = document.getElementById('printLabelsBatchSelect').value;
+            if (!batchId) {
+                alert('Please select a batch first!');
+                return;
+            }
+
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) {
+                alert('Batch not found!');
+                return;
+            }
+
+            const labelType = document.getElementById('printLabelsLabelType').value;
+            let zpl = '';
+
+            if (labelType === 'intake') {
+                zpl = generateIntakeBatchLabelZPL(batch);
+            } else if (labelType === 'postprod') {
+                const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
+                const sampleWeight = parseFloat(batch.sample_weight) || 0;
+                zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight);
+            } else if (labelType === 'labeling') {
+                const labeledBy = currentRole ? currentRole.name : 'Unknown';
+                zpl = generateLabelingCompletionZPL(batch, labeledBy);
+            }
+
+            // Print directly to Zebra IP
+            const printerIP = '10.1.10.95';
+            try {
+                await fetch(`http://${printerIP}:9100`, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: zpl
+                });
+                alert(`✅ Label sent to printer!`);
+            } catch (error) {
+                console.error('Print error:', error);
+                alert('Print error - check console');
+            }
         }
 
         async function loadLoginHistory() {
