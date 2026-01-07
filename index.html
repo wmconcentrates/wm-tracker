@@ -22157,6 +22157,17 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         // Build LeafLink product payload
+        // Pricing: Sugar Wax = $6/g, Wax = $6/g, Shatter = $5/g, etc.
+        const PRODUCT_PRICING = {
+            'Sugar Wax': 6,
+            'Wax': 6,
+            'Shatter': 5,
+            'Live Resin Carts': 12,
+            'Live Resin AIOs': 15,
+            'Brick Hash': 4
+        };
+        const pricePerUnit = PRODUCT_PRICING[productType] || 6;
+
         const payload = {
             sku: batch.id, // Use batch ID as SKU (e.g., "9.23.5447")
             name: batch.strain || 'Unknown Strain',
@@ -22166,19 +22177,21 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             license_id: leafLinkConfig.license_id,
             category_id: productLineConfig.category_id || leafLinkConfig.category_id,
             product_line_id: productLineConfig.product_line_id,
-            unit_of_measure: 'Gram', // String required by API
+            unit_of_measure: 'Gram',
+            sell_in_unit_of_measure: 'Case',
+            unit_multiplier: 10, // 10 units per case
             unit_denomination_id: leafLinkConfig.unit_denomination_id,
             listing_state: 'Internal', // TODO: Change to 'Available' after testing
             strain_classification: (batch.strain_type || 'hybrid').toLowerCase(),
             inventory_management: 1, // 1 = track inventory
-            minimum_order: '1.0000',
+            minimum_order: '1.0000', // 1 case minimum
             maximum_order: null,
             wholesale_price: {
-                amount: batch.wholesale_price || 0,
+                amount: pricePerUnit,
                 currency: 'USD'
             },
             retail_price: {
-                amount: 0, // Not used for B2B but required by API
+                amount: 0,
                 currency: 'USD'
             },
             sale_price: {
