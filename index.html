@@ -1688,7 +1688,7 @@
                 <div class="header-logo">
                     <img src="https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w" alt="White Mousse">
                 </div>
-                <div id="versionTag" style="position: absolute; top: 5px; right: 10px; font-size: 0.7rem; color: var(--text-muted); opacity: 0.6;">v8c70897</div>
+                <div id="versionTag" style="position: absolute; top: 5px; right: 10px; font-size: 0.7rem; color: var(--text-muted); opacity: 0.6;">loading...</div>
                             </div>
         </div>
         <!-- Demo Mode Indicator -->
@@ -5281,6 +5281,17 @@
 
         // Initialize on load
         document.addEventListener('DOMContentLoaded', function() {
+            // Fetch version from GitHub
+            fetch('https://api.github.com/repos/wmconcentrates/wm-tracker/commits/main')
+                .then(r => r.json())
+                .then(data => {
+                    const shortHash = data.sha ? data.sha.substring(0, 7) : 'unknown';
+                    document.getElementById('versionTag').textContent = 'v' + shortHash;
+                })
+                .catch(() => {
+                    document.getElementById('versionTag').textContent = 'v?';
+                });
+
             // Setup PIN login
             const pinInput = document.getElementById('pinInput');
             const loginBtn = document.getElementById('loginBtn');
