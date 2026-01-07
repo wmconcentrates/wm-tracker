@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Label Printer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #000000;
+            --bg-card: #0a0a0a;
+            --border: #1a1a1a;
+            --purple: #bf00ff;
+            --green: #39ff14;
+            --blue: #0055ff;
+            --orange: #ff6b00;
+            --pink: #ff10f0;
+            --text: #ffffff;
+            --text-dim: #888888;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Space Mono', monospace;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            color: var(--purple);
+            font-size: 24px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: var(--green);
+            font-size: 16px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2 .step {
+            background: var(--green);
+            color: var(--bg-dark);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-dim);
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--purple);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--purple);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #d633ff;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--purple);
+        }
+
+        .btn-success {
+            background: var(--green);
+            color: var(--bg-dark);
+        }
+
+        .btn-success:hover {
+            background: #4dff2a;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table th {
+            color: var(--purple);
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .data-table tr:hover {
+            background: rgba(191, 0, 255, 0.05);
+        }
+
+        .data-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .field-mapping {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .field-mapping label {
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .preview-container {
+            background: white;
+            color: black;
+            padding: 20px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            min-height: 200px;
+        }
+
+        .preview-label {
+            border: 2px dashed #ccc;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .preview-label::before {
+            content: attr(data-index);
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: var(--purple);
+            color: white;
+            padding: 2px 8px;
+            font-size: 11px;
+            border-radius: 3px;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 15px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-dim);
+        }
+
+        .status-indicator.connected {
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green);
+        }
+
+        .status-indicator.error {
+            background: var(--orange);
+            box-shadow: 0 0 10px var(--orange);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 4px 4px 0 0;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+        }
+
+        .tab.active {
+            background: var(--bg-card);
+            color: var(--purple);
+            border-bottom-color: var(--bg-card);
+        }
+
+        .help-text {
+            color: var(--text-dim);
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .badge-purple {
+            background: rgba(191, 0, 255, 0.2);
+            color: var(--purple);
+        }
+
+        .badge-green {
+            background: rgba(57, 255, 20, 0.2);
+            color: var(--green);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .zpl-preview {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+            color: var(--green);
+        }
+
+        .print-queue {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .print-queue-item {
+            padding: 8px 12px;
+            background: rgba(191, 0, 255, 0.1);
+            border: 1px solid var(--purple);
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .print-queue-item .remove {
+            cursor: pointer;
+            color: var(--orange);
+        }
+
+        .template-preview {
+            background: white;
+            color: black;
+            width: 400px;
+            height: 200px;
+            padding: 10px;
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            border: 1px solid #000;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .template-preview .label-title {
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+            border-bottom: 2px solid black;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .template-preview .label-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .row-select {
+            width: 20px;
+        }
+
+        .select-all-container {
+            margin-bottom: 10px;
+        }
+
+        .printer-settings {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .printer-settings {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .alert-info {
+            background: rgba(0, 85, 255, 0.1);
+            border: 1px solid var(--blue);
+            color: var(--blue);
+        }
+
+        .alert-success {
+            background: rgba(57, 255, 20, 0.1);
+            border: 1px solid var(--green);
+            color: var(--green);
+        }
+
+        .alert-error {
+            background: rgba(255, 107, 0, 0.1);
+            border: 1px solid var(--orange);
+            color: var(--orange);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .label-template-editor {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .template-fields {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .template-field {
+            display: grid;
+            grid-template-columns: 1fr 80px 80px 80px;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .template-field input {
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .template-field select {
+            padding: 8px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>GOOGLE SHEETS LABEL PRINTER</h1>
+            <div class="header-actions">
+                <button class="btn-secondary btn-small" onclick="showHelp()">Help</button>
+                <button class="btn-secondary btn-small" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-indicator" id="sheetStatus"></div>
+            <span id="sheetStatusText">No sheet connected</span>
+            <span style="margin-left: auto;">
+                <span class="badge badge-purple" id="rowCount">0 rows</span>
+                <span class="badge badge-green" id="selectedCount">0 selected</span>
+            </span>
+        </div>
+
+        <!-- Step 1: Connect to Google Sheet -->
+        <div class="card">
+            <h2><span class="step">1</span> CONNECT TO GOOGLE SHEET</h2>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('published')">Published Sheet URL</button>
+                <button class="tab" onclick="switchTab('api')">Google Sheets API</button>
+                <button class="tab" onclick="switchTab('paste')">Paste CSV</button>
+            </div>
+
+            <div id="tab-published">
+                <div class="form-group">
+                    <label>Google Sheet Published URL or Sheet ID</label>
+                    <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/SHEET_ID/edit or just SHEET_ID">
+                    <p class="help-text">
+                        To publish: File → Share → Publish to web → Select sheet → CSV format → Publish
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label>Sheet Name (optional)</label>
+                    <input type="text" id="sheetName" placeholder="Sheet1">
+                </div>
+                <button class="btn-primary" onclick="loadFromPublishedSheet()">Load Sheet Data</button>
+            </div>
+
+            <div id="tab-api" class="hidden">
+                <div class="alert alert-info">
+                    For private sheets, use Google Sheets API with an API key.
+                </div>
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" id="apiKey" placeholder="Your Google API Key">
+                </div>
+                <div class="form-group">
+                    <label>Spreadsheet ID</label>
+                    <input type="text" id="spreadsheetId" placeholder="Spreadsheet ID from URL">
+                </div>
+                <div class="form-group">
+                    <label>Range (e.g., Sheet1!A1:Z1000)</label>
+                    <input type="text" id="sheetRange" placeholder="Sheet1!A1:Z1000">
+                </div>
+                <button class="btn-primary" onclick="loadFromAPI()">Load with API</button>
+            </div>
+
+            <div id="tab-paste" class="hidden">
+                <div class="form-group">
+                    <label>Paste CSV Data</label>
+                    <textarea id="csvData" placeholder="Paste your CSV data here. First row should be headers."></textarea>
+                </div>
+                <button class="btn-primary" onclick="loadFromCSV()">Parse CSV</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Data Preview & Selection -->
+        <div class="card" id="dataSection" style="display: none;">
+            <h2><span class="step">2</span> SELECT DATA TO PRINT</h2>
+
+            <div class="select-all-container">
+                <label class="checkbox-group">
+                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                    <span>Select All Rows</span>
+                </label>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Step 3: Configure Label Template -->
+        <div class="card" id="templateSection" style="display: none;">
+            <h2><span class="step">3</span> CONFIGURE LABEL TEMPLATE</h2>
+
+            <div class="grid-2">
+                <div>
+                    <div class="form-group">
+                        <label>Label Size</label>
+                        <select id="labelSize" onchange="updateLabelSize()">
+                            <option value="4x2">4" x 2" (812 x 406 dots @ 203 DPI)</option>
+                            <option value="4x3">4" x 3" (812 x 609 dots @ 203 DPI)</option>
+                            <option value="4x6">4" x 6" (812 x 1218 dots @ 203 DPI)</option>
+                            <option value="2x1">2" x 1" (406 x 203 dots @ 203 DPI)</option>
+                            <option value="custom">Custom Size</option>
+                        </select>
+                    </div>
+
+                    <div id="customSizeInputs" class="hidden">
+                        <div class="form-group">
+                            <label>Width (dots)</label>
+                            <input type="number" id="customWidth" value="812">
+                        </div>
+                        <div class="form-group">
+                            <label>Height (dots)</label>
+                            <input type="number" id="customHeight" value="406">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Label Template</label>
+                        <select id="templateSelect" onchange="loadTemplate()">
+                            <option value="basic">Basic (Title + Fields)</option>
+                            <option value="product">Product Label</option>
+                            <option value="shipping">Shipping Label</option>
+                            <option value="inventory">Inventory Tag</option>
+                            <option value="custom">Custom Template</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Field Mappings</label>
+                        <div id="fieldMappings"></div>
+                        <button class="btn-secondary btn-small" onclick="addFieldMapping()" style="margin-top: 10px;">+ Add Field</button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="form-group">
+                        <label>Label Preview</label>
+                        <div class="preview-container">
+                            <div class="template-preview" id="labelPreview">
+                                <div class="label-title">LABEL TITLE</div>
+                                <div class="label-row">
+                                    <span>Field 1:</span>
+                                    <span>Value</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-secondary btn-small" onclick="refreshPreview()">Refresh Preview</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Printer Settings -->
+        <div class="card" id="printerSection" style="display: none;">
+            <h2><span class="step">4</span> PRINTER SETTINGS</h2>
+
+            <div class="printer-settings">
+                <div class="form-group">
+                    <label>Printer IP Address</label>
+                    <input type="text" id="printerIP" value="10.1.10.95" placeholder="e.g., 10.1.10.95">
+                </div>
+                <div class="form-group">
+                    <label>Printer Port</label>
+                    <input type="number" id="printerPort" value="9100">
+                </div>
+                <div class="form-group">
+                    <label>Print Darkness (0-30)</label>
+                    <input type="number" id="printDarkness" value="25" min="0" max="30">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-group">
+                    <input type="checkbox" id="useDownloadFallback">
+                    <span>Always use download fallback (for HTTPS/remote access)</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Step 5: Print -->
+        <div class="card" id="printSection" style="display: none;">
+            <h2><span class="step">5</span> GENERATE & PRINT LABELS</h2>
+
+            <div class="grid-2">
+                <div>
+                    <div class="form-group">
+                        <label>Labels to Print</label>
+                        <div class="print-queue" id="printQueue">
+                            <span class="help-text">Select rows from the data table above</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn-primary" onclick="generateZPL()">Generate ZPL</button>
+                        <button class="btn-success" onclick="printLabels()">Print Labels</button>
+                        <button class="btn-secondary" onclick="downloadZPL()">Download ZPL File</button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="form-group">
+                        <label>Generated ZPL Code</label>
+                        <div class="zpl-preview" id="zplPreview">
+                            ZPL code will appear here after generation...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Print Results -->
+        <div class="card hidden" id="resultsSection">
+            <h2>PRINT RESULTS</h2>
+            <div id="printResults"></div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let sheetData = [];
+        let headers = [];
+        let selectedRows = new Set();
+        let fieldMappings = [];
+        let generatedZPL = '';
+
+        // Label dimensions (in dots at 203 DPI)
+        const labelSizes = {
+            '4x2': { width: 812, height: 406 },
+            '4x3': { width: 812, height: 609 },
+            '4x6': { width: 812, height: 1218 },
+            '2x1': { width: 406, height: 203 }
+        };
+
+        // Templates
+        const templates = {
+            basic: {
+                title: { field: '', x: 20, y: 30, fontSize: 40 },
+                fields: [
+                    { label: 'Field 1', field: '', x: 20, y: 90, fontSize: 28 },
+                    { label: 'Field 2', field: '', x: 20, y: 130, fontSize: 28 },
+                    { label: 'Field 3', field: '', x: 20, y: 170, fontSize: 28 }
+                ]
+            },
+            product: {
+                title: { field: '', x: 20, y: 30, fontSize: 45 },
+                fields: [
+                    { label: 'SKU', field: '', x: 20, y: 100, fontSize: 30 },
+                    { label: 'Price', field: '', x: 20, y: 145, fontSize: 35 },
+                    { label: 'Category', field: '', x: 20, y: 195, fontSize: 24 }
+                ]
+            },
+            shipping: {
+                title: { field: '', x: 20, y: 25, fontSize: 35 },
+                fields: [
+                    { label: 'To', field: '', x: 20, y: 75, fontSize: 28 },
+                    { label: 'Address', field: '', x: 20, y: 115, fontSize: 24 },
+                    { label: 'City/State', field: '', x: 20, y: 155, fontSize: 24 },
+                    { label: 'ZIP', field: '', x: 20, y: 195, fontSize: 28 }
+                ]
+            },
+            inventory: {
+                title: { field: '', x: 20, y: 30, fontSize: 40 },
+                fields: [
+                    { label: 'Item #', field: '', x: 20, y: 90, fontSize: 32 },
+                    { label: 'Location', field: '', x: 20, y: 135, fontSize: 28 },
+                    { label: 'Qty', field: '', x: 20, y: 180, fontSize: 30 }
+                ]
+            },
+            custom: {
+                title: { field: '', x: 20, y: 30, fontSize: 40 },
+                fields: []
+            }
+        };
+
+        let currentTemplate = JSON.parse(JSON.stringify(templates.basic));
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+        }
+
+        // Load from published Google Sheet
+        async function loadFromPublishedSheet() {
+            const urlInput = document.getElementById('sheetUrl').value.trim();
+            const sheetName = document.getElementById('sheetName').value.trim() || 'Sheet1';
+
+            if (!urlInput) {
+                showAlert('Please enter a Google Sheet URL or ID', 'error');
+                return;
+            }
+
+            // Extract sheet ID from URL or use as-is
+            let sheetId = urlInput;
+            const match = urlInput.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            if (match) {
+                sheetId = match[1];
+            }
+
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+
+            updateStatus('loading', 'Loading sheet data...');
+
+            try {
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch sheet. Make sure it is published or shared.');
+                }
+
+                const csvText = await response.text();
+                parseCSVData(csvText);
+                updateStatus('connected', `Connected to sheet: ${sheetId}`);
+            } catch (error) {
+                console.error('Error loading sheet:', error);
+                updateStatus('error', 'Failed to load sheet');
+                showAlert('Failed to load sheet: ' + error.message, 'error');
+            }
+        }
+
+        // Load using Google Sheets API
+        async function loadFromAPI() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const spreadsheetId = document.getElementById('spreadsheetId').value.trim();
+            const range = document.getElementById('sheetRange').value.trim() || 'Sheet1!A1:Z1000';
+
+            if (!apiKey || !spreadsheetId) {
+                showAlert('Please enter both API key and Spreadsheet ID', 'error');
+                return;
+            }
+
+            updateStatus('loading', 'Loading via API...');
+
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || 'API request failed');
+                }
+
+                const data = await response.json();
+                if (data.values && data.values.length > 0) {
+                    headers = data.values[0];
+                    sheetData = data.values.slice(1).map(row => {
+                        const obj = {};
+                        headers.forEach((h, i) => obj[h] = row[i] || '');
+                        return obj;
+                    });
+                    displayData();
+                    updateStatus('connected', `Loaded ${sheetData.length} rows via API`);
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                updateStatus('error', 'API request failed');
+                showAlert('API Error: ' + error.message, 'error');
+            }
+        }
+
+        // Load from pasted CSV
+        function loadFromCSV() {
+            const csvText = document.getElementById('csvData').value.trim();
+            if (!csvText) {
+                showAlert('Please paste CSV data', 'error');
+                return;
+            }
+            parseCSVData(csvText);
+            updateStatus('connected', 'CSV data loaded');
+        }
+
+        // Parse CSV data
+        function parseCSVData(csvText) {
+            const lines = csvText.split('\n').filter(line => line.trim());
+            if (lines.length < 2) {
+                showAlert('CSV must have at least a header row and one data row', 'error');
+                return;
+            }
+
+            // Parse headers
+            headers = parseCSVLine(lines[0]);
+
+            // Parse data rows
+            sheetData = lines.slice(1).map(line => {
+                const values = parseCSVLine(line);
+                const obj = {};
+                headers.forEach((h, i) => obj[h] = values[i] || '');
+                return obj;
+            });
+
+            displayData();
+        }
+
+        // CSV line parser (handles quoted values)
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        // Display data in table
+        function displayData() {
+            const thead = document.querySelector('#dataTable thead');
+            const tbody = document.querySelector('#dataTable tbody');
+
+            // Headers
+            thead.innerHTML = `<tr>
+                <th style="width: 40px;"><input type="checkbox" id="headerSelectAll" onchange="toggleSelectAll()"></th>
+                ${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}
+            </tr>`;
+
+            // Body
+            tbody.innerHTML = sheetData.map((row, i) => `
+                <tr data-index="${i}">
+                    <td><input type="checkbox" class="row-select" data-index="${i}" onchange="toggleRowSelection(${i})"></td>
+                    ${headers.map(h => `<td>${escapeHtml(row[h] || '')}</td>`).join('')}
+                </tr>
+            `).join('');
+
+            // Show sections
+            document.getElementById('dataSection').style.display = 'block';
+            document.getElementById('templateSection').style.display = 'block';
+            document.getElementById('printerSection').style.display = 'block';
+            document.getElementById('printSection').style.display = 'block';
+
+            // Update counts
+            updateCounts();
+
+            // Initialize field mappings
+            initFieldMappings();
+        }
+
+        // Toggle row selection
+        function toggleRowSelection(index) {
+            if (selectedRows.has(index)) {
+                selectedRows.delete(index);
+            } else {
+                selectedRows.add(index);
+            }
+            updateCounts();
+            updatePrintQueue();
+        }
+
+        // Toggle select all
+        function toggleSelectAll() {
+            const selectAllChecked = document.getElementById('selectAll')?.checked ||
+                                    document.getElementById('headerSelectAll')?.checked;
+
+            document.querySelectorAll('.row-select').forEach((cb, i) => {
+                cb.checked = selectAllChecked;
+                if (selectAllChecked) {
+                    selectedRows.add(i);
+                } else {
+                    selectedRows.delete(i);
+                }
+            });
+
+            // Sync both checkboxes
+            if (document.getElementById('selectAll')) document.getElementById('selectAll').checked = selectAllChecked;
+            if (document.getElementById('headerSelectAll')) document.getElementById('headerSelectAll').checked = selectAllChecked;
+
+            updateCounts();
+            updatePrintQueue();
+        }
+
+        // Update counts display
+        function updateCounts() {
+            document.getElementById('rowCount').textContent = `${sheetData.length} rows`;
+            document.getElementById('selectedCount').textContent = `${selectedRows.size} selected`;
+        }
+
+        // Update print queue display
+        function updatePrintQueue() {
+            const queue = document.getElementById('printQueue');
+            if (selectedRows.size === 0) {
+                queue.innerHTML = '<span class="help-text">Select rows from the data table above</span>';
+                return;
+            }
+
+            queue.innerHTML = Array.from(selectedRows).sort((a, b) => a - b).map(i => {
+                const row = sheetData[i];
+                const display = headers[0] ? row[headers[0]] : `Row ${i + 1}`;
+                return `<div class="print-queue-item">
+                    <span>${escapeHtml(display?.substring(0, 30) || `Row ${i + 1}`)}</span>
+                    <span class="remove" onclick="removeFromQueue(${i})">✕</span>
+                </div>`;
+            }).join('');
+        }
+
+        // Remove from queue
+        function removeFromQueue(index) {
+            selectedRows.delete(index);
+            const checkbox = document.querySelector(`.row-select[data-index="${index}"]`);
+            if (checkbox) checkbox.checked = false;
+            updateCounts();
+            updatePrintQueue();
+        }
+
+        // Initialize field mappings
+        function initFieldMappings() {
+            const container = document.getElementById('fieldMappings');
+            container.innerHTML = '';
+
+            // Title field
+            addFieldMappingUI(container, 'Title', currentTemplate.title.field, true);
+
+            // Other fields
+            currentTemplate.fields.forEach((f, i) => {
+                addFieldMappingUI(container, f.label, f.field, false, i);
+            });
+        }
+
+        // Add field mapping UI
+        function addFieldMappingUI(container, label, selectedField, isTitle, index) {
+            const div = document.createElement('div');
+            div.className = 'field-mapping';
+            div.style.marginBottom = '8px';
+            div.innerHTML = `
+                <label>${escapeHtml(label)}:</label>
+                <select onchange="updateFieldMapping('${isTitle ? 'title' : index}', this.value)">
+                    <option value="">-- Select Column --</option>
+                    ${headers.map(h => `<option value="${escapeHtml(h)}" ${h === selectedField ? 'selected' : ''}>${escapeHtml(h)}</option>`).join('')}
+                </select>
+            `;
+            container.appendChild(div);
+        }
+
+        // Add new field mapping
+        function addFieldMapping() {
+            const label = prompt('Enter field label:');
+            if (label) {
+                currentTemplate.fields.push({
+                    label: label,
+                    field: '',
+                    x: 20,
+                    y: 90 + (currentTemplate.fields.length * 40),
+                    fontSize: 28
+                });
+                initFieldMappings();
+            }
+        }
+
+        // Update field mapping
+        function updateFieldMapping(key, value) {
+            if (key === 'title') {
+                currentTemplate.title.field = value;
+            } else {
+                const index = parseInt(key);
+                if (currentTemplate.fields[index]) {
+                    currentTemplate.fields[index].field = value;
+                }
+            }
+            refreshPreview();
+        }
+
+        // Load template
+        function loadTemplate() {
+            const templateName = document.getElementById('templateSelect').value;
+            currentTemplate = JSON.parse(JSON.stringify(templates[templateName]));
+            initFieldMappings();
+            refreshPreview();
+        }
+
+        // Update label size
+        function updateLabelSize() {
+            const size = document.getElementById('labelSize').value;
+            document.getElementById('customSizeInputs').classList.toggle('hidden', size !== 'custom');
+        }
+
+        // Refresh preview
+        function refreshPreview() {
+            const preview = document.getElementById('labelPreview');
+            const sampleRow = selectedRows.size > 0 ? sheetData[Array.from(selectedRows)[0]] : sheetData[0] || {};
+
+            let html = '';
+
+            // Title
+            if (currentTemplate.title.field && sampleRow[currentTemplate.title.field]) {
+                html += `<div class="label-title">${escapeHtml(sampleRow[currentTemplate.title.field])}</div>`;
+            } else {
+                html += `<div class="label-title">[Title]</div>`;
+            }
+
+            // Fields
+            currentTemplate.fields.forEach(f => {
+                const value = f.field && sampleRow[f.field] ? sampleRow[f.field] : '[Value]';
+                html += `<div class="label-row"><span>${escapeHtml(f.label)}:</span><span>${escapeHtml(value)}</span></div>`;
+            });
+
+            preview.innerHTML = html;
+        }
+
+        // Generate ZPL code
+        function generateZPL() {
+            if (selectedRows.size === 0) {
+                showAlert('Please select at least one row to print', 'error');
+                return;
+            }
+
+            const size = document.getElementById('labelSize').value;
+            let width, height;
+
+            if (size === 'custom') {
+                width = parseInt(document.getElementById('customWidth').value) || 812;
+                height = parseInt(document.getElementById('customHeight').value) || 406;
+            } else {
+                width = labelSizes[size].width;
+                height = labelSizes[size].height;
+            }
+
+            const darkness = document.getElementById('printDarkness').value || 25;
+
+            let zpl = '';
+
+            Array.from(selectedRows).sort((a, b) => a - b).forEach(rowIndex => {
+                const row = sheetData[rowIndex];
+                zpl += generateLabelZPL(row, width, height, darkness);
+            });
+
+            generatedZPL = zpl;
+            document.getElementById('zplPreview').textContent = zpl;
+            showAlert(`Generated ZPL for ${selectedRows.size} label(s)`, 'success');
+        }
+
+        // Generate single label ZPL
+        function generateLabelZPL(row, width, height, darkness) {
+            let zpl = `^XA\n`;
+            zpl += `^MMT\n`;
+            zpl += `^PW${width}\n`;
+            zpl += `^LL${height}\n`;
+            zpl += `^LS0\n`;
+            zpl += `~SD${darkness}\n`;
+
+            // Title
+            if (currentTemplate.title.field && row[currentTemplate.title.field]) {
+                const title = row[currentTemplate.title.field];
+                zpl += `^FO${currentTemplate.title.x},${currentTemplate.title.y}\n`;
+                zpl += `^CF0,${currentTemplate.title.fontSize}\n`;
+                zpl += `^FD${sanitizeZPL(title)}^FS\n`;
+            }
+
+            // Horizontal line under title
+            zpl += `^FO20,${currentTemplate.title.y + currentTemplate.title.fontSize + 10}\n`;
+            zpl += `^GB${width - 40},2,2^FS\n`;
+
+            // Fields
+            currentTemplate.fields.forEach(f => {
+                if (f.field && row[f.field]) {
+                    const value = row[f.field];
+                    zpl += `^FO${f.x},${f.y}\n`;
+                    zpl += `^CF0,${f.fontSize}\n`;
+                    zpl += `^FD${f.label}: ${sanitizeZPL(value)}^FS\n`;
+                }
+            });
+
+            zpl += `^XZ\n`;
+            return zpl;
+        }
+
+        // Sanitize text for ZPL
+        function sanitizeZPL(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/\^/g, ' ')
+                .replace(/~/g, ' ')
+                .replace(/[\r\n]/g, ' ')
+                .substring(0, 100);
+        }
+
+        // Print labels
+        async function printLabels() {
+            if (!generatedZPL) {
+                generateZPL();
+                if (!generatedZPL) return;
+            }
+
+            const useDownload = document.getElementById('useDownloadFallback').checked;
+            const printerIP = document.getElementById('printerIP').value;
+            const printerPort = document.getElementById('printerPort').value;
+
+            if (useDownload || !canDirectPrint()) {
+                downloadZPL();
+                return;
+            }
+
+            // Try direct print
+            try {
+                const response = await fetch(`http://${printerIP}:${printerPort}`, {
+                    method: 'POST',
+                    body: generatedZPL,
+                    mode: 'no-cors'
+                });
+                showAlert(`Print job sent to ${printerIP}:${printerPort}`, 'success');
+            } catch (error) {
+                console.error('Direct print failed:', error);
+                showAlert('Direct print failed. Downloading ZPL file instead.', 'error');
+                downloadZPL();
+            }
+        }
+
+        // Check if direct printing is possible
+        function canDirectPrint() {
+            const protocol = window.location.protocol;
+            const hostname = window.location.hostname;
+            return protocol === 'http:' || hostname === 'localhost' || hostname === '127.0.0.1';
+        }
+
+        // Download ZPL file
+        function downloadZPL() {
+            if (!generatedZPL) {
+                generateZPL();
+                if (!generatedZPL) return;
+            }
+
+            const blob = new Blob([generatedZPL], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `labels_${Date.now()}.zpl`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showAlert('ZPL file downloaded. Send to printer manually or use Zebra Setup Utilities.', 'success');
+        }
+
+        // Status updates
+        function updateStatus(status, text) {
+            const indicator = document.getElementById('sheetStatus');
+            const textEl = document.getElementById('sheetStatusText');
+
+            indicator.className = 'status-indicator';
+            if (status === 'connected') {
+                indicator.classList.add('connected');
+            } else if (status === 'error') {
+                indicator.classList.add('error');
+            }
+
+            textEl.textContent = text;
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            // Remove existing alerts
+            document.querySelectorAll('.alert').forEach(a => a.remove());
+
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+
+            const container = document.querySelector('.container');
+            container.insertBefore(alert, container.children[1]);
+
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            const settings = {
+                printerIP: document.getElementById('printerIP').value,
+                printerPort: document.getElementById('printerPort').value,
+                printDarkness: document.getElementById('printDarkness').value,
+                labelSize: document.getElementById('labelSize').value,
+                sheetUrl: document.getElementById('sheetUrl').value,
+                sheetName: document.getElementById('sheetName').value
+            };
+            localStorage.setItem('sheetsLabelPrinterSettings', JSON.stringify(settings));
+            showAlert('Settings saved!', 'success');
+        }
+
+        // Load settings from localStorage
+        function loadSettings() {
+            const saved = localStorage.getItem('sheetsLabelPrinterSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                if (settings.printerIP) document.getElementById('printerIP').value = settings.printerIP;
+                if (settings.printerPort) document.getElementById('printerPort').value = settings.printerPort;
+                if (settings.printDarkness) document.getElementById('printDarkness').value = settings.printDarkness;
+                if (settings.labelSize) document.getElementById('labelSize').value = settings.labelSize;
+                if (settings.sheetUrl) document.getElementById('sheetUrl').value = settings.sheetUrl;
+                if (settings.sheetName) document.getElementById('sheetName').value = settings.sheetName;
+            }
+        }
+
+        // Show help
+        function showHelp() {
+            alert(`Google Sheets Label Printer - Help
+
+1. CONNECT TO SHEET:
+   - Option A: Publish your Google Sheet (File → Share → Publish to web → CSV)
+   - Option B: Use Google Sheets API with an API key
+   - Option C: Copy/paste CSV data directly
+
+2. SELECT DATA:
+   - Check the rows you want to print
+   - Use "Select All" for bulk selection
+
+3. CONFIGURE TEMPLATE:
+   - Choose a label size matching your Zebra labels
+   - Map spreadsheet columns to label fields
+   - Preview shows how labels will look
+
+4. PRINTER SETTINGS:
+   - Enter your Zebra printer's IP address
+   - Default port is 9100 (standard ZPL port)
+   - Adjust darkness if needed (0-30)
+
+5. PRINT:
+   - Click "Generate ZPL" to create label code
+   - "Print Labels" sends directly to printer (HTTP only)
+   - "Download ZPL" saves a file you can send manually
+
+TIPS:
+- On HTTPS, direct printing won't work - use download
+- Use Zebra Setup Utilities to send ZPL files to printer
+- Standard resolution is 203 DPI`);
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+        });
+    </script>
+</body>
+</html>
