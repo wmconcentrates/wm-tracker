@@ -22076,30 +22076,70 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     const plData = await plResponse.json();
                     const productLines = plData.results || [];
 
+                    // Parent product IDs (the container products that varieties go under)
+                    const PARENT_IDS = {
+                        'Sugar Wax': 215740,
+                        'Sugar Wax 4g': 215740,  // Same parent for 4g
+                        'Wax': 215673,
+                        'Wax 4g': 215673,  // Same parent for 4g
+                        'Shatter': 215669,
+                        'Live Resin Carts': 958004,
+                        'Live Resin AIOs': 1252729,
+                        'Brick Hash': 2568608
+                    };
+
                     productLines.forEach(pl => {
                         const name = (pl.name || '').toLowerCase();
-                        const configData = {
-                            product_line_id: pl.id,
-                            name: pl.name
-                        };
 
                         // Map to our internal product types
                         if (name.includes('sugar wax') && name.includes('1 gram')) {
-                            leafLinkConfig.product_lines['Sugar Wax'] = configData;
+                            leafLinkConfig.product_lines['Sugar Wax'] = {
+                                product_line_id: pl.id,
+                                parent_id: PARENT_IDS['Sugar Wax'],
+                                name: pl.name
+                            };
                         } else if (name.includes('sugar wax') && name.includes('4 gram')) {
-                            leafLinkConfig.product_lines['Sugar Wax 4g'] = configData;
+                            leafLinkConfig.product_lines['Sugar Wax 4g'] = {
+                                product_line_id: pl.id,
+                                parent_id: PARENT_IDS['Sugar Wax 4g'],
+                                name: pl.name
+                            };
                         } else if (name === 'shatter') {
-                            leafLinkConfig.product_lines['Shatter'] = configData;
+                            leafLinkConfig.product_lines['Shatter'] = {
+                                product_line_id: pl.id,
+                                parent_id: PARENT_IDS['Shatter'],
+                                name: pl.name
+                            };
                         } else if (name.includes('wax') && name.includes('1 gram') && !name.includes('sugar')) {
-                            leafLinkConfig.product_lines['Wax'] = configData;
+                            leafLinkConfig.product_lines['Wax'] = {
+                                product_line_id: pl.id,
+                                parent_id: PARENT_IDS['Wax'],
+                                name: pl.name
+                            };
                         } else if (name.includes('wax') && name.includes('4 gram') && !name.includes('sugar')) {
-                            leafLinkConfig.product_lines['Wax 4g'] = configData;
+                            leafLinkConfig.product_lines['Wax 4g'] = {
+                                product_line_id: pl.id,
+                                parent_id: PARENT_IDS['Wax 4g'],
+                                name: pl.name
+                            };
                         } else if (name.includes('all in one') || name.includes('disposable')) {
-                            leafLinkConfig.product_lines['Live Resin AIOs'] = configData;
+                            leafLinkConfig.product_lines['Live Resin AIOs'] = {
+                                product_line_id: pl.id,
+                                parent_id: PARENT_IDS['Live Resin AIOs'],
+                                name: pl.name
+                            };
                         } else if (name.includes('cartridge')) {
-                            leafLinkConfig.product_lines['Live Resin Carts'] = configData;
+                            leafLinkConfig.product_lines['Live Resin Carts'] = {
+                                product_line_id: pl.id,
+                                parent_id: PARENT_IDS['Live Resin Carts'],
+                                name: pl.name
+                            };
                         } else if (name.includes('brick hash')) {
-                            leafLinkConfig.product_lines['Brick Hash'] = configData;
+                            leafLinkConfig.product_lines['Brick Hash'] = {
+                                product_line_id: pl.id,
+                                parent_id: PARENT_IDS['Brick Hash'],
+                                name: pl.name
+                            };
                         }
                     });
                 }
@@ -22252,6 +22292,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Only add product_line if we have a valid ID (not all categories have one)
         if (productLineConfig.product_line_id) {
             payload.product_line = productLineConfig.product_line_id;
+        }
+
+        // Add parent to make this a variety under the parent product
+        if (productLineConfig.parent_id) {
+            payload.parent = productLineConfig.parent_id;
         }
 
         // Add test results if available
