@@ -6411,45 +6411,35 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             return isLocalhost || isHTTP;
         }
 
-        // Send ZPL to printer with automatic fallback to download if on HTTPS
+        // Send ZPL to printer - silently skips if on HTTPS
         async function sendZPLToPrinter(zpl, filename) {
-            const printerIP = '10.1.10.95';
-
-            if (canDirectPrint()) {
-                try {
-                    await fetch(`http://${printerIP}:9100`, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        body: zpl
-                    });
-                    return { success: true, method: 'direct' };
-                } catch (error) {
-                    console.error('Direct print failed:', error);
-                }
+            if (!canDirectPrint()) {
+                // Silently skip on HTTPS - can't print to local network
+                return { success: false, method: 'skipped' };
             }
 
-            // Fallback: download ZPL file
-            const blob = new Blob([zpl], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename || 'label.zpl';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            return { success: true, method: 'download' };
+            const printerIP = '10.1.10.95';
+            try {
+                await fetch(`http://${printerIP}:9100`, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: zpl
+                });
+                return { success: true, method: 'direct' };
+            } catch (error) {
+                // Silently fail - don't spam console
+                return { success: false, method: 'error' };
+            }
         }
 
         // Print directly to Zebra printer via IP
         async function printIntakeLabelDirectly(batch) {
             const zpl = generateIntakeBatchLabelZPL(batch);
             const result = await sendZPLToPrinter(zpl, `intake-${batch.id}.zpl`);
-            if (result.method === 'download') {
-                console.log('ZPL downloaded (direct print not available on HTTPS)');
-            } else {
+            if (result.method === 'direct') {
                 console.log(`Label sent to printer: ${batch.id}`);
             }
+            // Silently skip on HTTPS
         }
 
         // Download ZPL file for intake label
@@ -6470,7 +6460,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             alert(`ZPL file downloaded: batch-label-${batch.id}.zpl\n\nTo print:\n1. Open Zebra Setup Utilities\n2. Go to Tools → Send File\n3. Select the .zpl file\n4. Click Send`);
         }
 
-        // Print label from Testing page - uses sendZPLToPrinter with HTTPS fallback
+        // Print label from Testing page - silently skips on HTTPS
         window.printTestingLabel = async function() {
             const batchId = document.getElementById('testingBatchSelect').value;
             if (!batchId) {
@@ -6485,24 +6475,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             }
 
             const labelType = document.getElementById('testingLabelType').value;
-            let downloadMethod = false;
 
             if (labelType === 'intake') {
                 const zpl = generateIntakeBatchLabelZPL(batch);
                 const result = await sendZPLToPrinter(zpl, `intake-${batch.id}.zpl`);
-                downloadMethod = result.method === 'download';
-                alert(downloadMethod ? `📥 Intake label downloaded!` : `✅ Intake label sent to printer!`);
+                if (result.method === 'direct') alert(`✅ Intake label sent to printer!`);
             } else if (labelType === 'postprod') {
                 const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 const sampleWeight = parseFloat(batch.sample_weight) || 0;
                 const totalBowls = batch.extraction_bowls || 1;
+                let printed = false;
 
                 for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
                     const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
                     const result = await sendZPLToPrinter(zpl, `postprod-${batch.id}-bowl${bowlNum}.zpl`);
-                    if (result.method === 'download') downloadMethod = true;
+                    if (result.method === 'direct') printed = true;
                 }
-                alert(downloadMethod ? `📥 ${totalBowls} post-production label(s) downloaded!` : `✅ ${totalBowls} post-production label(s) sent to printer!`);
+                if (printed) alert(`✅ ${totalBowls} post-production label(s) sent to printer!`);
             } else if (labelType === 'labeling') {
                 const labeledBy = currentRole ? currentRole.name : 'Test User';
                 const units1g = batch.units_1g || 0;
@@ -6512,65 +6501,56 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 if (units1g > 0) {
                     const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
                     const result = await sendZPLToPrinter(zpl1g, `labeling-${batch.id}-1g.zpl`);
-                    if (result.method === 'download') downloadMethod = true;
-                    labelsPrinted++;
+                    if (result.method === 'direct') labelsPrinted++;
                 }
 
                 if (units4g > 0) {
                     const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
                     const result = await sendZPLToPrinter(zpl4g, `labeling-${batch.id}-4g.zpl`);
-                    if (result.method === 'download') downloadMethod = true;
-                    labelsPrinted++;
+                    if (result.method === 'direct') labelsPrinted++;
                 }
-                alert(downloadMethod ? `📥 ${labelsPrinted} labeling label(s) downloaded!` : `✅ ${labelsPrinted} labeling label(s) sent to printer!`);
+                if (labelsPrinted > 0) alert(`✅ ${labelsPrinted} labeling label(s) sent to printer!`);
             }
         }
 
-        // Print labeling completion labels with alert (for testing) - one for 1g, one for 4g
+        // Print labeling completion labels with alert - silently skips on HTTPS
         async function printLabelingCompletionLabelWithAlert(batch, labeledBy) {
             const units1g = batch.units_1g || 0;
             const units4g = batch.units_4g || 0;
             let labelsPrinted = 0;
-            let downloadMethod = false;
 
             if (units1g > 0) {
                 const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
                 const result = await sendZPLToPrinter(zpl1g, `labeling-${batch.id}-1g.zpl`);
-                if (result.method === 'download') downloadMethod = true;
-                labelsPrinted++;
+                if (result.method === 'direct') labelsPrinted++;
             }
 
             if (units4g > 0) {
                 const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
                 const result = await sendZPLToPrinter(zpl4g, `labeling-${batch.id}-4g.zpl`);
-                if (result.method === 'download') downloadMethod = true;
-                labelsPrinted++;
+                if (result.method === 'direct') labelsPrinted++;
             }
 
             if (labelsPrinted > 0) {
-                const msg = downloadMethod
-                    ? `📥 ${labelsPrinted} label(s) downloaded!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\n1g: ${units1g} units  |  4g: ${units4g} units`
-                    : `✅ ${labelsPrinted} label(s) sent to printer!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\n1g: ${units1g} units  |  4g: ${units4g} units`;
-                alert(msg);
-            } else {
-                alert('No labels to print (no 1g or 4g units)');
+                alert(`✅ ${labelsPrinted} label(s) sent to printer!\n\nBatch: ${batch.id}\nStrain: ${batch.strain || 'Unknown'}\n1g: ${units1g} units  |  4g: ${units4g} units`);
             }
+            // Silently skip on HTTPS - no alert
         }
 
-        // Print post-production label (one per bowl) with HTTPS fallback
+        // Print post-production label (one per bowl) - silently skips on HTTPS
         async function printPostProductionLabelDirectly(batch, finalWeight, sampleWeight) {
             const totalBowls = batch.extraction_bowls || 1;
-            let downloadMethod = false;
+            let printed = false;
 
             for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
                 const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
                 const result = await sendZPLToPrinter(zpl, `postprod-${batch.id}-bowl${bowlNum}.zpl`);
-                if (result.method === 'download') downloadMethod = true;
+                if (result.method === 'direct') printed = true;
             }
-            const msg = downloadMethod
-                ? `📥 ${totalBowls} post-production label(s) downloaded!\n\nBatch: ${batch.id}`
-                : `✅ ${totalBowls} post-production label(s) sent to printer!\n\nBatch: ${batch.id}`;
-            alert(msg);
+            if (printed) {
+                alert(`✅ ${totalBowls} post-production label(s) sent to printer!\n\nBatch: ${batch.id}`);
+            }
+            // Silently skip on HTTPS - no alert
         }
 
         // Generate ZPL for labeling completion label (4" x 2" landscape)
@@ -11625,24 +11605,23 @@ ${growerName ? `^FO530,360^FD${growerName.substring(0, 18)}^FS` : ''}
             }
 
             const labelType = document.getElementById('printLabelsLabelType').value;
-            let downloadMethod = false;
 
             if (labelType === 'intake') {
                 const zpl = generateIntakeBatchLabelZPL(batch);
                 const result = await sendZPLToPrinter(zpl, `intake-${batch.id}.zpl`);
-                downloadMethod = result.method === 'download';
-                alert(downloadMethod ? `📥 Intake label downloaded!` : `✅ Intake label sent to printer!`);
+                if (result.method === 'direct') alert(`✅ Intake label sent to printer!`);
             } else if (labelType === 'postprod') {
                 const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 const sampleWeight = parseFloat(batch.sample_weight) || 0;
                 const totalBowls = batch.extraction_bowls || 1;
+                let printed = false;
 
                 for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
                     const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
                     const result = await sendZPLToPrinter(zpl, `postprod-${batch.id}-bowl${bowlNum}.zpl`);
-                    if (result.method === 'download') downloadMethod = true;
+                    if (result.method === 'direct') printed = true;
                 }
-                alert(downloadMethod ? `📥 ${totalBowls} post-production label(s) downloaded!` : `✅ ${totalBowls} post-production label(s) sent to printer!`);
+                if (printed) alert(`✅ ${totalBowls} post-production label(s) sent to printer!`);
             } else if (labelType === 'labeling') {
                 const labeledBy = currentRole ? currentRole.name : 'Unknown';
                 const units1g = batch.units_1g || 0;
@@ -11652,18 +11631,17 @@ ${growerName ? `^FO530,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 if (units1g > 0) {
                     const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
                     const result = await sendZPLToPrinter(zpl1g, `labeling-${batch.id}-1g.zpl`);
-                    if (result.method === 'download') downloadMethod = true;
-                    labelsPrinted++;
+                    if (result.method === 'direct') labelsPrinted++;
                 }
 
                 if (units4g > 0) {
                     const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
                     const result = await sendZPLToPrinter(zpl4g, `labeling-${batch.id}-4g.zpl`);
-                    if (result.method === 'download') downloadMethod = true;
-                    labelsPrinted++;
+                    if (result.method === 'direct') labelsPrinted++;
                 }
-                alert(downloadMethod ? `📥 ${labelsPrinted} labeling label(s) downloaded!` : `✅ ${labelsPrinted} labeling label(s) sent to printer!`);
+                if (labelsPrinted > 0) alert(`✅ ${labelsPrinted} labeling label(s) sent to printer!`);
             }
+            // Silently skips on HTTPS - no errors, no alerts
         }
 
         async function loadLoginHistory() {
