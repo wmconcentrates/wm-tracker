@@ -22084,12 +22084,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         };
 
                         // Map to our internal product types
-                        if (name === 'sugar wax') {
+                        if (name.includes('sugar wax') && name.includes('1 gram')) {
                             leafLinkConfig.product_lines['Sugar Wax'] = configData;
+                        } else if (name.includes('sugar wax') && name.includes('4 gram')) {
+                            leafLinkConfig.product_lines['Sugar Wax 4g'] = configData;
                         } else if (name === 'shatter') {
                             leafLinkConfig.product_lines['Shatter'] = configData;
-                        } else if (name === 'wax') {
+                        } else if (name.includes('wax') && name.includes('1 gram') && !name.includes('sugar')) {
                             leafLinkConfig.product_lines['Wax'] = configData;
+                        } else if (name.includes('wax') && name.includes('4 gram') && !name.includes('sugar')) {
+                            leafLinkConfig.product_lines['Wax 4g'] = configData;
                         } else if (name.includes('all in one') || name.includes('disposable')) {
                             leafLinkConfig.product_lines['Live Resin AIOs'] = configData;
                         } else if (name.includes('cartridge')) {
