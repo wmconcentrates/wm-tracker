@@ -22069,38 +22069,50 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 timestamp: Date.now()
             };
 
-            // Fetch actual product lines from /product-lines endpoint
+            // Fetch product lines AND parent products
             try {
+                // First get product lines for product_line_id
                 const plResponse = await fetch(LEAFLINK_PROXY_URL + '/product-lines/?page_size=50');
+                const productLineMap = {};
                 if (plResponse.ok) {
                     const plData = await plResponse.json();
-                    const productLines = plData.results || [];
+                    (plData.results || []).forEach(pl => {
+                        productLineMap[pl.name.toLowerCase()] = pl.id;
+                    });
+                }
 
-                    productLines.forEach(pl => {
-                        const name = (pl.name || '').toLowerCase();
-                        const plData = {
-                            product_line_id: pl.id,
-                            category_id: pl.category?.id || pl.category,
-                            name: pl.name
+                // Then get parent products (products with children) for parent_id
+                const prodResponse = await fetch(LEAFLINK_PROXY_URL + '/products/?page_size=100&has_children=true');
+                if (prodResponse.ok) {
+                    const prodData = await prodResponse.json();
+                    const parentProducts = prodData.results || [];
+
+                    parentProducts.forEach(product => {
+                        const name = (product.name || '').toLowerCase();
+                        const configData = {
+                            product_line_id: product.product_line?.id || product.product_line,
+                            parent_id: product.id, // The parent product ID for varieties
+                            category_id: product.category?.id || product.category,
+                            name: product.name
                         };
 
                         // Map to our internal categories
                         if (name.includes('sugar wax') && name.includes('1 gram')) {
-                            leafLinkConfig.product_lines['Sugar Wax'] = plData;
+                            leafLinkConfig.product_lines['Sugar Wax'] = configData;
                         } else if (name.includes('sugar wax') && name.includes('4 gram')) {
-                            leafLinkConfig.product_lines['Sugar Wax 4g'] = plData;
+                            leafLinkConfig.product_lines['Sugar Wax 4g'] = configData;
                         } else if (name === 'shatter') {
-                            leafLinkConfig.product_lines['Shatter'] = plData;
+                            leafLinkConfig.product_lines['Shatter'] = configData;
                         } else if (name.includes('wax') && name.includes('1 gram') && !name.includes('sugar')) {
-                            leafLinkConfig.product_lines['Wax'] = plData;
+                            leafLinkConfig.product_lines['Wax'] = configData;
                         } else if (name.includes('wax') && name.includes('4 gram') && !name.includes('sugar')) {
-                            leafLinkConfig.product_lines['Wax 4g'] = plData;
+                            leafLinkConfig.product_lines['Wax 4g'] = configData;
                         } else if (name.includes('disposable') || name.includes('all in one')) {
-                            leafLinkConfig.product_lines['Live Resin AIOs'] = plData;
+                            leafLinkConfig.product_lines['Live Resin AIOs'] = configData;
                         } else if (name.includes('cartridge')) {
-                            leafLinkConfig.product_lines['Live Resin Carts'] = plData;
+                            leafLinkConfig.product_lines['Live Resin Carts'] = configData;
                         } else if (name.includes('brick hash')) {
-                            leafLinkConfig.product_lines['Brick Hash'] = plData;
+                            leafLinkConfig.product_lines['Brick Hash'] = configData;
                         }
                     });
                 }
@@ -22253,6 +22265,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Only add product_line if we have a valid ID (not all categories have one)
         if (productLineConfig.product_line_id) {
             payload.product_line = productLineConfig.product_line_id;
+        }
+
+        // Add parent to make this a variety under the parent product
+        if (productLineConfig.parent_id) {
+            payload.parent = productLineConfig.parent_id;
         }
 
         // Add test results if available
