@@ -2957,6 +2957,13 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="editLabelsApplied" style="width: 18px; height: 18px;">
+                            Labels Applied
+                        </label>
+                        <div class="help-text">Uncheck to send back to labeling queue</div>
+                    </div>
+                    <div class="form-group">
                         <label>Strain Type</label>
                         <select id="editStrainType">
                             <option value="Indica">Indica (Blue Lid)</option>
@@ -16299,8 +16306,9 @@ ${employeeReport || 'No activity recorded today'}
             document.getElementById('editCultivationLicense').value = batch.cultivation_license || '';
             document.getElementById('editGrowerName').value = batch.grower_name || '';
             document.getElementById('editMetrcTags').value = batch.metrc_tags || '';
+            document.getElementById('editLabelsApplied').checked = batch.labels_applied || false;
             document.getElementById('editNotes').value = '';
-            
+
             // Parse batch ID to extract info
             parseBatchIdForEdit(batch.id);
             
@@ -16408,7 +16416,8 @@ ${employeeReport || 'No activity recorded today'}
                 material_cost: parseFloat(document.getElementById('editMaterialCost').value),
                 cultivation_license: document.getElementById('editCultivationLicense').value,
                 grower_name: document.getElementById('editGrowerName').value,
-                metrc_tags: document.getElementById('editMetrcTags').value || null
+                metrc_tags: document.getElementById('editMetrcTags').value || null,
+                labels_applied: document.getElementById('editLabelsApplied').checked
             };
             
             // If expiration date was parsed, update it
