@@ -22157,14 +22157,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         // Build LeafLink product payload
-        // Pricing: Sugar Wax = $6/g, Wax = $6/g, Shatter = $5/g, etc.
+        // Pricing per unit by product type
         const PRODUCT_PRICING = {
             'Sugar Wax': 6,
             'Wax': 6,
-            'Shatter': 5,
-            'Live Resin Carts': 12,
-            'Live Resin AIOs': 15,
-            'Brick Hash': 4
+            'Shatter': 6,
+            'Live Resin Carts': 15,
+            'Live Resin AIOs': 22,
+            'Brick Hash': 8
         };
         const pricePerUnit = PRODUCT_PRICING[productType] || 6;
 
