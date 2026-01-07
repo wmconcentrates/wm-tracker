@@ -22296,7 +22296,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Add parent to make this a variety under the parent product
         if (productLineConfig.parent_id) {
-            payload.parent = productLineConfig.parent_id;
+            payload.parent = { id: productLineConfig.parent_id };
         }
 
         // Add test results if available
