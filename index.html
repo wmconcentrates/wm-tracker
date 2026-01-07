@@ -22186,6 +22186,17 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         };
         const pricePerUnit = PRODUCT_PRICING[productType] || 6;
 
+        // Category IDs by product type (5 = Concentrates, 1 = Vaporizers)
+        const CATEGORY_IDS = {
+            'Sugar Wax': 5,
+            'Wax': 5,
+            'Shatter': 5,
+            'Live Resin Carts': 1,
+            'Live Resin AIOs': 1,
+            'Brick Hash': 5
+        };
+        const categoryId = CATEGORY_IDS[productType] || 5;
+
         // Sub-category IDs by product type (from LeafLink)
         const SUB_CATEGORY_IDS = {
             'Sugar Wax': 56,       // Sugar
@@ -22212,7 +22223,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             seller: leafLinkConfig.seller_id,
             brand: leafLinkConfig.brand_id,
             license: leafLinkConfig.license_id,
-            category: productLineConfig.category_id || leafLinkConfig.category_id,
+            category: categoryId,
             sub_category: subCategoryId,
             manufacturer: leafLinkConfig.seller_id, // Same as seller
             unit_of_measure: 'Gram',
