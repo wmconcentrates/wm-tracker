@@ -22184,8 +22184,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             brand: leafLinkConfig.brand_id,
             license: leafLinkConfig.license_id,
             category: productLineConfig.category_id || leafLinkConfig.category_id,
-            product_line: productLineConfig.product_line_id || null,
-            parent: productLineConfig.parent_id, // Link to parent product (e.g., Sugar Wax parent)
+            product_line: productLineConfig.product_line_id || productLineConfig.parent_id, // Use parent_id as product_line if no product_line_id
             manufacturer: leafLinkConfig.seller_id, // Same as seller
             unit_of_measure: 'Gram',
             sell_in_unit_of_measure: 'Case',
