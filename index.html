@@ -22168,10 +22168,17 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         };
         const pricePerUnit = PRODUCT_PRICING[productType] || 6;
 
+        // Clean strain name - remove WM prefix, product type suffixes, and size
+        let strainName = (batch.strain || 'Unknown Strain')
+            .replace(/^WM\s+/i, '')           // Remove "WM " prefix
+            .replace(/\s+(SW|SH|WX|LRC|AIO|BH)\b/gi, '')  // Remove product type codes
+            .replace(/\s*\(\d+g?\)/gi, '')    // Remove size like "(1g)" or "(4g)"
+            .trim();
+
         const payload = {
             sku: batch.id, // Use batch ID as SKU (e.g., "9.23.5447")
-            name: batch.strain || 'Unknown Strain',
-            description: `${batch.strain} ${productType}`,
+            name: strainName,
+            description: `${strainName} - ${productType}`,
             // API wants field names without _id suffix
             seller: leafLinkConfig.seller_id,
             brand: leafLinkConfig.brand_id,
