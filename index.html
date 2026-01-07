@@ -22158,6 +22158,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Build LeafLink product payload
         const payload = {
+            sku: batch.id, // Use batch ID as SKU (e.g., "9.23.5447")
             name: batch.strain || 'Unknown Strain',
             description: `${batch.strain} ${productType}`,
             seller_id: leafLinkConfig.seller_id,
@@ -22171,6 +22172,10 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             strain_classification: (batch.strain_type || 'hybrid').toLowerCase(),
             wholesale_price: {
                 amount: batch.wholesale_price || 0,
+                currency: 'USD'
+            },
+            retail_price: {
+                amount: 0, // Not used for B2B but required by API
                 currency: 'USD'
             }
         };
