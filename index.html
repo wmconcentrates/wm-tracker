@@ -22109,7 +22109,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             product_line_id: productLineConfig.product_line_id,
             unit_of_measure_id: leafLinkConfig.unit_of_measure_id,
             unit_denomination_id: leafLinkConfig.unit_denomination_id,
-            listing_state: 'Available',
+            listing_state: 'Internal', // TODO: Change to 'Available' after testing
             strain_classification: (batch.strain_type || 'hybrid').toLowerCase(),
             wholesale_price: {
                 amount: batch.wholesale_price || 0,
