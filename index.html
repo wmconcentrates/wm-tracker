@@ -21813,15 +21813,24 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         let allProducts = [];
         let nextUrl = LEAFLINK_PROXY_URL + '/products/?page_size=100';
+        let pageCount = 0;
+        const maxPages = 15; // Safety limit to prevent infinite loops
 
-        while (nextUrl) {
+        while (nextUrl && pageCount < maxPages) {
             try {
                 const response = await fetch(nextUrl);
-                if (!response.ok) break;
+                if (!response.ok) {
+                    // Stop pagination on error (likely end of data)
+                    break;
+                }
                 const data = await response.json();
-                allProducts = allProducts.concat(data.results || []);
+                const results = data.results || [];
+                if (results.length === 0) break; // No more results
+                allProducts = allProducts.concat(results);
                 nextUrl = data.next;
+                pageCount++;
             } catch (error) {
+                // Silently stop on error
                 break;
             }
         }
