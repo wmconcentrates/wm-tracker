@@ -22024,14 +22024,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
 
             // Extract common IDs from first product
+            // Note: Some fields are nested objects {id: x}, others are direct IDs
             const firstProduct = products[0];
             leafLinkConfig = {
-                seller_id: firstProduct.seller?.id,
-                brand_id: firstProduct.brand?.id,
-                license_id: firstProduct.license?.id,
-                unit_of_measure_id: firstProduct.unit_of_measure?.id,
-                unit_denomination_id: firstProduct.unit_denomination?.id,
-                category_id: firstProduct.category?.id,
+                seller_id: firstProduct.seller?.id || firstProduct.seller,
+                brand_id: firstProduct.brand?.id || firstProduct.brand,
+                license_id: firstProduct.license?.id || firstProduct.license,
+                unit_of_measure_id: firstProduct.unit_of_measure?.id || firstProduct.unit_of_measure,
+                unit_denomination_id: firstProduct.unit_denomination?.id || firstProduct.unit_denomination,
+                category_id: firstProduct.category?.id || firstProduct.category,
                 product_lines: {},
                 timestamp: Date.now()
             };
@@ -22088,12 +22089,29 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return { success: false, error: 'LeafLink config not available' };
         }
 
-        // Get product type mapping
-        const productType = batch.packaged_product_type || batch.product_made || '';
+        // Get product type mapping - normalize compound types
+        let productType = batch.packaged_product_type || batch.product_made || '';
+
+        // Normalize product types that don't match LeafLink categories exactly
+        const productTypeNormalization = {
+            'Wax/Sugar': 'Sugar Wax',  // Map combo type to Sugar Wax
+            'Sugar': 'Sugar Wax',
+            'Live Resin': 'Wax',
+            'Badder': 'Wax',
+            'Diamonds': 'Wax',
+            'Sauce': 'Wax'
+        };
+
+        if (productTypeNormalization[productType]) {
+            console.log(`Normalizing product type: ${productType} -> ${productTypeNormalization[productType]}`);
+            productType = productTypeNormalization[productType];
+        }
+
         const productLineConfig = leafLinkConfig.product_lines[productType];
 
         if (!productLineConfig) {
             console.error('Unknown product type for LeafLink:', productType);
+            console.log('Available product lines:', Object.keys(leafLinkConfig.product_lines));
             return { success: false, error: `Unknown product type: ${productType}` };
         }
 
