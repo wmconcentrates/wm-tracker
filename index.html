@@ -21382,6 +21382,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         function loadSalesPipeline() {
+            // If batches not loaded yet, retry after delay
+            if (!batches || batches.length === 0) {
+                console.log('Pipeline: batches not loaded yet, retrying in 2s...');
+                setTimeout(loadSalesPipeline, 2000);
+                return;
+            }
+
             // Define the 6 product categories
             const categories = [
                 { key: 'Wax', label: 'Wax', color: '#F59E0B' },
@@ -21890,11 +21897,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             try {
                 const parsed = JSON.parse(cachedData);
                 // Validate cache structure - must have Wax with needs array
-                if (parsed && parsed['Wax'] && Array.isArray(parsed['Wax'].needs)) {
+                // Also check that cache has actual data (not all zeros)
+                const hasRealData = parsed && parsed['Wax'] && Array.isArray(parsed['Wax'].needs) &&
+                    Object.values(parsed).some(cat => cat.totalInventory > 0 || cat.totalPipeline > 0 || (cat.needs && cat.needs.length > 0));
+                if (hasRealData) {
                     needsData = parsed;
                     renderNeedsCategories();
                 } else {
-                    // Invalid cache, clear it
+                    // Invalid or empty cache, clear it
+                    console.log('Needs cache invalid or empty, clearing...');
                     localStorage.removeItem('foh_needs_cache');
                 }
             } catch (e) {
