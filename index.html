@@ -22009,8 +22009,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         console.log('Fetching LeafLink config from products...');
 
         try {
-            // Fetch products to extract IDs
-            const response = await fetch(LEAFLINK_PROXY_URL + '/products/?page_size=100&has_children=true');
+            // Fetch concentrate products (category=5) to get correct recreational license
+            const response = await fetch(LEAFLINK_PROXY_URL + '/products/?page_size=50&category=5');
             if (!response.ok) {
                 console.error('Failed to fetch LeafLink products for config');
                 return null;
@@ -22020,14 +22020,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const products = data.results || [];
 
             if (products.length === 0) {
-                console.error('No LeafLink products found');
+                console.error('No LeafLink concentrate products found');
                 return null;
             }
 
-            // Extract common IDs from first product
+            // Extract common IDs from first concentrate product (uses recreational license)
             // Note: Some fields are nested objects {id: x}, others are direct IDs or strings
             const firstProduct = products[0];
-            console.log('First product raw data:', JSON.stringify(firstProduct, null, 2));
+            console.log('First concentrate product:', firstProduct.name, 'License:', firstProduct.license?.number);
 
             // UOM string to ID mapping (LeafLink returns strings but requires IDs for POST)
             // These IDs may need adjustment based on your LeafLink account
@@ -22069,45 +22069,28 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 timestamp: Date.now()
             };
 
-            // Fetch product lines AND parent products
+            // Fetch product lines from /product-lines endpoint
             try {
-                // First get product lines for product_line_id
                 const plResponse = await fetch(LEAFLINK_PROXY_URL + '/product-lines/?page_size=50');
-                const productLineMap = {};
                 if (plResponse.ok) {
                     const plData = await plResponse.json();
-                    (plData.results || []).forEach(pl => {
-                        productLineMap[pl.name.toLowerCase()] = pl.id;
-                    });
-                }
+                    const productLines = plData.results || [];
 
-                // Then get parent products (products with children) for parent_id
-                const prodResponse = await fetch(LEAFLINK_PROXY_URL + '/products/?page_size=100&has_children=true');
-                if (prodResponse.ok) {
-                    const prodData = await prodResponse.json();
-                    const parentProducts = prodData.results || [];
-
-                    parentProducts.forEach(product => {
-                        const name = (product.name || '').toLowerCase();
+                    productLines.forEach(pl => {
+                        const name = (pl.name || '').toLowerCase();
                         const configData = {
-                            product_line_id: product.product_line?.id || product.product_line,
-                            parent_id: product.id, // The parent product ID for varieties
-                            category_id: product.category?.id || product.category,
-                            name: product.name
+                            product_line_id: pl.id,
+                            name: pl.name
                         };
 
-                        // Map to our internal categories
-                        if (name.includes('sugar wax') && name.includes('1 gram')) {
+                        // Map to our internal product types
+                        if (name === 'sugar wax') {
                             leafLinkConfig.product_lines['Sugar Wax'] = configData;
-                        } else if (name.includes('sugar wax') && name.includes('4 gram')) {
-                            leafLinkConfig.product_lines['Sugar Wax 4g'] = configData;
                         } else if (name === 'shatter') {
                             leafLinkConfig.product_lines['Shatter'] = configData;
-                        } else if (name.includes('wax') && name.includes('1 gram') && !name.includes('sugar')) {
+                        } else if (name === 'wax') {
                             leafLinkConfig.product_lines['Wax'] = configData;
-                        } else if (name.includes('wax') && name.includes('4 gram') && !name.includes('sugar')) {
-                            leafLinkConfig.product_lines['Wax 4g'] = configData;
-                        } else if (name.includes('disposable') || name.includes('all in one')) {
+                        } else if (name.includes('all in one') || name.includes('disposable')) {
                             leafLinkConfig.product_lines['Live Resin AIOs'] = configData;
                         } else if (name.includes('cartridge')) {
                             leafLinkConfig.product_lines['Live Resin Carts'] = configData;
@@ -22265,11 +22248,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Only add product_line if we have a valid ID (not all categories have one)
         if (productLineConfig.product_line_id) {
             payload.product_line = productLineConfig.product_line_id;
-        }
-
-        // Add parent to make this a variety under the parent product
-        if (productLineConfig.parent_id) {
-            payload.parent = productLineConfig.parent_id;
         }
 
         // Add test results if available
