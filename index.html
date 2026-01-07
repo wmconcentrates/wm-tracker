@@ -22184,7 +22184,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             brand: leafLinkConfig.brand_id,
             license: leafLinkConfig.license_id,
             category: productLineConfig.category_id || leafLinkConfig.category_id,
-            product_line: productLineConfig.product_line_id || productLineConfig.parent_id, // Use parent_id as product_line if no product_line_id
             manufacturer: leafLinkConfig.seller_id, // Same as seller
             unit_of_measure: 'Gram',
             sell_in_unit_of_measure: 'Case',
@@ -22209,6 +22208,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 currency: 'USD'
             }
         };
+
+        // Only add product_line if we have a valid ID (not all categories have one)
+        if (productLineConfig.product_line_id) {
+            payload.product_line = productLineConfig.product_line_id;
+        }
 
         // Add test results if available
         if (batch.test_thc_percent) {
