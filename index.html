@@ -6448,18 +6448,32 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             return isLocalhost || isHTTP;
         }
 
-        // Send ZPL to printer - tries direct IP, falls back to download
+        // Send ZPL to printer - tries print server, then direct IP, falls back to download
         async function sendZPLToPrinter(zpl, filename) {
             const printerIP = '10.1.10.95';
+            const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
 
-            // Always try direct IP printing first
+            // Try print server first (works from HTTPS)
+            try {
+                const response = await fetch(printServerURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ zpl: zpl })
+                });
+                if (response.ok) {
+                    return { success: true, method: 'direct' };
+                }
+            } catch (error) {
+                // Print server not available
+            }
+
+            // Try direct IP printing
             try {
                 await fetch(`http://${printerIP}:9100`, {
                     method: 'POST',
                     mode: 'no-cors',
                     body: zpl
                 });
-                // no-cors succeeds silently - assume it worked
                 return { success: true, method: 'direct' };
             } catch (error) {
                 console.log('Direct print failed:', error.message);
