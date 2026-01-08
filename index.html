@@ -2193,6 +2193,37 @@
             <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
             <div class="form-section">
                 <h2>🧪 Test Results Entry</h2>
+
+                <!-- COA Auto-Sync Panel -->
+                <div id="coaSyncPanel" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(59, 130, 246, 0.15)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-green);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h3 style="color: var(--accent-green); margin: 0 0 5px 0; display: flex; align-items: center; gap: 8px;">
+                                <span>📄</span> COA Auto-Import
+                                <span id="coaSyncStatus" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 20px; background: var(--bg-tertiary); color: var(--text-secondary);">Not Connected</span>
+                            </h3>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">
+                                Automatically imports test results from Google Drive
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="coaConnectBtn" onclick="connectGoogleDrive()" style="padding: 10px 20px; background: #4285f4; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.498 0 2.866.549 3.921 1.453l2.814-2.814A9.969 9.969 0 0012.545 2C7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z"/></svg>
+                                Connect Google Drive
+                            </button>
+                            <button id="coaSyncBtn" onclick="syncCOAsFromDrive()" style="padding: 10px 20px; background: var(--accent-green); border: none; border-radius: 8px; color: black; font-weight: 600; cursor: pointer; display: none;">
+                                🔄 Sync Now
+                            </button>
+                        </div>
+                    </div>
+                    <div id="coaSyncResults" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                            Last sync: <span id="coaLastSync">Never</span> |
+                            COAs imported: <span id="coaImportCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>Select Batch for Test Results</label>
                     <select id="testingBatchSelect" required>
@@ -4010,6 +4041,11 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- PDF.js for COA parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Google Identity Services for Drive API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
     <!-- Time Clock Modal -->
     <div id="timeClockModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; overflow-y: auto;">
         <div style="max-width: 500px; margin: 50px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(57, 255, 20, 0.4);">
@@ -17017,6 +17053,445 @@ ${employeeReport || 'No activity recorded today'}
             populatePackagingSelect();
             populateTestingSelect();
         }
+
+        // ==============================================
+        // COA AUTO-IMPORT (Google Drive Integration)
+        // ==============================================
+
+        // Google API Configuration
+        // You'll need to create these at console.cloud.google.com
+        const COA_CONFIG = {
+            // Replace with your Google Cloud project credentials
+            clientId: localStorage.getItem('googleClientId') || '',
+            apiKey: localStorage.getItem('googleApiKey') || '',
+            scopes: 'https://www.googleapis.com/auth/drive.readonly',
+            folderName: 'COAs',
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+        };
+
+        let googleTokenClient = null;
+        let googleAccessToken = null;
+        let coaFolderId = null;
+        let processedCOAs = JSON.parse(localStorage.getItem('processedCOAs') || '[]');
+
+        // Initialize Google API on page load
+        function initGoogleAPI() {
+            if (typeof gapi !== 'undefined' && COA_CONFIG.apiKey) {
+                gapi.load('client', async () => {
+                    try {
+                        await gapi.client.init({
+                            apiKey: COA_CONFIG.apiKey,
+                            discoveryDocs: COA_CONFIG.discoveryDocs
+                        });
+                        console.log('Google API client initialized');
+                        checkGoogleConnection();
+                    } catch (error) {
+                        console.log('Google API init error:', error);
+                    }
+                });
+            }
+        }
+
+        // Check if already connected
+        function checkGoogleConnection() {
+            googleAccessToken = localStorage.getItem('googleAccessToken');
+            const tokenExpiry = localStorage.getItem('googleTokenExpiry');
+
+            if (googleAccessToken && tokenExpiry && Date.now() < parseInt(tokenExpiry)) {
+                updateCOASyncUI(true);
+                // Auto-sync on page load if connected
+                setTimeout(() => syncCOAsFromDrive(), 2000);
+            }
+        }
+
+        // Connect to Google Drive
+        async function connectGoogleDrive() {
+            // Check if credentials are configured
+            if (!COA_CONFIG.clientId) {
+                const clientId = prompt(
+                    'Enter your Google Cloud Client ID:\n\n' +
+                    'To get this:\n' +
+                    '1. Go to console.cloud.google.com\n' +
+                    '2. Create a project (or select existing)\n' +
+                    '3. Enable Google Drive API\n' +
+                    '4. Go to APIs & Services → Credentials\n' +
+                    '5. Create OAuth 2.0 Client ID (Web application)\n' +
+                    '6. Add your domain to Authorized JavaScript origins\n' +
+                    '7. Copy the Client ID'
+                );
+                if (clientId) {
+                    localStorage.setItem('googleClientId', clientId);
+                    COA_CONFIG.clientId = clientId;
+                } else {
+                    return;
+                }
+            }
+
+            if (!COA_CONFIG.apiKey) {
+                const apiKey = prompt(
+                    'Enter your Google Cloud API Key:\n\n' +
+                    'To get this:\n' +
+                    '1. Go to APIs & Services → Credentials\n' +
+                    '2. Create API Key\n' +
+                    '3. Restrict it to Google Drive API (recommended)'
+                );
+                if (apiKey) {
+                    localStorage.setItem('googleApiKey', apiKey);
+                    COA_CONFIG.apiKey = apiKey;
+                    // Reinitialize with API key
+                    initGoogleAPI();
+                } else {
+                    return;
+                }
+            }
+
+            try {
+                // Initialize token client
+                if (typeof google !== 'undefined' && google.accounts) {
+                    googleTokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: COA_CONFIG.clientId,
+                        scope: COA_CONFIG.scopes,
+                        callback: (response) => {
+                            if (response.access_token) {
+                                googleAccessToken = response.access_token;
+                                localStorage.setItem('googleAccessToken', response.access_token);
+                                localStorage.setItem('googleTokenExpiry', Date.now() + (response.expires_in * 1000));
+                                updateCOASyncUI(true);
+                                alert('✅ Connected to Google Drive!\n\nMake sure you have a folder named "COAs" in your Drive.');
+                                syncCOAsFromDrive();
+                            }
+                        }
+                    });
+                    googleTokenClient.requestAccessToken();
+                } else {
+                    alert('Google Identity Services not loaded. Please refresh the page and try again.');
+                }
+            } catch (error) {
+                console.error('Google Drive connection error:', error);
+                alert('Error connecting to Google Drive: ' + error.message);
+            }
+        }
+
+        // Update the UI based on connection status
+        function updateCOASyncUI(connected) {
+            const statusEl = document.getElementById('coaSyncStatus');
+            const connectBtn = document.getElementById('coaConnectBtn');
+            const syncBtn = document.getElementById('coaSyncBtn');
+            const resultsEl = document.getElementById('coaSyncResults');
+
+            if (connected) {
+                statusEl.textContent = 'Connected';
+                statusEl.style.background = 'rgba(16, 185, 129, 0.3)';
+                statusEl.style.color = 'var(--accent-green)';
+                connectBtn.style.display = 'none';
+                syncBtn.style.display = 'block';
+                resultsEl.style.display = 'block';
+
+                const lastSync = localStorage.getItem('coaLastSync');
+                if (lastSync) {
+                    document.getElementById('coaLastSync').textContent = new Date(lastSync).toLocaleString();
+                }
+                document.getElementById('coaImportCount').textContent = processedCOAs.length;
+            } else {
+                statusEl.textContent = 'Not Connected';
+                statusEl.style.background = 'var(--bg-tertiary)';
+                statusEl.style.color = 'var(--text-secondary)';
+                connectBtn.style.display = 'flex';
+                syncBtn.style.display = 'none';
+                resultsEl.style.display = 'none';
+            }
+        }
+
+        // Sync COAs from Google Drive
+        async function syncCOAsFromDrive() {
+            if (!googleAccessToken) {
+                alert('Please connect to Google Drive first');
+                return;
+            }
+
+            const syncBtn = document.getElementById('coaSyncBtn');
+            syncBtn.textContent = '🔄 Syncing...';
+            syncBtn.disabled = true;
+
+            try {
+                // Find the COAs folder
+                if (!coaFolderId) {
+                    const folderResponse = await fetch(
+                        `https://www.googleapis.com/drive/v3/files?q=name='${COA_CONFIG.folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
+                        { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+                    );
+                    const folderData = await folderResponse.json();
+
+                    if (folderData.files && folderData.files.length > 0) {
+                        coaFolderId = folderData.files[0].id;
+                    } else {
+                        alert('COAs folder not found in Google Drive.\n\nPlease create a folder named "COAs" in your Google Drive.');
+                        syncBtn.textContent = '🔄 Sync Now';
+                        syncBtn.disabled = false;
+                        return;
+                    }
+                }
+
+                // List PDF files in the folder
+                const filesResponse = await fetch(
+                    `https://www.googleapis.com/drive/v3/files?q='${coaFolderId}' in parents and mimeType='application/pdf' and trashed=false&fields=files(id,name,createdTime,modifiedTime)&orderBy=modifiedTime desc`,
+                    { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+                );
+                const filesData = await filesResponse.json();
+
+                if (!filesData.files || filesData.files.length === 0) {
+                    alert('No PDF files found in COAs folder.');
+                    syncBtn.textContent = '🔄 Sync Now';
+                    syncBtn.disabled = false;
+                    return;
+                }
+
+                // Process each new file
+                let importedCount = 0;
+                let skippedCount = 0;
+                let errorCount = 0;
+                const importDetails = [];
+
+                for (const file of filesData.files) {
+                    if (processedCOAs.includes(file.id)) {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    try {
+                        // Download the PDF
+                        const pdfResponse = await fetch(
+                            `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+                            { headers: { Authorization: `Bearer ${googleAccessToken}` } }
+                        );
+                        const pdfBlob = await pdfResponse.blob();
+                        const pdfData = await pdfBlob.arrayBuffer();
+
+                        // Parse the PDF
+                        const coaData = await parseCOAPdf(pdfData);
+
+                        if (coaData && coaData.batchId) {
+                            // Find matching batch
+                            const matchResult = await matchAndUpdateBatch(coaData);
+
+                            if (matchResult.success) {
+                                processedCOAs.push(file.id);
+                                importedCount++;
+                                importDetails.push(`✅ ${coaData.batchId}: THC ${coaData.totalThc}%`);
+                            } else {
+                                importDetails.push(`⚠️ ${coaData.batchId}: ${matchResult.message}`);
+                            }
+                        } else {
+                            errorCount++;
+                            importDetails.push(`❌ ${file.name}: Could not parse COA data`);
+                        }
+                    } catch (err) {
+                        console.error('Error processing file:', file.name, err);
+                        errorCount++;
+                    }
+                }
+
+                // Save processed list
+                localStorage.setItem('processedCOAs', JSON.stringify(processedCOAs));
+                localStorage.setItem('coaLastSync', new Date().toISOString());
+
+                // Update UI
+                document.getElementById('coaLastSync').textContent = new Date().toLocaleString();
+                document.getElementById('coaImportCount').textContent = processedCOAs.length;
+
+                // Show results
+                let message = `COA Sync Complete!\n\n`;
+                message += `📥 Imported: ${importedCount}\n`;
+                message += `⏭️ Already processed: ${skippedCount}\n`;
+                if (errorCount > 0) message += `❌ Errors: ${errorCount}\n`;
+                if (importDetails.length > 0) {
+                    message += `\nDetails:\n${importDetails.join('\n')}`;
+                }
+                alert(message);
+
+                // Refresh batches to show updated data
+                if (importedCount > 0) {
+                    await loadBatches();
+                    populateTestingSelect();
+                }
+
+            } catch (error) {
+                console.error('Sync error:', error);
+                if (error.message.includes('401') || error.message.includes('invalid_token')) {
+                    localStorage.removeItem('googleAccessToken');
+                    localStorage.removeItem('googleTokenExpiry');
+                    googleAccessToken = null;
+                    updateCOASyncUI(false);
+                    alert('Google Drive session expired. Please reconnect.');
+                } else {
+                    alert('Error syncing COAs: ' + error.message);
+                }
+            }
+
+            syncBtn.textContent = '🔄 Sync Now';
+            syncBtn.disabled = false;
+        }
+
+        // Parse AgriScience Labs COA PDF
+        async function parseCOAPdf(pdfData) {
+            try {
+                // Set worker source for PDF.js
+                if (typeof pdfjsLib !== 'undefined') {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                }
+
+                const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                const page = await pdf.getPage(1);
+                const textContent = await page.getTextContent();
+                const text = textContent.items.map(item => item.str).join(' ');
+
+                console.log('COA Text:', text);
+
+                // Extract data using patterns for AgriScience Labs format
+                const coaData = {
+                    batchId: null,
+                    metrcId: null,
+                    sampleId: null,
+                    productName: null,
+                    totalThc: null,
+                    totalCbd: null,
+                    totalCannabinoids: null,
+                    thca: null,
+                    thc: null,
+                    cbga: null,
+                    cbca: null,
+                    receivedDate: null
+                };
+
+                // Batch ID pattern: "Batch ID: X.X.XXXX"
+                const batchIdMatch = text.match(/Batch ID[:\s]+(\d+\.\d+\.\d+)/i);
+                if (batchIdMatch) coaData.batchId = batchIdMatch[1];
+
+                // Metrc ID pattern: "Metrc ID: 1A4..."
+                const metrcMatch = text.match(/Metrc ID[:\s]+(1A[A-Z0-9]+)/i);
+                if (metrcMatch) coaData.metrcId = metrcMatch[1];
+
+                // Sample ID pattern: "Sample ID: XXR-XXXX-XX"
+                const sampleMatch = text.match(/Sample ID[:\s]+([A-Z0-9-]+)/i);
+                if (sampleMatch) coaData.sampleId = sampleMatch[1];
+
+                // Product name pattern: "WM [Product Name] (Xg)"
+                const productMatch = text.match(/WM\s+([^(]+)\s*\(\d+g\)/i);
+                if (productMatch) coaData.productName = productMatch[1].trim();
+
+                // Total THC pattern: "Total THC: XX.X%"
+                const totalThcMatch = text.match(/Total THC[:\s]+(\d+\.?\d*)%/i);
+                if (totalThcMatch) coaData.totalThc = parseFloat(totalThcMatch[1]);
+
+                // Total CBD pattern: "Total CBD: X.XXX%"
+                const totalCbdMatch = text.match(/Total CBD[:\s]+(\d+\.?\d*)%/i);
+                if (totalCbdMatch) coaData.totalCbd = parseFloat(totalCbdMatch[1]);
+
+                // Total Cannabinoids pattern
+                const totalCannMatch = text.match(/Total Cannabinoids[:\s]+(\d+\.?\d*)%/i);
+                if (totalCannMatch) coaData.totalCannabinoids = parseFloat(totalCannMatch[1]);
+
+                // Individual cannabinoids (% weight column)
+                const thcaMatch = text.match(/delta-9 THCA\s+(\d+\.?\d*)/i);
+                if (thcaMatch) coaData.thca = parseFloat(thcaMatch[1]);
+
+                const thcMatch = text.match(/delta-9 THC\s+(\d+\.?\d*)/i);
+                if (thcMatch) coaData.thc = parseFloat(thcMatch[1]);
+
+                // Received date
+                const dateMatch = text.match(/Received[:\s]+(\d{1,2}\/\d{1,2}\/\d{4})/i);
+                if (dateMatch) coaData.receivedDate = dateMatch[1];
+
+                console.log('Parsed COA:', coaData);
+                return coaData;
+
+            } catch (error) {
+                console.error('PDF parsing error:', error);
+                return null;
+            }
+        }
+
+        // Match COA data to batch and update database
+        async function matchAndUpdateBatch(coaData) {
+            if (!coaData.batchId) {
+                return { success: false, message: 'No batch ID found in COA' };
+            }
+
+            // Find matching batch - try exact match first
+            let batch = batches.find(b => b.id === coaData.batchId);
+
+            // If no exact match, try matching by METRC tag last 4 digits
+            if (!batch && coaData.metrcId) {
+                const last4 = coaData.metrcId.slice(-4);
+                batch = batches.find(b => b.id && b.id.endsWith(last4));
+            }
+
+            // Also try matching by product name
+            if (!batch && coaData.productName) {
+                batch = batches.find(b =>
+                    b.strain && b.strain.toLowerCase().includes(coaData.productName.toLowerCase())
+                );
+            }
+
+            if (!batch) {
+                return {
+                    success: false,
+                    message: `No matching batch found for ID: ${coaData.batchId}`
+                };
+            }
+
+            // Check if already has test results
+            if (batch.test_thc_percent && batch.test_thc_percent > 0) {
+                return {
+                    success: false,
+                    message: `Batch ${batch.id} already has test results (THC: ${batch.test_thc_percent}%)`
+                };
+            }
+
+            // Update the batch with COA data
+            const timeline = batch.timeline || [];
+            timeline.push({
+                stage: 'testing',
+                user: 'COA Auto-Import',
+                date: new Date().toISOString(),
+                action: `Auto-imported from COA: THC ${coaData.totalThc}%, CBD ${coaData.totalCbd || 0}% | Sample: ${coaData.sampleId || 'N/A'}`
+            });
+
+            const updates = {
+                test_thc_percent: coaData.totalThc,
+                test_cbd_percent: coaData.totalCbd || 0,
+                timeline: timeline,
+                test_results_notes: `[COA AUTO-IMPORT]\nSample ID: ${coaData.sampleId || 'N/A'}\nMETRC: ${coaData.metrcId || 'N/A'}\nTotal Cannabinoids: ${coaData.totalCannabinoids || 'N/A'}%\nTHCA: ${coaData.thca || 'N/A'}%\nReceived: ${coaData.receivedDate || 'N/A'}`
+            };
+
+            try {
+                const { error } = await supabaseClient
+                    .from('batches')
+                    .update(updates)
+                    .eq('id', batch.id);
+
+                if (error) throw error;
+
+                return { success: true, message: `Updated batch ${batch.id}` };
+            } catch (error) {
+                console.error('Database update error:', error);
+                return { success: false, message: `Database error: ${error.message}` };
+            }
+        }
+
+        // Disconnect Google Drive
+        function disconnectGoogleDrive() {
+            localStorage.removeItem('googleAccessToken');
+            localStorage.removeItem('googleTokenExpiry');
+            googleAccessToken = null;
+            coaFolderId = null;
+            updateCOASyncUI(false);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initGoogleAPI, 1000);
+        });
 
         // ==============================================
         // METRC INTEGRATION FUNCTIONS
