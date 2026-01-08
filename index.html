@@ -1178,6 +1178,7 @@
                     margin-top: 10px;
                     width: 200px;
                     border: 2px solid var(--accent-purple);
+                    z-index: 10000;
                 }
 
                 .actions-dropdown button {
@@ -6447,25 +6448,34 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             return isLocalhost || isHTTP;
         }
 
-        // Send ZPL to printer - silently skips if on HTTPS
+        // Send ZPL to printer - tries direct IP, falls back to download
         async function sendZPLToPrinter(zpl, filename) {
-            if (!canDirectPrint()) {
-                // Silently skip on HTTPS - can't print to local network
-                return { success: false, method: 'skipped' };
-            }
-
             const printerIP = '10.1.10.95';
+
+            // Always try direct IP printing first
             try {
                 await fetch(`http://${printerIP}:9100`, {
                     method: 'POST',
                     mode: 'no-cors',
                     body: zpl
                 });
+                // no-cors means we can't read response, but if no error thrown, assume success
                 return { success: true, method: 'direct' };
             } catch (error) {
-                // Silently fail - don't spam console
-                return { success: false, method: 'error' };
+                console.log('Direct print failed:', error.message);
             }
+
+            // Download ZPL file as fallback
+            const blob = new Blob([zpl], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            return { success: true, method: 'download' };
         }
 
         // Print directly to Zebra printer via IP
@@ -11646,38 +11656,45 @@ ${growerName ? `^FO530,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 const zpl = generateIntakeBatchLabelZPL(batch);
                 const result = await sendZPLToPrinter(zpl, `intake-${batch.id}.zpl`);
                 if (result.method === 'direct') alert(`✅ Intake label sent to printer!`);
+                else if (result.method === 'download') alert(`📥 Intake label downloaded as ZPL file.\n\nSend to printer using Zebra Setup Utilities.`);
             } else if (labelType === 'postprod') {
                 const finalWeight = parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 const sampleWeight = parseFloat(batch.sample_weight) || 0;
                 const totalBowls = batch.extraction_bowls || 1;
                 let printed = false;
+                let downloaded = false;
 
                 for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
                     const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
                     const result = await sendZPLToPrinter(zpl, `postprod-${batch.id}-bowl${bowlNum}.zpl`);
                     if (result.method === 'direct') printed = true;
+                    else if (result.method === 'download') downloaded = true;
                 }
                 if (printed) alert(`✅ ${totalBowls} post-production label(s) sent to printer!`);
+                else if (downloaded) alert(`📥 ${totalBowls} post-production label(s) downloaded as ZPL files.\n\nSend to printer using Zebra Setup Utilities.`);
             } else if (labelType === 'labeling') {
                 const labeledBy = currentRole ? currentRole.name : 'Unknown';
                 const units1g = batch.units_1g || 0;
                 const units4g = batch.units_4g || 0;
                 let labelsPrinted = 0;
+                let labelsDownloaded = 0;
 
                 if (units1g > 0) {
                     const zpl1g = generateLabelingCompletionZPL(batch, labeledBy, 1);
                     const result = await sendZPLToPrinter(zpl1g, `labeling-${batch.id}-1g.zpl`);
                     if (result.method === 'direct') labelsPrinted++;
+                    else if (result.method === 'download') labelsDownloaded++;
                 }
 
                 if (units4g > 0) {
                     const zpl4g = generateLabelingCompletionZPL(batch, labeledBy, 4);
                     const result = await sendZPLToPrinter(zpl4g, `labeling-${batch.id}-4g.zpl`);
                     if (result.method === 'direct') labelsPrinted++;
+                    else if (result.method === 'download') labelsDownloaded++;
                 }
                 if (labelsPrinted > 0) alert(`✅ ${labelsPrinted} labeling label(s) sent to printer!`);
+                else if (labelsDownloaded > 0) alert(`📥 ${labelsDownloaded} labeling label(s) downloaded as ZPL files.\n\nSend to printer using Zebra Setup Utilities.`);
             }
-            // Silently skips on HTTPS - no errors, no alerts
         }
 
         async function loadLoginHistory() {
