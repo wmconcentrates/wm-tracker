@@ -17345,43 +17345,114 @@ ${employeeReport || 'No activity recorded today'}
                     receivedDate: null
                 };
 
-                // Batch ID pattern: "Batch ID: X.X.XXXX"
-                const batchIdMatch = text.match(/Batch ID[:\s]+(\d+\.\d+\.\d+)/i);
+                // === BATCH ID PATTERNS ===
+                // Format 1: "Batch ID: X.X.XXXX" (single sample COA)
+                let batchIdMatch = text.match(/Batch ID[:\s]+(\d+\.\d+\.\d+)/i);
                 if (batchIdMatch) coaData.batchId = batchIdMatch[1];
 
-                // Metrc ID pattern: "Metrc ID: 1A4..."
-                const metrcMatch = text.match(/Metrc ID[:\s]+(1A[A-Z0-9]+)/i);
+                // Format 2: Table format "CN X.X.XXXX" (multi-sample COA)
+                if (!coaData.batchId) {
+                    batchIdMatch = text.match(/CN\s+(\d+\.\d+\.\d+)/i);
+                    if (batchIdMatch) coaData.batchId = batchIdMatch[1];
+                }
+
+                // === METRC ID PATTERNS ===
+                // Format 1: "Metrc ID: 1A4..."
+                let metrcMatch = text.match(/Metrc ID[:\s]+(1A[A-Z0-9]+)/i);
                 if (metrcMatch) coaData.metrcId = metrcMatch[1];
 
-                // Sample ID pattern: "Sample ID: XXR-XXXX-XX"
-                const sampleMatch = text.match(/Sample ID[:\s]+([A-Z0-9-]+)/i);
+                // Format 2: "...XXXX" (truncated in table)
+                if (!coaData.metrcId) {
+                    metrcMatch = text.match(/\.\.\.(\d{4})/);
+                    if (metrcMatch) coaData.metrcId = metrcMatch[1]; // Just last 4
+                }
+
+                // === SAMPLE ID PATTERNS ===
+                // Format 1: "Sample ID: XXR-XXXX-XX"
+                let sampleMatch = text.match(/Sample ID[:\s]+(\d+[A-Z]-\d+-\d+)/i);
                 if (sampleMatch) coaData.sampleId = sampleMatch[1];
 
-                // Product name pattern: "WM [Product Name] (Xg)"
-                const productMatch = text.match(/WM\s+([^(]+)\s*\(\d+g\)/i);
+                // Format 2: Sample ID at start of row "25R-2078-02"
+                if (!coaData.sampleId) {
+                    sampleMatch = text.match(/(\d{2}[A-Z]-\d{4}-\d{2})/i);
+                    if (sampleMatch) coaData.sampleId = sampleMatch[1];
+                }
+
+                // === PRODUCT NAME PATTERNS ===
+                // Format 1: "WM [Product Name] (Xg)"
+                let productMatch = text.match(/WM\s+([^(]+)\s*\(\d+g\)/i);
                 if (productMatch) coaData.productName = productMatch[1].trim();
 
-                // Total THC pattern: "Total THC: XX.X%"
-                const totalThcMatch = text.match(/Total THC[:\s]+(\d+\.?\d*)%/i);
+                // Format 2: "Product Name: WM [Name]" or in sample name column
+                if (!coaData.productName) {
+                    productMatch = text.match(/WM\s+([A-Za-z\s]+(?:Bulk|SW|W|Live|Badder|Sauce|Sugar|Diamonds))/i);
+                    if (productMatch) coaData.productName = productMatch[1].trim();
+                }
+
+                // === THC PATTERNS ===
+                // Format 1: "Total THC: XX.X%"
+                let totalThcMatch = text.match(/Total THC[:\s]+(\d+\.?\d*)%/i);
                 if (totalThcMatch) coaData.totalThc = parseFloat(totalThcMatch[1]);
 
-                // Total CBD pattern: "Total CBD: X.XXX%"
-                const totalCbdMatch = text.match(/Total CBD[:\s]+(\d+\.?\d*)%/i);
+                // Format 2: "THC %*" header with value in row - look for "X.X.XXXX ...XXXX XX.X" pattern
+                if (!coaData.totalThc) {
+                    // Match batch ID followed by metrc and then THC value
+                    totalThcMatch = text.match(/\d+\.\d+\.\d+\s+\.\.\.\d+\s+(\d+\.?\d*)\s+\d+\.?\d*/);
+                    if (totalThcMatch) coaData.totalThc = parseFloat(totalThcMatch[1]);
+                }
+
+                // Format 3: Look for THC value near "THC %"
+                if (!coaData.totalThc) {
+                    totalThcMatch = text.match(/THC\s*%\*?\s*Total[^0-9]*(\d+\.?\d*)/i);
+                    if (totalThcMatch) coaData.totalThc = parseFloat(totalThcMatch[1]);
+                }
+
+                // === CBD PATTERNS ===
+                // Format 1: "Total CBD: X.XXX%"
+                let totalCbdMatch = text.match(/Total CBD[:\s]+(\d+\.?\d*)%/i);
                 if (totalCbdMatch) coaData.totalCbd = parseFloat(totalCbdMatch[1]);
 
-                // Total Cannabinoids pattern
-                const totalCannMatch = text.match(/Total Cannabinoids[:\s]+(\d+\.?\d*)%/i);
+                // Format 2: "% CBD" column with ND or value
+                if (!coaData.totalCbd) {
+                    const cbdMatch = text.match(/%\s*CBD[^N]*?(\d+\.?\d*)|CBD[^N]*?ND/i);
+                    if (cbdMatch && cbdMatch[1]) coaData.totalCbd = parseFloat(cbdMatch[1]);
+                    else coaData.totalCbd = 0;
+                }
+
+                // === TOTAL CANNABINOIDS PATTERNS ===
+                // Format 1: "Total Cannabinoids: XX.X%"
+                let totalCannMatch = text.match(/Total Cannabinoids?[:\s]+(\d+\.?\d*)%/i);
                 if (totalCannMatch) coaData.totalCannabinoids = parseFloat(totalCannMatch[1]);
 
-                // Individual cannabinoids (% weight column)
-                const thcaMatch = text.match(/delta-9 THCA\s+(\d+\.?\d*)/i);
+                // Format 2: "Percentage Detected" column
+                if (!coaData.totalCannabinoids) {
+                    totalCannMatch = text.match(/Detected\*?\*?\s+[^0-9]*?(\d+\.\d+\.\d+)[^0-9]+\.\.\.\d+\s+\d+\.?\d*\s+(\d+\.?\d*)/i);
+                    if (totalCannMatch) coaData.totalCannabinoids = parseFloat(totalCannMatch[2]);
+                }
+
+                // === THCA PATTERN ===
+                // Format 1: "delta-9 THCA XX.X"
+                let thcaMatch = text.match(/delta-9 THCA\s+(\d+\.?\d*)/i);
                 if (thcaMatch) coaData.thca = parseFloat(thcaMatch[1]);
 
-                const thcMatch = text.match(/delta-9 THC\s+(\d+\.?\d*)/i);
+                // Format 2: "% THCA" column
+                if (!coaData.thca) {
+                    thcaMatch = text.match(/%\s*THCA\s+[^0-9]*?(\d+\.?\d*)/i);
+                    if (thcaMatch) coaData.thca = parseFloat(thcaMatch[1]);
+                }
+
+                // === D9-THC PATTERN ===
+                let thcMatch = text.match(/delta-9 THC\s+(\d+\.?\d*)/i);
                 if (thcMatch) coaData.thc = parseFloat(thcMatch[1]);
 
-                // Received date
-                const dateMatch = text.match(/Received[:\s]+(\d{1,2}\/\d{1,2}\/\d{4})/i);
+                // Format 2: "% d9-THC" column
+                if (!coaData.thc) {
+                    thcMatch = text.match(/%\s*d9-THC\s+[^0-9]*?(\d+\.?\d*)/i);
+                    if (thcMatch) coaData.thc = parseFloat(thcMatch[1]);
+                }
+
+                // === DATE PATTERN ===
+                let dateMatch = text.match(/(?:Received|Date Received)[:\s]+(\d{1,2}\/\d{1,2}\/\d{4})/i);
                 if (dateMatch) coaData.receivedDate = dateMatch[1];
 
                 console.log('Parsed COA:', coaData);
