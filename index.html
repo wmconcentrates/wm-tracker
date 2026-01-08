@@ -17076,20 +17076,8 @@ ${employeeReport || 'No activity recorded today'}
 
         // Initialize Google API on page load
         function initGoogleAPI() {
-            if (typeof gapi !== 'undefined' && COA_CONFIG.apiKey) {
-                gapi.load('client', async () => {
-                    try {
-                        await gapi.client.init({
-                            apiKey: COA_CONFIG.apiKey,
-                            discoveryDocs: COA_CONFIG.discoveryDocs
-                        });
-                        console.log('Google API client initialized');
-                        checkGoogleConnection();
-                    } catch (error) {
-                        console.log('Google API init error:', error);
-                    }
-                });
-            }
+            // We use OAuth tokens with direct fetch() calls, no gapi client needed
+            checkGoogleConnection();
         }
 
         // Check if already connected
