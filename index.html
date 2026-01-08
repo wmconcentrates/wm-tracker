@@ -17127,24 +17127,6 @@ ${employeeReport || 'No activity recorded today'}
                 }
             }
 
-            if (!COA_CONFIG.apiKey) {
-                const apiKey = prompt(
-                    'Enter your Google Cloud API Key:\n\n' +
-                    'To get this:\n' +
-                    '1. Go to APIs & Services → Credentials\n' +
-                    '2. Create API Key\n' +
-                    '3. Restrict it to Google Drive API (recommended)'
-                );
-                if (apiKey) {
-                    localStorage.setItem('googleApiKey', apiKey);
-                    COA_CONFIG.apiKey = apiKey;
-                    // Reinitialize with API key
-                    initGoogleAPI();
-                } else {
-                    return;
-                }
-            }
-
             try {
                 // Initialize token client
                 if (typeof google !== 'undefined' && google.accounts) {
