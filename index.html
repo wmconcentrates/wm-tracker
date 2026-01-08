@@ -6452,20 +6452,25 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         async function sendZPLToPrinter(zpl, filename) {
             const printerIP = '10.1.10.95';
 
-            // Always try direct IP printing first
-            try {
-                await fetch(`http://${printerIP}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: zpl
-                });
-                // no-cors means we can't read response, but if no error thrown, assume success
-                return { success: true, method: 'direct' };
-            } catch (error) {
-                console.log('Direct print failed:', error.message);
+            // Check if direct printing is possible (HTTP or localhost only)
+            const canPrint = window.location.protocol === 'http:' ||
+                            window.location.hostname === 'localhost' ||
+                            window.location.hostname === '127.0.0.1';
+
+            if (canPrint) {
+                try {
+                    await fetch(`http://${printerIP}:9100`, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: zpl
+                    });
+                    return { success: true, method: 'direct' };
+                } catch (error) {
+                    console.log('Direct print failed:', error.message);
+                }
             }
 
-            // Download ZPL file as fallback
+            // Download ZPL file as fallback (HTTPS or print failed)
             const blob = new Blob([zpl], { type: 'text/plain' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -7114,11 +7119,21 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
         // Print post-production labels - one per bowl with numbering, HTTPS fallback
         async function printPostProductionLabels(batch, finalWeight, sampleWeight, copies) {
             const totalBowls = batch.extraction_bowls || 1;
+            let printed = false;
+            let downloaded = false;
 
             for (let bowlNum = 1; bowlNum <= totalBowls; bowlNum++) {
                 const zpl = generatePostProductionLabelZPL(batch, finalWeight, sampleWeight, bowlNum, totalBowls);
                 const result = await sendZPLToPrinter(zpl, `postprod-${batch.id}-bowl${bowlNum}.zpl`);
+                if (result.method === 'direct') printed = true;
+                else if (result.method === 'download') downloaded = true;
                 console.log(`Post-production label ${bowlNum}/${totalBowls} ${result.method === 'download' ? 'downloaded' : 'sent to printer'}`);
+            }
+
+            if (printed) {
+                alert(`✅ ${totalBowls} post-production label(s) sent to printer!`);
+            } else if (downloaded) {
+                alert(`📥 ${totalBowls} post-production label(s) downloaded as ZPL files.\n\nSend to printer using Zebra Setup Utilities.`);
             }
         }
 
