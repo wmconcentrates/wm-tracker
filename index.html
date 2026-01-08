@@ -6452,25 +6452,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         async function sendZPLToPrinter(zpl, filename) {
             const printerIP = '10.1.10.95';
 
-            // Check if direct printing is possible (HTTP or localhost only)
-            const canPrint = window.location.protocol === 'http:' ||
-                            window.location.hostname === 'localhost' ||
-                            window.location.hostname === '127.0.0.1';
-
-            if (canPrint) {
-                try {
-                    await fetch(`http://${printerIP}:9100`, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        body: zpl
-                    });
-                    return { success: true, method: 'direct' };
-                } catch (error) {
-                    console.log('Direct print failed:', error.message);
-                }
+            // Always try direct IP printing first
+            try {
+                await fetch(`http://${printerIP}:9100`, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: zpl
+                });
+                // no-cors succeeds silently - assume it worked
+                return { success: true, method: 'direct' };
+            } catch (error) {
+                console.log('Direct print failed:', error.message);
             }
 
-            // Download ZPL file as fallback (HTTPS or print failed)
+            // Download ZPL file as fallback
             const blob = new Blob([zpl], { type: 'text/plain' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
