@@ -6637,38 +6637,38 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
 ^LS0
 ~SD25
 
-^FO15,10^GB350,80,80^FS
+^FO65,10^GB350,80,80^FS
 ^CF0,38
-^FO25,30^FR^FD LABELING COMPLETE ^FS
+^FO75,30^FR^FD LABELING COMPLETE ^FS
 
 ^CF0,70
-^FO580,20^FD${unitLabel}^FS
+^FO630,20^FD${unitLabel}^FS
 
 ^CF0,50
-^FO15,105^FD${strainName.substring(0, 25)}^FS
+^FO65,105^FD${strainName.substring(0, 25)}^FS
 
 ^CF0,35
-^FO15,160^FDBatch: ${batchId}^FS
-^FO450,160^FD${batch.strain_type || 'Hybrid'}^FS
+^FO65,160^FDBatch: ${batchId}^FS
+^FO500,160^FD${batch.strain_type || 'Hybrid'}^FS
 
-^FO15,200^GB${width - 30},3,3^FS
+^FO65,200^GB${width - 80},3,3^FS
 
 ^CF0,90
-^FO15,215^FD${unitCount} UNITS^FS
+^FO65,215^FD${unitCount} UNITS^FS
 
 ^CF0,45
-^FO420,230^FD${gramsForSize}g total^FS
+^FO470,230^FD${gramsForSize}g total^FS
 
-^FO15,310^GB${width - 30},3,3^FS
+^FO65,310^GB${width - 80},3,3^FS
 
 ^CF0,30
-^FO15,330^FDLabeled: ${handler.substring(0, 12)}^FS
-^FO280,330^FD${agreement}^FS
-^FO480,330^FDGrower: ${license}^FS
+^FO65,330^FDLabeled: ${handler.substring(0, 12)}^FS
+^FO330,330^FD${agreement}^FS
+^FO530,330^FDGrower: ${license}^FS
 
 ^CF0,28
-^FO15,370^FD${today}^FS
-${growerName ? `^FO200,370^FD${growerName.substring(0, 35)}^FS` : ''}
+^FO65,370^FD${today}^FS
+${growerName ? `^FO250,370^FD${growerName.substring(0, 35)}^FS` : ''}
 
 ^XZ`;
 
@@ -6929,35 +6929,35 @@ ${growerName ? `^FO200,370^FD${growerName.substring(0, 35)}^FS` : ''}
 ^LS0
 ~SD20
 
-^FO15,10^GB180,70,70^FS
+^FO65,10^GB180,70,70^FS
 ^CF0,40
-^FO25,25^FR^FD INTAKE ^FS
+^FO75,25^FR^FD INTAKE ^FS
 
 ^CF0,55
-^FO15,95^FD${(batch.strain || 'Unknown').toUpperCase().substring(0, 22)}^FS
+^FO65,95^FD${(batch.strain || 'Unknown').toUpperCase().substring(0, 22)}^FS
 
 ^CF0,38
-^FO15,155^FDBatch: ${batch.id}^FS
-^FO450,155^FD${batch.strain_type || 'Hybrid'}^FS
+^FO65,155^FDBatch: ${batch.id}^FS
+^FO500,155^FD${batch.strain_type || 'Hybrid'}^FS
 
 ^CF0,65
-^FO15,205^FD${batch.trim_weight}g^FS
+^FO65,205^FD${batch.trim_weight}g^FS
 ^CF0,30
-^FO15,275^FDTRIM WEIGHT^FS
+^FO65,275^FDTRIM WEIGHT^FS
 
 ^CF0,55
-^FO220,205^FD${batch.socks_total || 1}^FS
+^FO270,205^FD${batch.socks_total || 1}^FS
 ^CF0,30
-^FO220,275^FDSOCKS^FS
+^FO270,275^FDSOCKS^FS
 
 ^CF0,32
-^FO350,205^FDDate: ${date}^FS
-^FO350,245^FDGrower: ${batch.cultivation_license || 'N/A'}^FS
-^FO350,285^FD${agreement}^FS
+^FO400,205^FDDate: ${date}^FS
+^FO400,245^FDGrower: ${batch.cultivation_license || 'N/A'}^FS
+^FO400,285^FD${agreement}^FS
 
 ^CF0,28
-^FO15,325^FDProducts: ${plannedProducts.substring(0, 35)}^FS
-${growerName ? `^FO450,325^FD${growerName.substring(0, 25)}^FS` : ''}
+^FO65,325^FDProducts: ${plannedProducts.substring(0, 35)}^FS
+${growerName ? `^FO500,325^FD${growerName.substring(0, 25)}^FS` : ''}
 
 ^XZ`;
 
@@ -7066,45 +7066,45 @@ ${growerName ? `^FO450,325^FD${growerName.substring(0, 25)}^FS` : ''}
 ^LS0
 ~SD25
 
-^FO15,10^GB330,75,75^FS
+^FO65,10^GB330,75,75^FS
 ^CF0,36
-^FO25,27^FR^FD POST-PRODUCTION ^FS
+^FO75,27^FR^FD POST-PRODUCTION ^FS
 ${bowlLabel ? `^CF0,70
-^FO680,15^FD${bowlLabel}^FS` : ''}
+^FO730,15^FD${bowlLabel}^FS` : ''}
 
 ^CF0,50
-^FO15,100^FD${productName.substring(0, 25)}^FS
+^FO65,100^FD${productName.substring(0, 25)}^FS
 
 ^CF0,35
-^FO15,155^FDBatch: ${batchId}^FS
-^FO450,155^FD${batch.strain_type || 'Hybrid'}^FS
+^FO65,155^FDBatch: ${batchId}^FS
+^FO500,155^FD${batch.strain_type || 'Hybrid'}^FS
 
-^FO15,195^GB${width - 30},3,3^FS
+^FO65,195^GB${width - 80},3,3^FS
 
 ^CF0,65
-^FO15,215^FD${finalWt.toFixed(1)}g^FS
+^FO65,215^FD${finalWt.toFixed(1)}g^FS
 ^CF0,28
-^FO180,235^FDFINAL^FS
+^FO230,235^FDFINAL^FS
 
 ^CF0,38
-^FO300,215^FDTrim: ${trimWeight}g^FS
-^FO300,260^FDYield: ${yieldPercent}%^FS
+^FO350,215^FDTrim: ${trimWeight}g^FS
+^FO350,260^FDYield: ${yieldPercent}%^FS
 
 ^CF0,38
-^FO530,215^FDSample: ${sampleWt.toFixed(1)}g^FS
+^FO580,215^FDSample: ${sampleWt.toFixed(1)}g^FS
 ^CF0,30
-^FO530,260^FD${today}^FS
+^FO580,260^FD${today}^FS
 
-^FO15,305^GB${width - 30},3,3^FS
-
-^CF0,28
-^FO15,325^FDMETRC: ${metrcTags || 'N/A'}^FS
-${partialInfo ? `^FO500,325^FDPartial: ${partialInfo}^FS` : ''}
+^FO65,305^GB${width - 80},3,3^FS
 
 ^CF0,28
-^FO15,360^FDGrower: ${license}^FS
-^FO300,360^FD${agreement}^FS
-${growerName ? `^FO530,360^FD${growerName.substring(0, 18)}^FS` : ''}
+^FO65,325^FDMETRC: ${metrcTags || 'N/A'}^FS
+${partialInfo ? `^FO550,325^FDPartial: ${partialInfo}^FS` : ''}
+
+^CF0,28
+^FO65,360^FDGrower: ${license}^FS
+^FO350,360^FD${agreement}^FS
+${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
 ^XZ`;
 
