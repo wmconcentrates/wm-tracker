@@ -22970,6 +22970,22 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                             };
                         }
                     });
+
+                    // Fallback: hardcode product line IDs if name matching failed
+                    if (!leafLinkConfig.product_lines['Live Resin Carts']) {
+                        leafLinkConfig.product_lines['Live Resin Carts'] = {
+                            product_line_id: 64135,  // 100% Live Resin 1g Cartridge
+                            parent_id: PARENT_IDS['Live Resin Carts'],
+                            name: '100% Live Resin 1g Cartridge'
+                        };
+                    }
+                    if (!leafLinkConfig.product_lines['Live Resin AIOs']) {
+                        leafLinkConfig.product_lines['Live Resin AIOs'] = {
+                            product_line_id: 64132,  // 100% Live Resin Disposable Vape (All in One)
+                            parent_id: PARENT_IDS['Live Resin AIOs'],
+                            name: '100% Live Resin Disposable Vape (All in One)'
+                        };
+                    }
                 }
             } catch (plError) {
                 console.error('Error fetching product lines:', plError);
