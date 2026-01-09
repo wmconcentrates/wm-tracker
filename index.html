@@ -23082,10 +23082,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             .replace(/\s*\(\d+g?\)/gi, '')    // Remove size like "(1g)" or "(4g)"
             .trim();
 
+        // Format strain type for display (capitalize first letter)
+        const strainType = (batch.strain_type || 'Hybrid').charAt(0).toUpperCase() + (batch.strain_type || 'Hybrid').slice(1).toLowerCase();
+
         const payload = {
             sku: batch.id, // Use batch ID as SKU (e.g., "9.23.5447")
-            name: strainName,
-            description: `${strainName} - ${productType}`,
+            name: `${strainName} (${strainType})`,
+            description: `${strainName} (${strainType}) - ${productType}`,
             // API wants field names without _id suffix
             seller: leafLinkConfig.seller_id,
             brand: leafLinkConfig.brand_id,
