@@ -7046,7 +7046,7 @@ ${growerName ? `^FO500,325^FD${growerName.substring(0, 25)}^FS` : ''}
                 metrcTags = metrcTags.substring(0, 32) + '...';
             }
 
-            // Source contributions for partial tag info
+            // Source contributions for partial tag info - show METRC tag and trim weight
             let partialInfo = '';
             let sourceContributions = batch.source_contributions || [];
             if (typeof sourceContributions === 'string') {
@@ -7055,7 +7055,9 @@ ${growerName ? `^FO500,325^FD${growerName.substring(0, 25)}^FS` : ''}
             if (sourceContributions.length > 0) {
                 const firstSource = sourceContributions[0];
                 const trimUsed = parseFloat(firstSource.trim_weight) || 0;
-                partialInfo = `${firstSource.batch_id} (${trimUsed.toFixed(0)}g)`;
+                // Use METRC tag if available, otherwise fall back to batch_id
+                const sourceTag = firstSource.metrc_tag || firstSource.batch_id || 'N/A';
+                partialInfo = `${sourceTag} (${trimUsed.toFixed(0)}g)`;
                 if (sourceContributions.length > 1) {
                     partialInfo += ` +${sourceContributions.length - 1}`;
                 }
@@ -7113,7 +7115,7 @@ ${bowlLabel ? `^CF0,70
 
 ^CF0,28
 ^FO65,325^FDMETRC: ${metrcTags || 'N/A'}^FS
-${partialInfo ? `^FO550,325^FDPartial: ${partialInfo}^FS` : ''}
+${partialInfo ? `^FO450,325^FDPartial: ${partialInfo}^FS` : ''}
 
 ^CF0,28
 ^FO65,360^FDGrower: ${license}^FS
