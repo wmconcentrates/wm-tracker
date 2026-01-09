@@ -11557,8 +11557,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             const select = document.getElementById('printLabelsBatchSelect');
             select.innerHTML = '<option value="">Select a batch...</option>';
 
-            // Sort batches by intake_date descending (newest first)
-            const sortedBatches = [...batches].sort((a, b) => {
+            // Filter out labeled batches (finished through labeling) and sort by intake_date descending
+            const activeBatches = batches.filter(b => !b.labels_applied);
+            const sortedBatches = [...activeBatches].sort((a, b) => {
                 const dateA = new Date(a.intake_date || 0);
                 const dateB = new Date(b.intake_date || 0);
                 return dateB - dateA;
@@ -11567,7 +11568,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             sortedBatches.forEach(batch => {
                 const option = document.createElement('option');
                 option.value = batch.id;
-                option.textContent = `${batch.id} - ${batch.strain || 'Unknown'}`;
+                option.textContent = `${batch.id} - ${batch.strain || 'Unknown'} (${batch.status})`;
                 select.appendChild(option);
             });
 
