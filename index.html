@@ -23064,16 +23064,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         };
         const categoryId = CATEGORY_IDS[productType] || 5;
 
-        // Sub-category IDs by product type (from LeafLink)
-        const SUB_CATEGORY_IDS = {
-            'Sugar Wax': 56,       // Sugar
-            'Wax': 49,             // Wax
-            'Shatter': 48,         // Shatter
-            'Live Resin Carts': 55, // Live Resin
-            'Live Resin AIOs': 55,  // Live Resin
-            'Brick Hash': 49        // Wax
-        };
-        const subCategoryId = SUB_CATEGORY_IDS[productType];
+        // Sub-category removed - was causing "Subcategory does not belong to category" errors
+        // LeafLink will use default sub-category for the category
+        const subCategoryId = null;
 
         // Clean strain name - remove WM prefix, product type suffixes, and size
         let strainName = (batch.strain || 'Unknown Strain')
@@ -23094,7 +23087,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             brand: leafLinkConfig.brand_id,
             license: leafLinkConfig.license_id,
             category: categoryId,
-            sub_category: subCategoryId,
             manufacturer: leafLinkConfig.seller_id, // Same as seller
             unit_of_measure: 'Gram',
             sell_in_unit_of_measure: 'Case',
