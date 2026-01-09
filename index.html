@@ -6456,35 +6456,44 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             return isLocalhost || isHTTP;
         }
 
-        // Send ZPL to printer - tries print server, then direct IP, falls back to download
+        // Send ZPL to printer - tries print server, then direct IP (HTTP only), falls back to download
         async function sendZPLToPrinter(zpl, filename) {
             const printerIP = '10.1.10.95';
             const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
+            const isHTTPS = window.location.protocol === 'https:';
 
-            // Try print server first (works from HTTPS)
+            // Try print server first (works from HTTPS) - with timeout
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
                 const response = await fetch(printServerURL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zpl: zpl })
+                    body: JSON.stringify({ zpl: zpl }),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
+
                 if (response.ok) {
                     return { success: true, method: 'direct' };
                 }
             } catch (error) {
-                // Print server not available
+                // Print server not available or timed out
             }
 
-            // Try direct IP printing
-            try {
-                await fetch(`http://${printerIP}:9100`, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: zpl
-                });
-                return { success: true, method: 'direct' };
-            } catch (error) {
-                console.log('Direct print failed:', error.message);
+            // Try direct IP printing (only works on HTTP, blocked on HTTPS)
+            if (!isHTTPS) {
+                try {
+                    await fetch(`http://${printerIP}:9100`, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: zpl
+                    });
+                    return { success: true, method: 'direct' };
+                } catch (error) {
+                    console.log('Direct print failed:', error.message);
+                }
             }
 
             // Download ZPL file as fallback
