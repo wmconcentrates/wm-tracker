@@ -6955,6 +6955,9 @@ ${growerName ? `^FO250,370^FD${growerName.substring(0, 35)}^FS` : ''}
 ^CF0,40
 ^FO75,25^FR^FD INTAKE ^FS
 
+^CF0,50
+^FO620,20^FD${batch.socks_total || 1} Socks^FS
+
 ^CF0,55
 ^FO65,95^FD${(batch.strain || 'Unknown').toUpperCase().substring(0, 22)}^FS
 
@@ -6967,15 +6970,10 @@ ${growerName ? `^FO250,370^FD${growerName.substring(0, 35)}^FS` : ''}
 ^CF0,30
 ^FO65,275^FDTRIM WEIGHT^FS
 
-^CF0,55
-^FO270,205^FD${batch.socks_total || 1}^FS
-^CF0,30
-^FO270,275^FDSOCKS^FS
-
 ^CF0,32
-^FO400,205^FDDate: ${date}^FS
-^FO400,245^FDGrower: ${batch.cultivation_license || 'N/A'}^FS
-^FO400,285^FD${agreement}^FS
+^FO270,205^FDDate: ${date}^FS
+^FO270,245^FDGrower: ${batch.cultivation_license || 'N/A'}^FS
+^FO270,285^FD${agreement}^FS
 
 ^CF0,28
 ^FO65,325^FDProducts: ${plannedProducts.substring(0, 35)}^FS
