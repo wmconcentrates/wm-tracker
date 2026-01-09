@@ -9970,7 +9970,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     socks_remaining: 0,
                     parent_batch: batchId,
                     sift_grade: 'A',
-                    metrc_source_tag: batch?.metrc_source_tag || '',
+                    metrc_tags: batch?.metrc_tags || batch?.metrc_source_tag || '',
                     pre_sift: 'no',
                     created_at: now,
                     notes: `A-grade sift from ${batchRuns.length} barrel run(s)`
@@ -9992,7 +9992,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     socks_remaining: 0,
                     parent_batch: batchId,
                     sift_grade: 'B',
-                    metrc_source_tag: batch?.metrc_source_tag || '',
+                    metrc_tags: batch?.metrc_tags || batch?.metrc_source_tag || '',
                     pre_sift: 'no',
                     created_at: now,
                     notes: `B-grade sift from ${batchRuns.length} barrel run(s)`
@@ -10214,10 +10214,10 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 } else {
                     potLedger.push({
                         batch_id: c.batchId,
-                        metrc_tag: batch.metrc_source_tag || '',
+                        metrc_tag: batch.metrc_tags || batch.metrc_source_tag || '',
                         socks: c.socks,
                         trim_weight: trimWeight,
-                        cultivation_license: batch.partner || '',
+                        cultivation_license: batch.partner || batch.cultivation_license || '',
                         material_agreement: batch.material_agreement || '',
                         strain: batch.strain || ''
                     });
