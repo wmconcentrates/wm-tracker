@@ -1827,9 +1827,9 @@
                             <input type="text" id="growerName" placeholder="Farm/supplier name">
                         </div>
                         <div class="form-group">
-                            <label>METRC Tag Numbers (last 4-5 digits)</label>
-                            <input type="text" id="metrcTags" placeholder="e.g., 12345, 67890, 11223">
-                            <div class="help-text">Multiple tags separated by commas. Use last 4-5 digits only.</div>
+                            <label>METRC Tag Numbers (last 4-5 digits) <span style="color: var(--accent-red);">*</span></label>
+                            <input type="text" id="metrcTags" placeholder="e.g., 12345, 67890, 11223" required>
+                            <div class="help-text">Required. Multiple tags separated by commas. Use last 4-5 digits only.</div>
                         </div>
                         <div class="form-group">
                             <label>Intake Date</label>
@@ -6320,7 +6320,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 alert('Please select at least one planned product!');
                 return;
             }
-            
+
+            // Validate METRC tags are required
+            const metrcTags = document.getElementById('metrcTags').value.trim();
+            if (!metrcTags) {
+                alert('METRC Tag Numbers are required!');
+                document.getElementById('metrcTags').focus();
+                return;
+            }
+
             // Validate pre-sift requires hash products
             const preSift = document.getElementById('preSift').value;
             if (preSift === 'yes') {
