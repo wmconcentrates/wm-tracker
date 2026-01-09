@@ -4621,6 +4621,15 @@
             return currentRole && currentRole.isDemo === true;
         }
 
+        // Block database writes in demo mode - returns true if blocked, false if allowed
+        function blockDemoWrite(actionName = 'This action') {
+            if (isDemoMode() || DEMO_MODE) {
+                alert(`🎭 DEMO MODE\n\n${actionName} is disabled in demo mode.\n\nNo changes will be saved to the database.`);
+                return true; // Blocked
+            }
+            return false; // Allowed
+        }
+
         function hidePINsForDemo() {
             if (!isDemoMode()) return;
 
@@ -4749,6 +4758,8 @@
         }
 
         async function saveEmployee() {
+            if (blockDemoWrite('Managing employees')) return;
+
             const id = document.getElementById('employeeEditId').value;
             const name = document.getElementById('employeeName').value.trim();
             const pin = document.getElementById('employeePIN').value.trim();
@@ -5985,6 +5996,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             if (roleKey) {
                 // Successful login
                 currentRole = ROLES[roleKey];
+
+                // Enable DEMO_MODE if demo user logs in (blocks all database writes)
+                if (currentRole.isDemo) {
+                    DEMO_MODE = true;
+                    document.getElementById('demoIndicator').style.display = 'block';
+                }
+
                 localStorage.setItem('wmRole', roleKey);
                 const sessionId = Date.now();
                 localStorage.setItem('wmSession', sessionId);
@@ -6307,7 +6325,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
         // Intake form submission
         document.getElementById('intakeForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
+            // Block demo mode from creating batches
+            if (blockDemoWrite('Creating batches')) return;
+
             if (!currentRole) {
                 alert('Please select a user first!');
                 return;
@@ -7440,6 +7461,8 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
         }
 
         async function submitFinishing() {
+            if (blockDemoWrite('Finishing batches')) return;
+
             if (!currentRole) {
                 alert('Please select a user first!');
                 return;
@@ -7836,11 +7859,13 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
         }
 
         async function submitPackaging() {
+            if (blockDemoWrite('Packaging batches')) return;
+
             if (!currentRole) {
                 alert('Please select a user first!');
                 return;
             }
-            
+
             const batchId = document.getElementById('packagingBatchSelect').value;
             const batch = batches.find(b => b.id === batchId);
 
@@ -13794,6 +13819,8 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         async function submitTestResults() {
+            if (blockDemoWrite('Submitting test results')) return;
+
             if (!currentRole) {
                 alert('Please select a user first!');
                 return;
@@ -14690,11 +14717,13 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         async function markAsLabeled() {
+            if (blockDemoWrite('Marking as labeled')) return;
+
             if (!currentRole) {
                 alert('Please login first!');
                 return;
             }
-            
+
             const batchId = document.getElementById('labelingBatchSelect').value;
             const batch = batches.find(b => b.id === batchId);
             
@@ -16574,6 +16603,8 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         async function saveEditedBatch() {
+            if (blockDemoWrite('Editing batches')) return;
+
             const oldBatchId = document.getElementById('originalBatchId').value;
             const newBatchId = document.getElementById('editBatchId').value.trim();
             const batch = batches.find(b => b.id === oldBatchId);
