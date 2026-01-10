@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Management - WM Tracker</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent-purple: #8B5CF6;
+            --accent-blue: #00f0ff;
+            --accent-green: #10B981;
+            --accent-red: #ff0055;
+            --accent-orange: #F59E0B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+
+        .login-section {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .login-section h2 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-purple);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: #7C3AED;
+        }
+
+        .admin-panel {
+            display: none;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: var(--accent-blue);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .logout-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: 2px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .business-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .business-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .business-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: var(--bg-tertiary);
+        }
+
+        .business-info {
+            flex: 1;
+        }
+
+        .business-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .business-slug {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .color-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+        }
+
+        .status-inactive {
+            background: rgba(255, 0, 85, 0.2);
+            color: var(--accent-red);
+        }
+
+        .api-key-section {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .api-key-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+        }
+
+        .api-key-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .api-key-hint {
+            font-family: monospace;
+            color: var(--accent-blue);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .btn-edit {
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        .btn-add {
+            background: var(--accent-green);
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid var(--border);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.3rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-cancel {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-save {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .color-picker-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-picker-group input[type="color"] {
+            width: 50px;
+            height: 40px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+        }
+
+        .info-text {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .server-url {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .server-url code {
+            color: var(--accent-blue);
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="loginSection" class="login-section">
+        <h2>Admin Login</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="adminPin">Admin PIN</label>
+                <input type="password" id="adminPin" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" required placeholder="Enter 4-digit PIN">
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-panel">
+        <button class="logout-btn" onclick="logout()">Logout</button>
+        <a href="admin-config.html" class="back-link">&larr; Back to Config</a>
+        <h1>Business Management</h1>
+
+        <div class="server-url">
+            <strong>Server API Base:</strong> <code id="serverUrl">Configure SUPABASE in server.js</code>
+        </div>
+
+        <button class="btn btn-add" onclick="openAddBusiness()">+ Add Business</button>
+
+        <div id="businessesList">
+            <div class="empty-state">Loading businesses...</div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Business Modal -->
+    <div id="businessModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="businessModalTitle">Add Business</h3>
+                <button class="close-btn" onclick="closeBusinessModal()">&times;</button>
+            </div>
+            <form id="businessForm">
+                <input type="hidden" id="businessId">
+                <div class="form-group">
+                    <label for="businessName">Business Name</label>
+                    <input type="text" id="businessName" required placeholder="White Mousse">
+                </div>
+                <div class="form-group">
+                    <label for="businessSlug">URL Slug</label>
+                    <input type="text" id="businessSlug" required placeholder="white-mousse" pattern="[a-z0-9-]+">
+                    <p class="info-text">Lowercase letters, numbers, and hyphens only</p>
+                </div>
+                <div class="form-group">
+                    <label for="businessDisplayName">Display Name</label>
+                    <input type="text" id="businessDisplayName" required placeholder="White Mousse">
+                </div>
+                <div class="form-group">
+                    <label for="businessLogo">Logo URL (optional)</label>
+                    <input type="url" id="businessLogo" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>Brand Color</label>
+                    <div class="color-picker-group">
+                        <input type="color" id="businessColor" value="#bf00ff">
+                        <span id="colorHex">#bf00ff</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" onclick="closeBusinessModal()">Cancel</button>
+                    <button type="submit" class="btn btn-save">Save Business</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="apiKeyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Update LeafLink API Key</h3>
+                <button class="close-btn" onclick="closeApiKeyModal()">&times;</button>
+            </div>
+            <form id="apiKeyForm">
+                <input type="hidden" id="apiKeyBusinessId">
+                <div class="form-group">
+                    <label for="leaflinkApiKey">LeafLink API Key</label>
+                    <input type="password" id="leaflinkApiKey" required placeholder="Enter API Key">
+                    <p class="info-text">Your API key will be encrypted before storage</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" onclick="closeApiKeyModal()">Cancel</button>
+                    <button type="submit" class="btn btn-save">Save API Key</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        let supabaseClient = null;
+        let businesses = [];
+        const SERVER_BASE = window.location.origin;
+
+        const ADMIN_PINS = ['1827', '1980'];
+        const SUPABASE_URL = 'https://nspmwcpvukehaqswaewt.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zcG13Y3B2dWtlaGFxc3dhZXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzE2NDQsImV4cCI6MjA3NzA0NzY0NH0.JGYZ4223nhgO_Er619DkB0tOXrIJzfldG9yNkaHCdtI';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                console.log('Supabase connected');
+                document.getElementById('serverUrl').textContent = SERVER_BASE + '/api/business/{slug}/';
+            } catch (err) {
+                console.error('Failed to connect:', err);
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pin = document.getElementById('adminPin').value.trim();
+
+            if (!ADMIN_PINS.includes(pin)) {
+                alert('Invalid admin PIN');
+                return;
+            }
+
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            await loadBusinesses();
+        });
+
+        function logout() {
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('adminPin').value = '';
+        }
+
+        async function loadBusinesses() {
+            const container = document.getElementById('businessesList');
+            container.innerHTML = '<div class="empty-state">Loading businesses...</div>';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('businesses')
+                    .select('*')
+                    .order('name');
+
+                if (error) throw error;
+                businesses = data || [];
+
+                if (businesses.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No businesses configured. Add your first business!</div>';
+                    return;
+                }
+
+                // Load API key status for each business
+                const apiKeysPromises = businesses.map(biz =>
+                    supabaseClient
+                        .from('business_api_keys')
+                        .select('service, api_key_hint, is_active')
+                        .eq('business_id', biz.id)
+                );
+                const apiKeysResults = await Promise.all(apiKeysPromises);
+
+                container.innerHTML = businesses.map((biz, idx) => {
+                    const apiKeys = apiKeysResults[idx].data || [];
+                    const leaflinkKey = apiKeys.find(k => k.service === 'leaflink');
+
+                    return `
+                        <div class="business-card">
+                            <div class="business-header">
+                                ${biz.logo_url ? `<img src="${biz.logo_url}" class="business-logo" alt="${biz.display_name}">` : `<div class="business-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem;">${biz.display_name.charAt(0)}</div>`}
+                                <div class="business-info">
+                                    <div class="business-name">${biz.display_name}</div>
+                                    <div class="business-slug">/${biz.slug}</div>
+                                </div>
+                                <div class="color-indicator" style="background: ${biz.primary_color}"></div>
+                                <span class="status-badge ${biz.is_active ? 'status-active' : 'status-inactive'}">${biz.is_active ? 'Active' : 'Inactive'}</span>
+                                <button class="btn btn-small btn-edit" onclick="openEditBusiness('${biz.id}')">Edit</button>
+                            </div>
+                            <div class="api-key-section">
+                                <div class="api-key-header">LeafLink Integration</div>
+                                <div class="api-key-status">
+                                    ${leaflinkKey ?
+                                        `<span class="status-badge status-active">Configured</span>
+                                         <span class="api-key-hint">${leaflinkKey.api_key_hint}</span>` :
+                                        `<span class="status-badge status-inactive">Not configured</span>`
+                                    }
+                                    <button class="btn btn-small" style="margin-left: auto; background: var(--accent-blue); color: #000;" onclick="openApiKeyModal('${biz.id}')">
+                                        ${leaflinkKey ? 'Update Key' : 'Add Key'}
+                                    </button>
+                                </div>
+                                <p class="info-text" style="margin-top: 10px;">API Endpoint: <code>${SERVER_BASE}/api/business/${biz.slug}/orders</code></p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Error loading businesses:', err);
+                container.innerHTML = `<div class="empty-state" style="color: var(--accent-red);">Error: ${err.message}<br><br>Make sure you've run the migration script to create the businesses table.</div>`;
+            }
+        }
+
+        // Business Modal
+        function openAddBusiness() {
+            document.getElementById('businessModalTitle').textContent = 'Add Business';
+            document.getElementById('businessForm').reset();
+            document.getElementById('businessId').value = '';
+            document.getElementById('businessColor').value = '#bf00ff';
+            document.getElementById('colorHex').textContent = '#bf00ff';
+            document.getElementById('businessModal').classList.add('active');
+        }
+
+        function openEditBusiness(id) {
+            const biz = businesses.find(b => b.id === id);
+            if (!biz) return;
+
+            document.getElementById('businessModalTitle').textContent = 'Edit Business';
+            document.getElementById('businessId').value = biz.id;
+            document.getElementById('businessName').value = biz.name;
+            document.getElementById('businessSlug').value = biz.slug;
+            document.getElementById('businessDisplayName').value = biz.display_name;
+            document.getElementById('businessLogo').value = biz.logo_url || '';
+            document.getElementById('businessColor').value = biz.primary_color || '#bf00ff';
+            document.getElementById('colorHex').textContent = biz.primary_color || '#bf00ff';
+            document.getElementById('businessModal').classList.add('active');
+        }
+
+        function closeBusinessModal() {
+            document.getElementById('businessModal').classList.remove('active');
+        }
+
+        document.getElementById('businessColor').addEventListener('input', (e) => {
+            document.getElementById('colorHex').textContent = e.target.value;
+        });
+
+        document.getElementById('businessForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('businessId').value;
+            const businessData = {
+                name: document.getElementById('businessName').value.trim(),
+                slug: document.getElementById('businessSlug').value.trim().toLowerCase(),
+                display_name: document.getElementById('businessDisplayName').value.trim(),
+                logo_url: document.getElementById('businessLogo').value.trim() || null,
+                primary_color: document.getElementById('businessColor').value
+            };
+
+            try {
+                if (id) {
+                    // Update
+                    const { error } = await supabaseClient
+                        .from('businesses')
+                        .update({ ...businessData, updated_at: new Date().toISOString() })
+                        .eq('id', id);
+                    if (error) throw error;
+                } else {
+                    // Insert
+                    const { error } = await supabaseClient
+                        .from('businesses')
+                        .insert(businessData);
+                    if (error) throw error;
+                }
+
+                closeBusinessModal();
+                await loadBusinesses();
+            } catch (err) {
+                alert('Error saving business: ' + err.message);
+            }
+        });
+
+        // API Key Modal
+        function openApiKeyModal(businessId) {
+            document.getElementById('apiKeyBusinessId').value = businessId;
+            document.getElementById('leaflinkApiKey').value = '';
+            document.getElementById('apiKeyModal').classList.add('active');
+        }
+
+        function closeApiKeyModal() {
+            document.getElementById('apiKeyModal').classList.remove('active');
+        }
+
+        document.getElementById('apiKeyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const businessId = document.getElementById('apiKeyBusinessId').value;
+            const apiKey = document.getElementById('leaflinkApiKey').value.trim();
+
+            try {
+                // Call server endpoint to encrypt and store the key
+                const response = await fetch(`${SERVER_BASE}/api/internal/businesses/${businessId}/api-key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ service: 'leaflink', api_key: apiKey })
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to save API key');
+                }
+
+                closeApiKeyModal();
+                await loadBusinesses();
+                alert('API key saved successfully!');
+            } catch (err) {
+                alert('Error saving API key: ' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>

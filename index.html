@@ -1487,6 +1487,13 @@
     <div class="actions-menu" id="actionsMenu" style="display: none;">
         <button class="actions-toggle-btn" onclick="toggleActionsMenu()">Actions</button>
         <div class="actions-dropdown">
+            <!-- Business Selector -->
+            <div id="businessSelector" style="display: none; padding: 10px; border-bottom: 1px solid var(--border); margin-bottom: 8px;">
+                <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Switch Business</label>
+                <select id="businessFilter" onchange="switchBusiness(this.value)" style="width: 100%; background: var(--bg-tertiary); color: var(--text-primary); border: 2px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; cursor: pointer;">
+                    <option value="all">All Businesses</option>
+                </select>
+            </div>
             <button id="logoutBtn" onclick="logout()" style="display: none; background: transparent; border: 2px solid var(--accent-red); color: var(--accent-red); box-shadow: 0 0 15px rgba(255, 0, 85, 0.4), 0 0 30px rgba(255, 0, 85, 0.2);">🚪 Log Out</button>
             <button id="myStatsBtn" onclick="openPersonalStatsModal()" style="display: none;">👤 My Workload</button>
             <button id="timeClockBtn" onclick="openTimeClockModal()" style="display: none;">Time Clock</button>
@@ -1687,7 +1694,7 @@
         <div class="header">
             <div class="header-content">
                 <div class="header-logo">
-                    <img src="https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w" alt="White Mousse">
+                    <img src="https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w" alt="White Mousse" id="headerLogo">
                 </div>
                 <div id="versionTag" style="position: absolute; top: 5px; right: 10px; font-size: 0.7rem; color: var(--text-muted); opacity: 0.6;">loading...</div>
                             </div>
@@ -2825,29 +2832,22 @@
                         <h4 style="margin: 0 0 15px 0; color: var(--accent-purple); display: flex; align-items: center; gap: 10px;">
                             <span>💵</span> Commission Calculator (8% on Paid Invoices)
                         </h4>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
-                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('currentMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(147, 51, 234, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Current Month Commission</div>
-                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);" id="commissionCurrentMonth">$0.00</div>
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionCurrentMonthLabel">January 2025</div>
-                                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.7;">Click for details</div>
-                            </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
                             <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('prevMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Previous Month Commission</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Last Month</div>
                                 <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);" id="commissionPrevMonth">$0.00</div>
                                 <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionPrevMonthLabel">December 2024</div>
                                 <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.7;">Click for details</div>
                             </div>
-                            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(147, 51, 234, 0.2)); padding: 20px; border-radius: 10px; text-align: center; border: 2px solid var(--accent-green); cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('nextPaycheck')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                                <div style="font-size: 0.8rem; color: var(--accent-green); margin-bottom: 5px; font-weight: 600;">Next Paycheck</div>
-                                <div style="font-size: 2rem; font-weight: 700; color: var(--accent-green);" id="commissionNextPaycheck">$0.00</div>
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionPaydayDate">January 9, 2025</div>
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('currentMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(147, 51, 234, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">This Month</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);" id="commissionCurrentMonth">$0.00</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionCurrentMonthLabel">January 2025</div>
                                 <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.7;">Click for details</div>
                             </div>
                         </div>
                         <div style="margin-top: 15px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary);">
-                            <strong style="color: var(--accent-purple);">Pay Schedule:</strong> Commission paid every 2 weeks on Friday. First pay period of each month includes previous month's commission.
-                            <span id="commissionPayScheduleNote" style="display: block; margin-top: 5px;"></span>
+                            <strong style="color: var(--accent-purple);">Pay Schedule:</strong> Commission paid on the first paycheck of each month for the previous month's paid invoices.
                         </div>
                     </div>
 
@@ -5087,6 +5087,71 @@
         let batchCounter = 1000;
         let realtimeChannel = null;
 
+        // Multi-tenant business support
+        let businessesList = [];
+        let currentBusinessId = 'all'; // 'all' or specific business UUID
+
+        async function loadBusinesses() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('businesses')
+                    .select('id, name, slug, display_name, logo_url, primary_color, is_active')
+                    .eq('is_active', true)
+                    .order('name');
+                if (error) throw error;
+                businessesList = data || [];
+
+                // Update business selector dropdown
+                const selector = document.getElementById('businessFilter');
+                if (selector && businessesList.length > 1) {
+                    selector.innerHTML = '<option value="all">All Businesses</option>';
+                    businessesList.forEach(biz => {
+                        selector.innerHTML += `<option value="${biz.id}" style="color: ${biz.primary_color}">${biz.display_name}</option>`;
+                    });
+                    document.getElementById('businessSelector').style.display = 'block';
+                }
+            } catch (err) {
+                console.error('Error loading businesses:', err);
+            }
+        }
+
+        function switchBusiness(businessId) {
+            currentBusinessId = businessId;
+            // Update logo if viewing single business
+            const logo = document.getElementById('headerLogo');
+            if (businessId !== 'all') {
+                const biz = businessesList.find(b => b.id === businessId);
+                if (biz && biz.logo_url) {
+                    logo.src = biz.logo_url;
+                    logo.alt = biz.display_name;
+                }
+            } else {
+                logo.src = 'https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w';
+                logo.alt = 'White Mousse';
+            }
+            loadBatches();
+            // Clear ALL FOH cached data so it reloads for the new business
+            dropCalendarData = [];
+            allLeafLinkOrders = [];
+            leafLinkDataLoaded = false;
+            needsData = {};  // Clear needs data
+            needsDataLoading = null;  // Reset loading state
+            // Force refresh LeafLink data and reload FOH views
+            ensureLeafLinkData(true).then(() => {
+                // Refresh FOH sections with new business data
+                if (typeof loadNeedsData === 'function') loadNeedsData(true);
+                if (typeof loadSalesDashboard === 'function') loadSalesDashboard();
+            });
+        }
+
+        function getBusinessBadge(businessId) {
+            if (!businessId || businessesList.length <= 1) return '';
+            const biz = businessesList.find(b => b.id === businessId);
+            if (!biz) return '';
+            return `<span style="background: ${biz.primary_color}22; color: ${biz.primary_color}; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; border: 1px solid ${biz.primary_color}44;">${biz.display_name}</span>`;
+        }
+
         // ==================== DEMO MODE ====================
         let DEMO_MODE = false;
 
@@ -5431,6 +5496,13 @@
                     console.error("Error loading config:", configError);
                 }
 
+                // Load businesses for multi-tenant support
+                try {
+                    await loadBusinesses();
+                } catch (bizError) {
+                    console.error("Error loading businesses:", bizError);
+                }
+
                 // Load batches
                 try {
                     await loadBatches();
@@ -5747,11 +5819,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return;
             }
 
-            const { data, error } = await supabaseClient
+            let query = supabaseClient
                 .from('wm_batches')
                 .select('*')
-                .neq('status', 'deleted')
-                .order('created_at', { ascending: false });
+                .neq('status', 'deleted');
+
+            // Filter by business if one is selected
+            if (currentBusinessId && currentBusinessId !== 'all') {
+                query = query.eq('business_id', currentBusinessId);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
 
             if (error) {
                 console.error('Error loading batches:', error);
@@ -12359,6 +12437,7 @@ ${employeeReport || 'No activity recorded today'}
                 <div class="batch-item">
                     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 5px 0;">
                         <div class="batch-id" style="font-weight: 700; min-width: 90px;">${batch.id}</div>
+                        ${currentBusinessId === 'all' ? getBusinessBadge(batch.business_id) : ''}
                         <div class="batch-status status-${batch.status}" style="font-size: 0.7rem; padding: 2px 8px;">${batch.status.toUpperCase()}</div>
                         <div style="font-size: 1.2rem; font-weight: 700;">${batch.strain}</div>
                         <span style="color: var(--text-secondary); font-size: 0.85rem;">(${batch.strain_type})</span>
@@ -18604,9 +18683,6 @@ ${employeeReport || 'No activity recorded today'}
 
         // ==================== LEAFLINK DROP CALENDAR ====================
 
-        // Use hosted Railway proxy to avoid CORS issues
-        const LEAFLINK_PROXY_URL = 'https://leaflink-proxy-production.up.railway.app/api';
-
         let dropCalendarData = [];
         let currentCalendarView = 'calendar';
         let calendarDisplayMonth = new Date().getMonth();
@@ -18655,7 +18731,8 @@ ${employeeReport || 'No activity recorded today'}
 
                 // Fetch shipped and complete orders via proxy
                 let allOrders = [];
-                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+                const proxyUrl = getLeafLinkProxyUrl();
+                let nextUrl = `${proxyUrl}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
 
                 while (nextUrl) {
                     const response = await fetch(nextUrl);
@@ -18996,13 +19073,25 @@ ${employeeReport || 'No activity recorded today'}
         let allLeafLinkOrders = [];
         let customerFirstOrderDates = {};
         let leafLinkDataLoaded = false;
-        const LEAFLINK_CACHE_KEY = 'leaflink_orders_cache';
         const LEAFLINK_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+
+        // Get business-specific cache key
+        function getLeafLinkCacheKey() {
+            const bizSlug = currentBusinessId === 'all' ? 'all' :
+                (businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse');
+            return `leaflink_orders_cache_${bizSlug}`;
+        }
+
+        function getNeedsCacheKey() {
+            const bizSlug = currentBusinessId === 'all' ? 'all' :
+                (businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse');
+            return `foh_needs_cache_${bizSlug}`;
+        }
 
         // Load cached data from localStorage
         function loadCachedLeafLinkData() {
             try {
-                const cached = localStorage.getItem(LEAFLINK_CACHE_KEY);
+                const cached = localStorage.getItem(getLeafLinkCacheKey());
                 if (!cached) return null;
 
                 const { orders, timestamp, customerDates } = JSON.parse(cached);
@@ -19025,16 +19114,27 @@ ${employeeReport || 'No activity recorded today'}
 
         // Save data to localStorage cache
         function saveLeafLinkCache(orders, customerDates) {
+            // Skip caching for "all" view to avoid quota issues
+            if (currentBusinessId === 'all') {
+                console.log('Skipping cache for "all" business view');
+                return;
+            }
             try {
                 const cacheData = {
                     orders,
                     customerDates,
                     timestamp: Date.now()
                 };
-                localStorage.setItem(LEAFLINK_CACHE_KEY, JSON.stringify(cacheData));
-                console.log(`Cached ${orders.length} LeafLink orders`);
+                localStorage.setItem(getLeafLinkCacheKey(), JSON.stringify(cacheData));
+                console.log(`Cached ${orders.length} LeafLink orders for ${getLeafLinkCacheKey()}`);
             } catch (e) {
-                console.error('Error saving cache:', e);
+                // Clear old caches on quota error
+                console.warn('Cache quota exceeded, clearing old caches');
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('leaflink_orders_cache_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
             }
         }
 
@@ -19060,8 +19160,8 @@ ${employeeReport || 'No activity recorded today'}
         // Force refresh sales data from LeafLink (bypasses all caches)
         async function forceRefreshSales() {
             try {
-                // Clear all caches
-                localStorage.removeItem('leaflink_orders_cache');
+                // Clear business-specific cache
+                localStorage.removeItem(getLeafLinkCacheKey());
                 allLeafLinkOrders = [];
                 leafLinkDataLoaded = false;
                 
@@ -19141,20 +19241,73 @@ ${employeeReport || 'No activity recorded today'}
             return allLeafLinkOrders;
         }
 
+        // Get the LeafLink proxy URL for current business
+        function getLeafLinkProxyUrl() {
+            const businessSlug = currentBusinessId === 'all' ? 'white-mousse' :
+                (businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse');
+            return `${window.location.origin}/api/business/${businessSlug}`;
+        }
+
         // Fetch orders from LeafLink API
+        // Fetch orders from a specific business
+        async function fetchOrdersForBusiness(businessSlug) {
+            try {
+                const twoMonthsAgo = new Date();
+                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
+
+                const proxyUrl = `${window.location.origin}/api/business/${businessSlug}`;
+                console.log(`Fetching LeafLink orders from: ${proxyUrl} (${businessSlug})`);
+                let orders = [];
+                let nextUrl = `${proxyUrl}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+
+                while (nextUrl && orders.length < 300) {
+                    const response = await fetch(nextUrl);
+                    if (!response.ok) throw new Error(`API request failed for ${businessSlug}`);
+                    const data = await response.json();
+                    orders = orders.concat(data.results);
+                    nextUrl = data.next;
+                }
+
+                console.log(`Fetched ${orders.length} orders from ${businessSlug}`);
+                return orders;
+            } catch (error) {
+                console.error(`Error fetching orders for ${businessSlug}:`, error);
+                return [];
+            }
+        }
+
         async function fetchLeafLinkOrders() {
             // Return fake data in demo mode
             if (isDemoMode()) {
                 return generateDemoLeafLinkOrders();
             }
 
+            // If viewing all businesses, fetch from each in parallel and combine
+            if (currentBusinessId === 'all' && businessesList.length > 0) {
+                const activeBusinesses = businessesList.filter(b => b.is_active);
+                const orderPromises = activeBusinesses.map(async biz => {
+                    const orders = await fetchOrdersForBusiness(biz.slug);
+                    // Tag each order with business info for display
+                    orders.forEach(o => o._business = { id: biz.id, slug: biz.slug, name: biz.display_name });
+                    return orders;
+                });
+                const results = await Promise.all(orderPromises);
+                const allOrders = results.flat();
+                console.log(`Combined ${allOrders.length} orders from all businesses`);
+                return allOrders;
+            }
+
+            // Single business fetch
             try {
                 const twoMonthsAgo = new Date();
                 twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
                 const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
 
+                const proxyUrl = getLeafLinkProxyUrl();
+                console.log('Fetching LeafLink orders from:', proxyUrl);
                 let allOrders = [];
-                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+                let nextUrl = `${proxyUrl}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
 
                 while (nextUrl && allOrders.length < 300) {
                     const response = await fetch(nextUrl);
@@ -19380,7 +19533,7 @@ ${employeeReport || 'No activity recorded today'}
 
         const COMMISSION_RATE = 0.08; // 8% commission
 
-        // Extract unique sales reps from orders
+        // Extract unique sales reps from orders (dedupe by name for multi-business)
         function extractSalesReps(orders) {
             const repsMap = new Map();
             orders.forEach(order => {
@@ -19389,8 +19542,16 @@ ${employeeReport || 'No activity recorded today'}
                         if (rep.user) {
                             // Handle both string and object user formats
                             const userName = typeof rep.user === 'string' ? rep.user : (rep.user.name || rep.user.first_name || `Rep ${rep.id}`);
-                            if (!repsMap.has(rep.id)) {
-                                repsMap.set(rep.id, { id: rep.id, name: userName });
+                            const nameKey = userName.toLowerCase().trim();
+                            // Use name as key to combine same rep across different businesses
+                            if (!repsMap.has(nameKey)) {
+                                repsMap.set(nameKey, { id: rep.id, name: userName, ids: [rep.id] });
+                            } else {
+                                // Add additional ID if this rep has different IDs in different accounts
+                                const existing = repsMap.get(nameKey);
+                                if (!existing.ids.includes(rep.id)) {
+                                    existing.ids.push(rep.id);
+                                }
                             }
                         }
                     });
@@ -19399,15 +19560,23 @@ ${employeeReport || 'No activity recorded today'}
             return Array.from(repsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
         }
 
-        // Filter orders by sales rep
+        // Filter orders by sales rep (handles reps with multiple IDs across businesses)
         function filterOrdersBySalesRep(orders, repIdOrName) {
             if (repIdOrName === 'all') return orders;
+
+            // Check if repIdOrName is actually a rep object with multiple IDs
+            let idsToMatch = [repIdOrName];
+            if (typeof repIdOrName === 'object' && repIdOrName.ids) {
+                idsToMatch = repIdOrName.ids;
+            }
+
             return orders.filter(order => {
                 if (!order.sales_reps || !Array.isArray(order.sales_reps)) return false;
                 return order.sales_reps.some(rep => {
-                    if (rep.id == repIdOrName) return true;
+                    // Check if this rep's ID matches any of the IDs we're looking for
+                    if (idsToMatch.some(id => rep.id == id)) return true;
                     const userName = typeof rep.user === 'string' ? rep.user : (rep.user?.name || rep.user?.first_name || '');
-                    return userName.toLowerCase().includes(repIdOrName.toLowerCase());
+                    return userName.toLowerCase().includes(String(repIdOrName).toLowerCase());
                 });
             });
         }
@@ -19545,14 +19714,15 @@ ${employeeReport || 'No activity recorded today'}
                 await loadLeafLinkInventory();
                 await loadNeedsData();
 
-                // Populate sales rep dropdown
+                // Populate sales rep dropdown (use name as value for multi-business dedup)
                 const salesReps = extractSalesReps(allLeafLinkOrders);
                 const dropdown = document.getElementById('salesRepFilter');
                 if (dropdown) {
                     dropdown.innerHTML = '<option value="all">All Sales Reps</option>';
                     salesReps.forEach(rep => {
                         const option = document.createElement('option');
-                        option.value = rep.id;
+                        // Store IDs as JSON for filtering across businesses
+                        option.value = JSON.stringify({ name: rep.name, ids: rep.ids });
                         option.textContent = rep.name;
                         dropdown.appendChild(option);
                     });
@@ -19566,7 +19736,16 @@ ${employeeReport || 'No activity recorded today'}
 
         // Update dashboard with current filter
         function updateSalesDashboard() {
-            const salesRepFilter = document.getElementById('salesRepFilter')?.value || 'all';
+            const rawFilter = document.getElementById('salesRepFilter')?.value || 'all';
+            // Parse JSON filter value (contains name and ids array for multi-business)
+            let salesRepFilter = rawFilter;
+            if (rawFilter !== 'all') {
+                try {
+                    salesRepFilter = JSON.parse(rawFilter);
+                } catch (e) {
+                    // Fallback to raw value if not JSON
+                }
+            }
             const filteredOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
 
             // Calculate stats
@@ -19617,47 +19796,17 @@ ${employeeReport || 'No activity recorded today'}
             document.getElementById('salesStatNewCustomers').textContent = newCustomersCount.toLocaleString();
 
             // Commission calculations - based on PAYMENT DATE, not order date
-            // Get payday info including last commission payout date
-            const paydayInfo = getNextPaydayInfo();
-
-            // Get payments since last commission payout (for next paycheck)
-            const paymentsSinceLastPayout = getPaidOrdersBetweenDates(filteredOrders, paydayInfo.lastCommissionPayday, now);
-            const paymentsSinceLastPayoutTotal = paymentsSinceLastPayout.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
-            const pendingCommission = paymentsSinceLastPayoutTotal * COMMISSION_RATE;
-
-            // For display purposes, also show current and previous month payments
             const currentMonthPaid = getPaidOrdersForMonth(filteredOrders, currentYear, currentMonth);
             const prevMonthPaid = getPaidOrdersForMonth(filteredOrders, prevYear, prevMonth);
             const currentMonthCommission = currentMonthPaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
             const prevMonthCommission = prevMonthPaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
 
-            // Next paycheck calculation
-            let nextPaycheckCommission = 0;
-            let paycheckNote = '';
-
-            if (paydayInfo.isFirstPayPeriod) {
-                // First pay period - pays out commission for payments since last commission payout
-                nextPaycheckCommission = pendingCommission;
-                const lastPayoutFormatted = paydayInfo.lastCommissionPayday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                paycheckNote = `Payments since ${lastPayoutFormatted} (${paymentsSinceLastPayout.length} orders, $${paymentsSinceLastPayoutTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})} total)`;
-            } else {
-                // Second pay period - show what will be paid on next commission payday
-                const nextCommissionFormatted = paydayInfo.nextCommissionPayday ?
-                    paydayInfo.nextCommissionPayday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'next month';
-                nextPaycheckCommission = 0; // No commission this pay period
-                paycheckNote = `No commission this pay period. Next commission on ${nextCommissionFormatted}.`;
-            }
-
             // Update commission display
             document.getElementById('commissionCurrentMonth').textContent = '$' + currentMonthCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('commissionCurrentMonthLabel').textContent = `${getMonthName(currentMonth)} ${currentYear} (by paid_date)`;
+            document.getElementById('commissionCurrentMonthLabel').textContent = `${getMonthName(currentMonth)} ${currentYear}`;
 
             document.getElementById('commissionPrevMonth').textContent = '$' + prevMonthCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('commissionPrevMonthLabel').textContent = `${getMonthName(prevMonth)} ${prevYear} (by paid_date)`;
-
-            document.getElementById('commissionNextPaycheck').textContent = '$' + nextPaycheckCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('commissionPaydayDate').textContent = paydayInfo.nextPayday.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            document.getElementById('commissionPayScheduleNote').textContent = paycheckNote;
+            document.getElementById('commissionPrevMonthLabel').textContent = `${getMonthName(prevMonth)} ${prevYear}`;
 
             // Build monthly breakdown
             renderMonthlyBreakdown(filteredOrders);
@@ -19668,7 +19817,13 @@ ${employeeReport || 'No activity recorded today'}
 
         // Show commission details modal
         function showCommissionDetails(period) {
-            const salesRepFilter = document.getElementById('salesRepFilter')?.value || 'all';
+            const rawFilter = document.getElementById('salesRepFilter')?.value || 'all';
+            let salesRepFilter = rawFilter;
+            if (rawFilter !== 'all') {
+                try {
+                    salesRepFilter = JSON.parse(rawFilter);
+                } catch (e) {}
+            }
             const filteredOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
 
             const now = new Date();
@@ -19694,12 +19849,6 @@ ${employeeReport || 'No activity recorded today'}
                 startDate = new Date(prevYear, prevMonth, 1);
                 endDate = new Date(prevYear, prevMonth + 1, 0);
                 subtitle = `Payments from ${formatDateShort(startDate)} to ${formatDateShort(endDate)}`;
-            } else if (period === 'nextPaycheck') {
-                const paydayInfo = getNextPaydayInfo();
-                orders = getPaidOrdersBetweenDates(filteredOrders, paydayInfo.lastCommissionPayday, now);
-                const paydayFormatted = paydayInfo.nextPayday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                title = `Commission Details - Next Paycheck (${paydayFormatted})`;
-                subtitle = `Payments from ${formatDateShort(paydayInfo.lastCommissionPayday)} to ${formatDateShort(now)}`;
             }
 
             // Store for clipboard copy
@@ -20081,6 +20230,10 @@ ${employeeReport || 'No activity recorded today'}
                 // Deduplicate orders by ID
                 const uniqueOrders = [...new Map(orders.map(o => [String(o.id), o])).values()];
 
+                // Get current business ID for multi-tenant support
+                const bizId = currentBusinessId !== 'all' ? currentBusinessId :
+                    (businessesList.find(b => b.slug === 'white-mousse')?.id || null);
+
                 // Prepare order records
                 const orderRecords = uniqueOrders.map(order => ({
                     order_id: String(order.id),
@@ -20095,7 +20248,8 @@ ${employeeReport || 'No activity recorded today'}
                     created_on: order.created_on,
                     status: order.status || '',
                     order_json: JSON.stringify(order),
-                    synced_at: new Date().toISOString()
+                    synced_at: new Date().toISOString(),
+                    business_id: bizId
                 }));
 
                 // Upsert orders in batches
@@ -20223,11 +20377,17 @@ ${employeeReport || 'No activity recorded today'}
                     return { stale: true };
                 }
 
-                // Load cached orders
-                const { data, error } = await supabaseClient
+                // Load cached orders (filtered by business if selected)
+                let query = supabaseClient
                     .from('sales_data_cache')
                     .select('order_json')
                     .order('created_on', { ascending: false });
+
+                if (currentBusinessId && currentBusinessId !== 'all') {
+                    query = query.eq('business_id', currentBusinessId);
+                }
+
+                const { data, error } = await query;
 
                 if (error || !data) return null;
 
@@ -20542,7 +20702,7 @@ ${employeeReport || 'No activity recorded today'}
                 const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
 
                 let allOrders = [];
-                let nextUrl = `${LEAFLINK_PROXY_URL}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+                let nextUrl = `${getLeafLinkProxyUrl()}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
 
                 while (nextUrl) {
                     const response = await fetch(nextUrl);
@@ -20609,14 +20769,15 @@ ${employeeReport || 'No activity recorded today'}
                 }
                 }
 
-                // Populate sales rep dropdown
+                // Populate sales rep dropdown (use name as value for multi-business dedup)
                 const salesReps = extractSalesReps(allLeafLinkOrders);
                 const dropdown = document.getElementById('salesRepFilter');
                 if (dropdown) {
                     dropdown.innerHTML = '<option value="all">All Sales Reps</option>';
                     salesReps.forEach(rep => {
                         const option = document.createElement('option');
-                        option.value = rep.id;
+                        // Store IDs as JSON for filtering across businesses
+                        option.value = JSON.stringify({ name: rep.name, ids: rep.ids });
                         option.textContent = rep.name;
                         dropdown.appendChild(option);
                     });
@@ -22741,13 +22902,54 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         renderInventoryCategories();
     }
 
+    // Fetch inventory from a specific business
+    async function fetchInventoryForBusiness(businessSlug) {
+        let products = [];
+        let nextUrl = `${window.location.origin}/api/business/${businessSlug}/products/?page_size=100`;
+        let pageCount = 0;
+        const maxPages = 15;
+
+        while (nextUrl && pageCount < maxPages) {
+            try {
+                const response = await fetch(nextUrl);
+                if (!response.ok) break;
+                const data = await response.json();
+                const results = data.results || [];
+                if (results.length === 0) break;
+                products = products.concat(results);
+                nextUrl = data.next;
+                pageCount++;
+            } catch (error) {
+                break;
+            }
+        }
+        console.log(`Fetched ${products.length} products from ${businessSlug}`);
+        return products;
+    }
+
     async function fetchLeafLinkInventory() {
         if (typeof isDemoMode === 'function' && isDemoMode()) {
             return generateDemoInventory();
         }
 
+        // If viewing all businesses, fetch from each in parallel and combine
+        if (currentBusinessId === 'all' && businessesList.length > 0) {
+            const activeBusinesses = businessesList.filter(b => b.is_active);
+            const productPromises = activeBusinesses.map(async biz => {
+                const products = await fetchInventoryForBusiness(biz.slug);
+                // Tag each product with business info
+                products.forEach(p => p._business = { id: biz.id, slug: biz.slug, name: biz.display_name });
+                return products;
+            });
+            const results = await Promise.all(productPromises);
+            const allProducts = results.flat();
+            console.log(`Combined ${allProducts.length} products from all businesses`);
+            return allProducts;
+        }
+
+        // Single business fetch
         let allProducts = [];
-        let nextUrl = LEAFLINK_PROXY_URL + '/products/?page_size=100';
+        let nextUrl = getLeafLinkProxyUrl() + '/products/?page_size=100';
         let pageCount = 0;
         const maxPages = 15; // Safety limit to prevent infinite loops
 
@@ -22954,7 +23156,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         try {
             // Fetch concentrate products (category=5) to get correct recreational license
-            const response = await fetch(LEAFLINK_PROXY_URL + '/products/?page_size=50&category=5');
+            const response = await fetch(getLeafLinkProxyUrl() + '/products/?page_size=50&category=5');
             if (!response.ok) {
                 console.error('Failed to fetch LeafLink products for config');
                 return null;
@@ -23015,7 +23217,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             // Fetch product lines from /product-lines endpoint
             try {
-                const plResponse = await fetch(LEAFLINK_PROXY_URL + '/product-lines/?page_size=50');
+                const plResponse = await fetch(getLeafLinkProxyUrl() + '/product-lines/?page_size=50');
                 if (plResponse.ok) {
                     const plData = await plResponse.json();
                     const productLines = plData.results || [];
@@ -23273,7 +23475,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         console.log('Pushing batch to LeafLink:', batch.id, payload);
 
         try {
-            const response = await fetch(LEAFLINK_PROXY_URL + '/products', {
+            const response = await fetch(getLeafLinkProxyUrl() + '/products', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -23400,7 +23602,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         // Load cached data immediately for instant display
-        const cachedData = localStorage.getItem('foh_needs_cache');
+        const cachedData = localStorage.getItem(getNeedsCacheKey());
         if (cachedData && Object.keys(needsData).length === 0) {
             try {
                 const parsed = JSON.parse(cachedData);
@@ -23414,11 +23616,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 } else {
                     // Invalid or empty cache, clear it
                     console.log('Needs cache invalid or empty, clearing...');
-                    localStorage.removeItem('foh_needs_cache');
+                    localStorage.removeItem(getNeedsCacheKey());
                 }
             } catch (e) {
                 console.log('Cache parse error:', e);
-                localStorage.removeItem('foh_needs_cache');
+                localStorage.removeItem(getNeedsCacheKey());
             }
         }
 
@@ -23610,7 +23812,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Update global data and cache
         needsData = newNeedsData;
-        localStorage.setItem('foh_needs_cache', JSON.stringify(needsData));
+        localStorage.setItem(getNeedsCacheKey(), JSON.stringify(needsData));
         renderNeedsCategories();
         })();
 

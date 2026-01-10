@@ -393,11 +393,20 @@
         <a href="index.html" class="back-link">&larr; Back to App</a>
         <h1>Admin Configuration</h1>
 
+        <!-- Business Selector -->
+        <div id="businessSelectorAdmin" style="margin-bottom: 20px; display: none;">
+            <label style="margin-right: 10px; color: var(--text-secondary);">Viewing config for:</label>
+            <select id="businessFilterAdmin" onchange="switchBusinessAdmin(this.value)" style="padding: 8px 12px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary);">
+                <option value="all">All Businesses</option>
+            </select>
+        </div>
+
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('machines')">Machines</button>
             <button class="tab-btn" onclick="switchTab('products')">Products</button>
             <button class="tab-btn" onclick="switchTab('materials')">Materials</button>
+            <a href="admin-businesses.html" class="tab-btn" style="text-decoration: none;">Businesses</a>
         </div>
 
         <!-- Machines Tab -->
@@ -613,6 +622,41 @@
     <script>
         let supabaseClient = null;
         let currentUser = null;
+        let businessesList = [];
+        let currentBusinessIdAdmin = 'all';
+
+        async function loadBusinessesAdmin() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('businesses')
+                    .select('id, name, slug, display_name, primary_color, is_active')
+                    .eq('is_active', true)
+                    .order('name');
+                if (error) throw error;
+                businessesList = data || [];
+
+                const selector = document.getElementById('businessFilterAdmin');
+                if (selector && businessesList.length > 1) {
+                    selector.innerHTML = '<option value="all">All Businesses</option>';
+                    businessesList.forEach(biz => {
+                        selector.innerHTML += `<option value="${biz.id}">${biz.display_name}</option>`;
+                    });
+                    document.getElementById('businessSelectorAdmin').style.display = 'block';
+                }
+            } catch (err) {
+                console.log('Businesses table not found - multi-tenant not enabled');
+            }
+        }
+
+        function switchBusinessAdmin(businessId) {
+            currentBusinessIdAdmin = businessId;
+            loadAllData();
+        }
+
+        function getBusinessName(businessId) {
+            const biz = businessesList.find(b => b.id === businessId);
+            return biz ? biz.display_name : '';
+        }
 
         // Admin PINs (will be loaded from database in production)
         const ADMIN_PINS = ['1827', '1980']; // Ryan and Alex
@@ -689,6 +733,9 @@
         // ==================== DATA LOADING ====================
 
         async function loadAllData() {
+            // Load businesses first (for multi-tenant)
+            await loadBusinessesAdmin();
+
             await Promise.all([
                 loadMachines(),
                 loadProducts(),
