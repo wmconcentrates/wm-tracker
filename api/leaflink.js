@@ -116,7 +116,9 @@ module.exports = async function handler(req, res) {
         }
 
         if (req.method === 'GET') {
-            const url = `${LEAFLINK_API_URL}/${endpoint}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+            // LeafLink API requires trailing slash
+            const cleanEndpoint = endpoint.endsWith('/') ? endpoint : endpoint + '/';
+            const url = `${LEAFLINK_API_URL}/${cleanEndpoint}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
             console.log(`[${business.slug}] Fetching: ${url}`);
 
             const response = await fetch(url, {
