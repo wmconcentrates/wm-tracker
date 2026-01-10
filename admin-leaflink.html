@@ -466,7 +466,8 @@
                             <th>LeafLink Product Line</th>
                             <th>Parent ID</th>
                             <th>Price/Unit</th>
-                            <th>Confidence</th>
+                            <th>Category</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="mappingsBody">
@@ -681,59 +682,39 @@
         function renderProductLines() {
             const container = document.getElementById('productLinesList');
             if (cachedProductLines.length === 0) {
-                container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No product lines cached. Click "Sync from LeafLink" to pull product lines.</div>';
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No product lines. Click "Sync from LeafLink".</div>';
                 return;
             }
+            container.innerHTML = cachedProductLines.map(pl => {
+                const mapped = currentMappings.some(m => m.leaflink_product_line_id == pl.leaflink_id);
+                const safeName = pl.name.replace(/'/g, "\\'");
+                return `<div class="product-item" style="display:flex;justify-content:space-between;align-items:center;"><div><div class="product-name">${pl.name}</div><div class="product-meta">ID: ${pl.leaflink_id}</div></div><div>${mapped ? '<span style="color:var(--accent-green);font-size:0.85rem;">✓ Mapped</span>' : `<button class="btn btn-primary" style="padding:6px 12px;font-size:0.85rem;" onclick="addProductLineAsMapping(${pl.leaflink_id}, '${safeName}')">Add to Mappings</button>`}</div></div>`;
+            }).join('');
+        }
 
-            container.innerHTML = cachedProductLines.map(pl => `
-                <div class="product-item">
-                    <div class="product-name">${pl.name}</div>
-                    <div class="product-meta">ID: ${pl.leaflink_id}</div>
-                </div>
-            `).join('');
+        function addProductLineAsMapping(productLineId, productLineName) {
+            if (currentMappings.some(m => m.leaflink_product_line_id == productLineId)) { showAlert('Already mapped', 'error'); return; }
+            currentMappings.push({ app_product_type: productLineName, leaflink_product_line_id: productLineId, leaflink_product_line_name: productLineName, price_per_unit: null, leaflink_parent_id: null, app_category: 'concentrate', leaflink_category_id: 5 });
+            renderMappings(); renderProductLines(); updateSyncStatus(); switchTab('mappings');
+            showAlert('Added "' + productLineName + '". Set price and save.', 'success');
         }
 
         function renderMappings() {
             const tbody = document.getElementById('mappingsBody');
-            const appProductTypes = [
-                'Sugar Wax', 'Sugar Wax 4g', 'Wax', 'Wax 4g', 'Shatter',
-                'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash',
-                'Rosin', 'Badder', 'Diamonds', 'Sauce'
-            ];
-
-            tbody.innerHTML = appProductTypes.map(type => {
-                const mapping = currentMappings.find(m => m.app_product_type === type) || {};
-                const suggestion = suggestedMappings.find(s => s.app_product_type === type);
-
-                const productLineOptions = cachedProductLines.map(pl =>
-                    `<option value="${pl.leaflink_id}" ${mapping.leaflink_product_line_id == pl.leaflink_id ? 'selected' : ''}>${pl.name}</option>`
-                ).join('');
-
-                let confidenceBadge = '';
-                if (suggestion && suggestion.confidence > 0) {
-                    const confClass = suggestion.confidence >= 0.8 ? 'high' : suggestion.confidence >= 0.5 ? 'medium' : 'low';
-                    confidenceBadge = `<span class="confidence-badge confidence-${confClass}">${Math.round(suggestion.confidence * 100)}%</span>`;
-                }
-
-                return `
-                    <tr data-type="${type}">
-                        <td><strong>${type}</strong></td>
-                        <td>
-                            <select name="product_line" onchange="markModified(this)">
-                                <option value="">-- Not Configured --</option>
-                                ${productLineOptions}
-                            </select>
-                        </td>
-                        <td>
-                            <input type="number" name="parent_id" value="${mapping.leaflink_parent_id || ''}" placeholder="Parent ID" onchange="markModified(this)">
-                        </td>
-                        <td>
-                            <input type="number" name="price" value="${mapping.price_per_unit || ''}" step="0.01" placeholder="0.00" onchange="markModified(this)">
-                        </td>
-                        <td>${confidenceBadge}</td>
-                    </tr>
-                `;
+            if (currentMappings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-secondary);">No mappings. Go to Product Lines tab and click Add to Mappings.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = currentMappings.map((m, i) => {
+                const opts = cachedProductLines.map(pl => `<option value="${pl.leaflink_id}" ${m.leaflink_product_line_id == pl.leaflink_id ? 'selected' : ''}>${pl.name}</option>`).join('');
+                return `<tr data-index="${i}"><td><input type="text" name="app_type" value="${m.app_product_type || ''}" style="width:150px;"></td><td><select name="product_line"><option value="">-- Select --</option>${opts}</select></td><td><input type="number" name="parent_id" value="${m.leaflink_parent_id || ''}" placeholder="Auto" style="width:80px;"></td><td><input type="number" name="price" value="${m.price_per_unit || ''}" step="0.01" placeholder="0.00" style="width:80px;"></td><td><select name="category"><option value="concentrate" ${m.app_category === 'concentrate' ? 'selected' : ''}>Concentrate</option><option value="cart" ${m.app_category === 'cart' ? 'selected' : ''}>Cart</option></select></td><td><button class="remove-btn" onclick="removeMapping(${i})" style="background:transparent;border:1px solid var(--accent-red);color:var(--accent-red);padding:4px 8px;border-radius:4px;cursor:pointer;">Remove</button></td></tr>`;
             }).join('');
+        }
+
+        function removeMapping(i) {
+            const removed = currentMappings.splice(i, 1)[0];
+            renderMappings(); renderProductLines(); updateSyncStatus();
+            showAlert('Removed "' + removed.app_product_type + '". Save to confirm.', 'success');
         }
 
         function markModified(el) {
@@ -823,26 +804,27 @@
 
             try {
                 // Gather mappings from table
-                const rows = document.querySelectorAll('#mappingsBody tr');
+                const rows = document.querySelectorAll('#mappingsBody tr[data-index]');
                 const mappings = [];
 
                 // Get sample product for seller/brand/license IDs
                 const sampleProduct = cachedProducts[0];
 
                 rows.forEach(row => {
-                    const type = row.getAttribute('data-type');
-                    const productLineId = row.querySelector('select[name="product_line"]').value;
-                    const parentId = row.querySelector('input[name="parent_id"]').value;
-                    const price = row.querySelector('input[name="price"]').value;
+                    const appType = row.querySelector('input[name="app_type"]')?.value;
+                    const productLineId = row.querySelector('select[name="product_line"]')?.value;
+                    const parentId = row.querySelector('input[name="parent_id"]')?.value;
+                    const price = row.querySelector('input[name="price"]')?.value;
+                    const category = row.querySelector('select[name="category"]')?.value;
 
-                    if (productLineId || parentId || price) {
+                    if (appType) {
                         const productLine = cachedProductLines.find(pl => pl.leaflink_id == productLineId);
                         mappings.push({
-                            app_product_type: type,
-                            app_category: ['Live Resin Carts', 'Live Resin AIOs'].includes(type) ? 'cart' : 'concentrate',
+                            app_product_type: appType,
+                            app_category: category || 'concentrate',
                             leaflink_product_line_id: productLineId ? parseInt(productLineId) : null,
                             leaflink_parent_id: parentId ? parseInt(parentId) : null,
-                            leaflink_category_id: ['Live Resin Carts', 'Live Resin AIOs'].includes(type) ? 1 : 5,
+                            leaflink_category_id: category === 'cart' ? 1 : 5,
                             price_per_unit: price ? parseFloat(price) : null,
                             leaflink_seller_id: sampleProduct?.seller_id,
                             leaflink_brand_id: sampleProduct?.brand_id,
