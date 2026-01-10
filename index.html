@@ -1505,6 +1505,7 @@
             <button id="printLabelsBtn" onclick="openPrintLabelsModal()">🖨️ Print Labels</button>
             <button id="manageEmployeesBtn" onclick="openEmployeeManagement()" style="display: none;">👥 Manage Employees</button>
             <button id="adminConfigBtn" onclick="window.open('admin-config.html', '_blank')" style="display: none;">⚙️ Admin Config</button>
+            <button id="leaflinkConfigBtn" onclick="window.open('admin-leaflink.html', '_blank')" style="display: none;">🔗 LeafLink Config</button>
         </div>
     </div>
 
@@ -5429,7 +5430,7 @@
                     document.getElementById('userLogin').style.display = 'none';
                     document.getElementById('appContent').style.display = 'block';
                     document.getElementById('myStatsBtn').style.display = 'block';
-                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} const isAdminUser = currentRole.isAdmin || currentRole.name.includes('Admin') || currentRole.name === 'Ryan' || currentRole.name === 'Alex'; if(isAdminUser){document.getElementById('viewTimecardsBtn').style.display = 'block'; document.getElementById('manageEmployeesBtn').style.display = 'block'; document.getElementById('adminConfigBtn').style.display = 'block'; document.getElementById('loginHistoryBtn').style.display = 'block'; document.getElementById('viewTrashBtn').style.display = 'block';}
+                document.getElementById('logoutBtn').style.display = 'block'; if(!currentRole.salary){document.getElementById('timeClockBtn').style.display = 'block';} const isAdminUser = currentRole.isAdmin || currentRole.name.includes('Admin') || currentRole.name === 'Ryan' || currentRole.name === 'Alex'; if(isAdminUser){document.getElementById('viewTimecardsBtn').style.display = 'block'; document.getElementById('manageEmployeesBtn').style.display = 'block'; document.getElementById('adminConfigBtn').style.display = 'block'; document.getElementById('leaflinkConfigBtn').style.display = 'block'; document.getElementById('loginHistoryBtn').style.display = 'block'; document.getElementById('viewTrashBtn').style.display = 'block';}
                     document.getElementById('complianceBtn').style.display = 'block';
                     applyRolePermissions();
                     hidePINsForDemo(); // Hide PINs if in demo mode
