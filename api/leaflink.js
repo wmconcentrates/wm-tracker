@@ -120,6 +120,7 @@ module.exports = async function handler(req, res) {
             const cleanEndpoint = endpoint.endsWith('/') ? endpoint : endpoint + '/';
             const url = `${LEAFLINK_API_URL}/${cleanEndpoint}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
             console.log(`[${business.slug}] Fetching: ${url}`);
+            console.log(`[${business.slug}] API key hint: ${apiKey ? apiKey.substring(0, 8) + '...' : 'NULL'}`);
 
             const response = await fetch(url, {
                 headers: {
@@ -129,6 +130,8 @@ module.exports = async function handler(req, res) {
             });
 
             if (!response.ok) {
+                const errorBody = await response.text();
+                console.error(`[${business.slug}] LeafLink error ${response.status}:`, errorBody);
                 throw new Error(`LeafLink API error: ${response.status}`);
             }
 
