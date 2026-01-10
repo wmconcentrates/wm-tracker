@@ -18216,62 +18216,49 @@ ${employeeReport || 'No activity recorded today'}
             'lightshade': { name: 'Lightshade', instagram: '@lightshadeco', website: 'https://lightshade.com', type: 'dispensary', hashtags: ['#Lightshade'] }
         };
 
-        // Natural, varied post styles - mix of tones and lengths
+        // Authentic, personality-driven post templates
+        // Each has multiple variations to avoid repetition
         const fohPostStyles = {
             equipment: {
-                short: [
-                    "New gear day. {INPUT}",
-                    "Lab upgrade: {INPUT}",
-                    "{INPUT} - always improving the process."
-                ],
-                medium: [
-                    "{INPUT}\n\nConstantly tweaking the setup to get better results.",
-                    "Added some new equipment to the lab. {INPUT}\n\nSmall changes, big differences in the final product.",
-                    "{INPUT}\n\nThe right tools make all the difference when you're chasing quality."
+                templates: [
+                    "{INPUT}\n\nDifficult to overstate how much proper equipment matters in this game. You can have the best material in Colorado but if your setup isn't dialed, you're leaving terps on the table. Literally.",
+                    "Lab day. {INPUT}\n\nPeople ask why we're so obsessive about our process - this is why. Every upgrade, every tweak, every adjustment compounds over hundreds of runs. The difference between good and great is in the details.",
+                    "{INPUT}\n\nNot the sexiest post but this is the stuff that actually matters. Better temp control, cleaner runs, more consistent product. The grind never stops.",
+                    "Upgraded the setup today. {INPUT}\n\nWe run a lot of material through this lab. Efficiency isn't just about speed - it's about preserving what makes each strain special. New gear helps us do that better.",
+                    "{INPUT}\n\n6am deliveries, weekend installs, endless calibration. Nobody sees this part. But when you crack open that jar and the terps hit different? This is why."
                 ]
             },
             newStrain: {
-                short: [
-                    "{INPUT}",
-                    "New material just landed. {INPUT}",
-                    "{INPUT} - can't wait to run this one."
-                ],
-                medium: [
-                    "{INPUT}\n\nThe nose on this is wild. Really looking forward to seeing how it extracts.",
-                    "Got some new material in. {INPUT}\n\nQuality genetics = quality concentrates.",
-                    "{INPUT}\n\nAlways hunting for interesting profiles. This one checks the boxes."
-                ],
-                longer: [
-                    "{INPUT}\n\nYou can tell quality material the second you open the bag. This is one of those. Proper cure, great structure, loud terps.\n\nShould make for some really nice extract.",
-                    "New strain day. {INPUT}\n\nBeen wanting to work with this cultivar for a while. The terpene profile is exactly what we look for - complex, loud, and unique.\n\nStay tuned for the finished product."
+                templates: [
+                    "{INPUT}\n\nFirst impression: this one's got legs. Dense structure, sticky to the touch, nose that fills the room the second you crack the bag. Exactly what we look for.\n\nThe cure is on point too - not rushed, not overdried. You can tell when a grower actually cares about the craft.",
+                    "New pickup. {INPUT}\n\nBeen chasing this cut for a minute. The terp profile reads like a wishlist - limonene forward with that gassy backend that Colorado heads love. Can't wait to see how she runs.",
+                    "{INPUT}\n\nSometimes material walks in and you just know. The trichome coverage on this is absurd - looks like it got caught in a snowstorm. Whoever grew this understood the assignment.",
+                    "Fresh drop: {INPUT}\n\nWe're picky about what comes through these doors. Not everything makes the cut. But this? This is why we do what we do. Proper genetics, proper grow, proper cure. The trifecta.",
+                    "{INPUT}\n\nThe thing about quality material is it almost extracts itself. You're not fighting it, you're just guiding it. This has that energy. Frosty, fragrant, ready to go.\n\nShoutout to the cultivator on this one.",
+                    "Material check: {INPUT}\n\nPurple hues, orange pistils absolutely caked in frost. Smells like someone spilled gas at a fruit stand. In the best way possible.\n\nThis is gonna make some special extract.",
+                    "{INPUT}\n\nReal talk - we turn down more material than we accept. Standards matter. But when something this nice comes through? Drop everything. This gets priority.",
+                    "Just landed: {INPUT}\n\nYou know that feeling when you open a bag and everyone in the lab stops what they're doing? Yeah. That.\n\nTerms and conditions of working here: you WILL become a terp snob."
                 ]
             },
             batch: {
-                short: [
-                    "Fresh batch. {INPUT}",
-                    "{INPUT} - just pulled.",
-                    "Another one done. {INPUT}"
-                ],
-                medium: [
-                    "Wrapped up a run today. {INPUT}\n\nReally happy with how this one turned out.",
-                    "{INPUT}\n\nSolid yields, great color, terps are on point.",
-                    "Just finished processing. {INPUT}\n\nThis batch came out exactly how we wanted."
-                ],
-                longer: [
-                    "{INPUT}\n\nEvery batch is a little different. Same process, same care, but the plant always has the final say. This one cooperated.\n\nClean extraction, proper cure, ready for the shelves.",
-                    "Batch complete. {INPUT}\n\nFrom intake to finish, this run went smooth. Good starting material makes everything easier.\n\nCheck with your local shop for availability."
+                templates: [
+                    "{INPUT}\n\nJust pulled this run and had to share. Color came out beautiful - that light gold that tells you the starting material was prime. Consistency is butter smooth.\n\nThis is what happens when you don't cut corners.",
+                    "Fresh out the lab: {INPUT}\n\nEvery batch tells a story. This one's story is 'started with fire, ended with fire.' Sometimes the plant just cooperates and you get exactly what you're hoping for.",
+                    "{INPUT}\n\nRan this one low and slow. Patience pays off - the terp retention on this batch is insane. You can smell it through the jar.\n\nHeading to shelves soon. Ask your budtender.",
+                    "Batch complete. {INPUT}\n\nFrom trim to jar, we touched every step of this. That's the White Mousse difference - no outsourcing, no shortcuts, just obsessive attention to detail from start to finish.",
+                    "{INPUT}\n\nPulled this one yesterday, been curing overnight. The nose is developing beautifully - started fruity, now it's got that funky gas creeping in.\n\nLove watching a batch come together.",
+                    "Another one in the books. {INPUT}\n\nYield was solid but honestly that's not even what we're excited about. The quality on this run is exceptional. Sometimes everything just clicks.",
+                    "{INPUT}\n\nTest results just came back. Numbers are where we want them, but the real test is the smoke. And trust me - this one passes.\n\nDrop incoming.",
+                    "Lab update: {INPUT}\n\nBeen running hard this week. Multiple strains, multiple batches, zero compromises. When the material is this good, you show up and do the work.\n\nStay tuned for drops."
                 ]
             },
             general: {
-                short: [
-                    "{INPUT}",
-                    "Quick update: {INPUT}",
-                    "{INPUT} ✌️"
-                ],
-                medium: [
-                    "{INPUT}\n\nJust another day at the lab.",
-                    "What's happening: {INPUT}\n\nMore updates coming.",
-                    "{INPUT}\n\nBusy week but staying on it."
+                templates: [
+                    "{INPUT}\n\nJust another day doing what we love. Not every post needs to be a banger - sometimes it's just about showing up and putting in the work.",
+                    "{INPUT}\n\nBehind every jar on the shelf is hours of work nobody sees. Material sourcing, extraction, curing, testing, packaging. We're in the lab while you're sleeping.\n\nAnd we wouldn't have it any other way.",
+                    "Quick one: {INPUT}\n\nMore updates coming. We've been heads down working on some exciting stuff. Appreciate everyone rocking with us.",
+                    "{INPUT}\n\nGrateful for everyone who supports the craft. Colorado's concentrate scene is special and we don't take being part of it for granted.",
+                    "{INPUT}\n\nNo fancy caption needed. Just doing the work, making the product, serving the community. That's the whole mission."
                 ]
             }
         };
@@ -18331,48 +18318,53 @@ ${employeeReport || 'No activity recorded today'}
             else if (lowerInput.match(/strain|flower|material|trim|grabbed|picked up|fresh|new.*from|got.*from/)) postType = 'newStrain';
             else if (lowerInput.match(/batch|run|extract|finish|wrap|pull/)) postType = 'batch';
 
-            const styles = fohPostStyles[postType];
+            const styleCategory = fohPostStyles[postType];
+            const templates = styleCategory.templates;
 
-            // Pick random length (favor medium for variety)
-            const lengths = Object.keys(styles);
-            const lengthWeights = { short: 0.25, medium: 0.5, longer: 0.25 };
-            let rand = Math.random();
-            let selectedLength = 'medium';
-            for (const len of lengths) {
-                rand -= (lengthWeights[len] || 0.33);
-                if (rand <= 0) { selectedLength = len; break; }
-            }
-            if (!styles[selectedLength]) selectedLength = lengths[0];
-
-            // Pick random template from that length
-            const templates = styles[selectedLength];
+            // Pick random template
             const template = templates[Math.floor(Math.random() * templates.length)];
 
-            // Clean up input - capitalize first letter, ensure ends with period if needed
+            // Clean up input - capitalize first letter, remove trailing period (template adds context)
             let cleanInput = input.charAt(0).toUpperCase() + input.slice(1);
-            if (!cleanInput.match(/[.!?]$/)) cleanInput += '.';
+            cleanInput = cleanInput.replace(/[.]+$/, '');
 
             // Generate content from template
             let content = template.replace(/{INPUT}/g, cleanInput);
 
-            // Add partner shoutout naturally (not as separate section)
+            // Add partner mention naturally if detected
             if (partners.length > 0) {
-                const partnerMentions = partners.map(p => {
-                    if (p.type === 'farm') return `Props to ${p.name} for the quality material.`;
-                    if (p.type === 'dispensary') return `Find it at ${p.name}.`;
-                    return `${p.name}`;
-                }).join(' ');
-                content += `\n\n${partnerMentions}`;
+                const partnerPhrases = {
+                    farm: [
+                        `Big ups to ${partners[0].name} for bringing the heat.`,
+                        `${partners[0].name} came through with this one.`,
+                        `Shoutout ${partners[0].name} - they know what they're doing over there.`,
+                        `When ${partners[0].name} sends material, we clear the schedule.`
+                    ],
+                    dispensary: [
+                        `Available at ${partners[0].name} - go show them some love.`,
+                        `Find this at ${partners[0].name}.`,
+                        `${partners[0].name} got you covered on this one.`
+                    ]
+                };
+                const phrases = partnerPhrases[partners[0].type] || [`${partners[0].name}`];
+                const partnerMention = phrases[Math.floor(Math.random() * phrases.length)];
+
+                // Add Instagram handle if available
+                const igHandle = partners[0].instagram ? ` ${partners[0].instagram}` : '';
+                content += `\n\n${partnerMention}${igHandle}`;
             }
 
-            // Add hashtags (fewer, more relevant)
+            // Add hashtags sparingly
             const hashtags = generateFOHHashtags(partners);
             content += `\n\n${hashtags}`;
 
-            // Generate simple title from first part of input
+            // Generate title - extract key words from input
             const emoji = fohEmojis[Math.floor(Math.random() * fohEmojis.length)];
-            const titleWords = cleanInput.split(' ').slice(0, 5).join(' ').replace(/[.!?,]$/, '');
-            const title = `${emoji} ${titleWords}`;
+            // Try to extract strain name or key descriptor
+            const words = cleanInput.split(' ');
+            let titleText = words.slice(0, 4).join(' ');
+            if (titleText.length > 30) titleText = words.slice(0, 3).join(' ');
+            const title = `${emoji} ${titleText}`;
 
             fohGeneratedPost = {
                 title,
