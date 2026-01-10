@@ -18216,26 +18216,66 @@ ${employeeReport || 'No activity recorded today'}
             'lightshade': { name: 'Lightshade', instagram: '@lightshadeco', website: 'https://lightshade.com', type: 'dispensary', hashtags: ['#Lightshade'] }
         };
 
-        const fohTemplates = {
-            equipment: [
-                { title: "🔧 Gear Upgrade Alert", intro: "The lab just got a serious upgrade, fam!", body: "We're always pushing our extraction game to the next level.", cta: "Stay tuned for even better concentrates! 🚀" },
-                { title: "⚡ New Tech in the Lab", intro: "When you're obsessed with quality, you never stop upgrading.", body: "Just added some new firepower to our arsenal.", cta: "Better equipment = better terps. 💯" }
-            ],
-            newStrain: [
-                { title: "🔥 Fresh Heat Incoming", intro: "The terp hunters have spoken!", body: "Just got our hands on some absolutely incredible material. The nose on this one is INSANE.", cta: "Keep your eyes peeled at your local dispensary! 👀" },
-                { title: "🌟 Strain Alert", intro: "Sometimes a strain walks in and you just KNOW it's gonna be special.", body: "The terpene profile on this one is chef's kiss.", cta: "Coming soon to a dispo near you! 🏃‍♂️" }
-            ],
-            batch: [
-                { title: "🧪 Fresh Batch Alert", intro: "The extractors have been BUSY!", body: "Just wrapped up a beautiful run and the results speak for themselves.", cta: "Ask your budtender about White Mousse! 🔥" },
-                { title: "💎 Quality Check: PASSED", intro: "Another batch, another banger.", body: "When you prioritize terps and quality, the results are always fire.", cta: "Keep an eye out at your local spot! 👀" }
-            ],
-            general: [
-                { title: "📣 What's Good, Fam", intro: "Just had to hop on and share what's happening at the lab!", body: "You know we're always cooking up something special.", cta: "More updates coming soon. Stay lifted! ✌️" },
-                { title: "🎯 Lab Update", intro: "Another day, another chance to serve the terps!", body: "Things are moving fast over here.", cta: "Thanks for rocking with White Mousse! 💚" }
-            ]
+        // Natural, varied post styles - mix of tones and lengths
+        const fohPostStyles = {
+            equipment: {
+                short: [
+                    "New gear day. {INPUT}",
+                    "Lab upgrade: {INPUT}",
+                    "{INPUT} - always improving the process."
+                ],
+                medium: [
+                    "{INPUT}\n\nConstantly tweaking the setup to get better results.",
+                    "Added some new equipment to the lab. {INPUT}\n\nSmall changes, big differences in the final product.",
+                    "{INPUT}\n\nThe right tools make all the difference when you're chasing quality."
+                ]
+            },
+            newStrain: {
+                short: [
+                    "{INPUT}",
+                    "New material just landed. {INPUT}",
+                    "{INPUT} - can't wait to run this one."
+                ],
+                medium: [
+                    "{INPUT}\n\nThe nose on this is wild. Really looking forward to seeing how it extracts.",
+                    "Got some new material in. {INPUT}\n\nQuality genetics = quality concentrates.",
+                    "{INPUT}\n\nAlways hunting for interesting profiles. This one checks the boxes."
+                ],
+                longer: [
+                    "{INPUT}\n\nYou can tell quality material the second you open the bag. This is one of those. Proper cure, great structure, loud terps.\n\nShould make for some really nice extract.",
+                    "New strain day. {INPUT}\n\nBeen wanting to work with this cultivar for a while. The terpene profile is exactly what we look for - complex, loud, and unique.\n\nStay tuned for the finished product."
+                ]
+            },
+            batch: {
+                short: [
+                    "Fresh batch. {INPUT}",
+                    "{INPUT} - just pulled.",
+                    "Another one done. {INPUT}"
+                ],
+                medium: [
+                    "Wrapped up a run today. {INPUT}\n\nReally happy with how this one turned out.",
+                    "{INPUT}\n\nSolid yields, great color, terps are on point.",
+                    "Just finished processing. {INPUT}\n\nThis batch came out exactly how we wanted."
+                ],
+                longer: [
+                    "{INPUT}\n\nEvery batch is a little different. Same process, same care, but the plant always has the final say. This one cooperated.\n\nClean extraction, proper cure, ready for the shelves.",
+                    "Batch complete. {INPUT}\n\nFrom intake to finish, this run went smooth. Good starting material makes everything easier.\n\nCheck with your local shop for availability."
+                ]
+            },
+            general: {
+                short: [
+                    "{INPUT}",
+                    "Quick update: {INPUT}",
+                    "{INPUT} ✌️"
+                ],
+                medium: [
+                    "{INPUT}\n\nJust another day at the lab.",
+                    "What's happening: {INPUT}\n\nMore updates coming.",
+                    "{INPUT}\n\nBusy week but staying on it."
+                ]
+            }
         };
 
-        const fohExcitingWords = ['absolutely fire', 'incredible', 'next level', 'game-changing', 'beautiful', 'insane', 'chef\'s kiss', 'dialed in', 'premium', 'top shelf'];
         const fohEmojis = ['🔥', '💎', '✨', '🚀', '💯', '⚡', '🌟', '🎯', '💚', '🧪'];
 
         let fohGeneratedPost = null;
@@ -18262,9 +18302,14 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         function generateFOHHashtags(partners) {
-            const base = ['#WhiteMousse', '#ColoradoConcentrates', '#LiveResin', '#Terps', '#CannabisCommunity'];
-            const partnerTags = partners.flatMap(p => p.hashtags || []);
-            return [...new Set([...base, ...partnerTags])].slice(0, 10).join(' ');
+            // Core tags - just a few, not spammy
+            const core = ['#WhiteMousse', '#ColoradoConcentrates'];
+            // Rotate through secondary tags
+            const secondary = ['#LiveResin', '#Concentrates', '#Terps', '#Colorado710'];
+            const randomSecondary = secondary[Math.floor(Math.random() * secondary.length)];
+            // Partner tags if any
+            const partnerTags = partners.flatMap(p => p.hashtags || []).slice(0, 2);
+            return [...core, randomSecondary, ...partnerTags].join(' ');
         }
 
         function addQuickTag(tag) {
@@ -18280,37 +18325,60 @@ ${employeeReport || 'No activity recorded today'}
             const lowerInput = input.toLowerCase();
             const partners = detectFOHPartners(input);
 
-            let templateType = 'general';
-            if (lowerInput.match(/hardware|equipment|machine|tech/)) templateType = 'equipment';
-            else if (lowerInput.match(/strain|flower|material|trim|grabbed|picked up|gmo|cookies|og/)) templateType = 'newStrain';
-            else if (lowerInput.match(/batch|run|extract/)) templateType = 'batch';
+            // Detect post type
+            let postType = 'general';
+            if (lowerInput.match(/hardware|equipment|machine|tech|upgrade/)) postType = 'equipment';
+            else if (lowerInput.match(/strain|flower|material|trim|grabbed|picked up|fresh|new.*from|got.*from/)) postType = 'newStrain';
+            else if (lowerInput.match(/batch|run|extract|finish|wrap|pull/)) postType = 'batch';
 
-            const templates = fohTemplates[templateType];
+            const styles = fohPostStyles[postType];
+
+            // Pick random length (favor medium for variety)
+            const lengths = Object.keys(styles);
+            const lengthWeights = { short: 0.25, medium: 0.5, longer: 0.25 };
+            let rand = Math.random();
+            let selectedLength = 'medium';
+            for (const len of lengths) {
+                rand -= (lengthWeights[len] || 0.33);
+                if (rand <= 0) { selectedLength = len; break; }
+            }
+            if (!styles[selectedLength]) selectedLength = lengths[0];
+
+            // Pick random template from that length
+            const templates = styles[selectedLength];
             const template = templates[Math.floor(Math.random() * templates.length)];
-            const word = fohExcitingWords[Math.floor(Math.random() * fohExcitingWords.length)];
-            const emoji = fohEmojis[Math.floor(Math.random() * fohEmojis.length)];
 
-            const expansions = [
-                `So here's the deal: ${input}. And let me tell you, it's ${word}!`,
-                `Big news from the lab: ${input}. We're honestly so hyped about this one.`,
-                `Had to share this with y'all: ${input}. The quality is ${word}.`
-            ];
-            const expanded = expansions[Math.floor(Math.random() * expansions.length)];
+            // Clean up input - capitalize first letter, ensure ends with period if needed
+            let cleanInput = input.charAt(0).toUpperCase() + input.slice(1);
+            if (!cleanInput.match(/[.!?]$/)) cleanInput += '.';
 
-            let partnerSection = '';
+            // Generate content from template
+            let content = template.replace(/{INPUT}/g, cleanInput);
+
+            // Add partner shoutout naturally (not as separate section)
             if (partners.length > 0) {
-                partnerSection = `\n\n---\n\n**🤝 Shoutouts**\n\n${partners.map(p => formatPartnerShoutout(p)).join('\n\n')}`;
+                const partnerMentions = partners.map(p => {
+                    if (p.type === 'farm') return `Props to ${p.name} for the quality material.`;
+                    if (p.type === 'dispensary') return `Find it at ${p.name}.`;
+                    return `${p.name}`;
+                }).join(' ');
+                content += `\n\n${partnerMentions}`;
             }
 
+            // Add hashtags (fewer, more relevant)
             const hashtags = generateFOHHashtags(partners);
-            const title = template.title + ': ' + input.split(' ').slice(0, 4).join(' ') + '...';
-            const content = `${template.intro}\n\n${expanded}\n\n${template.body}${partnerSection}\n\n${template.cta}\n\n---\n${hashtags}`;
+            content += `\n\n${hashtags}`;
+
+            // Generate simple title from first part of input
+            const emoji = fohEmojis[Math.floor(Math.random() * fohEmojis.length)];
+            const titleWords = cleanInput.split(' ').slice(0, 5).join(' ').replace(/[.!?,]$/, '');
+            const title = `${emoji} ${titleWords}`;
 
             fohGeneratedPost = {
                 title,
                 content,
-                excerpt: `${template.intro} ${expanded.slice(0, 100)}...`,
-                category: templateType === 'equipment' ? 'update' : templateType === 'newStrain' ? 'strains' : 'update',
+                excerpt: content.split('\n')[0].slice(0, 120) + '...',
+                category: postType === 'equipment' ? 'update' : postType === 'newStrain' ? 'strains' : 'update',
                 emoji
             };
 
