@@ -1,9 +1,8 @@
 {
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "destination": "https://app.whitemousse.com/$1",
-      "permanent": true
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 30
     }
-  ]
+  }
 }
