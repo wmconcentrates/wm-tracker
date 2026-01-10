@@ -253,6 +253,122 @@ app.get('/api/internal/businesses/:id/api-keys', async (req, res) => {
 // BUSINESS-AWARE LEAFLINK PROXY
 // ============================================
 
+// GET /api/leaflink?slug=xxx&endpoint=xxx (unified endpoint for frontend)
+app.get('/api/leaflink', async (req, res) => {
+    const { slug, endpoint } = req.query;
+
+    // Debug endpoint
+    if (slug === 'debug') {
+        return res.json({
+            supabase_configured: !!supabase,
+            encryption_key_set: !!process.env.API_KEY_ENCRYPTION_SECRET,
+            encryption_key_hint: ENCRYPTION_KEY ? ENCRYPTION_KEY.substring(0, 10) + '...' : 'NOT SET'
+        });
+    }
+
+    if (!slug || !endpoint) {
+        return res.status(400).json({ error: 'Missing slug or endpoint parameter' });
+    }
+
+    try {
+        const business = await getBusinessBySlug(slug);
+        if (!business) {
+            return res.status(404).json({ error: 'Business not found' });
+        }
+        const apiKey = await getBusinessApiKey(business.id, 'leaflink');
+        if (!apiKey) {
+            return res.status(400).json({ error: 'LeafLink not configured for this business' });
+        }
+
+        // Build query params (exclude our custom params)
+        const queryParams = new URLSearchParams();
+        for (const [key, value] of Object.entries(req.query)) {
+            if (key !== 'slug' && key !== 'endpoint') {
+                if (Array.isArray(value)) {
+                    value.forEach(v => queryParams.append(key, v));
+                } else {
+                    queryParams.append(key, value);
+                }
+            }
+        }
+
+        // LeafLink API requires trailing slash
+        const cleanEndpoint = endpoint.endsWith('/') ? endpoint : endpoint + '/';
+        const url = `${LEAFLINK_API_URL}/${cleanEndpoint}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+        console.log(`[${business.slug}] Fetching: ${url}`);
+
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `App ${apiKey}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`[${business.slug}] LeafLink error ${response.status}:`, errorBody);
+            throw new Error(`LeafLink API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        // Rewrite pagination URLs to use the new format
+        if (data.next) {
+            data.next = data.next.replace(LEAFLINK_API_URL, `${req.protocol}://${req.get('host')}/api/leaflink?slug=${slug}&endpoint=`).replace('/?', '&');
+        }
+        if (data.previous) {
+            data.previous = data.previous.replace(LEAFLINK_API_URL, `${req.protocol}://${req.get('host')}/api/leaflink?slug=${slug}&endpoint=`).replace('/?', '&');
+        }
+        res.json(data);
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST /api/leaflink?slug=xxx&endpoint=xxx
+app.post('/api/leaflink', async (req, res) => {
+    const { slug, endpoint } = req.query;
+
+    if (!slug || !endpoint) {
+        return res.status(400).json({ error: 'Missing slug or endpoint parameter' });
+    }
+
+    try {
+        const business = await getBusinessBySlug(slug);
+        if (!business) {
+            return res.status(404).json({ error: 'Business not found' });
+        }
+        const apiKey = await getBusinessApiKey(business.id, 'leaflink');
+        if (!apiKey) {
+            return res.status(400).json({ error: 'LeafLink not configured for this business' });
+        }
+
+        const url = `${LEAFLINK_API_URL}/${endpoint}/`;
+        console.log(`[${business.slug}] POST to: ${url}`);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `App ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(req.body)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            console.error('LeafLink POST error:', response.status, data);
+            return res.status(response.status).json(data);
+        }
+
+        console.log(`[${business.slug}] POST success:`, data.id || data);
+        res.status(response.status).json(data);
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // GET /api/business/:slug/orders
 app.get('/api/business/:slug/orders', async (req, res) => {
     try {
