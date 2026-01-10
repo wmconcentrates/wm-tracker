@@ -22251,6 +22251,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             });
 
             // Group batches by category
+            // Cutoff date for LeafLink auto-list tracking (Jan 8, 2026 - before this, batches weren't auto-listed)
+            const leaflinkCutoffDate = new Date('2026-01-08T00:00:00');
+
             pipelineData.forEach(batch => {
                 const category = getProductCategory(batch.product_made);
                 if (category && pipelineCategoryData[category]) {
@@ -22261,8 +22264,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
                     // Determine pipeline stage for display
                     let pipelineStage = batch.status;
+                    const labelingDate = batch.labeling_date ? new Date(batch.labeling_date) : null;
+
                     if (batch.labels_applied && !batch.leaflink_product_id) {
-                        pipelineStage = 'awaiting_leaflink';
+                        // Only flag as awaiting_leaflink if labeled after cutoff date
+                        if (labelingDate && labelingDate >= leaflinkCutoffDate) {
+                            pipelineStage = 'awaiting_leaflink';
+                        } else {
+                            pipelineStage = 'labeled_legacy'; // Old batches, don't nag about LeafLink
+                        }
                     } else if (batch.status === 'complete' && batch.test_thc_percent && !batch.labels_applied) {
                         pipelineStage = 'labeling';
                     } else if (batch.status === 'complete' && !batch.test_thc_percent) {
@@ -22345,6 +22355,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 'testing': { label: 'Testing', color: '#EC4899', icon: '🧪' },
                 'labeling': { label: 'Labeling', color: '#10B981', icon: '🏷️' },
                 'awaiting_leaflink': { label: 'Ready to List', color: '#FFD700', icon: '⏳' },
+                'labeled_legacy': { label: 'Labeled', color: '#6B7280', icon: '✓' }, // Pre-auto-list batches
                 'complete': { label: 'Complete', color: '#6B7280', icon: '✅' }
             };
             return stages[stage] || stages['complete'];
