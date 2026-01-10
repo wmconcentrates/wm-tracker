@@ -22237,6 +22237,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 pipelineCategoryData[cat.key] = { count: 0, strains: [], color: cat.color, label: cat.label };
             });
 
+            // Cutoff date for LeafLink auto-list tracking (Jan 8, 2026 - before this, batches weren't auto-listed)
+            const leaflinkCutoffDate = new Date('2026-01-08T00:00:00');
+
             // Filter batches in pipeline (all stages until listed on LeafLink)
             pipelineData = batches.filter(batch => {
                 const hasWeight = batch.final_weight || batch.net_weight || batch.grams_labeled;
@@ -22245,14 +22248,21 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 if (salesPercent === 0) return false;
                 // Exclude batches already listed on LeafLink
                 if (batch.leaflink_product_id) return false;
+
+                // Exclude old labeled batches (before cutoff) - they're already on LeafLink manually
+                if (batch.labels_applied) {
+                    const labelingDate = batch.labeling_date ? new Date(batch.labeling_date) : null;
+                    if (!labelingDate || labelingDate < leaflinkCutoffDate) {
+                        return false; // Old labeled batch, assume already on LeafLink
+                    }
+                }
+
                 // Include all in-progress stages AND labeled batches awaiting LeafLink
                 const validStatuses = ['extraction', 'finishing', 'packaging', 'complete'];
                 return validStatuses.includes(batch.status);
             });
 
             // Group batches by category
-            // Cutoff date for LeafLink auto-list tracking (Jan 8, 2026 - before this, batches weren't auto-listed)
-            const leaflinkCutoffDate = new Date('2026-01-08T00:00:00');
 
             pipelineData.forEach(batch => {
                 const category = getProductCategory(batch.product_made);
@@ -22264,15 +22274,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
                     // Determine pipeline stage for display
                     let pipelineStage = batch.status;
-                    const labelingDate = batch.labeling_date ? new Date(batch.labeling_date) : null;
-
                     if (batch.labels_applied && !batch.leaflink_product_id) {
-                        // Only flag as awaiting_leaflink if labeled after cutoff date
-                        if (labelingDate && labelingDate >= leaflinkCutoffDate) {
-                            pipelineStage = 'awaiting_leaflink';
-                        } else {
-                            pipelineStage = 'labeled_legacy'; // Old batches, don't nag about LeafLink
-                        }
+                        pipelineStage = 'awaiting_leaflink';
                     } else if (batch.status === 'complete' && batch.test_thc_percent && !batch.labels_applied) {
                         pipelineStage = 'labeling';
                     } else if (batch.status === 'complete' && !batch.test_thc_percent) {
@@ -22355,7 +22358,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 'testing': { label: 'Testing', color: '#EC4899', icon: '🧪' },
                 'labeling': { label: 'Labeling', color: '#10B981', icon: '🏷️' },
                 'awaiting_leaflink': { label: 'Ready to List', color: '#FFD700', icon: '⏳' },
-                'labeled_legacy': { label: 'Labeled', color: '#6B7280', icon: '✓' }, // Pre-auto-list batches
                 'complete': { label: 'Complete', color: '#6B7280', icon: '✅' }
             };
             return stages[stage] || stages['complete'];
