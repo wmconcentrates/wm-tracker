@@ -22237,13 +22237,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 pipelineCategoryData[cat.key] = { count: 0, strains: [], color: cat.color, label: cat.label };
             });
 
-            // Filter batches in pipeline (extraction, finishing, packaging stages)
+            // Filter batches in pipeline (all stages before fully labeled)
             pipelineData = batches.filter(batch => {
                 const hasWeight = batch.final_weight || batch.net_weight || batch.grams_labeled;
                 if (!hasWeight) return false;
                 const salesPercent = getSalesPercentage(batch.material_agreement);
                 if (salesPercent === 0) return false;
-                const validStatuses = ['extraction', 'finishing', 'packaging'];
+                // Include extraction, finishing, packaging, and complete (testing/labeling) stages
+                // Exclude only fully labeled batches
+                if (batch.labels_applied) return false;
+                const validStatuses = ['extraction', 'finishing', 'packaging', 'complete'];
                 return validStatuses.includes(batch.status);
             });
 
