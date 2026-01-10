@@ -18731,8 +18731,9 @@ ${employeeReport || 'No activity recorded today'}
 
                 // Fetch shipped and complete orders via proxy
                 let allOrders = [];
-                const proxyUrl = getLeafLinkProxyUrl();
-                let nextUrl = `${proxyUrl}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+                const businessSlug = currentBusinessId === 'all' ? 'white-mousse' :
+                    (businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse');
+                let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=orders-received&status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
 
                 while (nextUrl) {
                     const response = await fetch(nextUrl);
@@ -19242,10 +19243,12 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         // Get the LeafLink proxy URL for current business
-        function getLeafLinkProxyUrl() {
-            const businessSlug = currentBusinessId === 'all' ? 'white-mousse' :
-                (businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse');
-            return `${window.location.origin}/api/business/${businessSlug}`;
+        function getLeafLinkProxyUrl(endpoint, businessSlug = null) {
+            const slug = businessSlug || (currentBusinessId === 'all' ? 'white-mousse' :
+                (businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse'));
+            // Use direct endpoint with query params (no rewrites needed)
+            const base = `${window.location.origin}/api/leaflink?slug=${slug}&endpoint=${encodeURIComponent(endpoint)}`;
+            return base;
         }
 
         // Fetch orders from LeafLink API
@@ -19256,10 +19259,9 @@ ${employeeReport || 'No activity recorded today'}
                 twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
                 const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
 
-                const proxyUrl = `${window.location.origin}/api/business/${businessSlug}`;
-                console.log(`Fetching LeafLink orders from: ${proxyUrl} (${businessSlug})`);
+                console.log(`Fetching LeafLink orders for: ${businessSlug}`);
                 let orders = [];
-                let nextUrl = `${proxyUrl}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+                let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=orders-received&status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
 
                 while (nextUrl && orders.length < 300) {
                     const response = await fetch(nextUrl);
@@ -19304,10 +19306,10 @@ ${employeeReport || 'No activity recorded today'}
                 twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
                 const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
 
-                const proxyUrl = getLeafLinkProxyUrl();
-                console.log('Fetching LeafLink orders from:', proxyUrl);
+                const businessSlug = businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse';
+                console.log('Fetching LeafLink orders for:', businessSlug);
                 let allOrders = [];
-                let nextUrl = `${proxyUrl}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+                let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=orders-received&status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
 
                 while (nextUrl && allOrders.length < 300) {
                     const response = await fetch(nextUrl);
@@ -20702,7 +20704,9 @@ ${employeeReport || 'No activity recorded today'}
                 const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
 
                 let allOrders = [];
-                let nextUrl = `${getLeafLinkProxyUrl()}/orders-received/?status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
+                const businessSlug = currentBusinessId === 'all' ? 'white-mousse' :
+                    (businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse');
+                let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=orders-received&status=Accepted&status=Shipped&status=Complete&created_on__gte=${dateFilter}&page_size=100`;
 
                 while (nextUrl) {
                     const response = await fetch(nextUrl);
@@ -22905,7 +22909,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     // Fetch inventory from a specific business
     async function fetchInventoryForBusiness(businessSlug) {
         let products = [];
-        let nextUrl = `${window.location.origin}/api/business/${businessSlug}/products/?page_size=100`;
+        let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=products&page_size=100`;
         let pageCount = 0;
         const maxPages = 15;
 
@@ -22949,7 +22953,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Single business fetch
         let allProducts = [];
-        let nextUrl = getLeafLinkProxyUrl() + '/products/?page_size=100';
+        const businessSlug = businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse';
+        let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=products&page_size=100`;
         let pageCount = 0;
         const maxPages = 15; // Safety limit to prevent infinite loops
 
@@ -23156,7 +23161,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         try {
             // Fetch concentrate products (category=5) to get correct recreational license
-            const response = await fetch(getLeafLinkProxyUrl() + '/products/?page_size=50&category=5');
+            const businessSlug = currentBusinessId === 'all' ? 'white-mousse' :
+                (businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse');
+            const response = await fetch(`${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=products&page_size=50&category=5`);
             if (!response.ok) {
                 console.error('Failed to fetch LeafLink products for config');
                 return null;
@@ -23217,7 +23224,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             // Fetch product lines from /product-lines endpoint
             try {
-                const plResponse = await fetch(getLeafLinkProxyUrl() + '/product-lines/?page_size=50');
+                const plResponse = await fetch(`${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=product-lines&page_size=50`);
                 if (plResponse.ok) {
                     const plData = await plResponse.json();
                     const productLines = plData.results || [];
@@ -23475,7 +23482,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         console.log('Pushing batch to LeafLink:', batch.id, payload);
 
         try {
-            const response = await fetch(getLeafLinkProxyUrl() + '/products', {
+            // Use batch's business or fall back to current business
+            const businessSlug = batch._business?.slug ||
+                (currentBusinessId === 'all' ? 'white-mousse' :
+                (businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse'));
+            const response = await fetch(`${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=products`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
