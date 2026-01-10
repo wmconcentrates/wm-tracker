@@ -75,7 +75,7 @@ function rewritePaginationUrls(data, proxyBase) {
     return data;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -85,8 +85,12 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    const { slug, path } = req.query;
-    const endpoint = Array.isArray(path) ? path.join('/') : path;
+    // Parse the URL: /api/leaflink?slug=xxx&endpoint=xxx
+    const { slug, endpoint } = req.query;
+
+    if (!slug || !endpoint) {
+        return res.status(400).json({ error: 'Missing slug or endpoint parameter' });
+    }
 
     try {
         const business = await getBusinessBySlug(slug);
@@ -99,12 +103,19 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'LeafLink not configured for this business' });
         }
 
-        if (req.method === 'GET') {
-            const queryParams = new URLSearchParams(req.query);
-            // Remove slug and path from query params
-            queryParams.delete('slug');
-            queryParams.delete('path');
+        // Build query params (exclude our custom params)
+        const queryParams = new URLSearchParams();
+        for (const [key, value] of Object.entries(req.query)) {
+            if (key !== 'slug' && key !== 'endpoint') {
+                if (Array.isArray(value)) {
+                    value.forEach(v => queryParams.append(key, v));
+                } else {
+                    queryParams.append(key, value);
+                }
+            }
+        }
 
+        if (req.method === 'GET') {
             const url = `${LEAFLINK_API_URL}/${endpoint}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
             console.log(`[${business.slug}] Fetching: ${url}`);
 
@@ -155,4 +166,4 @@ export default async function handler(req, res) {
         console.error('Proxy error:', error);
         return res.status(500).json({ error: error.message });
     }
-}
+};
