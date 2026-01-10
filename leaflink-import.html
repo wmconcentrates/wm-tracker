@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafLink Import Tool</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --accent-green: #10B981;
+            --accent-blue: #3B82F6;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: var(--accent-green);
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #10B981, #047857);
+            color: white;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+        .status.info { background: rgba(59, 130, 246, 0.2); color: #93c5fd; display: block; }
+        .status.success { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; display: block; }
+        .status.error { background: rgba(239, 68, 68, 0.2); color: #fca5a5; display: block; }
+
+        .mapping-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .mapping-row label {
+            flex: 1;
+            color: var(--text-primary);
+        }
+        .mapping-row select {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--bg-tertiary);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .product-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+        .product-row:last-child { border-bottom: none; }
+        .product-row input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+        .product-info { flex: 1; }
+        .product-name { color: var(--text-primary); font-weight: 500; }
+        .product-meta { color: var(--text-secondary); font-size: 0.85rem; }
+        .product-category {
+            background: var(--bg-tertiary);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .step { display: none; }
+        .step.active { display: block; }
+
+        .progress-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .progress-step {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .progress-step.active {
+            background: var(--accent-green);
+            color: white;
+        }
+        .progress-step.completed {
+            background: rgba(16, 185, 129, 0.3);
+            color: var(--accent-green);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+        th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        .back-link:hover { color: var(--text-primary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Tracker</a>
+        <h1>📥 LeafLink Product Import</h1>
+        <p class="subtitle">Import existing LeafLink products as legacy batches</p>
+
+        <div class="progress-bar">
+            <div class="progress-step active" id="prog1">1. Connect</div>
+            <div class="progress-step" id="prog2">2. Map Categories</div>
+            <div class="progress-step" id="prog3">3. Select Products</div>
+            <div class="progress-step" id="prog4">4. Import</div>
+        </div>
+
+        <!-- Step 1: Fetch Products -->
+        <div id="step1" class="step active">
+            <div class="card">
+                <h2>Connect to LeafLink</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                    Fetch your existing products from LeafLink to import them as legacy batches.
+                </p>
+                <button class="btn btn-primary" onclick="fetchProducts()">
+                    🔄 Fetch Products from LeafLink
+                </button>
+                <div id="fetchStatus" class="status"></div>
+            </div>
+        </div>
+
+        <!-- Step 2: Category Mapping -->
+        <div id="step2" class="step">
+            <div class="card">
+                <h2>Map LeafLink Categories → Product Types</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                    Match each LeafLink category to one of your product types:
+                </p>
+                <div id="mappingContainer"></div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+                    <button class="btn btn-primary" onclick="goToStep(3)">Next: Select Products →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Product Selection -->
+        <div id="step3" class="step">
+            <div class="card">
+                <h2>Select Products to Import</h2>
+                <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 20px;">
+                    <label style="color: var(--text-secondary); cursor: pointer;">
+                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)"> Select All
+                    </label>
+                    <span id="selectedCount" style="color: var(--text-secondary);">0 selected</span>
+                    <input type="text" id="searchProducts" placeholder="Search products..."
+                           style="margin-left: auto; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--bg-tertiary); background: var(--bg-primary); color: var(--text-primary);"
+                           oninput="filterProducts()">
+                </div>
+                <div id="productList" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--bg-tertiary); border-radius: 8px;"></div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+                    <button class="btn btn-primary" onclick="importProducts()">📥 Import Selected Products</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Results -->
+        <div id="step4" class="step">
+            <div class="card" style="text-align: center;">
+                <div style="font-size: 4rem; margin-bottom: 20px;">✅</div>
+                <h2>Import Complete!</h2>
+                <p id="resultMessage" style="color: var(--text-secondary); margin: 20px 0;"></p>
+                <div id="importedList" style="text-align: left; margin: 20px 0;"></div>
+                <a href="index.html" class="btn btn-primary">Go to Tracker</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Config - These should match your main app
+        const SUPABASE_URL = localStorage.getItem('supabaseUrl') || '';
+        const SUPABASE_KEY = localStorage.getItem('supabaseKey') || '';
+        const API_BASE = localStorage.getItem('apiBase') || '';
+
+        let supabaseClient = null;
+        let leaflinkProducts = [];
+        let productTypes = [];
+        let categoryMappings = {};
+        let currentBusinessId = localStorage.getItem('currentBusinessId') || '';
+        let currentBusinessSlug = localStorage.getItem('currentBusinessSlug') || '';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (SUPABASE_URL && SUPABASE_KEY) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                await loadProductTypes();
+            } else {
+                showStatus('fetchStatus', 'error', 'Supabase not configured. Please access this from the main app.');
+            }
+        });
+
+        async function loadProductTypes() {
+            if (!supabaseClient) return;
+            const { data } = await supabaseClient
+                .from('products')
+                .select('*')
+                .eq('business_id', currentBusinessId);
+            productTypes = data || [];
+        }
+
+        async function fetchProducts() {
+            showStatus('fetchStatus', 'info', '🔄 Fetching products from LeafLink...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/business/${currentBusinessSlug}/products/`, {
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error('Failed to fetch from LeafLink');
+
+                const data = await response.json();
+                leaflinkProducts = data.results || data || [];
+
+                if (leaflinkProducts.length === 0) {
+                    showStatus('fetchStatus', 'error', 'No products found in LeafLink');
+                    return;
+                }
+
+                showStatus('fetchStatus', 'success', `✅ Found ${leaflinkProducts.length} products`);
+
+                // Build category mapping
+                buildCategoryMapping();
+
+                setTimeout(() => goToStep(2), 1000);
+            } catch (error) {
+                showStatus('fetchStatus', 'error', '❌ Error: ' + error.message);
+            }
+        }
+
+        function buildCategoryMapping() {
+            // Get unique categories from LeafLink products
+            const categories = [...new Set(leaflinkProducts.map(p => p.category || p.product_type || 'Unknown'))];
+
+            const container = document.getElementById('mappingContainer');
+            container.innerHTML = categories.map(cat => `
+                <div class="mapping-row">
+                    <label><strong>${cat}</strong> (${leaflinkProducts.filter(p => (p.category || p.product_type || 'Unknown') === cat).length} products)</label>
+                    <span style="color: var(--text-secondary);">→</span>
+                    <select id="map_${cat.replace(/\s+/g, '_')}" onchange="updateMapping('${cat}', this.value)">
+                        <option value="">-- Select Product Type --</option>
+                        ${productTypes.map(pt => `<option value="${pt.id}">${pt.name}</option>`).join('')}
+                        <option value="skip">Skip (don't import)</option>
+                    </select>
+                </div>
+            `).join('');
+        }
+
+        function updateMapping(category, productTypeId) {
+            categoryMappings[category] = productTypeId;
+        }
+
+        function renderProductList() {
+            const search = document.getElementById('searchProducts').value.toLowerCase();
+            const filtered = leaflinkProducts.filter(p => {
+                const name = (p.name || p.display_name || '').toLowerCase();
+                const strain = (p.strain || '').toLowerCase();
+                return name.includes(search) || strain.includes(search);
+            });
+
+            const container = document.getElementById('productList');
+            container.innerHTML = filtered.map(product => {
+                const category = product.category || product.product_type || 'Unknown';
+                const mappedTo = categoryMappings[category];
+                const productType = productTypes.find(pt => pt.id === mappedTo);
+
+                return `
+                    <div class="product-row">
+                        <input type="checkbox" class="product-checkbox" data-id="${product.id}"
+                               ${mappedTo && mappedTo !== 'skip' ? '' : 'disabled'}
+                               onchange="updateSelectedCount()">
+                        <div class="product-info">
+                            <div class="product-name">${product.name || product.display_name}</div>
+                            <div class="product-meta">
+                                ${product.strain ? `Strain: ${product.strain} · ` : ''}
+                                SKU: ${product.sku || 'N/A'} ·
+                                Qty: ${product.quantity || product.available_inventory || 0}
+                            </div>
+                        </div>
+                        <span class="product-category">${category}</span>
+                        <span style="color: ${productType ? 'var(--accent-green)' : 'var(--text-secondary)'}; font-size: 0.85rem;">
+                            → ${productType ? productType.name : (mappedTo === 'skip' ? 'Skipped' : 'Not mapped')}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+
+            updateSelectedCount();
+        }
+
+        function filterProducts() {
+            renderProductList();
+        }
+
+        function toggleSelectAll(checked) {
+            document.querySelectorAll('.product-checkbox:not(:disabled)').forEach(cb => cb.checked = checked);
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const count = document.querySelectorAll('.product-checkbox:checked').length;
+            document.getElementById('selectedCount').textContent = `${count} selected`;
+        }
+
+        async function importProducts() {
+            const selectedIds = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.dataset.id);
+
+            if (selectedIds.length === 0) {
+                alert('Please select at least one product to import');
+                return;
+            }
+
+            const selectedProducts = leaflinkProducts.filter(p => selectedIds.includes(String(p.id)));
+            let imported = 0;
+            let errors = [];
+
+            for (const product of selectedProducts) {
+                try {
+                    const category = product.category || product.product_type || 'Unknown';
+                    const productTypeId = categoryMappings[category];
+                    const productType = productTypes.find(pt => pt.id === productTypeId);
+
+                    // Generate a legacy batch ID
+                    const batchId = `LEGACY-${product.id}`;
+
+                    // Create batch record
+                    const batchData = {
+                        id: batchId,
+                        strain: product.strain || product.name || 'Unknown',
+                        strain_type: product.strain_classification || 'hybrid',
+                        status: 'complete',
+                        business_id: currentBusinessId,
+                        leaflink_product_id: product.id,
+                        packaged_product_type: productType?.name || category,
+                        units_packaged: product.quantity || product.available_inventory || 0,
+                        intake_date: new Date().toISOString().split('T')[0],
+                        intake_notes: `Imported from LeafLink. Original SKU: ${product.sku || 'N/A'}`,
+                        is_legacy_import: true
+                    };
+
+                    const { error } = await supabaseClient.from('wm_batches').insert(batchData);
+
+                    if (error) throw error;
+                    imported++;
+                } catch (err) {
+                    errors.push(`${product.name}: ${err.message}`);
+                }
+            }
+
+            // Show results
+            document.getElementById('resultMessage').textContent =
+                `Successfully imported ${imported} of ${selectedProducts.length} products as legacy batches.`;
+
+            if (errors.length > 0) {
+                document.getElementById('importedList').innerHTML = `
+                    <div style="color: #fca5a5; margin-top: 15px;">
+                        <strong>Errors:</strong><br>
+                        ${errors.join('<br>')}
+                    </div>
+                `;
+            }
+
+            goToStep(4);
+        }
+
+        function goToStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`step${step}`).classList.add('active');
+
+            // Update progress bar
+            for (let i = 1; i <= 4; i++) {
+                const prog = document.getElementById(`prog${i}`);
+                prog.classList.remove('active', 'completed');
+                if (i < step) prog.classList.add('completed');
+                if (i === step) prog.classList.add('active');
+            }
+
+            // Render product list when entering step 3
+            if (step === 3) renderProductList();
+        }
+
+        function showStatus(elementId, type, message) {
+            const el = document.getElementById(elementId);
+            el.className = `status ${type}`;
+            el.textContent = message;
+        }
+    </script>
+</body>
+</html>
