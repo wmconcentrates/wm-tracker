@@ -88,6 +88,17 @@ module.exports = async function handler(req, res) {
     // Parse the URL: /api/leaflink?slug=xxx&endpoint=xxx
     const { slug, endpoint } = req.query;
 
+    // Debug endpoint to check configuration
+    if (slug === 'debug') {
+        return res.status(200).json({
+            supabase_configured: !!supabase,
+            supabase_url_set: !!SUPABASE_URL,
+            service_key_set: !!SUPABASE_SERVICE_KEY,
+            encryption_key_set: !!process.env.API_KEY_ENCRYPTION_SECRET,
+            encryption_key_hint: ENCRYPTION_KEY ? ENCRYPTION_KEY.substring(0, 10) + '...' : 'NOT SET'
+        });
+    }
+
     if (!slug || !endpoint) {
         return res.status(400).json({ error: 'Missing slug or endpoint parameter' });
     }
