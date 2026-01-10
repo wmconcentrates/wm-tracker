@@ -312,11 +312,14 @@ app.get('/api/leaflink', async (req, res) => {
 
         const data = await response.json();
         // Rewrite pagination URLs to use the new format
+        // Use x-forwarded-proto header or default to https for production
+        const protocol = req.get('x-forwarded-proto') || (req.get('host').includes('localhost') ? 'http' : 'https');
+        const baseUrl = `${protocol}://${req.get('host')}/api/leaflink?slug=${slug}&endpoint=`;
         if (data.next) {
-            data.next = data.next.replace(LEAFLINK_API_URL, `${req.protocol}://${req.get('host')}/api/leaflink?slug=${slug}&endpoint=`).replace('/?', '&');
+            data.next = data.next.replace(LEAFLINK_API_URL, baseUrl).replace('/?', '&');
         }
         if (data.previous) {
-            data.previous = data.previous.replace(LEAFLINK_API_URL, `${req.protocol}://${req.get('host')}/api/leaflink?slug=${slug}&endpoint=`).replace('/?', '&');
+            data.previous = data.previous.replace(LEAFLINK_API_URL, baseUrl).replace('/?', '&');
         }
         res.json(data);
     } catch (error) {
