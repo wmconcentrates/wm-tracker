@@ -250,6 +250,324 @@ app.get('/api/internal/businesses/:id/api-keys', async (req, res) => {
 });
 
 // ============================================
+// LEAFLINK PRODUCT MAPPING ENDPOINTS
+// ============================================
+
+// Sync LeafLink products for a business
+app.post('/api/internal/businesses/:id/leaflink/sync', async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+
+    try {
+        // Get business
+        const { data: business, error: bizError } = await supabase
+            .from('businesses')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
+        if (bizError || !business) {
+            return res.status(404).json({ error: 'Business not found' });
+        }
+
+        // Get API key
+        const apiKey = await getBusinessApiKey(business.id, 'leaflink');
+        if (!apiKey) {
+            return res.status(400).json({ error: 'LeafLink not configured for this business' });
+        }
+
+        // Fetch products from LeafLink (all pages)
+        let allProducts = [];
+        let nextUrl = `${LEAFLINK_API_URL}/products/?page_size=100`;
+        let pageCount = 0;
+
+        while (nextUrl && pageCount < 20) {
+            const response = await fetch(nextUrl, {
+                headers: {
+                    'Authorization': `App ${apiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`LeafLink API error: ${response.status}`);
+            }
+            const data = await response.json();
+            allProducts = allProducts.concat(data.results || []);
+            nextUrl = data.next;
+            pageCount++;
+        }
+
+        // Fetch product lines from LeafLink
+        let allProductLines = [];
+        nextUrl = `${LEAFLINK_API_URL}/product-lines/?page_size=100`;
+        pageCount = 0;
+
+        while (nextUrl && pageCount < 10) {
+            const response = await fetch(nextUrl, {
+                headers: {
+                    'Authorization': `App ${apiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`LeafLink API error: ${response.status}`);
+            }
+            const data = await response.json();
+            allProductLines = allProductLines.concat(data.results || []);
+            nextUrl = data.next;
+            pageCount++;
+        }
+
+        // Clear old cache for this business
+        await supabase.from('leaflink_products_cache').delete().eq('business_id', business.id);
+        await supabase.from('leaflink_product_lines_cache').delete().eq('business_id', business.id);
+
+        // Insert products into cache
+        if (allProducts.length > 0) {
+            const productRows = allProducts.map(p => ({
+                business_id: business.id,
+                leaflink_id: p.id,
+                name: p.name,
+                sku: p.sku,
+                category_id: p.category?.id || p.category,
+                category_name: p.category?.name,
+                product_line_id: p.product_line?.id || p.product_line,
+                product_line_name: p.product_line?.name,
+                parent_id: p.parent?.id || p.parent,
+                seller_id: p.seller?.id || p.seller,
+                brand_id: p.brand?.id || p.brand,
+                license_id: p.license?.id || p.license,
+                unit_of_measure: p.unit_of_measure,
+                unit_denomination_id: p.unit_denomination?.id || p.unit_denomination,
+                raw_data: p,
+                cached_at: new Date().toISOString()
+            }));
+
+            const { error: insertError } = await supabase
+                .from('leaflink_products_cache')
+                .insert(productRows);
+            if (insertError) console.error('Error caching products:', insertError);
+        }
+
+        // Insert product lines into cache
+        if (allProductLines.length > 0) {
+            const lineRows = allProductLines.map(pl => ({
+                business_id: business.id,
+                leaflink_id: pl.id,
+                name: pl.name,
+                raw_data: pl,
+                cached_at: new Date().toISOString()
+            }));
+
+            const { error: insertError } = await supabase
+                .from('leaflink_product_lines_cache')
+                .insert(lineRows);
+            if (insertError) console.error('Error caching product lines:', insertError);
+        }
+
+        res.json({
+            success: true,
+            products_synced: allProducts.length,
+            product_lines_synced: allProductLines.length
+        });
+
+    } catch (error) {
+        console.error('Sync error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get cached LeafLink products for a business
+app.get('/api/internal/businesses/:id/leaflink/products', async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+
+    try {
+        const { data, error } = await supabase
+            .from('leaflink_products_cache')
+            .select('*')
+            .eq('business_id', req.params.id)
+            .order('name');
+
+        if (error) throw error;
+        res.json(data || []);
+    } catch (error) {
+        console.error('Error fetching cached products:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get cached LeafLink product lines for a business
+app.get('/api/internal/businesses/:id/leaflink/product-lines', async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+
+    try {
+        const { data, error } = await supabase
+            .from('leaflink_product_lines_cache')
+            .select('*')
+            .eq('business_id', req.params.id)
+            .order('name');
+
+        if (error) throw error;
+        res.json(data || []);
+    } catch (error) {
+        console.error('Error fetching cached product lines:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Suggest mappings based on cached products
+app.get('/api/internal/businesses/:id/leaflink/suggest-mappings', async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+
+    try {
+        // Get cached product lines
+        const { data: productLines, error } = await supabase
+            .from('leaflink_product_lines_cache')
+            .select('*')
+            .eq('business_id', req.params.id);
+
+        if (error) throw error;
+
+        // Get a sample product to extract seller/brand/license IDs
+        const { data: sampleProducts } = await supabase
+            .from('leaflink_products_cache')
+            .select('*')
+            .eq('business_id', req.params.id)
+            .limit(1);
+
+        const sampleProduct = sampleProducts?.[0];
+
+        // Auto-detect mappings based on product line names
+        const suggestions = [];
+        const appProductTypes = [
+            { type: 'Sugar Wax', keywords: ['sugar wax', 'sugar'], category: 'concentrate', categoryId: 5, price: 6 },
+            { type: 'Wax', keywords: ['wax'], excludeKeywords: ['sugar'], category: 'concentrate', categoryId: 5, price: 6 },
+            { type: 'Shatter', keywords: ['shatter'], category: 'concentrate', categoryId: 5, price: 6 },
+            { type: 'Live Resin Carts', keywords: ['cart', 'cartridge'], category: 'cart', categoryId: 1, price: 15 },
+            { type: 'Live Resin AIOs', keywords: ['all in one', 'aio', 'disposable', 'all-in-one'], category: 'cart', categoryId: 1, price: 22 },
+            { type: 'Brick Hash', keywords: ['brick', 'hash'], category: 'concentrate', categoryId: 5, price: 8 },
+            { type: 'Rosin', keywords: ['rosin'], category: 'concentrate', categoryId: 5, price: 10 },
+            { type: 'Badder', keywords: ['badder', 'batter'], category: 'concentrate', categoryId: 5, price: 6 },
+            { type: 'Diamonds', keywords: ['diamond'], category: 'concentrate', categoryId: 5, price: 8 },
+            { type: 'Sauce', keywords: ['sauce'], category: 'concentrate', categoryId: 5, price: 6 }
+        ];
+
+        for (const appType of appProductTypes) {
+            let matchedLine = null;
+            let confidence = 0;
+
+            for (const line of (productLines || [])) {
+                const lineName = line.name.toLowerCase();
+
+                // Check exclude keywords first
+                if (appType.excludeKeywords && appType.excludeKeywords.some(kw => lineName.includes(kw))) {
+                    continue;
+                }
+
+                // Check include keywords
+                const matchedKeywords = appType.keywords.filter(kw => lineName.includes(kw));
+                if (matchedKeywords.length > 0) {
+                    const newConfidence = matchedKeywords.length / appType.keywords.length;
+                    if (newConfidence > confidence) {
+                        matchedLine = line;
+                        confidence = newConfidence;
+                    }
+                }
+            }
+
+            suggestions.push({
+                app_product_type: appType.type,
+                app_category: appType.category,
+                leaflink_category_id: appType.categoryId,
+                price_per_unit: appType.price,
+                suggested_product_line: matchedLine ? {
+                    id: matchedLine.leaflink_id,
+                    name: matchedLine.name
+                } : null,
+                confidence: matchedLine ? confidence : 0,
+                // Include config from sample product
+                leaflink_seller_id: sampleProduct?.seller_id,
+                leaflink_brand_id: sampleProduct?.brand_id,
+                leaflink_license_id: sampleProduct?.license_id,
+                leaflink_unit_denomination_id: sampleProduct?.unit_denomination_id
+            });
+        }
+
+        res.json(suggestions);
+
+    } catch (error) {
+        console.error('Error suggesting mappings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get saved mappings for a business
+app.get('/api/internal/businesses/:id/leaflink/mappings', async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+
+    try {
+        const { data, error } = await supabase
+            .from('leaflink_product_mappings')
+            .select('*')
+            .eq('business_id', req.params.id)
+            .eq('is_active', true);
+
+        if (error) throw error;
+        res.json(data || []);
+    } catch (error) {
+        console.error('Error fetching mappings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Save/update mappings for a business
+app.post('/api/internal/businesses/:id/leaflink/mappings', async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+
+    try {
+        const mappings = req.body.mappings;
+        if (!Array.isArray(mappings)) {
+            return res.status(400).json({ error: 'mappings must be an array' });
+        }
+
+        const businessId = req.params.id;
+
+        // Upsert each mapping
+        for (const mapping of mappings) {
+            const { error } = await supabase
+                .from('leaflink_product_mappings')
+                .upsert({
+                    business_id: businessId,
+                    app_product_type: mapping.app_product_type,
+                    app_category: mapping.app_category,
+                    leaflink_product_line_id: mapping.leaflink_product_line_id,
+                    leaflink_parent_id: mapping.leaflink_parent_id,
+                    leaflink_category_id: mapping.leaflink_category_id,
+                    price_per_unit: mapping.price_per_unit,
+                    leaflink_seller_id: mapping.leaflink_seller_id,
+                    leaflink_brand_id: mapping.leaflink_brand_id,
+                    leaflink_license_id: mapping.leaflink_license_id,
+                    leaflink_unit_of_measure_id: mapping.leaflink_unit_of_measure_id,
+                    leaflink_unit_denomination_id: mapping.leaflink_unit_denomination_id,
+                    leaflink_product_line_name: mapping.leaflink_product_line_name,
+                    is_active: true,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'business_id,app_product_type'
+                });
+
+            if (error) {
+                console.error('Error upserting mapping:', error);
+            }
+        }
+
+        res.json({ success: true, mappings_saved: mappings.length });
+
+    } catch (error) {
+        console.error('Error saving mappings:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================
 // BUSINESS-AWARE LEAFLINK PROXY
 // ============================================
 

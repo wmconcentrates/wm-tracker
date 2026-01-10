@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafLink Configuration - WM Tracker</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent-purple: #8B5CF6;
+            --accent-blue: #00f0ff;
+            --accent-green: #10B981;
+            --accent-red: #ff0055;
+            --accent-orange: #F59E0B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+
+        .login-section {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .login-section h2 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #7C3AED;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-success {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .admin-panel {
+            display: none;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .admin-panel.show {
+            display: block;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .business-selector {
+            padding: 10px 15px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            min-width: 200px;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin-bottom: 15px;
+            font-size: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-badge.synced {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+        }
+
+        .status-badge.not-synced {
+            background: rgba(255, 0, 85, 0.2);
+            color: var(--accent-red);
+        }
+
+        .sync-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .sync-stats {
+            display: flex;
+            gap: 30px;
+        }
+
+        .sync-stat {
+            text-align: center;
+        }
+
+        .sync-stat .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .sync-stat .label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .mapping-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .mapping-table th, .mapping-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mapping-table th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .mapping-table select {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .mapping-table input[type="number"] {
+            width: 80px;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .confidence-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .confidence-high {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+        }
+
+        .confidence-medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-orange);
+        }
+
+        .confidence-low {
+            background: rgba(255, 0, 85, 0.2);
+            color: var(--accent-red);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .back-link {
+            display: inline-block;
+            color: var(--accent-blue);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .alert-error {
+            background: rgba(255, 0, 85, 0.2);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .product-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .product-item {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .product-item:last-child {
+            border-bottom: none;
+        }
+
+        .product-name {
+            font-weight: 500;
+        }
+
+        .product-meta {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: var(--accent-purple);
+            color: white;
+            border-color: var(--accent-purple);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Section -->
+    <div class="login-section" id="loginSection">
+        <h2>Admin Login</h2>
+        <form onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Admin PIN</label>
+                <input type="password" id="adminPin" placeholder="Enter PIN" maxlength="4" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%">Login</button>
+        </form>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-panel" id="adminPanel">
+        <a href="/" class="back-link">&larr; Back to Main App</a>
+
+        <div class="header">
+            <h1>LeafLink Product Configuration</h1>
+            <div class="header-controls">
+                <select class="business-selector" id="businessSelect" onchange="loadBusinessData()">
+                    <option value="">Select Business...</option>
+                </select>
+                <button class="btn btn-primary" onclick="syncLeafLink()" id="syncBtn" disabled>
+                    Sync from LeafLink
+                </button>
+            </div>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <!-- Sync Status Card -->
+        <div class="card" id="syncStatusCard" style="display: none;">
+            <h2>
+                Sync Status
+                <span class="status-badge not-synced" id="syncStatusBadge">Not Synced</span>
+            </h2>
+            <div class="sync-info">
+                <div class="sync-stats">
+                    <div class="sync-stat">
+                        <div class="value" id="productCount">0</div>
+                        <div class="label">Products</div>
+                    </div>
+                    <div class="sync-stat">
+                        <div class="value" id="productLineCount">0</div>
+                        <div class="label">Product Lines</div>
+                    </div>
+                    <div class="sync-stat">
+                        <div class="value" id="mappingCount">0</div>
+                        <div class="label">Mappings Saved</div>
+                    </div>
+                </div>
+                <div id="lastSyncTime" style="color: var(--text-secondary); font-size: 0.85rem;"></div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs" id="tabsContainer" style="display: none;">
+            <div class="tab active" onclick="switchTab('mappings')">Product Mappings</div>
+            <div class="tab" onclick="switchTab('products')">Cached Products</div>
+            <div class="tab" onclick="switchTab('productlines')">Product Lines</div>
+        </div>
+
+        <!-- Mappings Tab -->
+        <div class="tab-content active" id="mappingsTab">
+            <div class="card">
+                <h2>
+                    Product Type Mappings
+                    <button class="btn btn-secondary" onclick="suggestMappings()" id="suggestBtn" disabled>
+                        Auto-Detect
+                    </button>
+                </h2>
+                <div id="mappingsLoading" class="loading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <div>Loading mappings...</div>
+                </div>
+                <table class="mapping-table" id="mappingsTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>App Product Type</th>
+                            <th>LeafLink Product Line</th>
+                            <th>Parent ID</th>
+                            <th>Price/Unit</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mappingsBody">
+                    </tbody>
+                </table>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn btn-success" onclick="saveMappings()" id="saveBtn" disabled>
+                        Save Mappings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Tab -->
+        <div class="tab-content" id="productsTab">
+            <div class="card">
+                <h2>Cached LeafLink Products</h2>
+                <div id="productsLoading" class="loading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <div>Loading products...</div>
+                </div>
+                <div class="product-list" id="productsList" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Product Lines Tab -->
+        <div class="tab-content" id="productlinesTab">
+            <div class="card">
+                <h2>Cached Product Lines</h2>
+                <div id="productLinesLoading" class="loading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <div>Loading product lines...</div>
+                </div>
+                <div class="product-list" id="productLinesList" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://nspmwcpvukehaqswaewt.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zcG13Y3B2dWtlaGFxc3dhZXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzE2NDQsImV4cCI6MjA3NzA0NzY0NH0.g40d0pc00eHxfyuqB8WrOhIS5bST_199LSN-TH9wohg';
+        const ADMIN_PINS = ['1827', '1980'];
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let businesses = [];
+        let currentBusinessId = null;
+        let cachedProducts = [];
+        let cachedProductLines = [];
+        let currentMappings = [];
+        let suggestedMappings = [];
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const pin = document.getElementById('adminPin').value;
+            if (ADMIN_PINS.includes(pin)) {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminPanel').classList.add('show');
+                loadBusinesses();
+            } else {
+                alert('Invalid PIN');
+            }
+        }
+
+        async function loadBusinesses() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('businesses')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('name');
+
+                if (error) throw error;
+
+                businesses = data || [];
+                const select = document.getElementById('businessSelect');
+                select.innerHTML = '<option value="">Select Business...</option>';
+                businesses.forEach(b => {
+                    select.innerHTML += `<option value="${b.id}">${b.display_name}</option>`;
+                });
+            } catch (error) {
+                showAlert('Error loading businesses: ' + error.message, 'error');
+            }
+        }
+
+        async function loadBusinessData() {
+            currentBusinessId = document.getElementById('businessSelect').value;
+
+            if (!currentBusinessId) {
+                document.getElementById('syncStatusCard').style.display = 'none';
+                document.getElementById('tabsContainer').style.display = 'none';
+                document.getElementById('syncBtn').disabled = true;
+                return;
+            }
+
+            document.getElementById('syncBtn').disabled = false;
+            document.getElementById('syncStatusCard').style.display = 'block';
+            document.getElementById('tabsContainer').style.display = 'flex';
+
+            await Promise.all([
+                loadCachedProducts(),
+                loadCachedProductLines(),
+                loadSavedMappings()
+            ]);
+
+            updateSyncStatus();
+        }
+
+        async function loadCachedProducts() {
+            document.getElementById('productsLoading').style.display = 'block';
+            document.getElementById('productsList').style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/products`);
+                if (!response.ok) throw new Error('Failed to load products');
+
+                cachedProducts = await response.json();
+                renderProducts();
+            } catch (error) {
+                console.error('Error loading products:', error);
+                cachedProducts = [];
+            }
+
+            document.getElementById('productsLoading').style.display = 'none';
+            document.getElementById('productsList').style.display = 'block';
+        }
+
+        async function loadCachedProductLines() {
+            document.getElementById('productLinesLoading').style.display = 'block';
+            document.getElementById('productLinesList').style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/product-lines`);
+                if (!response.ok) throw new Error('Failed to load product lines');
+
+                cachedProductLines = await response.json();
+                renderProductLines();
+            } catch (error) {
+                console.error('Error loading product lines:', error);
+                cachedProductLines = [];
+            }
+
+            document.getElementById('productLinesLoading').style.display = 'none';
+            document.getElementById('productLinesList').style.display = 'block';
+        }
+
+        async function loadSavedMappings() {
+            document.getElementById('mappingsLoading').style.display = 'block';
+            document.getElementById('mappingsTable').style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/mappings`);
+                if (!response.ok) throw new Error('Failed to load mappings');
+
+                currentMappings = await response.json();
+                renderMappings();
+            } catch (error) {
+                console.error('Error loading mappings:', error);
+                currentMappings = [];
+            }
+
+            document.getElementById('mappingsLoading').style.display = 'none';
+            document.getElementById('mappingsTable').style.display = 'table';
+            document.getElementById('suggestBtn').disabled = cachedProductLines.length === 0;
+            document.getElementById('saveBtn').disabled = false;
+        }
+
+        function updateSyncStatus() {
+            const badge = document.getElementById('syncStatusBadge');
+            const productCount = document.getElementById('productCount');
+            const productLineCount = document.getElementById('productLineCount');
+            const mappingCount = document.getElementById('mappingCount');
+            const lastSyncTime = document.getElementById('lastSyncTime');
+
+            productCount.textContent = cachedProducts.length;
+            productLineCount.textContent = cachedProductLines.length;
+            mappingCount.textContent = currentMappings.length;
+
+            if (cachedProducts.length > 0) {
+                badge.textContent = 'Synced';
+                badge.className = 'status-badge synced';
+                const lastSync = cachedProducts[0]?.cached_at;
+                if (lastSync) {
+                    lastSyncTime.textContent = 'Last synced: ' + new Date(lastSync).toLocaleString();
+                }
+            } else {
+                badge.textContent = 'Not Synced';
+                badge.className = 'status-badge not-synced';
+                lastSyncTime.textContent = 'Never synced';
+            }
+        }
+
+        function renderProducts() {
+            const container = document.getElementById('productsList');
+            if (cachedProducts.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No products cached. Click "Sync from LeafLink" to pull products.</div>';
+                return;
+            }
+
+            container.innerHTML = cachedProducts.map(p => `
+                <div class="product-item">
+                    <div>
+                        <div class="product-name">${p.name}</div>
+                        <div class="product-meta">SKU: ${p.sku || 'N/A'} | Category: ${p.category_name || p.category_id || 'N/A'}</div>
+                    </div>
+                    <div class="product-meta">ID: ${p.leaflink_id}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderProductLines() {
+            const container = document.getElementById('productLinesList');
+            if (cachedProductLines.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No product lines cached. Click "Sync from LeafLink" to pull product lines.</div>';
+                return;
+            }
+
+            container.innerHTML = cachedProductLines.map(pl => `
+                <div class="product-item">
+                    <div class="product-name">${pl.name}</div>
+                    <div class="product-meta">ID: ${pl.leaflink_id}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderMappings() {
+            const tbody = document.getElementById('mappingsBody');
+            const appProductTypes = [
+                'Sugar Wax', 'Sugar Wax 4g', 'Wax', 'Wax 4g', 'Shatter',
+                'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash',
+                'Rosin', 'Badder', 'Diamonds', 'Sauce'
+            ];
+
+            tbody.innerHTML = appProductTypes.map(type => {
+                const mapping = currentMappings.find(m => m.app_product_type === type) || {};
+                const suggestion = suggestedMappings.find(s => s.app_product_type === type);
+
+                const productLineOptions = cachedProductLines.map(pl =>
+                    `<option value="${pl.leaflink_id}" ${mapping.leaflink_product_line_id == pl.leaflink_id ? 'selected' : ''}>${pl.name}</option>`
+                ).join('');
+
+                let confidenceBadge = '';
+                if (suggestion && suggestion.confidence > 0) {
+                    const confClass = suggestion.confidence >= 0.8 ? 'high' : suggestion.confidence >= 0.5 ? 'medium' : 'low';
+                    confidenceBadge = `<span class="confidence-badge confidence-${confClass}">${Math.round(suggestion.confidence * 100)}%</span>`;
+                }
+
+                return `
+                    <tr data-type="${type}">
+                        <td><strong>${type}</strong></td>
+                        <td>
+                            <select name="product_line" onchange="markModified(this)">
+                                <option value="">-- Not Configured --</option>
+                                ${productLineOptions}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" name="parent_id" value="${mapping.leaflink_parent_id || ''}" placeholder="Parent ID" onchange="markModified(this)">
+                        </td>
+                        <td>
+                            <input type="number" name="price" value="${mapping.price_per_unit || ''}" step="0.01" placeholder="0.00" onchange="markModified(this)">
+                        </td>
+                        <td>${confidenceBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function markModified(el) {
+            el.closest('tr').classList.add('modified');
+        }
+
+        async function syncLeafLink() {
+            if (!currentBusinessId) return;
+
+            const btn = document.getElementById('syncBtn');
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+
+            try {
+                const response = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/sync`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Sync failed');
+                }
+
+                const result = await response.json();
+                showAlert(`Synced ${result.products_synced} products and ${result.product_lines_synced} product lines from LeafLink`, 'success');
+
+                // Reload data
+                await loadBusinessData();
+            } catch (error) {
+                showAlert('Sync error: ' + error.message, 'error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Sync from LeafLink';
+        }
+
+        async function suggestMappings() {
+            if (!currentBusinessId) return;
+
+            const btn = document.getElementById('suggestBtn');
+            btn.disabled = true;
+            btn.textContent = 'Detecting...';
+
+            try {
+                const response = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/suggest-mappings`);
+                if (!response.ok) throw new Error('Failed to get suggestions');
+
+                suggestedMappings = await response.json();
+
+                // Apply suggestions to mappings
+                suggestedMappings.forEach(s => {
+                    if (s.suggested_product_line && s.confidence > 0.3) {
+                        const existingMapping = currentMappings.find(m => m.app_product_type === s.app_product_type);
+                        if (!existingMapping || !existingMapping.leaflink_product_line_id) {
+                            // Only apply if no existing mapping
+                            const row = document.querySelector(`tr[data-type="${s.app_product_type}"]`);
+                            if (row) {
+                                const select = row.querySelector('select[name="product_line"]');
+                                if (select) {
+                                    select.value = s.suggested_product_line.id;
+                                }
+                                const priceInput = row.querySelector('input[name="price"]');
+                                if (priceInput && !priceInput.value) {
+                                    priceInput.value = s.price_per_unit;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                renderMappings();
+                showAlert('Auto-detection complete. Review and save the mappings.', 'success');
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Auto-Detect';
+        }
+
+        async function saveMappings() {
+            if (!currentBusinessId) return;
+
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                // Gather mappings from table
+                const rows = document.querySelectorAll('#mappingsBody tr');
+                const mappings = [];
+
+                // Get sample product for seller/brand/license IDs
+                const sampleProduct = cachedProducts[0];
+
+                rows.forEach(row => {
+                    const type = row.getAttribute('data-type');
+                    const productLineId = row.querySelector('select[name="product_line"]').value;
+                    const parentId = row.querySelector('input[name="parent_id"]').value;
+                    const price = row.querySelector('input[name="price"]').value;
+
+                    if (productLineId || parentId || price) {
+                        const productLine = cachedProductLines.find(pl => pl.leaflink_id == productLineId);
+                        mappings.push({
+                            app_product_type: type,
+                            app_category: ['Live Resin Carts', 'Live Resin AIOs'].includes(type) ? 'cart' : 'concentrate',
+                            leaflink_product_line_id: productLineId ? parseInt(productLineId) : null,
+                            leaflink_parent_id: parentId ? parseInt(parentId) : null,
+                            leaflink_category_id: ['Live Resin Carts', 'Live Resin AIOs'].includes(type) ? 1 : 5,
+                            price_per_unit: price ? parseFloat(price) : null,
+                            leaflink_seller_id: sampleProduct?.seller_id,
+                            leaflink_brand_id: sampleProduct?.brand_id,
+                            leaflink_license_id: sampleProduct?.license_id,
+                            leaflink_unit_denomination_id: sampleProduct?.unit_denomination_id,
+                            leaflink_product_line_name: productLine?.name || null
+                        });
+                    }
+                });
+
+                const response = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/mappings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mappings })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Save failed');
+                }
+
+                const result = await response.json();
+                showAlert(`Saved ${result.mappings_saved} mappings successfully`, 'success');
+
+                // Reload mappings
+                await loadSavedMappings();
+            } catch (error) {
+                showAlert('Error saving mappings: ' + error.message, 'error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Save Mappings';
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+            document.querySelector(`.tab:nth-child(${tabName === 'mappings' ? 1 : tabName === 'products' ? 2 : 3})`).classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+
+            setTimeout(() => alert.remove(), 5000);
+        }
+    </script>
+</body>
+</html>

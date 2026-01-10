@@ -23005,6 +23005,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
     // LeafLink configuration - will be populated from existing products
     let leafLinkConfig = null;
+    let leafLinkMappings = {}; // Per-business mappings from database { businessId: [mappings] }
 
     // Pending LeafLink approvals (stored on batch records in Supabase)
 
@@ -23138,6 +23139,48 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             .eq('id', batchId);
 
         renderLeafLinkApprovalQueue();
+    }
+
+    // Load LeafLink product mappings from database for a business
+    async function loadLeafLinkMappings(businessId) {
+        if (!businessId) return [];
+
+        // Check if already loaded
+        if (leafLinkMappings[businessId]) {
+            return leafLinkMappings[businessId];
+        }
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('leaflink_product_mappings')
+                .select('*')
+                .eq('business_id', businessId)
+                .eq('is_active', true);
+
+            if (error) {
+                console.error('Error loading LeafLink mappings:', error);
+                return [];
+            }
+
+            leafLinkMappings[businessId] = data || [];
+            console.log(`Loaded ${data?.length || 0} LeafLink mappings for business ${businessId}`);
+            return leafLinkMappings[businessId];
+        } catch (error) {
+            console.error('Error loading LeafLink mappings:', error);
+            return [];
+        }
+    }
+
+    // Get mapping for a specific product type and business
+    function getLeafLinkMapping(businessId, productType) {
+        const mappings = leafLinkMappings[businessId] || [];
+        return mappings.find(m => m.app_product_type === productType);
+    }
+
+    // Special rule: Brick Hash always goes to Bubblman
+    function getBrickHashBusinessId() {
+        const bubblman = businessesList.find(b => b.slug === 'bubblman');
+        return bubblman?.id || null;
     }
 
     async function initLeafLinkConfig() {
@@ -23337,26 +23380,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return { success: false, error: 'Buyback - not pushed to LeafLink' };
         }
 
-        // Ensure config is loaded
-        if (!leafLinkConfig) {
-            await initLeafLinkConfig();
-        }
-
-        if (!leafLinkConfig) {
-            console.error('Could not initialize LeafLink config');
-            return { success: false, error: 'LeafLink config not available' };
-        }
-
-        // Get product type mapping - normalize compound types
+        // Get product type - normalize compound types
         let productType = batch.packaged_product_type || batch.product_made || '';
 
         // Normalize product types that don't match LeafLink categories exactly
         const productTypeNormalization = {
             'Sugar': 'Sugar Wax',
             'Live Resin': 'Wax',
-            'Badder': 'Wax',
-            'Diamonds': 'Wax',
-            'Sauce': 'Wax'
+            'Badder': 'Badder',
+            'Diamonds': 'Diamonds',
+            'Sauce': 'Sauce'
         };
 
         if (productTypeNormalization[productType]) {
@@ -23364,12 +23397,37 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             productType = productTypeNormalization[productType];
         }
 
-        const productLineConfig = leafLinkConfig.product_lines[productType];
+        // Determine which business to use for this push
+        // Special rule: Brick Hash always goes to Bubblman
+        let targetBusinessId = batch.business_id || batch._business?.id;
+        let targetBusinessSlug = batch._business?.slug;
 
-        if (!productLineConfig) {
-            console.error('Unknown product type for LeafLink:', productType);
-            console.log('Available product lines:', Object.keys(leafLinkConfig.product_lines));
-            return { success: false, error: `Unknown product type: ${productType}` };
+        if (productType === 'Brick Hash') {
+            const bubblmanId = getBrickHashBusinessId();
+            if (bubblmanId) {
+                console.log('Brick Hash detected - routing to Bubblman');
+                targetBusinessId = bubblmanId;
+                targetBusinessSlug = 'bubblman';
+            }
+        }
+
+        // Fall back to current business if needed
+        if (!targetBusinessId) {
+            targetBusinessId = currentBusinessId === 'all' ?
+                businessesList.find(b => b.slug === 'white-mousse')?.id :
+                currentBusinessId;
+        }
+        if (!targetBusinessSlug) {
+            targetBusinessSlug = businessesList.find(b => b.id === targetBusinessId)?.slug || 'white-mousse';
+        }
+
+        // Load mappings for this business from database
+        await loadLeafLinkMappings(targetBusinessId);
+        const mapping = getLeafLinkMapping(targetBusinessId, productType);
+
+        if (!mapping) {
+            console.error('No LeafLink mapping found for:', productType, 'in business:', targetBusinessSlug);
+            return { success: false, error: `No LeafLink mapping configured for ${productType}. Configure in Admin > LeafLink.` };
         }
 
         // Calculate quantity based on material agreement
@@ -23382,32 +23440,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return { success: false, error: 'No sellable quantity' };
         }
 
-        // Build LeafLink product payload
-        // Pricing per unit by product type
-        const PRODUCT_PRICING = {
-            'Sugar Wax': 6,
-            'Wax': 6,
-            'Shatter': 6,
-            'Live Resin Carts': 15,
-            'Live Resin AIOs': 22,
-            'Brick Hash': 8
-        };
-        const pricePerUnit = PRODUCT_PRICING[productType] || 6;
-
-        // Category IDs by product type (5 = Concentrates, 1 = Vaporizers)
-        const CATEGORY_IDS = {
-            'Sugar Wax': 5,
-            'Wax': 5,
-            'Shatter': 5,
-            'Live Resin Carts': 1,
-            'Live Resin AIOs': 1,
-            'Brick Hash': 5
-        };
-        const categoryId = CATEGORY_IDS[productType] || 5;
-
-        // Sub-category removed - was causing "Subcategory does not belong to category" errors
-        // LeafLink will use default sub-category for the category
-        const subCategoryId = null;
+        // Get pricing and category from database mapping
+        const pricePerUnit = mapping.price_per_unit || 6;
+        const categoryId = mapping.leaflink_category_id || 5;
 
         // Clean strain name - remove WM prefix, product type suffixes, and size
         let strainName = (batch.strain || 'Unknown Strain')
@@ -23419,20 +23454,21 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Format strain type for display (capitalize first letter)
         const strainType = (batch.strain_type || 'Hybrid').charAt(0).toUpperCase() + (batch.strain_type || 'Hybrid').slice(1).toLowerCase();
 
+        // Build payload using database mapping values
         const payload = {
             sku: batch.id, // Use batch ID as SKU (e.g., "9.23.5447")
             name: `${strainName} (${strainType})`,
             description: `${strainName} (${strainType}) - ${productType}`,
-            // API wants field names without _id suffix
-            seller: leafLinkConfig.seller_id,
-            brand: leafLinkConfig.brand_id,
-            license: leafLinkConfig.license_id,
+            // Use values from database mapping
+            seller: mapping.leaflink_seller_id,
+            brand: mapping.leaflink_brand_id,
+            license: mapping.leaflink_license_id,
             category: categoryId,
-            manufacturer: leafLinkConfig.seller_id, // Same as seller
+            manufacturer: mapping.leaflink_seller_id,
             unit_of_measure: 'Gram',
             sell_in_unit_of_measure: 'Case',
             unit_multiplier: 10, // 10 units per case
-            unit_denomination: leafLinkConfig.unit_denomination_id,
+            unit_denomination: mapping.leaflink_unit_denomination_id,
             listing_state: 'Internal', // TODO: Change to 'Available' after testing
             strain_classification: (batch.strain_type || 'hybrid').toLowerCase(),
             inventory_management: 1, // 1 = track inventory
@@ -23453,14 +23489,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
         };
 
-        // Only add product_line if we have a valid ID (not all categories have one)
-        if (productLineConfig.product_line_id) {
-            payload.product_line = productLineConfig.product_line_id;
+        // Add product_line if configured in mapping
+        if (mapping.leaflink_product_line_id) {
+            payload.product_line = mapping.leaflink_product_line_id;
         }
 
         // Add parent to make this a variety under the parent product
-        if (productLineConfig.parent_id) {
-            payload.parent = { id: productLineConfig.parent_id };
+        if (mapping.leaflink_parent_id) {
+            payload.parent = { id: mapping.leaflink_parent_id };
         }
 
         // Add test results if available
@@ -23479,14 +23515,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
         }
 
-        console.log('Pushing batch to LeafLink:', batch.id, payload);
+        console.log('Pushing batch to LeafLink:', batch.id, 'to business:', targetBusinessSlug, payload);
 
         try {
-            // Use batch's business or fall back to current business
-            const businessSlug = batch._business?.slug ||
-                (currentBusinessId === 'all' ? 'white-mousse' :
-                (businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse'));
-            const response = await fetch(`${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=products`, {
+            // Use the target business slug determined earlier (handles Brick Hash → Bubblman rule)
+            const response = await fetch(`${window.location.origin}/api/leaflink?slug=${targetBusinessSlug}&endpoint=products`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
