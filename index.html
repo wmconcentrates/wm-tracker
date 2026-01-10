@@ -22237,15 +22237,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 pipelineCategoryData[cat.key] = { count: 0, strains: [], color: cat.color, label: cat.label };
             });
 
-            // Filter batches in pipeline (all stages before fully labeled)
+            // Filter batches in pipeline (all stages until listed on LeafLink)
             pipelineData = batches.filter(batch => {
                 const hasWeight = batch.final_weight || batch.net_weight || batch.grams_labeled;
                 if (!hasWeight) return false;
                 const salesPercent = getSalesPercentage(batch.material_agreement);
                 if (salesPercent === 0) return false;
-                // Include extraction, finishing, packaging, and complete (testing/labeling) stages
-                // Exclude only fully labeled batches
-                if (batch.labels_applied) return false;
+                // Exclude batches already listed on LeafLink
+                if (batch.leaflink_product_id) return false;
+                // Include all in-progress stages AND labeled batches awaiting LeafLink
                 const validStatuses = ['extraction', 'finishing', 'packaging', 'complete'];
                 return validStatuses.includes(batch.status);
             });
@@ -22258,11 +22258,25 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     const weight = batch.final_weight || batch.net_weight || batch.grams_labeled || 0;
                     const salesPercent = getSalesPercentage(batch.material_agreement);
                     const availableGrams = (weight * salesPercent / 100).toFixed(1);
+
+                    // Determine pipeline stage for display
+                    let pipelineStage = batch.status;
+                    if (batch.labels_applied && !batch.leaflink_product_id) {
+                        pipelineStage = 'awaiting_leaflink';
+                    } else if (batch.status === 'complete' && batch.test_thc_percent && !batch.labels_applied) {
+                        pipelineStage = 'labeling';
+                    } else if (batch.status === 'complete' && !batch.test_thc_percent) {
+                        pipelineStage = 'testing';
+                    }
+
                     pipelineCategoryData[category].strains.push({
                         strain: batch.strain || 'Unknown',
                         strainType: batch.strain_type || 'Hybrid',
                         batchId: batch.id,
                         status: batch.status,
+                        pipelineStage: pipelineStage,
+                        labelsApplied: batch.labels_applied,
+                        labelingDate: batch.labeling_date,
                         weight: weight,
                         availableGrams: availableGrams
                     });
@@ -22279,20 +22293,38 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const data = pipelineCategoryData[key];
                 const hasItems = data.count > 0;
 
-                // Count by strain type
+                // Count by strain type and awaiting LeafLink
                 const strainCounts = { Sativa: 0, Hybrid: 0, Indica: 0 };
+                let awaitingLeafLink = 0;
+                let urgentCount = 0;
                 (data.strains || []).forEach(item => {
                     if (item.strainType) strainCounts[item.strainType]++;
+                    if (item.pipelineStage === 'awaiting_leaflink') {
+                        awaitingLeafLink++;
+                        // Check if waiting > 24 hours
+                        if (item.labelingDate) {
+                            const hoursWaiting = (Date.now() - new Date(item.labelingDate).getTime()) / (1000 * 60 * 60);
+                            if (hoursWaiting > 24) urgentCount++;
+                        }
+                    }
                 });
 
                 // Calculate total grams
                 const totalGrams = (data.strains || []).reduce((sum, s) => sum + (parseFloat(s.availableGrams) || 0), 0);
 
+                // Show indicator if batches are ready to list
+                let readyIndicator = '';
+                if (awaitingLeafLink > 0) {
+                    const indicatorColor = urgentCount > 0 ? '#ff6b00' : '#FFD700';
+                    readyIndicator = `<div style="font-size: 0.7rem; color: ${indicatorColor}; margin-top: 2px;">⏳ ${awaitingLeafLink} ready</div>`;
+                }
+
                 return `
-                    <button onclick="showPipelineStrains('${key}')" class="foh-btn" style="opacity: ${hasItems ? '1' : '0.5'};">
+                    <button onclick="showPipelineStrains('${key}')" class="foh-btn" style="opacity: ${hasItems ? '1' : '0.5'}; ${urgentCount > 0 ? 'border: 2px solid #ff6b00;' : ''}">
                         <div class="foh-btn-name">${data.label}</div>
                         <div class="foh-btn-num">${data.count}</div>
                         <div class="foh-btn-sub">${totalGrams.toFixed(0)}g</div>
+                        ${readyIndicator}
                     </button>
                 `;
             }).join('');
@@ -22302,6 +22334,20 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const inlineContainer = document.getElementById('inlinePipelineGrid');
             if (modalContainer) modalContainer.innerHTML = html;
             if (inlineContainer) inlineContainer.innerHTML = html;
+        }
+
+        // Get stage label and color for pipeline display
+        function getPipelineStageInfo(stage) {
+            const stages = {
+                'extraction': { label: 'Extracting', color: '#F59E0B', icon: '⚗️' },
+                'finishing': { label: 'Finishing', color: '#3B82F6', icon: '🔥' },
+                'packaging': { label: 'Packaging', color: '#8B5CF6', icon: '📦' },
+                'testing': { label: 'Testing', color: '#EC4899', icon: '🧪' },
+                'labeling': { label: 'Labeling', color: '#10B981', icon: '🏷️' },
+                'awaiting_leaflink': { label: 'Ready to List', color: '#FFD700', icon: '⏳' },
+                'complete': { label: 'Complete', color: '#6B7280', icon: '✅' }
+            };
+            return stages[stage] || stages['complete'];
         }
 
         function showPipelineStrains(category) {
@@ -22315,26 +22361,39 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             const contentEl = document.getElementById('pipelinePopupContent');
 
-            // Group strains and count occurrences
-            const strainCounts = {};
+            // Group by strain but keep individual batch details
+            const strainGroups = {};
             let totalGrams = 0;
+            let awaitingLeafLinkCount = 0;
+
             data.strains.forEach(item => {
                 const key = item.strain;
-                if (!strainCounts[key]) {
-                    strainCounts[key] = { count: 0, batches: [], grams: 0, strainType: item.strainType };
+                if (!strainGroups[key]) {
+                    strainGroups[key] = { count: 0, batches: [], grams: 0, strainType: item.strainType };
                 }
-                strainCounts[key].count++;
-                strainCounts[key].batches.push({ id: item.batchId, grams: item.availableGrams });
-                strainCounts[key].grams += parseFloat(item.availableGrams) || 0;
+                strainGroups[key].count++;
+                strainGroups[key].batches.push({
+                    id: item.batchId,
+                    grams: item.availableGrams,
+                    pipelineStage: item.pipelineStage,
+                    labelingDate: item.labelingDate
+                });
+                strainGroups[key].grams += parseFloat(item.availableGrams) || 0;
                 totalGrams += parseFloat(item.availableGrams) || 0;
+
+                if (item.pipelineStage === 'awaiting_leaflink') awaitingLeafLinkCount++;
             });
 
-            // Update title with total grams
-            document.getElementById('pipelinePopupTitle').textContent = data.label + ' - ' + totalGrams.toFixed(1) + 'g';
+            // Update title with total grams and awaiting count
+            let titleText = data.label + ' - ' + totalGrams.toFixed(1) + 'g';
+            if (awaitingLeafLinkCount > 0) {
+                titleText += ` (${awaitingLeafLinkCount} ready to list)`;
+            }
+            document.getElementById('pipelinePopupTitle').textContent = titleText;
 
             // Sort by strain type (Sativa, Hybrid, Indica), then by grams descending
             const strainOrder = { 'Sativa': 0, 'Hybrid': 1, 'Indica': 2 };
-            const sortedStrains = Object.entries(strainCounts)
+            const sortedStrains = Object.entries(strainGroups)
                 .sort((a, b) => {
                     const typeA = strainOrder[a[1].strainType] ?? 1;
                     const typeB = strainOrder[b[1].strainType] ?? 1;
@@ -22351,12 +22410,31 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             contentEl.innerHTML = sortedStrains.map(([strain, info]) => {
                 const strainColor = getStrainColor(info.strainType);
+
+                // Show individual batches with their stages
+                const batchDetails = info.batches.map(batch => {
+                    const stageInfo = getPipelineStageInfo(batch.pipelineStage);
+                    let waitingWarning = '';
+
+                    // Check if awaiting LeafLink for more than 24 hours
+                    if (batch.pipelineStage === 'awaiting_leaflink' && batch.labelingDate) {
+                        const labeledDate = new Date(batch.labelingDate);
+                        const hoursWaiting = (Date.now() - labeledDate.getTime()) / (1000 * 60 * 60);
+                        if (hoursWaiting > 24) {
+                            waitingWarning = `<span style="color: #ff6b00; font-size: 0.75rem; margin-left: 5px;">⚠️ ${Math.floor(hoursWaiting)}h</span>`;
+                        }
+                    }
+
+                    return `<span style="display: inline-flex; align-items: center; background: ${stageInfo.color}22; color: ${stageInfo.color}; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; margin-right: 5px; margin-top: 5px;">${stageInfo.icon} ${batch.id} (${batch.grams}g)${waitingWarning}</span>`;
+                }).join('');
+
                 return `
                 <div style="padding: 12px 15px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${strainColor}; box-shadow: 0 0 10px ${strainColor}33;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; color: var(--text-primary);">${strain}</span>
                         <span style="background: ${strainColor}22; color: ${strainColor}; padding: 6px 12px; border-radius: 12px; font-size: 1.1rem; font-weight: 700;">${info.grams.toFixed(1)}g</span>
                     </div>
+                    <div style="margin-top: 8px; display: flex; flex-wrap: wrap;">${batchDetails}</div>
                 </div>
             `;
             }).join('');
