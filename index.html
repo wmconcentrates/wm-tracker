@@ -8043,21 +8043,110 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 });
             }
             
-            // Prepare update data
+            // Check if we need to create a 4g sub-batch
+            const units1g = packagingDetails.units_1g || 0;
+            const units4g = packagingDetails.units_4g || 0;
+            let createdSubBatchId = null;
+
+            if (units4g > 0 && (packagedProductType === 'Wax' || packagedProductType === 'Sugar Wax' || packagedProductType === 'Brick Hash')) {
+                // Create a 4g sub-batch
+                const subBatchId = `${batchId}-4g`;
+                const productType4g = `${packagedProductType} 4g`;
+                const grams4g = units4g * 4;
+
+                const subBatchTimeline = [{
+                    stage: 'packaging',
+                    user: currentRole ? currentRole.name : "Unknown",
+                    date: new Date().toISOString(),
+                    action: `Created as 4g sub-batch from ${batchId} - ${units4g}x 4g units (${grams4g}g)`
+                }];
+
+                const subBatch = {
+                    id: subBatchId,
+                    parent_batch_id: batchId,
+                    is_sub_batch: true,
+                    business_id: batch.business_id,
+                    strain: batch.strain,
+                    strain_type: batch.strain_type,
+                    trim_weight: batch.trim_weight,
+                    material_cost: batch.material_cost,
+                    material_agreement: batch.material_agreement,
+                    pre_sift: batch.pre_sift,
+                    cultivation_license: batch.cultivation_license,
+                    grower_name: batch.grower_name,
+                    intake_date: batch.intake_date,
+                    planned_products: batch.planned_products,
+                    intake_notes: batch.intake_notes,
+                    intake_user: batch.intake_user,
+                    extraction_date: batch.extraction_date,
+                    extraction_method: batch.extraction_method,
+                    product_made: batch.product_made,
+                    product_type: batch.product_type,
+                    extraction_user: batch.extraction_user,
+                    finishing_date: batch.finishing_date,
+                    finishing_user: batch.finishing_user,
+                    final_weight: batch.final_weight,
+                    net_weight: batch.net_weight,
+                    // Packaging-specific data for 4g
+                    packaging_date: document.getElementById('packagingDate').value,
+                    packaged_product_type: productType4g,
+                    units_packaged: units4g,
+                    units_1g: null,
+                    units_4g: null,
+                    total_grams_packaged: grams4g,
+                    packaging_breakdown: `${units4g}x 4g`,
+                    wholesale_price: wholesalePrice,
+                    packaging_notes: document.getElementById('packagingNotes').value,
+                    packaging_user: currentRole ? currentRole.name : "Unknown",
+                    status: 'complete',
+                    completed_at: new Date().toISOString(),
+                    timeline: subBatchTimeline,
+                    created_at: new Date().toISOString()
+                };
+
+                const { error: subBatchError } = await supabaseClient
+                    .from('wm_batches')
+                    .insert([subBatch]);
+
+                if (subBatchError) {
+                    console.error('Error creating 4g sub-batch:', subBatchError);
+                    alert('Error creating 4g sub-batch. Please try again.');
+                    return;
+                }
+
+                createdSubBatchId = subBatchId;
+
+                // Update timeline to note the split
+                timeline.push({
+                    stage: 'packaging',
+                    user: currentRole ? currentRole.name : "Unknown",
+                    date: new Date().toISOString(),
+                    action: `Created 4g sub-batch ${subBatchId} with ${units4g}x 4g units`
+                });
+            }
+
+            // Prepare update data for main batch
+            // If we created a 4g sub-batch, main batch only gets 1g units
+            const mainUnits1g = units4g > 0 ? units1g : packagingDetails.units_1g;
+            const mainUnits4g = units4g > 0 ? null : packagingDetails.units_4g;
+            const mainUnitsPackaged = units4g > 0 ? units1g : unitsPackaged;
+            const mainTotalGrams = units4g > 0 ? (units1g * 1) : packagingDetails.total_grams;
+            const mainBreakdown = units4g > 0 ? `${units1g}x 1g` : packagingDetails.packaging_breakdown;
+
             const updateData = {
                 packaging_date: document.getElementById('packagingDate').value,
                 packaged_product_type: packagedProductType,
-                units_packaged: unitsPackaged,
-                units_1g: packagingDetails.units_1g,
-                units_4g: packagingDetails.units_4g,
-                total_grams_packaged: packagingDetails.total_grams,
-                packaging_breakdown: packagingDetails.packaging_breakdown,
+                units_packaged: mainUnitsPackaged,
+                units_1g: mainUnits1g,
+                units_4g: mainUnits4g,
+                total_grams_packaged: mainTotalGrams,
+                packaging_breakdown: mainBreakdown,
                 wholesale_price: wholesalePrice,
                 packaging_notes: document.getElementById('packagingNotes').value,
                 packaging_user: currentRole ? currentRole.name : "Unknown",
                 timeline: timeline
             };
-            
+
             // If bulk sale, go to packaging status (testing queue) but will skip labeling after testing
             if (isBulkSale) {
                 updateData.status = 'packaging'; // Goes to testing queue
@@ -8067,7 +8156,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 updateData.status = 'complete';
                 updateData.completed_at = new Date().toISOString();
             }
-            
+
             const { error } = await supabaseClient
                 .from('wm_batches')
                 .update(updateData)
@@ -8087,6 +8176,17 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     stats: [
                         { value: `${totalGrams}g`, label: 'Total Weight' },
                         { value: packagedProductType, label: 'Product' }
+                    ]
+                });
+            } else if (createdSubBatchId) {
+                // Show celebration for both batches when 4g sub-batch was created
+                showCelebration({
+                    emoji: '📦',
+                    title: 'Packaging Complete!',
+                    message: `Created ${batchId} (1g) + ${createdSubBatchId} (4g) - Both ready for labeling!`,
+                    stats: [
+                        { value: `${mainUnitsPackaged}x 1g`, label: 'Main Batch' },
+                        { value: `${units4g}x 4g`, label: 'Sub-Batch' }
                     ]
                 });
             } else {
@@ -14034,19 +14134,61 @@ ${employeeReport || 'No activity recorded today'}
                     .from('wm_batches')
                     .update(updates)
                     .eq('id', batchId);
-                
+
                 if (error) {
                     console.error('Error updating test results:', error);
                     alert('Error saving test results. Please try again.');
                     return;
                 }
             }
-            
+
+            // Apply test results to any 4g sub-batches (they share the same test)
+            const finalBatchIdForSubBatch = batchIdChanged ? newBatchId : batchId;
+            const subBatches = batches.filter(b => b.parent_batch_id === batchId || b.parent_batch_id === finalBatchIdForSubBatch);
+
+            if (subBatches.length > 0) {
+                for (const subBatch of subBatches) {
+                    const subBatchTimeline = subBatch.timeline || [];
+                    subBatchTimeline.push({
+                        stage: 'testing',
+                        user: currentRole ? currentRole.name : "Unknown",
+                        date: new Date().toISOString(),
+                        action: `Test results applied from parent batch ${finalBatchIdForSubBatch}: THC ${thcPercent}%, CBD ${cbdPercent || 0}%`
+                    });
+
+                    const subBatchUpdates = {
+                        test_submitted_date: submittedDate,
+                        test_expiration_date: expirationDate,
+                        test_thc_percent: thcPercent,
+                        test_cbd_percent: cbdPercent,
+                        is_rta: isRTA,
+                        strain: finalProductName,
+                        strain_type: finalStrainType,
+                        timeline: subBatchTimeline
+                    };
+
+                    // Update parent_batch_id if the parent's ID changed
+                    if (batchIdChanged) {
+                        subBatchUpdates.parent_batch_id = newBatchId;
+                    }
+
+                    const { error: subBatchError } = await supabaseClient
+                        .from('wm_batches')
+                        .update(subBatchUpdates)
+                        .eq('id', subBatch.id);
+
+                    if (subBatchError) {
+                        console.error(`Error updating sub-batch ${subBatch.id}:`, subBatchError);
+                    }
+                }
+            }
+
             const lidColor = finalStrainType === 'Indica' ? 'Blue' : finalStrainType === 'Sativa' ? 'Red' : 'Green';
             const resultsInfo = thcPercent !== null ? `\nTHC: ${thcPercent}% | CBD: ${cbdPercent || 0}%` : '\nTest submitted - awaiting results';
             const finalBatchId = batchIdChanged ? newBatchId : batchId;
             const batchChangeMsg = batchIdChanged ? `\n✓ Batch ID changed: ${oldBatchId} → ${newBatchId}` : '';
-            alert(`Test results saved for ${finalBatchId}!${batchChangeMsg}\n\nProduct Name: ${finalProductName}\nStrain Type: ${finalStrainType} (${lidColor} Lid)${strainTypeNote ? '\n✓ Strain type redesignated' : ''}${resultsInfo}\n${isRTA === 'yes' ? '✓ RTA Full Panel' : 'Standard Potency'}\nExpires: ${expirationDate}`);
+            const subBatchMsg = subBatches.length > 0 ? `\n✓ Test results also applied to: ${subBatches.map(s => s.id).join(', ')}` : '';
+            alert(`Test results saved for ${finalBatchId}!${batchChangeMsg}${subBatchMsg}\n\nProduct Name: ${finalProductName}\nStrain Type: ${finalStrainType} (${lidColor} Lid)${strainTypeNote ? '\n✓ Strain type redesignated' : ''}${resultsInfo}\n${isRTA === 'yes' ? '✓ RTA Full Panel' : 'Standard Potency'}\nExpires: ${expirationDate}`);
             
             document.getElementById('testingForm').style.display = 'none';
             document.getElementById('testingBatchSelect').value = '';
