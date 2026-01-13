@@ -22563,6 +22563,114 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         // ============================================
+        // DYNAMIC CATEGORY FUNCTIONS (Multi-tenant)
+        // ============================================
+
+        let cachedBusinessCategories = null;
+        let cachedBusinessCategoriesId = null;
+
+        // Default categories for fallback (when no business selected or no mappings)
+        function getDefaultCategories() {
+            return [
+                { key: 'Wax', label: 'Wax', color: '#F59E0B' },
+                { key: 'Shatter', label: 'Shatter', color: '#3B82F6' },
+                { key: 'Sugar Wax', label: 'Sugar Wax', color: '#F97316' },
+                { key: 'Live Resin Carts', label: 'Live Resin Carts', color: '#10B981' },
+                { key: 'Live Resin AIOs', label: 'Live Resin AIOs', color: '#8B5CF6' },
+                { key: 'Brick Hash', label: 'Brick Hash', color: '#6B7280' }
+            ];
+        }
+
+        // Load categories from business mappings (multi-tenant)
+        async function loadBusinessCategories(forceReload = false) {
+            // If no business selected or viewing all, use defaults
+            if (!currentBusinessId || currentBusinessId === 'all') {
+                cachedBusinessCategories = getDefaultCategories();
+                cachedBusinessCategoriesId = 'all';
+                return cachedBusinessCategories;
+            }
+
+            // Return cached if same business and not forcing reload
+            if (!forceReload && cachedBusinessCategories && cachedBusinessCategoriesId === currentBusinessId) {
+                return cachedBusinessCategories;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('leaflink_product_mappings')
+                    .select('product_type')
+                    .eq('business_id', currentBusinessId);
+
+                if (error) throw error;
+
+                // If no mappings found, use defaults
+                if (!data || data.length === 0) {
+                    console.log('No LeafLink mappings found for business, using defaults');
+                    cachedBusinessCategories = getDefaultCategories();
+                    cachedBusinessCategoriesId = currentBusinessId;
+                    return cachedBusinessCategories;
+                }
+
+                // Build categories from mappings with colors
+                const colors = ['#F59E0B', '#3B82F6', '#F97316', '#10B981', '#8B5CF6', '#6B7280', '#EC4899', '#06B6D4'];
+                const categories = [];
+                const seenTypes = new Set();
+
+                data.forEach((mapping, i) => {
+                    if (!seenTypes.has(mapping.product_type)) {
+                        seenTypes.add(mapping.product_type);
+                        categories.push({
+                            key: mapping.product_type,
+                            label: mapping.product_type,
+                            color: colors[categories.length % colors.length]
+                        });
+                    }
+                });
+
+                console.log('Loaded', categories.length, 'categories from LeafLink mappings');
+                cachedBusinessCategories = categories;
+                cachedBusinessCategoriesId = currentBusinessId;
+                return categories;
+
+            } catch (err) {
+                console.error('Error loading business categories:', err);
+                cachedBusinessCategories = getDefaultCategories();
+                cachedBusinessCategoriesId = currentBusinessId;
+                return cachedBusinessCategories;
+            }
+        }
+
+        // Get product category using dynamic categories
+        function getProductCategoryDynamic(productMade, categories) {
+            if (!productMade || !categories) return null;
+            const product = productMade.toLowerCase();
+
+            // Check each category for a match
+            for (const cat of categories) {
+                const catKey = cat.key.toLowerCase();
+                // Simple contains match
+                if (product.includes(catKey)) return cat.key;
+                // Also check individual words
+                const catWords = catKey.split(/\s+/);
+                if (catWords.some(word => word.length > 2 && product.includes(word))) {
+                    return cat.key;
+                }
+            }
+
+            // Special handling for common abbreviations
+            if (product.includes('cart') || product === 'live resin oil') {
+                const cartCat = categories.find(c => c.key.toLowerCase().includes('cart'));
+                if (cartCat) return cartCat.key;
+            }
+            if (product.includes('aio') || product.includes('all-in-one')) {
+                const aioCat = categories.find(c => c.key.toLowerCase().includes('aio'));
+                if (aioCat) return aioCat.key;
+            }
+
+            return null;
+        }
+
+        // ============================================
         // SALES PIPELINE FUNCTIONS
         // ============================================
 
@@ -22609,7 +22717,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return null;
         }
 
-        function loadSalesPipeline() {
+        async function loadSalesPipeline() {
             // If batches not loaded yet, retry after delay
             if (!batches || batches.length === 0) {
                 console.log('Pipeline: batches not loaded yet, retrying in 2s...');
@@ -22617,15 +22725,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 return;
             }
 
-            // Define the 6 product categories
-            const categories = [
-                { key: 'Wax', label: 'Wax', color: '#F59E0B' },
-                { key: 'Shatter', label: 'Shatter', color: '#3B82F6' },
-                { key: 'Sugar Wax', label: 'Sugar Wax', color: '#F97316' },
-                { key: 'Live Resin Carts', label: 'Live Resin Carts', color: '#10B981' },
-                { key: 'Live Resin AIOs', label: 'Live Resin AIOs', color: '#8B5CF6' },
-                { key: 'Brick Hash', label: 'Brick Hash', color: '#6B7280' }
-            ];
+            // Load dynamic categories from business LeafLink mappings
+            const categories = await loadBusinessCategories();
 
             // Initialize category data
             pipelineCategoryData = {};
@@ -22661,7 +22762,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Group batches by category
 
             pipelineData.forEach(batch => {
-                const category = getProductCategory(batch.product_made);
+                const category = getProductCategoryDynamic(batch.product_made, categories);
                 if (category && pipelineCategoryData[category]) {
                     pipelineCategoryData[category].count++;
                     const weight = batch.final_weight || batch.net_weight || batch.grams_labeled || 0;
@@ -22696,10 +22797,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         function renderPipelineCategories() {
-            const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash'];
+            // Use dynamic category order from pipelineCategoryData keys
+            const categoryOrder = Object.keys(pipelineCategoryData);
 
             const html = categoryOrder.map(key => {
                 const data = pipelineCategoryData[key];
+                if (!data) return '';
                 const hasItems = data.count > 0;
 
                 // Count by strain type and awaiting LeafLink
@@ -22987,9 +23090,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             container.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px; color: var(--text-secondary);">Loading...</div>';
         }
 
-        // Initialize category data
+        // Load dynamic categories from business LeafLink mappings
+        const dynamicCategories = await loadBusinessCategories();
+
+        // Initialize category data with dynamic categories
         inventoryCategoryData = {};
-        inventoryCategories.forEach(cat => {
+        dynamicCategories.forEach(cat => {
             inventoryCategoryData[cat.key] = { count: 0, items: [], color: cat.color, label: cat.label, totalQty: 0 };
         });
 
@@ -23029,9 +23135,6 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (name.includes('sativa') || name.includes('(sativa)')) strainType = 'Sativa';
             else if (name.includes('indica') || name.includes('(indica)')) strainType = 'Indica';
 
-            // Map to our categories - check specific product types
-            let category = null;
-
             // Skip non-concentrate products
             if (matchText.includes('syrup') || matchText.includes('jousse') ||
                 matchText.includes('rso') || matchText.includes('battery') ||
@@ -23039,27 +23142,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 return; // Skip syrups, RSO, batteries
             }
 
-            // Check for 4g buckets first (before other wax/sugar matching)
-            const is4g = matchText.includes('4 gram') || matchText.includes('4gram') || matchText.includes('4g ') || matchText.includes('bucket');
-            const isHash = matchText.includes('brick') || matchText.includes('hash');
-
-            if (is4g && matchText.includes('sugar')) {
-                category = '4g Sugar';
-            } else if (is4g && !isHash) {
-                category = '4g Wax';
-            } else if (matchText.includes('shatter')) {
-                category = 'Shatter';
-            } else if (matchText.includes('sugar')) {
-                category = 'Sugar Wax';
-            } else if (matchText.includes('disposable') || matchText.includes('all in one') || matchText.includes('all-in-one') || matchText.includes('aio')) {
-                category = 'Live Resin AIOs';
-            } else if (matchText.includes('cartridge') || matchText.includes('100% live resin')) {
-                category = 'Live Resin Carts';
-            } else if (isHash) {
-                category = 'Brick Hash';
-            } else if ((matchText.includes('wax') || matchText.includes('badder') || matchText.includes('budder')) && !isHash) {
-                category = 'Wax';
-            }
+            // Map to categories using dynamic matching
+            let category = getProductCategoryDynamic(matchText, dynamicCategories);
 
             if (category && inventoryCategoryData[category]) {
                 inventoryCategoryData[category].count++;
@@ -23721,10 +23805,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     function renderInventoryCategories() {
-        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax', '4g Sugar'];
+        // Use dynamic category order from inventoryCategoryData keys
+        const categoryOrder = Object.keys(inventoryCategoryData);
 
         const html = categoryOrder.map(key => {
             const data = inventoryCategoryData[key];
+            if (!data) return '';
             const hasItems = data.count > 0;
 
             // Count by strain type
@@ -23848,18 +23934,19 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         needsDataLoading = (async () => {
             // Ensure pipeline data is loaded first (it populates pipelineCategoryData)
-            loadSalesPipeline();
+            await loadSalesPipeline();
 
-        // Initialize needs data structure
-        const categories = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax', '4g Sugar'];
+        // Load dynamic categories from business LeafLink mappings
+        const dynamicCategories = await loadBusinessCategories();
+        const categoryKeys = dynamicCategories.map(c => c.key);
         const strainTypes = ['Indica', 'Sativa', 'Hybrid'];
 
         const newNeedsData = {};
         salesByCategory = {};
 
-        categories.forEach(cat => {
-            newNeedsData[cat] = { label: cat, color: getCategoryColor(cat), needs: [] };
-            salesByCategory[cat] = { Indica: 0, Sativa: 0, Hybrid: 0 };
+        dynamicCategories.forEach(cat => {
+            newNeedsData[cat.key] = { label: cat.label, color: cat.color, needs: [] };
+            salesByCategory[cat.key] = { Indica: 0, Sativa: 0, Hybrid: 0 };
         });
 
         // Get 60-day sales data
@@ -23876,20 +23963,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const productName = (item.frozen_data?.product?.name || item.product?.name || '').toLowerCase();
                 const qty = parseFloat(item.quantity) || 0;
 
-                // Determine category
-                let category = null;
-                const is4g = productName.includes('4 gram') || productName.includes('4gram') || productName.includes('4g ') || productName.includes('bucket');
-                const isHash = productName.includes('brick') || productName.includes('hash');
-
-                if (is4g && productName.includes('sugar')) category = '4g Sugar';
-                else if (is4g && !isHash) category = '4g Wax';
-                else if (productName.includes('shatter')) category = 'Shatter';
-                else if (productName.includes('sugar')) category = 'Sugar Wax';
-                else if (productName.includes('cartridge') || productName.includes('cart')) category = 'Live Resin Carts';
-                else if (productName.includes('disposable') || productName.includes('all in one') || productName.includes('aio')) category = 'Live Resin AIOs';
-                else if (isHash) category = 'Brick Hash';
-                else if ((productName.includes('wax') || productName.includes('badder') || productName.includes('budder')) && !isHash) category = 'Wax';
-
+                // Determine category using dynamic matching
+                let category = getProductCategoryDynamic(productName, dynamicCategories);
                 if (!category) return;
 
                 // Determine strain type
@@ -23904,7 +23979,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Get current inventory
         const products = await fetchLeafLinkInventory();
         const inventoryByCategory = {};
-        categories.forEach(cat => {
+        categoryKeys.forEach(cat => {
             inventoryByCategory[cat] = { Indica: [], Sativa: [], Hybrid: [] };
         });
 
@@ -23918,29 +23993,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const matchText = (parentName + ' ' + displayName).toLowerCase();
             const qty = parseFloat(product.available_inventory != null ? product.available_inventory : (product.quantity || 0)) || 0;
 
-            // Check if this is a 4g bucket product (allow Internal for these)
-            const is4g = matchText.includes('4 gram') || matchText.includes('4gram') || matchText.includes('4g ') || matchText.includes('bucket');
-            const isHash = matchText.includes('brick') || matchText.includes('hash');
-
-            // Skip archived, skip internal unless 4g bucket
+            // Skip archived
             if (product.listing_state === 'Archived') return;
-            if (product.listing_state === 'Internal' && !is4g) return;
             if (qty <= 0) return;
 
             // Skip non-concentrates
             if (matchText.includes('syrup') || matchText.includes('jousse') || matchText.includes('rso') || matchText.includes('battery')) return;
 
-            // Determine category
-            let category = null;
-            if (is4g && matchText.includes('sugar')) category = '4g Sugar';
-            else if (is4g && !isHash) category = '4g Wax';
-            else if (matchText.includes('shatter')) category = 'Shatter';
-            else if (matchText.includes('sugar')) category = 'Sugar Wax';
-            else if (matchText.includes('cartridge') || (matchText.includes('cart') && matchText.includes('live resin')) || matchText.includes('100% live resin')) category = 'Live Resin Carts';
-            else if (matchText.includes('disposable') || matchText.includes('all in one') || matchText.includes('aio')) category = 'Live Resin AIOs';
-            else if (isHash) category = 'Brick Hash';
-            else if ((matchText.includes('wax') || matchText.includes('badder') || matchText.includes('budder')) && !isHash) category = 'Wax';
-
+            // Determine category using dynamic matching
+            let category = getProductCategoryDynamic(matchText, dynamicCategories);
             if (!category) return;
 
             // Determine strain type
@@ -23954,7 +24015,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Add pipeline inventory to the calculation (product being made counts as upcoming inventory)
         try {
             if (typeof pipelineCategoryData === 'object' && pipelineCategoryData !== null) {
-                categories.forEach(cat => {
+                categoryKeys.forEach(cat => {
                     if (!pipelineCategoryData[cat]) return;
                     const strains = pipelineCategoryData[cat].strains;
                     if (!Array.isArray(strains)) return;
@@ -23985,7 +24046,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         // Calculate needs: 1-week supply based on 60-day sales average (7 days for urgent visibility)
-        categories.forEach(cat => {
+        categoryKeys.forEach(cat => {
             strainTypes.forEach(strain => {
                 const totalSold = salesByCategory[cat][strain];
                 const parLevel = Math.ceil((totalSold / 60) * 7); // 1-week supply based on 60-day daily average
@@ -24053,10 +24114,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     function renderNeedsCategories() {
-        const categoryOrder = ['Wax', 'Shatter', 'Sugar Wax', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', '4g Wax', '4g Sugar'];
+        // Use dynamic category order from needsData keys
+        const categoryOrder = Object.keys(needsData);
 
         const html = categoryOrder.map(key => {
             const data = needsData[key] || { label: key, needs: [] };
+            if (!data) return '';
 
             // Get needs by strain type
             const needsByStrain = { Sativa: 0, Hybrid: 0, Indica: 0 };
