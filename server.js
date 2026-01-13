@@ -497,6 +497,10 @@ app.get('/api/internal/businesses/:id/leaflink/suggest-mappings', async (req, re
                 }
             }
 
+            // Get unit info from parent product's raw_data
+            const parentRaw = parentProduct?.raw_data || {};
+            const sampleRaw = sampleProduct?.raw_data || {};
+
             suggestions.push({
                 app_product_type: appType.type,
                 app_category: appType.category,
@@ -508,11 +512,16 @@ app.get('/api/internal/businesses/:id/leaflink/suggest-mappings', async (req, re
                 } : null,
                 suggested_parent_id: parentProduct?.leaflink_id || null,
                 confidence: matchedLine ? confidence : 0,
-                // Include config from sample product
-                leaflink_seller_id: sampleProduct?.seller_id,
-                leaflink_brand_id: sampleProduct?.brand_id,
-                leaflink_license_id: sampleProduct?.license_id,
-                leaflink_unit_denomination_id: sampleProduct?.unit_denomination_id
+                // Include config from matched product (for correct unit settings) or sample
+                leaflink_seller_id: parentProduct?.seller_id || sampleProduct?.seller_id,
+                leaflink_brand_id: parentProduct?.brand_id || sampleProduct?.brand_id,
+                leaflink_license_id: parentProduct?.license_id || sampleProduct?.license_id,
+                leaflink_unit_denomination_id: parentProduct?.unit_denomination_id || sampleProduct?.unit_denomination_id,
+                leaflink_unit_of_measure: parentProduct?.unit_of_measure || (appType.category === 'cart' ? 'Unit' : 'Gram'),
+                // Unit configuration from raw_data
+                unit_multiplier: parentRaw.unit_multiplier || sampleRaw.unit_multiplier || 10,
+                sell_in_unit_of_measure: parentRaw.sell_in_unit_of_measure || sampleRaw.sell_in_unit_of_measure || 'Case',
+                grams_per_unit: parentRaw.unit_denomination?.value ? parseFloat(parentRaw.unit_denomination.value) : 1
             });
         }
 
@@ -557,25 +566,33 @@ app.post('/api/internal/businesses/:id/leaflink/mappings', async (req, res) => {
 
         // Upsert each mapping
         for (const mapping of mappings) {
+            const upsertData = {
+                business_id: businessId,
+                app_product_type: mapping.app_product_type,
+                app_category: mapping.app_category,
+                leaflink_product_line_id: mapping.leaflink_product_line_id,
+                leaflink_parent_id: mapping.leaflink_parent_id,
+                leaflink_category_id: mapping.leaflink_category_id,
+                price_per_unit: mapping.price_per_unit,
+                leaflink_seller_id: mapping.leaflink_seller_id,
+                leaflink_brand_id: mapping.leaflink_brand_id,
+                leaflink_license_id: mapping.leaflink_license_id,
+                leaflink_unit_of_measure_id: mapping.leaflink_unit_of_measure_id,
+                leaflink_unit_denomination_id: mapping.leaflink_unit_denomination_id,
+                leaflink_product_line_name: mapping.leaflink_product_line_name,
+                is_active: true,
+                updated_at: new Date().toISOString()
+            };
+
+            // Add unit config fields if provided (requires DB columns)
+            if (mapping.leaflink_unit_of_measure) upsertData.leaflink_unit_of_measure = mapping.leaflink_unit_of_measure;
+            if (mapping.unit_multiplier) upsertData.unit_multiplier = mapping.unit_multiplier;
+            if (mapping.sell_in_unit_of_measure) upsertData.sell_in_unit_of_measure = mapping.sell_in_unit_of_measure;
+            if (mapping.grams_per_unit) upsertData.grams_per_unit = mapping.grams_per_unit;
+
             const { error } = await supabase
                 .from('leaflink_product_mappings')
-                .upsert({
-                    business_id: businessId,
-                    app_product_type: mapping.app_product_type,
-                    app_category: mapping.app_category,
-                    leaflink_product_line_id: mapping.leaflink_product_line_id,
-                    leaflink_parent_id: mapping.leaflink_parent_id,
-                    leaflink_category_id: mapping.leaflink_category_id,
-                    price_per_unit: mapping.price_per_unit,
-                    leaflink_seller_id: mapping.leaflink_seller_id,
-                    leaflink_brand_id: mapping.leaflink_brand_id,
-                    leaflink_license_id: mapping.leaflink_license_id,
-                    leaflink_unit_of_measure_id: mapping.leaflink_unit_of_measure_id,
-                    leaflink_unit_denomination_id: mapping.leaflink_unit_denomination_id,
-                    leaflink_product_line_name: mapping.leaflink_product_line_name,
-                    is_active: true,
-                    updated_at: new Date().toISOString()
-                }, {
+                .upsert(upsertData, {
                     onConflict: 'business_id,app_product_type'
                 });
 
