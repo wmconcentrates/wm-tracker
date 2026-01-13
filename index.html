@@ -22644,26 +22644,36 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (!productMade || !categories) return null;
             const product = productMade.toLowerCase();
 
-            // Check each category for a match
-            for (const cat of categories) {
+            // Sort categories by key length (longest first) so "Sugar Wax" matches before "Wax"
+            const sortedCats = [...categories].sort((a, b) => b.key.length - a.key.length);
+
+            // First pass: check for exact full category name match
+            for (const cat of sortedCats) {
                 const catKey = cat.key.toLowerCase();
-                // Simple contains match
                 if (product.includes(catKey)) return cat.key;
-                // Also check individual words
-                const catWords = catKey.split(/\s+/);
-                if (catWords.some(word => word.length > 2 && product.includes(word))) {
-                    return cat.key;
-                }
             }
 
-            // Special handling for common abbreviations
-            if (product.includes('cart') || product === 'live resin oil') {
-                const cartCat = categories.find(c => c.key.toLowerCase().includes('cart'));
-                if (cartCat) return cartCat.key;
-            }
-            if (product.includes('aio') || product.includes('all-in-one')) {
+            // Special handling for AIOs (check BEFORE carts since AIOs might contain "cart")
+            if (product.includes('aio') || product.includes('all-in-one') || product.includes('all in one') || product.includes('disposable')) {
                 const aioCat = categories.find(c => c.key.toLowerCase().includes('aio'));
                 if (aioCat) return aioCat.key;
+            }
+
+            // Special handling for carts
+            if (product.includes('cart')) {
+                const cartCat = categories.find(c => c.key.toLowerCase().includes('cart') && !c.key.toLowerCase().includes('aio'));
+                if (cartCat) return cartCat.key;
+            }
+
+            // Second pass: check individual significant words (but skip very short words)
+            for (const cat of sortedCats) {
+                const catKey = cat.key.toLowerCase();
+                const catWords = catKey.split(/\s+/);
+                // Only match on words 4+ chars to avoid false positives
+                const significantWords = catWords.filter(word => word.length >= 4);
+                if (significantWords.length > 0 && significantWords.every(word => product.includes(word))) {
+                    return cat.key;
+                }
             }
 
             return null;
