@@ -5089,7 +5089,7 @@
 
         // Multi-tenant business support
         let businessesList = [];
-        let currentBusinessId = 'all'; // 'all' or specific business UUID
+        let currentBusinessId = localStorage.getItem('selectedBusinessId') || 'all'; // 'all' or specific business UUID
 
         async function loadBusinesses() {
             if (!supabaseClient) return;
@@ -5109,7 +5109,19 @@
                     businessesList.forEach(biz => {
                         selector.innerHTML += `<option value="${biz.id}" style="color: ${biz.primary_color}">${biz.display_name}</option>`;
                     });
+                    // Restore saved selection
+                    selector.value = currentBusinessId;
                     document.getElementById('businessSelector').style.display = 'block';
+
+                    // Update logo for saved business
+                    const logo = document.getElementById('headerLogo');
+                    if (currentBusinessId !== 'all') {
+                        const biz = businessesList.find(b => b.id === currentBusinessId);
+                        if (biz && biz.logo_url && logo) {
+                            logo.src = biz.logo_url;
+                            logo.alt = biz.display_name;
+                        }
+                    }
                 }
             } catch (err) {
                 console.error('Error loading businesses:', err);
@@ -5117,34 +5129,9 @@
         }
 
         function switchBusiness(businessId) {
-            currentBusinessId = businessId;
-            // Update logo if viewing single business
-            const logo = document.getElementById('headerLogo');
-            if (businessId !== 'all') {
-                const biz = businessesList.find(b => b.id === businessId);
-                if (biz && biz.logo_url) {
-                    logo.src = biz.logo_url;
-                    logo.alt = biz.display_name;
-                }
-            } else {
-                logo.src = 'https://images.squarespace-cdn.com/content/v1/5501f606e4b0b9ba3b7be5ec/1537298893777-QBVYYWKI0KBKGYJGQJB5/WM.png?format=1500w';
-                logo.alt = 'White Mousse';
-            }
-            loadBatches();
-            // Clear ALL FOH cached data so it reloads for the new business
-            dropCalendarData = [];
-            allLeafLinkOrders = [];
-            leafLinkDataLoaded = false;
-            needsData = {};  // Clear needs data
-            needsDataLoading = null;  // Reset loading state
-            cachedBusinessCategories = null;  // Clear category cache
-            cachedBusinessCategoriesId = null;
-            // Force refresh LeafLink data and reload FOH views
-            ensureLeafLinkData(true).then(() => {
-                // Refresh FOH sections with new business data
-                if (typeof loadNeedsData === 'function') loadNeedsData(true);
-                if (typeof loadSalesDashboard === 'function') loadSalesDashboard();
-            });
+            // Save selected business and refresh page to ensure clean state
+            localStorage.setItem('selectedBusinessId', businessId);
+            window.location.reload();
         }
 
         function getBusinessBadge(businessId) {
