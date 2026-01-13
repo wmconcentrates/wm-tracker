@@ -759,41 +759,36 @@
             btn.textContent = 'Detecting...';
 
             try {
-                const response = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/suggest-mappings`);
-                if (!response.ok) throw new Error('Failed to get suggestions');
+                // Fetch cached products to find parent products by product line
+                const productsResponse = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/products`);
+                const cachedProducts = productsResponse.ok ? await productsResponse.json() : [];
 
-                suggestedMappings = await response.json();
+                // For each existing mapping with a product_line_id but no parent_id, find a parent
+                for (const mapping of currentMappings) {
+                    if (mapping.leaflink_product_line_id && !mapping.leaflink_parent_id) {
+                        // Find a parent product in this product line (one with no parent)
+                        const parentProduct = cachedProducts.find(p => {
+                            const productLine = p.product_line;
+                            const lineId = typeof productLine === 'object' ? productLine?.id : productLine;
+                            const hasNoParent = !p.parent || p.parent === null;
+                            return lineId == mapping.leaflink_product_line_id && hasNoParent;
+                        });
 
-                // Apply suggestions to currentMappings
-                suggestedMappings.forEach(s => {
-                    if (s.suggested_product_line && s.confidence > 0.3) {
-                        const existingMapping = currentMappings.find(m => m.app_product_type === s.app_product_type);
-                        if (existingMapping) {
-                            // Update existing mapping if fields are empty
-                            if (!existingMapping.leaflink_product_line_id) {
-                                existingMapping.leaflink_product_line_id = s.suggested_product_line.id;
-                                existingMapping.leaflink_product_line_name = s.suggested_product_line.name;
-                            }
-                            if (!existingMapping.price_per_unit && s.price_per_unit) {
-                                existingMapping.price_per_unit = s.price_per_unit;
-                            }
-                            if (!existingMapping.leaflink_parent_id && s.suggested_parent_id) {
-                                existingMapping.leaflink_parent_id = s.suggested_parent_id;
-                            }
+                        if (parentProduct) {
+                            mapping.leaflink_parent_id = parentProduct.leaflink_id;
                         } else {
-                            // Add new mapping from suggestion
-                            currentMappings.push({
-                                app_product_type: s.app_product_type,
-                                app_category: s.app_category || 'concentrate',
-                                leaflink_category_id: s.leaflink_category_id || 5,
-                                leaflink_product_line_id: s.suggested_product_line.id,
-                                leaflink_product_line_name: s.suggested_product_line.name,
-                                leaflink_parent_id: s.suggested_parent_id || null,
-                                price_per_unit: s.price_per_unit || null
+                            // Fallback: use any product from this line
+                            const anyProduct = cachedProducts.find(p => {
+                                const productLine = p.product_line;
+                                const lineId = typeof productLine === 'object' ? productLine?.id : productLine;
+                                return lineId == mapping.leaflink_product_line_id;
                             });
+                            if (anyProduct) {
+                                mapping.leaflink_parent_id = anyProduct.leaflink_id;
+                            }
                         }
                     }
-                });
+                }
 
                 renderMappings();
                 showAlert('Auto-detection complete. Review and save the mappings.', 'success');
