@@ -21162,7 +21162,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             tomorrow.setDate(tomorrow.getDate() + 1);
 
             try {
-                const { data, error } = await supabaseClient
+                // Get today's punches
+                const { data: todayData, error: todayError } = await supabaseClient
                     .from('timeclock')
                     .select('*')
                     .eq('user_name', userName)
@@ -21170,8 +21171,35 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     .lt('punch_time', tomorrow.toISOString())
                     .order('punch_time', { ascending: true });
 
-                if (error) throw error;
-                return data || [];
+                if (todayError) throw todayError;
+
+                let punches = todayData || [];
+
+                // Check if there's an open clock-in from before today (overnight shift)
+                // Get the most recent punch before today
+                const { data: prevData, error: prevError } = await supabaseClient
+                    .from('timeclock')
+                    .select('*')
+                    .eq('user_name', userName)
+                    .lt('punch_time', today.toISOString())
+                    .order('punch_time', { ascending: false })
+                    .limit(1);
+
+                if (!prevError && prevData && prevData.length > 0) {
+                    const lastPunch = prevData[0];
+                    // If the last punch before today was a clock-in, they're still working from yesterday
+                    if (lastPunch.punch_type === 'in') {
+                        // Create a synthetic "midnight" clock-in for today's calculation
+                        const midnightPunch = {
+                            ...lastPunch,
+                            punch_time: today.toISOString(),
+                            is_overnight: true
+                        };
+                        punches = [midnightPunch, ...punches];
+                    }
+                }
+
+                return punches;
             } catch (error) {
                 console.error('Error getting today punches:', error);
                 return [];
