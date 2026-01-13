@@ -437,16 +437,23 @@ app.get('/api/internal/businesses/:id/leaflink/suggest-mappings', async (req, re
         // Auto-detect mappings based on product line names
         const suggestions = [];
         const appProductTypes = [
+            // Solventless products (check specific matches first)
+            { type: 'Bubble Hash', keywords: ['bubble hash', 'bubble'], excludeKeywords: ['brick'], category: 'concentrate', categoryId: 5, price: 8 },
+            { type: 'Hash Hits', keywords: ['hash hits', 'hash hit'], category: 'concentrate', categoryId: 5, price: 10 },
+            { type: 'Brick Hash 1g', keywords: ['brick hash 1g', 'brick hash 1 gram', 'brick 1g'], category: 'concentrate', categoryId: 5, price: 8 },
+            { type: 'Brick Hash 4g', keywords: ['brick hash 4g', 'brick hash 4 gram', 'brick 4g'], category: 'concentrate', categoryId: 5, price: 28 },
+            { type: 'Brick Hash', keywords: ['brick hash', 'brick'], excludeKeywords: ['1g', '4g', '1 gram', '4 gram'], category: 'concentrate', categoryId: 5, price: 8 },
+            { type: 'Rosin', keywords: ['rosin'], excludeKeywords: ['disposable', 'aio', 'cart'], category: 'concentrate', categoryId: 5, price: 10 },
+            // BHO/Hydrocarbon products
             { type: 'Sugar Wax', keywords: ['sugar wax', 'sugar'], category: 'concentrate', categoryId: 5, price: 6 },
             { type: 'Wax', keywords: ['wax'], excludeKeywords: ['sugar'], category: 'concentrate', categoryId: 5, price: 6 },
             { type: 'Shatter', keywords: ['shatter'], category: 'concentrate', categoryId: 5, price: 6 },
-            { type: 'Live Resin Carts', keywords: ['cart', 'cartridge'], category: 'cart', categoryId: 1, price: 15 },
-            { type: 'Live Resin AIOs', keywords: ['all in one', 'aio', 'disposable', 'all-in-one'], category: 'cart', categoryId: 1, price: 22 },
-            { type: 'Brick Hash', keywords: ['brick', 'hash'], category: 'concentrate', categoryId: 5, price: 8 },
-            { type: 'Rosin', keywords: ['rosin'], category: 'concentrate', categoryId: 5, price: 10 },
             { type: 'Badder', keywords: ['badder', 'batter'], category: 'concentrate', categoryId: 5, price: 6 },
             { type: 'Diamonds', keywords: ['diamond'], category: 'concentrate', categoryId: 5, price: 8 },
-            { type: 'Sauce', keywords: ['sauce'], category: 'concentrate', categoryId: 5, price: 6 }
+            { type: 'Sauce', keywords: ['sauce'], category: 'concentrate', categoryId: 5, price: 6 },
+            // Vapes
+            { type: 'Live Resin Carts', keywords: ['cart', 'cartridge'], excludeKeywords: ['rosin'], category: 'cart', categoryId: 1, price: 15 },
+            { type: 'Live Resin AIOs', keywords: ['all in one', 'aio', 'disposable', 'all-in-one'], category: 'cart', categoryId: 1, price: 22 }
         ];
 
         for (const appType of appProductTypes) {
