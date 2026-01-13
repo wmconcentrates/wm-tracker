@@ -763,9 +763,25 @@
                 const productsResponse = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/products`);
                 const cachedProducts = productsResponse.ok ? await productsResponse.json() : [];
 
+                console.log('Cached products for parent lookup:', cachedProducts.length, 'products');
+                if (cachedProducts.length === 0) {
+                    showAlert('No cached products found. Click "Sync from LeafLink" in Products tab first.', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Auto-Detect';
+                    return;
+                }
+
+                // Debug: show sample product structure
+                if (cachedProducts.length > 0) {
+                    console.log('Sample product:', JSON.stringify(cachedProducts[0], null, 2));
+                }
+
+                let foundParents = 0;
                 // For each existing mapping with a product_line_id but no parent_id, find a parent
                 for (const mapping of currentMappings) {
                     if (mapping.leaflink_product_line_id && !mapping.leaflink_parent_id) {
+                        console.log('Looking for parent for line ID:', mapping.leaflink_product_line_id);
+
                         // Find a parent product in this product line (one with no parent)
                         const parentProduct = cachedProducts.find(p => {
                             const productLine = p.product_line;
@@ -775,7 +791,9 @@
                         });
 
                         if (parentProduct) {
+                            console.log('Found parent product:', parentProduct.leaflink_id, parentProduct.name);
                             mapping.leaflink_parent_id = parentProduct.leaflink_id;
+                            foundParents++;
                         } else {
                             // Fallback: use any product from this line
                             const anyProduct = cachedProducts.find(p => {
@@ -784,14 +802,18 @@
                                 return lineId == mapping.leaflink_product_line_id;
                             });
                             if (anyProduct) {
+                                console.log('Using fallback product:', anyProduct.leaflink_id, anyProduct.name);
                                 mapping.leaflink_parent_id = anyProduct.leaflink_id;
+                                foundParents++;
+                            } else {
+                                console.log('No products found for line ID:', mapping.leaflink_product_line_id);
                             }
                         }
                     }
                 }
 
                 renderMappings();
-                showAlert('Auto-detection complete. Review and save the mappings.', 'success');
+                showAlert(`Auto-detection complete. Found ${foundParents} parent IDs.`, 'success');
             } catch (error) {
                 showAlert('Error: ' + error.message, 'error');
             }
