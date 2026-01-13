@@ -5137,6 +5137,8 @@
             leafLinkDataLoaded = false;
             needsData = {};  // Clear needs data
             needsDataLoading = null;  // Reset loading state
+            cachedBusinessCategories = null;  // Clear category cache
+            cachedBusinessCategoriesId = null;
             // Force refresh LeafLink data and reload FOH views
             ensureLeafLinkData(true).then(() => {
                 // Refresh FOH sections with new business data
@@ -22591,11 +22593,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             try {
                 let query = supabaseClient
                     .from('leaflink_product_mappings')
-                    .select('app_product_type');
+                    .select('app_product_type, business_id')
+                    .eq('is_active', true);
 
                 // If specific business selected, filter by it; otherwise get all mappings
                 if (currentBusinessId && currentBusinessId !== 'all') {
                     query = query.eq('business_id', currentBusinessId);
+                    console.log('Loading categories for business:', currentBusinessId);
+                } else {
+                    console.log('Loading categories for ALL businesses');
                 }
 
                 const { data, error } = await query;
@@ -22615,6 +22621,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const categories = [];
                 const seenTypes = new Set();
 
+                console.log('Raw mappings received:', data.length, data.map(m => m.app_product_type));
+
                 data.forEach((mapping, i) => {
                     if (!seenTypes.has(mapping.app_product_type)) {
                         seenTypes.add(mapping.app_product_type);
@@ -22626,7 +22634,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     }
                 });
 
-                console.log('Loaded', categories.length, 'categories from LeafLink mappings');
+                console.log('Built categories:', categories.map(c => c.key));
                 cachedBusinessCategories = categories;
                 cachedBusinessCategoriesId = currentBusinessId;
                 return categories;
