@@ -22583,23 +22583,22 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Load categories from business mappings (multi-tenant)
         async function loadBusinessCategories(forceReload = false) {
-            // If no business selected or viewing all, use defaults
-            if (!currentBusinessId || currentBusinessId === 'all') {
-                cachedBusinessCategories = getDefaultCategories();
-                cachedBusinessCategoriesId = 'all';
-                return cachedBusinessCategories;
-            }
-
             // Return cached if same business and not forcing reload
             if (!forceReload && cachedBusinessCategories && cachedBusinessCategoriesId === currentBusinessId) {
                 return cachedBusinessCategories;
             }
 
             try {
-                const { data, error } = await supabaseClient
+                let query = supabaseClient
                     .from('leaflink_product_mappings')
-                    .select('product_type')
-                    .eq('business_id', currentBusinessId);
+                    .select('product_type');
+
+                // If specific business selected, filter by it; otherwise get all mappings
+                if (currentBusinessId && currentBusinessId !== 'all') {
+                    query = query.eq('business_id', currentBusinessId);
+                }
+
+                const { data, error } = await query;
 
                 if (error) throw error;
 
