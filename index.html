@@ -23984,6 +23984,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 let category = getProductCategoryDynamic(productName, dynamicCategories);
                 if (!category) return;
 
+                // Skip if category not in current business's categories
+                if (!salesByCategory[category]) return;
+
                 // Determine strain type
                 let strainType = 'Hybrid';
                 if (productName.includes('sativa') || productName.includes('(s)')) strainType = 'Sativa';
@@ -24020,6 +24023,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Determine category using dynamic matching
             let category = getProductCategoryDynamic(matchText, dynamicCategories);
             if (!category) return;
+
+            // Skip if category not in current business's categories
+            if (!inventoryByCategory[category]) return;
 
             // Determine strain type
             let strainType = 'Hybrid';
