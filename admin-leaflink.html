@@ -759,59 +759,64 @@
             btn.textContent = 'Detecting...';
 
             try {
-                // Fetch cached products to find parent products by product line
-                const productsResponse = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/products`);
-                const cachedProducts = productsResponse.ok ? await productsResponse.json() : [];
+                // Call server-side auto-detect endpoint
+                const response = await fetch(`/api/internal/businesses/${currentBusinessId}/leaflink/suggest-mappings`);
+                if (!response.ok) throw new Error('Failed to get suggestions');
 
-                console.log('Cached products for parent lookup:', cachedProducts.length, 'products');
-                if (cachedProducts.length === 0) {
-                    showAlert('No cached products found. Click "Sync from LeafLink" in Products tab first.', 'error');
-                    btn.disabled = false;
-                    btn.textContent = 'Auto-Detect';
-                    return;
-                }
+                const suggestions = await response.json();
+                console.log('Server suggestions:', suggestions);
 
-                // Debug: show sample product structure
-                if (cachedProducts.length > 0) {
-                    console.log('Sample product:', JSON.stringify(cachedProducts[0], null, 2));
-                }
+                let updatedCount = 0;
+                let addedCount = 0;
 
-                let foundParents = 0;
-                // For each existing mapping with a product_line_id but no parent_id, find a parent
-                for (const mapping of currentMappings) {
-                    if (mapping.leaflink_product_line_id && !mapping.leaflink_parent_id) {
-                        console.log('Looking for parent for line ID:', mapping.leaflink_product_line_id);
+                // For each suggestion with a match, update or add mapping
+                for (const suggestion of suggestions) {
+                    if (!suggestion.suggested_product_line) continue;
 
-                        // Find a parent product in this product line (one with no parent)
-                        // Note: cached products use product_line_id field (not product_line)
-                        const parentProduct = cachedProducts.find(p => {
-                            const lineId = p.product_line_id;
-                            const hasNoParent = !p.parent_id;
-                            return lineId == mapping.leaflink_product_line_id && hasNoParent;
-                        });
+                    // Check if we already have a mapping for this product line
+                    const existingMapping = currentMappings.find(m =>
+                        m.leaflink_product_line_id == suggestion.suggested_product_line.id
+                    );
 
-                        if (parentProduct) {
-                            console.log('Found parent product:', parentProduct.leaflink_id, parentProduct.name);
-                            mapping.leaflink_parent_id = parentProduct.leaflink_id;
-                            foundParents++;
-                        } else {
-                            // Fallback: use any product from this line
-                            const anyProduct = cachedProducts.find(p => {
-                                return p.product_line_id == mapping.leaflink_product_line_id;
-                            });
-                            if (anyProduct) {
-                                console.log('Using fallback product:', anyProduct.leaflink_id, anyProduct.name);
-                                mapping.leaflink_parent_id = anyProduct.leaflink_id;
-                                foundParents++;
-                            } else {
-                                console.log('No products found for line ID:', mapping.leaflink_product_line_id);
-                            }
+                    if (existingMapping) {
+                        // Update existing mapping with parent ID and price if missing
+                        if (!existingMapping.leaflink_parent_id && suggestion.suggested_parent_id) {
+                            existingMapping.leaflink_parent_id = suggestion.suggested_parent_id;
+                            updatedCount++;
                         }
+                        if (!existingMapping.price_per_unit && suggestion.price_per_unit) {
+                            existingMapping.price_per_unit = suggestion.price_per_unit;
+                            updatedCount++;
+                        }
+                    } else {
+                        // Add new mapping
+                        currentMappings.push({
+                            app_product_type: suggestion.app_product_type,
+                            app_category: suggestion.app_category,
+                            leaflink_product_line_id: suggestion.suggested_product_line.id,
+                            leaflink_product_line_name: suggestion.suggested_product_line.name,
+                            leaflink_parent_id: suggestion.suggested_parent_id,
+                            leaflink_category_id: suggestion.leaflink_category_id,
+                            price_per_unit: suggestion.price_per_unit,
+                            leaflink_seller_id: suggestion.leaflink_seller_id,
+                            leaflink_brand_id: suggestion.leaflink_brand_id,
+                            leaflink_license_id: suggestion.leaflink_license_id,
+                            leaflink_unit_denomination_id: suggestion.leaflink_unit_denomination_id
+                        });
+                        addedCount++;
                     }
                 }
 
                 renderMappings();
-                showAlert(`Auto-detection complete. Found ${foundParents} parent IDs.`, 'success');
+                renderProductLines();
+                updateSyncStatus();
+
+                const messages = [];
+                if (addedCount > 0) messages.push(`Added ${addedCount} new mappings`);
+                if (updatedCount > 0) messages.push(`Updated ${updatedCount} fields`);
+                if (messages.length === 0) messages.push('No new matches found');
+
+                showAlert(`Auto-detection complete. ${messages.join(', ')}.`, 'success');
             } catch (error) {
                 showAlert('Error: ' + error.message, 'error');
             }

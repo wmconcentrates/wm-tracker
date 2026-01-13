@@ -476,21 +476,16 @@ app.get('/api/internal/businesses/:id/leaflink/suggest-mappings', async (req, re
             let parentProduct = null;
             if (matchedLine && allProducts) {
                 // Look for a product in this product line that has no parent (is itself a parent)
+                // Cached products use product_line_id and parent_id fields
                 parentProduct = allProducts.find(p => {
-                    const productLine = p.product_line;
-                    const hasNoParent = !p.parent || p.parent === null;
-                    const matchesLine = productLine == matchedLine.leaflink_id ||
-                                       (typeof productLine === 'object' && productLine?.id == matchedLine.leaflink_id);
+                    const hasNoParent = !p.parent_id;
+                    const matchesLine = p.product_line_id == matchedLine.leaflink_id;
                     return hasNoParent && matchesLine;
                 });
 
                 // If no parent-less product found, just use any product from this line
                 if (!parentProduct) {
-                    parentProduct = allProducts.find(p => {
-                        const productLine = p.product_line;
-                        return productLine == matchedLine.leaflink_id ||
-                               (typeof productLine === 'object' && productLine?.id == matchedLine.leaflink_id);
-                    });
+                    parentProduct = allProducts.find(p => p.product_line_id == matchedLine.leaflink_id);
                 }
             }
 
