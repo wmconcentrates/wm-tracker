@@ -780,6 +780,11 @@
                                 if (priceInput && !priceInput.value) {
                                     priceInput.value = s.price_per_unit;
                                 }
+                                // Also set parent ID if suggested
+                                const parentInput = row.querySelector('input[name="parent_id"]');
+                                if (parentInput && s.suggested_parent_id && !parentInput.value) {
+                                    parentInput.value = s.suggested_parent_id;
+                                }
                             }
                         }
                     }

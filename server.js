@@ -426,14 +426,13 @@ app.get('/api/internal/businesses/:id/leaflink/suggest-mappings', async (req, re
 
         if (error) throw error;
 
-        // Get a sample product to extract seller/brand/license IDs
-        const { data: sampleProducts } = await supabase
+        // Get all cached products to find parent products
+        const { data: allProducts } = await supabase
             .from('leaflink_products_cache')
             .select('*')
-            .eq('business_id', req.params.id)
-            .limit(1);
+            .eq('business_id', req.params.id);
 
-        const sampleProduct = sampleProducts?.[0];
+        const sampleProduct = allProducts?.[0];
 
         // Auto-detect mappings based on product line names
         const suggestions = [];
@@ -473,6 +472,28 @@ app.get('/api/internal/businesses/:id/leaflink/suggest-mappings', async (req, re
                 }
             }
 
+            // Find a parent product for this product line (a product with no parent that belongs to this line)
+            let parentProduct = null;
+            if (matchedLine && allProducts) {
+                // Look for a product in this product line that has no parent (is itself a parent)
+                parentProduct = allProducts.find(p => {
+                    const productLine = p.product_line;
+                    const hasNoParent = !p.parent || p.parent === null;
+                    const matchesLine = productLine == matchedLine.leaflink_id ||
+                                       (typeof productLine === 'object' && productLine?.id == matchedLine.leaflink_id);
+                    return hasNoParent && matchesLine;
+                });
+
+                // If no parent-less product found, just use any product from this line
+                if (!parentProduct) {
+                    parentProduct = allProducts.find(p => {
+                        const productLine = p.product_line;
+                        return productLine == matchedLine.leaflink_id ||
+                               (typeof productLine === 'object' && productLine?.id == matchedLine.leaflink_id);
+                    });
+                }
+            }
+
             suggestions.push({
                 app_product_type: appType.type,
                 app_category: appType.category,
@@ -482,6 +503,7 @@ app.get('/api/internal/businesses/:id/leaflink/suggest-mappings', async (req, re
                     id: matchedLine.leaflink_id,
                     name: matchedLine.name
                 } : null,
+                suggested_parent_id: parentProduct?.leaflink_id || null,
                 confidence: matchedLine ? confidence : 0,
                 // Include config from sample product
                 leaflink_seller_id: sampleProduct?.seller_id,
