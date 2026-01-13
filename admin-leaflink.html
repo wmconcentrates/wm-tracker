@@ -783,10 +783,10 @@
                         console.log('Looking for parent for line ID:', mapping.leaflink_product_line_id);
 
                         // Find a parent product in this product line (one with no parent)
+                        // Note: cached products use product_line_id field (not product_line)
                         const parentProduct = cachedProducts.find(p => {
-                            const productLine = p.product_line;
-                            const lineId = typeof productLine === 'object' ? productLine?.id : productLine;
-                            const hasNoParent = !p.parent || p.parent === null;
+                            const lineId = p.product_line_id;
+                            const hasNoParent = !p.parent_id;
                             return lineId == mapping.leaflink_product_line_id && hasNoParent;
                         });
 
@@ -797,9 +797,7 @@
                         } else {
                             // Fallback: use any product from this line
                             const anyProduct = cachedProducts.find(p => {
-                                const productLine = p.product_line;
-                                const lineId = typeof productLine === 'object' ? productLine?.id : productLine;
-                                return lineId == mapping.leaflink_product_line_id;
+                                return p.product_line_id == mapping.leaflink_product_line_id;
                             });
                             if (anyProduct) {
                                 console.log('Using fallback product:', anyProduct.leaflink_id, anyProduct.name);
