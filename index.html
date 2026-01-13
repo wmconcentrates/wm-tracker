@@ -23107,8 +23107,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             container.innerHTML = '<div style="grid-column: span 3; text-align: center; padding: 40px; color: var(--text-secondary);">Loading...</div>';
         }
 
-        // Load dynamic categories from business LeafLink mappings
-        const dynamicCategories = await loadBusinessCategories();
+        // Load dynamic categories from business LeafLink mappings (force reload to get current business)
+        const dynamicCategories = await loadBusinessCategories(true);
 
         // Initialize category data with dynamic categories
         inventoryCategoryData = {};
@@ -23953,8 +23953,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Ensure pipeline data is loaded first (it populates pipelineCategoryData)
             await loadSalesPipeline();
 
-        // Load dynamic categories from business LeafLink mappings
-        const dynamicCategories = await loadBusinessCategories();
+        // Load dynamic categories from business LeafLink mappings (pass forceReload through)
+        const dynamicCategories = await loadBusinessCategories(forceReload);
         const categoryKeys = dynamicCategories.map(c => c.key);
         const strainTypes = ['Indica', 'Sativa', 'Hybrid'];
 
