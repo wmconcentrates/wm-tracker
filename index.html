@@ -22591,7 +22591,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             try {
                 let query = supabaseClient
                     .from('leaflink_product_mappings')
-                    .select('product_type');
+                    .select('app_product_type');
 
                 // If specific business selected, filter by it; otherwise get all mappings
                 if (currentBusinessId && currentBusinessId !== 'all') {
@@ -22616,11 +22616,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const seenTypes = new Set();
 
                 data.forEach((mapping, i) => {
-                    if (!seenTypes.has(mapping.product_type)) {
-                        seenTypes.add(mapping.product_type);
+                    if (!seenTypes.has(mapping.app_product_type)) {
+                        seenTypes.add(mapping.app_product_type);
                         categories.push({
-                            key: mapping.product_type,
-                            label: mapping.product_type,
+                            key: mapping.app_product_type,
+                            label: mapping.app_product_type,
                             color: colors[categories.length % colors.length]
                         });
                     }
