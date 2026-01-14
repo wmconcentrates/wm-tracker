@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
+const { google } = require('googleapis');
 const app = express();
 
 // Environment variables
@@ -22,6 +23,25 @@ if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     console.log('Supabase client initialized');
 } else {
     console.warn('Supabase credentials not configured - using legacy mode');
+}
+
+// Google Drive Service Account Configuration
+let googleDrive = null;
+const GOOGLE_SERVICE_ACCOUNT_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+if (GOOGLE_SERVICE_ACCOUNT_KEY) {
+    try {
+        const credentials = JSON.parse(GOOGLE_SERVICE_ACCOUNT_KEY);
+        const auth = new google.auth.GoogleAuth({
+            credentials,
+            scopes: ['https://www.googleapis.com/auth/drive.readonly']
+        });
+        googleDrive = google.drive({ version: 'v3', auth });
+        console.log('Google Drive service account initialized');
+    } catch (error) {
+        console.warn('Google Drive service account not configured:', error.message);
+    }
+} else {
+    console.warn('GOOGLE_SERVICE_ACCOUNT_KEY not set - COA sync will not work');
 }
 
 // Enable CORS and JSON parsing
@@ -874,6 +894,84 @@ app.get('/api/orders', async (req, res) => {
         res.json(data);
     } catch (error) {
         console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================
+// GOOGLE DRIVE COA ENDPOINTS
+// ============================================
+
+// List COA PDF files from Google Drive
+app.get('/api/google-drive/list-coas/:slug', async (req, res) => {
+    if (!googleDrive) {
+        return res.status(503).json({ error: 'Google Drive not configured. Set GOOGLE_SERVICE_ACCOUNT_KEY in .env.local' });
+    }
+
+    try {
+        const { slug } = req.params;
+        const folderName = req.query.folder || 'COAs';
+
+        // Find the COAs folder
+        const folderResponse = await googleDrive.files.list({
+            q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+            fields: 'files(id, name)',
+            pageSize: 1
+        });
+
+        if (!folderResponse.data.files || folderResponse.data.files.length === 0) {
+            return res.status(404).json({
+                error: `Folder "${folderName}" not found. Make sure it's shared with the service account.`
+            });
+        }
+
+        const folderId = folderResponse.data.files[0].id;
+
+        // List PDF files in the folder
+        const filesResponse = await googleDrive.files.list({
+            q: `'${folderId}' in parents and mimeType='application/pdf' and trashed=false`,
+            fields: 'files(id, name, createdTime, modifiedTime)',
+            orderBy: 'modifiedTime desc',
+            pageSize: 100
+        });
+
+        res.json({
+            folderId,
+            folderName,
+            files: filesResponse.data.files || []
+        });
+    } catch (error) {
+        console.error('Google Drive list error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Download a COA PDF file from Google Drive
+app.get('/api/google-drive/download/:slug/:fileId', async (req, res) => {
+    if (!googleDrive) {
+        return res.status(503).json({ error: 'Google Drive not configured' });
+    }
+
+    try {
+        const { fileId } = req.params;
+
+        // Get file content
+        const response = await googleDrive.files.get({
+            fileId,
+            alt: 'media'
+        }, {
+            responseType: 'arraybuffer'
+        });
+
+        // Return as base64 for frontend parsing
+        const base64 = Buffer.from(response.data).toString('base64');
+        res.json({
+            fileId,
+            data: base64,
+            contentType: 'application/pdf'
+        });
+    } catch (error) {
+        console.error('Google Drive download error:', error);
         res.status(500).json({ error: error.message });
     }
 });

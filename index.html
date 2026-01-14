@@ -2208,23 +2208,18 @@
                         <div>
                             <h3 style="color: var(--accent-green); margin: 0 0 5px 0; display: flex; align-items: center; gap: 8px;">
                                 <span>📄</span> COA Auto-Import
-                                <span id="coaSyncStatus" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 20px; background: var(--bg-tertiary); color: var(--text-secondary);">Not Connected</span>
                             </h3>
                             <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">
-                                Automatically imports test results from Google Drive
+                                Imports test results from shared Google Drive folder
                             </p>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button id="coaConnectBtn" onclick="connectGoogleDrive()" style="padding: 10px 20px; background: #4285f4; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12.545 10.239v3.821h5.445c-.712 2.315-2.647 3.972-5.445 3.972a6.033 6.033 0 110-12.064c1.498 0 2.866.549 3.921 1.453l2.814-2.814A9.969 9.969 0 0012.545 2C7.021 2 2.543 6.477 2.543 12s4.478 10 10.002 10c8.396 0 10.249-7.85 9.426-11.748l-9.426-.013z"/></svg>
-                                Connect Google Drive
-                            </button>
-                            <button id="coaSyncBtn" onclick="syncCOAsFromDrive()" style="padding: 10px 20px; background: var(--accent-green); border: none; border-radius: 8px; color: black; font-weight: 600; cursor: pointer; display: none;">
-                                🔄 Sync Now
+                            <button id="coaSyncBtn" onclick="syncCOAsFromDrive()" style="padding: 10px 20px; background: var(--accent-green); border: none; border-radius: 8px; color: black; font-weight: 600; cursor: pointer;">
+                                🔄 Sync COAs
                             </button>
                         </div>
                     </div>
-                    <div id="coaSyncResults" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                    <div id="coaSyncResults" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">
                             Last sync: <span id="coaLastSync">Never</span> |
                             COAs imported: <span id="coaImportCount">0</span>
@@ -17267,161 +17262,38 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         // ==============================================
-        // COA AUTO-IMPORT (Google Drive Integration)
+        // COA AUTO-IMPORT (via backend service account)
         // ==============================================
-
-        // Google API Configuration
-        // You'll need to create these at console.cloud.google.com
-        const COA_CONFIG = {
-            // Replace with your Google Cloud project credentials
-            clientId: localStorage.getItem('googleClientId') || '',
-            apiKey: localStorage.getItem('googleApiKey') || '',
-            scopes: 'https://www.googleapis.com/auth/drive.readonly',
-            folderName: 'COAs',
-            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-        };
-
-        let googleTokenClient = null;
-        let googleAccessToken = null;
-        let coaFolderId = null;
         let processedCOAs = JSON.parse(localStorage.getItem('processedCOAs') || '[]');
 
-        // Initialize Google API on page load
-        function initGoogleAPI() {
-            // We use OAuth tokens with direct fetch() calls, no gapi client needed
-            checkGoogleConnection();
+        // Initialize COA sync UI on page load
+        function initCOASync() {
+            const lastSync = localStorage.getItem('coaLastSync');
+            if (lastSync) {
+                document.getElementById('coaLastSync').textContent = new Date(lastSync).toLocaleString();
+            }
+            document.getElementById('coaImportCount').textContent = processedCOAs.length;
         }
 
-        // Check if already connected
-        function checkGoogleConnection() {
-            googleAccessToken = localStorage.getItem('googleAccessToken');
-            const tokenExpiry = localStorage.getItem('googleTokenExpiry');
-
-            if (googleAccessToken && tokenExpiry && Date.now() < parseInt(tokenExpiry)) {
-                updateCOASyncUI(true);
-                // Auto-sync on page load if connected
-                setTimeout(() => syncCOAsFromDrive(), 2000);
-            }
-        }
-
-        // Connect to Google Drive
-        async function connectGoogleDrive() {
-            // Check if credentials are configured
-            if (!COA_CONFIG.clientId) {
-                const clientId = prompt(
-                    'Enter your Google Cloud Client ID:\n\n' +
-                    'To get this:\n' +
-                    '1. Go to console.cloud.google.com\n' +
-                    '2. Create a project (or select existing)\n' +
-                    '3. Enable Google Drive API\n' +
-                    '4. Go to APIs & Services → Credentials\n' +
-                    '5. Create OAuth 2.0 Client ID (Web application)\n' +
-                    '6. Add your domain to Authorized JavaScript origins\n' +
-                    '7. Copy the Client ID'
-                );
-                if (clientId) {
-                    localStorage.setItem('googleClientId', clientId);
-                    COA_CONFIG.clientId = clientId;
-                } else {
-                    return;
-                }
-            }
-
-            try {
-                // Initialize token client
-                if (typeof google !== 'undefined' && google.accounts) {
-                    googleTokenClient = google.accounts.oauth2.initTokenClient({
-                        client_id: COA_CONFIG.clientId,
-                        scope: COA_CONFIG.scopes,
-                        callback: (response) => {
-                            if (response.access_token) {
-                                googleAccessToken = response.access_token;
-                                localStorage.setItem('googleAccessToken', response.access_token);
-                                localStorage.setItem('googleTokenExpiry', Date.now() + (response.expires_in * 1000));
-                                updateCOASyncUI(true);
-                                alert('✅ Connected to Google Drive!\n\nMake sure you have a folder named "COAs" in your Drive.');
-                                syncCOAsFromDrive();
-                            }
-                        }
-                    });
-                    googleTokenClient.requestAccessToken();
-                } else {
-                    alert('Google Identity Services not loaded. Please refresh the page and try again.');
-                }
-            } catch (error) {
-                console.error('Google Drive connection error:', error);
-                alert('Error connecting to Google Drive: ' + error.message);
-            }
-        }
-
-        // Update the UI based on connection status
-        function updateCOASyncUI(connected) {
-            const statusEl = document.getElementById('coaSyncStatus');
-            const connectBtn = document.getElementById('coaConnectBtn');
-            const syncBtn = document.getElementById('coaSyncBtn');
-            const resultsEl = document.getElementById('coaSyncResults');
-
-            if (connected) {
-                statusEl.textContent = 'Connected';
-                statusEl.style.background = 'rgba(16, 185, 129, 0.3)';
-                statusEl.style.color = 'var(--accent-green)';
-                connectBtn.style.display = 'none';
-                syncBtn.style.display = 'block';
-                resultsEl.style.display = 'block';
-
-                const lastSync = localStorage.getItem('coaLastSync');
-                if (lastSync) {
-                    document.getElementById('coaLastSync').textContent = new Date(lastSync).toLocaleString();
-                }
-                document.getElementById('coaImportCount').textContent = processedCOAs.length;
-            } else {
-                statusEl.textContent = 'Not Connected';
-                statusEl.style.background = 'var(--bg-tertiary)';
-                statusEl.style.color = 'var(--text-secondary)';
-                connectBtn.style.display = 'flex';
-                syncBtn.style.display = 'none';
-                resultsEl.style.display = 'none';
-            }
-        }
-
-        // Sync COAs from Google Drive
+        // Sync COAs from Google Drive (via backend service account)
         async function syncCOAsFromDrive() {
-            if (!googleAccessToken) {
-                alert('Please connect to Google Drive first');
-                return;
-            }
-
             const syncBtn = document.getElementById('coaSyncBtn');
             syncBtn.textContent = '🔄 Syncing...';
             syncBtn.disabled = true;
 
             try {
-                // Find the COAs folder
-                if (!coaFolderId) {
-                    const folderResponse = await fetch(
-                        `https://www.googleapis.com/drive/v3/files?q=name='${COA_CONFIG.folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
-                        { headers: { Authorization: `Bearer ${googleAccessToken}` } }
-                    );
-                    const folderData = await folderResponse.json();
+                // Get current business slug
+                const businessSlug = businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse';
 
-                    if (folderData.files && folderData.files.length > 0) {
-                        coaFolderId = folderData.files[0].id;
-                    } else {
-                        alert('COAs folder not found in Google Drive.\n\nPlease create a folder named "COAs" in your Google Drive.');
-                        syncBtn.textContent = '🔄 Sync Now';
-                        syncBtn.disabled = false;
-                        return;
-                    }
+                // List COA files via our backend
+                const listResponse = await fetch(`/api/google-drive/list-coas/${businessSlug}`);
+                const listData = await listResponse.json();
+
+                if (!listResponse.ok) {
+                    throw new Error(listData.error || 'Failed to list COA files');
                 }
 
-                // List PDF files in the folder
-                const filesResponse = await fetch(
-                    `https://www.googleapis.com/drive/v3/files?q='${coaFolderId}' in parents and mimeType='application/pdf' and trashed=false&fields=files(id,name,createdTime,modifiedTime)&orderBy=modifiedTime desc`,
-                    { headers: { Authorization: `Bearer ${googleAccessToken}` } }
-                );
-                const filesData = await filesResponse.json();
-
-                if (!filesData.files || filesData.files.length === 0) {
+                if (!listData.files || listData.files.length === 0) {
                     alert('No PDF files found in COAs folder.');
                     syncBtn.textContent = '🔄 Sync Now';
                     syncBtn.disabled = false;
@@ -17434,20 +17306,28 @@ ${employeeReport || 'No activity recorded today'}
                 let errorCount = 0;
                 const importDetails = [];
 
-                for (const file of filesData.files) {
+                for (const file of listData.files) {
                     if (processedCOAs.includes(file.id)) {
                         skippedCount++;
                         continue;
                     }
 
                     try {
-                        // Download the PDF
-                        const pdfResponse = await fetch(
-                            `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
-                            { headers: { Authorization: `Bearer ${googleAccessToken}` } }
-                        );
-                        const pdfBlob = await pdfResponse.blob();
-                        const pdfData = await pdfBlob.arrayBuffer();
+                        // Download the PDF via our backend
+                        const downloadResponse = await fetch(`/api/google-drive/download/${businessSlug}/${file.id}`);
+                        const downloadData = await downloadResponse.json();
+
+                        if (!downloadResponse.ok) {
+                            throw new Error(downloadData.error || 'Failed to download file');
+                        }
+
+                        // Convert base64 to ArrayBuffer for PDF parsing
+                        const binaryString = atob(downloadData.data);
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) {
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }
+                        const pdfData = bytes.buffer;
 
                         // Parse the PDF
                         const coaData = await parseCOAPdf(pdfData);
@@ -17470,6 +17350,7 @@ ${employeeReport || 'No activity recorded today'}
                     } catch (err) {
                         console.error('Error processing file:', file.name, err);
                         errorCount++;
+                        importDetails.push(`❌ ${file.name}: ${err.message}`);
                     }
                 }
 
@@ -17499,15 +17380,7 @@ ${employeeReport || 'No activity recorded today'}
 
             } catch (error) {
                 console.error('Sync error:', error);
-                if (error.message.includes('401') || error.message.includes('invalid_token')) {
-                    localStorage.removeItem('googleAccessToken');
-                    localStorage.removeItem('googleTokenExpiry');
-                    googleAccessToken = null;
-                    updateCOASyncUI(false);
-                    alert('Google Drive session expired. Please reconnect.');
-                } else {
-                    alert('Error syncing COAs: ' + error.message);
-                }
+                alert('Error syncing COAs: ' + error.message);
             }
 
             syncBtn.textContent = '🔄 Sync Now';
@@ -17732,18 +17605,9 @@ ${employeeReport || 'No activity recorded today'}
             }
         }
 
-        // Disconnect Google Drive
-        function disconnectGoogleDrive() {
-            localStorage.removeItem('googleAccessToken');
-            localStorage.removeItem('googleTokenExpiry');
-            googleAccessToken = null;
-            coaFolderId = null;
-            updateCOASyncUI(false);
-        }
-
-        // Initialize on page load
+        // Initialize COA sync on page load
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initGoogleAPI, 1000);
+            setTimeout(initCOASync, 1000);
         });
 
         // ==============================================
