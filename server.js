@@ -30,14 +30,21 @@ let googleDrive = null;
 const GOOGLE_SERVICE_ACCOUNT_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
 if (GOOGLE_SERVICE_ACCOUNT_KEY) {
     try {
-        // Fix for Railway/Heroku: env vars convert \n to actual newlines, breaking JSON
-        // Always escape any actual newlines or carriage returns before parsing
-        const keyToParse = GOOGLE_SERVICE_ACCOUNT_KEY
-            .replace(/\r\n/g, '\\n')
-            .replace(/\n/g, '\\n')
-            .replace(/\r/g, '\\n');
+        let jsonString;
 
-        const credentials = JSON.parse(keyToParse);
+        // Support base64-encoded key (recommended for Railway/Heroku to avoid escape issues)
+        if (GOOGLE_SERVICE_ACCOUNT_KEY.startsWith('ey')) {
+            // Looks like base64 (starts with 'ey' which is '{"' in base64)
+            jsonString = Buffer.from(GOOGLE_SERVICE_ACCOUNT_KEY, 'base64').toString('utf8');
+        } else {
+            // Raw JSON - fix newlines for platforms that convert \n to actual newlines
+            jsonString = GOOGLE_SERVICE_ACCOUNT_KEY
+                .replace(/\r\n/g, '\\n')
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\n');
+        }
+
+        const credentials = JSON.parse(jsonString);
 
         // Ensure private_key has actual newlines for the crypto library
         if (credentials.private_key) {
