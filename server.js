@@ -30,9 +30,19 @@ let googleDrive = null;
 const GOOGLE_SERVICE_ACCOUNT_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
 if (GOOGLE_SERVICE_ACCOUNT_KEY) {
     try {
-        // Fix for Railway: actual newlines in env vars need to be converted back to \n escape sequences
-        const fixedKey = GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\n/g, '\\n');
-        const credentials = JSON.parse(fixedKey);
+        // Fix for Railway: env vars with \n get converted to actual newlines, breaking JSON parsing
+        // Replace actual newlines with escaped \n so JSON.parse works
+        let keyToParse = GOOGLE_SERVICE_ACCOUNT_KEY;
+        if (GOOGLE_SERVICE_ACCOUNT_KEY.includes('\n')) {
+            keyToParse = GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\n/g, '\\n');
+        }
+        const credentials = JSON.parse(keyToParse);
+
+        // Ensure private_key has actual newlines (not literal \n strings)
+        if (credentials.private_key && !credentials.private_key.includes('\n')) {
+            credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+        }
+
         const auth = new google.auth.GoogleAuth({
             credentials,
             scopes: ['https://www.googleapis.com/auth/drive.readonly']
