@@ -30,26 +30,18 @@ let googleDrive = null;
 const GOOGLE_SERVICE_ACCOUNT_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
 if (GOOGLE_SERVICE_ACCOUNT_KEY) {
     try {
-        console.log('Raw key length:', GOOGLE_SERVICE_ACCOUNT_KEY.length);
-        console.log('Raw key has actual newlines:', GOOGLE_SERVICE_ACCOUNT_KEY.includes('\n'));
-        console.log('Raw key has literal backslash-n:', GOOGLE_SERVICE_ACCOUNT_KEY.includes('\\n'));
+        // Fix for Railway/Heroku: env vars convert \n to actual newlines, breaking JSON
+        // Always escape any actual newlines or carriage returns before parsing
+        const keyToParse = GOOGLE_SERVICE_ACCOUNT_KEY
+            .replace(/\r\n/g, '\\n')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\n');
 
-        // Fix for Railway: env vars with \n get converted to actual newlines, breaking JSON parsing
-        // Replace actual newlines with escaped \n so JSON.parse works
-        let keyToParse = GOOGLE_SERVICE_ACCOUNT_KEY;
-        if (GOOGLE_SERVICE_ACCOUNT_KEY.includes('\n')) {
-            keyToParse = GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\n/g, '\\n');
-        }
         const credentials = JSON.parse(keyToParse);
 
-        console.log('Parsed private_key length:', credentials.private_key?.length);
-        console.log('Private key has actual newlines:', credentials.private_key?.includes('\n'));
-        console.log('Private key starts with:', credentials.private_key?.substring(0, 30));
-
-        // Ensure private_key has actual newlines (not literal \n strings)
-        if (credentials.private_key && !credentials.private_key.includes('\n')) {
+        // Ensure private_key has actual newlines for the crypto library
+        if (credentials.private_key) {
             credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
-            console.log('Fixed private_key, now has newlines:', credentials.private_key.includes('\n'));
         }
 
         const auth = new google.auth.GoogleAuth({
