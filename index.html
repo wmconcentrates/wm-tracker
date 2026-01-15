@@ -17807,6 +17807,34 @@ ${employeeReport || 'No activity recorded today'}
 
                 if (error) throw error;
 
+                // Add to Google Sheets for Canva label generation
+                try {
+                    const labelData = {
+                        productType: batch.product_made || '',
+                        strainName: batch.strain || '',
+                        totalThc: coaData.totalThc,
+                        totalCbd: coaData.totalCbd || 0,
+                        netWeight: batch.net_weight || batch.final_weight || '',
+                        cultivationLicense: batch.cultivation_license || '',
+                        batchId: batch.id,
+                        useByDate: batch.test_expiration_date || ''
+                    };
+
+                    const sheetResponse = await fetch('/api/google-sheets/add-label', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(labelData)
+                    });
+
+                    if (sheetResponse.ok) {
+                        console.log(`Label row added to spreadsheet for batch ${batch.id}`);
+                    } else {
+                        console.warn('Failed to add label to spreadsheet:', await sheetResponse.text());
+                    }
+                } catch (sheetError) {
+                    console.warn('Spreadsheet update failed (non-critical):', sheetError);
+                }
+
                 return { success: true, message: `Updated batch ${batch.id}` };
             } catch (error) {
                 console.error('Database update error:', error);

@@ -25,9 +25,12 @@ if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     console.warn('Supabase credentials not configured - using legacy mode');
 }
 
-// Google Drive Service Account Configuration
+// Google Drive & Sheets Service Account Configuration
 let googleDrive = null;
+let googleSheets = null;
 const GOOGLE_SERVICE_ACCOUNT_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+const GOOGLE_LABEL_SPREADSHEET_ID = process.env.GOOGLE_LABEL_SPREADSHEET_ID;
+
 if (GOOGLE_SERVICE_ACCOUNT_KEY) {
     try {
         let jsonString;
@@ -53,15 +56,24 @@ if (GOOGLE_SERVICE_ACCOUNT_KEY) {
 
         const auth = new google.auth.GoogleAuth({
             credentials,
-            scopes: ['https://www.googleapis.com/auth/drive.readonly']
+            scopes: [
+                'https://www.googleapis.com/auth/drive.readonly',
+                'https://www.googleapis.com/auth/spreadsheets'
+            ]
         });
         googleDrive = google.drive({ version: 'v3', auth });
+        googleSheets = google.sheets({ version: 'v4', auth });
         console.log('Google Drive service account initialized');
+        console.log('Google Sheets service account initialized');
     } catch (error) {
-        console.warn('Google Drive service account not configured:', error.message);
+        console.warn('Google Drive/Sheets service account not configured:', error.message);
     }
 } else {
     console.warn('GOOGLE_SERVICE_ACCOUNT_KEY not set - COA sync will not work');
+}
+
+if (!GOOGLE_LABEL_SPREADSHEET_ID) {
+    console.warn('GOOGLE_LABEL_SPREADSHEET_ID not set - Label spreadsheet sync disabled');
 }
 
 // Enable CORS and JSON parsing
@@ -992,6 +1004,66 @@ app.get('/api/google-drive/download/:slug/:fileId', async (req, res) => {
         });
     } catch (error) {
         console.error('Google Drive download error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Google Sheets - Add label row when COA results are imported
+app.post('/api/google-sheets/add-label', async (req, res) => {
+    if (!googleSheets) {
+        return res.status(503).json({ error: 'Google Sheets not configured' });
+    }
+    if (!GOOGLE_LABEL_SPREADSHEET_ID) {
+        return res.status(503).json({ error: 'GOOGLE_LABEL_SPREADSHEET_ID not configured' });
+    }
+
+    try {
+        const {
+            productType,
+            strainName,
+            totalThc,
+            totalCbd,
+            netWeight,
+            cultivationLicense,
+            batchId,
+            useByDate
+        } = req.body;
+
+        // Format the row data
+        const today = new Date().toLocaleDateString('en-US');
+        const row = [
+            productType || '',
+            strainName || '',
+            totalThc ? `${totalThc}%` : '',
+            totalCbd ? `${totalCbd}%` : '',
+            netWeight || '',
+            cultivationLicense || '',
+            batchId || '',
+            useByDate || '',
+            today,
+            'New'
+        ];
+
+        // Append to spreadsheet
+        const response = await googleSheets.spreadsheets.values.append({
+            spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
+            range: 'Sheet1!A:J',
+            valueInputOption: 'USER_ENTERED',
+            insertDataOption: 'INSERT_ROWS',
+            resource: {
+                values: [row]
+            }
+        });
+
+        console.log(`Label row added for batch ${batchId}: ${strainName}`);
+        res.json({
+            success: true,
+            updatedRange: response.data.updates?.updatedRange,
+            batchId
+        });
+
+    } catch (error) {
+        console.error('Google Sheets error:', error);
         res.status(500).json({ error: error.message });
     }
 });
