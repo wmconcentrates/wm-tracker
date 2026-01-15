@@ -2235,130 +2235,131 @@
                 </div>
                 
                 <div id="testingForm" style="display: none;">
+                    <!-- Current Batch Info -->
                     <div id="currentTestInfo" style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                        <h3 style="color: var(--accent-purple); margin-bottom: 10px;">Current Batch Info</h3>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                             <div>
-                                <strong style="color: var(--accent-orange);">Current Batch ID:</strong> 
-                                <span id="currentBatchIdDisplay" style="font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--accent-green);"></span>
+                                <span style="color: var(--text-secondary); font-size: 0.85rem;">Current Batch</span>
+                                <div id="currentBatchIdDisplay" style="font-family: 'Space Mono', monospace; font-size: 1.4rem; font-weight: 700; color: var(--accent-green);"></div>
                             </div>
+                            <div id="testingBatchStatus" style="text-align: right;"></div>
                         </div>
                         <div id="testBatchDetails"></div>
-<!-- Print Label Section -->                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">                            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">                                <label style="color: var(--text-secondary); margin: 0;">Print Label:</label>                                <select id="testingLabelType" style="padding: 8px 12px; border-radius: 8px; border: 2px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary);">                                    <option value="intake">📥 Intake Label (2x3)</option>                                    <option value="postprod">📦 Post-Production Label (2x1.5)</option>                                    <option value="labeling">🏷️ Labeling Complete Label</option>                                </select>                                <button type="button" onclick="printTestingLabel()" class="btn" style="background: var(--accent-purple); padding: 8px 20px;">                                    🖨️ Print                                </button>                            </div>                        </div>
                     </div>
 
-                    <!-- Finalize Batch for Testing -->
-                    <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(147, 51, 234, 0.15)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-orange);">
-                        <h3 style="color: var(--accent-orange); margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                            <span>📋</span> Finalize Batch for Testing
-                        </h3>
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px; line-height: 1.5;">
-                            Complete this section when extraction is done. Batch ID protocol: M.D.XXXX (expiration month.day.last 4 of METRC tag)
-                        </p>
-
-                        <div id="readyForTestingStatus" style="margin-bottom: 15px;"></div>
-
-                        <div id="dealersChoiceAlert" style="display: none; background: rgba(245, 158, 11, 0.2); border: 2px solid var(--accent-orange); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                            <strong style="color: var(--accent-orange);">🎲 Dealer's Choice Batch</strong>
-                            <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">This batch was marked for dealer's choice at intake. Select the final strain type below.</p>
+                    <!-- RTA Alert (shown when full panel needed) -->
+                    <div id="rtaAlertBanner" style="display: none; background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2)); border: 2px solid var(--accent-red); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.5rem;">⚠️</span>
+                            <div>
+                                <strong style="color: var(--accent-red);">RTA Full Panel Required</strong>
+                                <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">This product type requires a full panel test for RTA qualification.</p>
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- Simplified Submit to Testing Form -->
+                    <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.15)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-blue);">
+                        <h3 style="color: var(--accent-blue); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                            <span>📋</span> Submit to Testing
+                        </h3>
 
                         <div class="form-grid" style="margin-bottom: 15px;">
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label>Product Name</label>
                                 <input type="text" id="finalProductName" placeholder="e.g., Blue Dream Live Resin" required>
-                                <div class="help-text">Final name for this batch</div>
+                                <div class="help-text">Final wholesale product name</div>
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
-                                <label>Product Type</label>
-                                <select id="finalConsistency" required>
-                                    <option value="">Select product type...</option>
-                                    <option value="Wax">Wax</option>
-                                    <option value="Sugar Wax">Sugar Wax</option>
-                                    <option value="Shatter">Shatter</option>
-                                    <option value="Live Resin Carts">Live Resin Carts</option>
-                                    <option value="Live Resin AIOs">Live Resin AIOs</option>
-                                    <option value="Brick Hash">Brick Hash</option>
-                                    <option value="Hash Hits">Hash Hits</option>
-                                </select>
-                                <div class="help-text">Final product type</div>
+                                <label>Batch ID</label>
+                                <input type="text" id="newBatchId" placeholder="e.g., 10.3.1212" style="font-family: 'Space Mono', monospace; font-size: 1.2rem; font-weight: 700;" oninput="parseBatchId(this.value)">
+                                <div class="help-text">Format: M.D.XXXX (expiration month.day.METRC last 4)</div>
                             </div>
                         </div>
 
-                        <div class="form-grid" style="margin-bottom: 15px;">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label>Strain Type (Lid Color)</label>
-                                <select id="finalStrainType" required>
-                                    <option value="Indica">Indica (Blue Lid)</option>
-                                    <option value="Sativa">Sativa (Red Lid)</option>
-                                    <option value="Hybrid">Hybrid (Green Lid)</option>
-                                </select>
-                                <div class="help-text">Redesignate if needed</div>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label>Expiration Date</label>
-                                <input type="date" id="testExpirationDate" required>
-                                <div class="help-text">For batch ID generation</div>
+                        <!-- Auto-parsed info display -->
+                        <div id="parsedBatchInfo" style="display: none; background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.9rem;">
+                                <div>
+                                    <span style="color: var(--text-secondary);">Expiration Date:</span>
+                                    <strong id="parsedExpiration" style="color: var(--accent-green); margin-left: 8px;"></strong>
+                                </div>
+                                <div>
+                                    <span style="color: var(--text-secondary);">METRC Tag (last 4):</span>
+                                    <strong id="parsedMetrc" style="color: var(--accent-purple); margin-left: 8px; font-family: 'Space Mono', monospace;"></strong>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="form-grid" style="margin-bottom: 15px;">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label>Last 4 of METRC Tag (Optional)</label>
-                                <input type="text" id="metrcLast4" maxlength="4" placeholder="e.g., 5678" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;">
-                                <div class="help-text">For new batch ID</div>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label>Generated Batch ID</label>
-                                <input type="text" id="newBatchId" readonly placeholder="Enter expiration date & METRC tag" style="font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700; background: var(--bg-primary); color: var(--accent-green);">
-                                <div class="help-text">Format: M.D.XXXX</div>
-                            </div>
-                        </div>
-
-                        <button type="button" id="markReadyForTestingBtn" onclick="markReadyForTesting()" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font-size: 1.1rem;">
-                            <span>✓</span> Mark as Extraction Complete (Ready for Testing)
-                        </button>
-                        <div class="help-text" style="margin-top: 8px; text-align: center;">Saves product info and marks batch ready for lab submission</div>
-                    </div>
-
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Date Submitted to Lab</label>
-                            <input type="date" id="testSubmittedDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label>RTA (Full Panel)?</label>
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label>RTA Full Panel?</label>
                             <select id="isRTA" required onchange="updateTestResultVisibility()">
                                 <option value="no">No - Standard Potency Only</option>
                                 <option value="yes">Yes - Full Panel RTA</option>
                             </select>
-                            <div class="help-text">Full panel RTA required once per month</div>
                         </div>
-                        <div class="form-group" id="testResultGroup" style="display: none;">
-                            <label>Full Panel Test Result</label>
-                            <select id="fullPanelResult">
-                                <option value="pending">Pending - Awaiting Results</option>
-                                <option value="pass">✓ PASSED - All Tests Clear</option>
-                                <option value="fail">✗ FAILED - Contamination Found</option>
+
+                        <!-- Hidden field - auto-set to today -->
+                        <input type="hidden" id="testSubmittedDate">
+
+                        <!-- Hidden fields for compatibility -->
+                        <input type="hidden" id="testExpirationDate">
+                        <input type="hidden" id="metrcLast4">
+                        <input type="hidden" id="finalConsistency">
+                        <input type="hidden" id="finalStrainType">
+
+                        <button type="button" id="submitToTestingBtn" onclick="submitToTesting()" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font-size: 1.1rem;">
+                            <span>🧪</span> Submit Batch to Lab
+                        </button>
+                    </div>
+
+                    <!-- Test Results Section (shown after COA sync populates data) -->
+                    <div id="testResultsSection" style="display: none; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(59, 130, 246, 0.15)); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid var(--accent-green);">
+                        <h3 style="color: var(--accent-green); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                            <span>✓</span> Test Results Received
+                        </h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                            <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; text-align: center;">
+                                <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">THC</div>
+                                <div id="displayThc" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">--</div>
+                            </div>
+                            <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; text-align: center;">
+                                <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">CBD</div>
+                                <div id="displayCbd" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">--</div>
+                            </div>
+                            <div style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; text-align: center;">
+                                <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Status</div>
+                                <div id="displayStatus" style="font-size: 1.2rem; font-weight: 700; color: var(--accent-purple);">Pending</div>
+                            </div>
+                        </div>
+                        <div id="testResultsNotes" style="font-size: 0.9rem; color: var(--text-secondary); padding: 10px; background: var(--bg-secondary); border-radius: 8px;"></div>
+                    </div>
+
+                    <!-- Full Panel Result (for RTA tracking) -->
+                    <div class="form-group" id="testResultGroup" style="display: none; margin-bottom: 20px;">
+                        <label>Full Panel Test Result</label>
+                        <select id="fullPanelResult">
+                            <option value="pending">Pending - Awaiting Results</option>
+                            <option value="pass">✓ PASSED - All Tests Clear</option>
+                            <option value="fail">✗ FAILED - Contamination Found</option>
+                        </select>
+                        <div class="help-text">Update when lab results arrive</div>
+                    </div>
+
+                    <!-- Print Label Section -->
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                            <label style="color: var(--text-secondary); margin: 0;">Print Label:</label>
+                            <select id="testingLabelType" style="padding: 8px 12px; border-radius: 8px; border: 2px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary);">
+                                <option value="intake">📥 Intake Label (2x3)</option>
+                                <option value="postprod">📦 Post-Production Label (2x1.5)</option>
+                                <option value="labeling">🏷️ Labeling Complete Label</option>
                             </select>
-                            <div class="help-text">Update when lab results arrive</div>
-                        </div>
-                        <div class="form-group">
-                            <label>THC % (if results received)</label>
-                            <input type="number" id="testThcPercent" step="0.01" placeholder="Enter when results arrive">
-                        </div>
-                        <div class="form-group">
-                            <label>CBD % (if results received)</label>
-                            <input type="number" id="testCbdPercent" step="0.01" placeholder="Enter when results arrive">
+                            <button type="button" onclick="printTestingLabel()" class="btn" style="background: var(--accent-purple); padding: 8px 20px;">
+                                🖨️ Print
+                            </button>
                         </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label>Test Results Notes</label>
-                        <textarea id="testResultsNotes" placeholder="Any issues, terpene highlights, pass/fail status..."></textarea>
-                    </div>
-                    
-                    <button type="button" class="btn" onclick="submitTestResults()">Save Test Results</button>
                 </div>
 
                                 <!-- RTA Qualification Status -->
@@ -12804,14 +12805,18 @@ ${employeeReport || 'No activity recorded today'}
             select.innerHTML = '<option value="">Select a batch...</option>';
             testableBatches.forEach(batch => {
                 let statusIcon = '';
-                if (batch.test_results_received_date) {
-                    statusIcon = '✓ '; // Has results
+                let statusText = '';
+                if (batch.test_thc_percent !== null && batch.test_thc_percent !== undefined) {
+                    statusIcon = '✓ '; // Has results - ready for labeling
+                    statusText = ` [${batch.test_thc_percent}% THC - Ready]`;
                 } else if (batch.test_submitted_date) {
-                    statusIcon = '📤 '; // Submitted to lab
-                } else if (batch.ready_for_testing_date) {
-                    statusIcon = '✅ '; // Ready for testing
+                    statusIcon = '⏳ '; // Submitted to lab - awaiting results
+                    statusText = ' [Awaiting Results]';
+                } else {
+                    statusIcon = '📋 '; // Not yet submitted
+                    statusText = '';
                 }
-                select.innerHTML += `<option value="${batch.id}">${statusIcon}${batch.id} - ${batch.strain} - ${batch.product_made}</option>`;
+                select.innerHTML += `<option value="${batch.id}">${statusIcon}${batch.id} - ${batch.strain}${statusText}</option>`;
             });
         }
 
@@ -13037,14 +13042,10 @@ ${employeeReport || 'No activity recorded today'}
                 // Auto-populate strain type from batch, but allow redesignation
                 const strainType = batch.final_strain_type || batch.strain_type;
                 
-                // Show Dealer's Choice alert if this batch was marked as such
-                const dealersChoiceAlert = document.getElementById('dealersChoiceAlert');
+                // Handle Dealer's Choice - default to Hybrid
                 if (batch.strain_type === "Dealer's Choice") {
-                    dealersChoiceAlert.style.display = 'block';
-                    // Default to Hybrid for Dealer's Choice, but user can select anything
                     document.getElementById('finalStrainType').value = 'Hybrid';
                 } else {
-                    dealersChoiceAlert.style.display = 'none';
                     document.getElementById('finalStrainType').value = strainType;
                 }
                 
@@ -13053,39 +13054,51 @@ ${employeeReport || 'No activity recorded today'}
                     document.getElementById('testSubmittedDate').value = batch.test_submitted_date || '';
                     document.getElementById('testExpirationDate').value = batch.test_expiration_date || '';
                     document.getElementById('metrcLast4').value = ''; // Clear - batch ID already set
-                    document.getElementById('newBatchId').value = ''; // Always clear - this is for reassignment
-                    document.getElementById('testThcPercent').value = batch.test_thc_percent || '';
-                    document.getElementById('testCbdPercent').value = batch.test_cbd_percent || '';
+                    document.getElementById('newBatchId').value = batch.id || ''; // Show current batch ID
                     document.getElementById('isRTA').value = batch.is_rta || 'no';
-                    document.getElementById('testResultsNotes').value = batch.test_results_notes || '';
-                    // Load saved product name, consistency, and strain type
-                    document.getElementById('finalProductName').value = batch.strain || '';
-                    if (batch.product_made) {
-                        document.getElementById('finalConsistency').value = batch.product_made;
-                    }
-                    document.getElementById('finalStrainType').value = batch.strain_type || 'Hybrid';
-                    // Trigger batch ID generation in case user wants to reassign
-                    generateBatchId();
-                } else {
-                    // Clear form
-                    document.getElementById('testSubmittedDate').value = '';
-                    document.getElementById('testExpirationDate').value = '';
-                    document.getElementById('metrcLast4').value = '';
-                    document.getElementById('newBatchId').value = '';
-                    document.getElementById('testThcPercent').value = '';
-                    document.getElementById('testCbdPercent').value = '';
-                    document.getElementById('isRTA').value = 'no';
-                    document.getElementById('testResultsNotes').value = '';
-                    // Pre-populate finalize fields from batch data
+                    // Load saved product name and strain type
                     document.getElementById('finalProductName').value = batch.strain || '';
                     document.getElementById('finalConsistency').value = batch.product_made || '';
                     document.getElementById('finalStrainType').value = batch.strain_type || 'Hybrid';
-                    // Reset button text
-                    document.getElementById('markReadyForTestingBtn').innerHTML = '<span>✓</span> Mark as Extraction Complete (Ready for Testing)';
+                    // Parse current batch ID to show parsed info
+                    parseBatchId(batch.id);
+                } else {
+                    // Clear form for new submission
+                    document.getElementById('testSubmittedDate').value = new Date().toISOString().split('T')[0]; // Default to today
+                    document.getElementById('testExpirationDate').value = '';
+                    document.getElementById('metrcLast4').value = '';
+                    document.getElementById('newBatchId').value = '';
+                    document.getElementById('isRTA').value = 'no';
+                    // Pre-populate from batch data
+                    document.getElementById('finalProductName').value = batch.strain || '';
+                    document.getElementById('finalConsistency').value = batch.product_made || '';
+                    document.getElementById('finalStrainType').value = batch.strain_type || 'Hybrid';
+                    // Hide parsed info
+                    document.getElementById('parsedBatchInfo').style.display = 'none';
                 }
 
                 // Update ready for testing status UI
                 updateReadyForTestingUI(batch);
+
+                // Check if RTA full panel is required for this product type
+                if (batch.product_made) {
+                    checkRTAAlert(batch.product_made);
+                }
+
+                // Update test results display section
+                updateTestResultsDisplay(batch);
+
+                // Show batch status in header
+                const statusDiv = document.getElementById('testingBatchStatus');
+                if (statusDiv) {
+                    if (batch.test_thc_percent) {
+                        statusDiv.innerHTML = `<span style="background: var(--accent-green); color: black; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">Results Ready</span>`;
+                    } else if (batch.test_submitted_date) {
+                        statusDiv.innerHTML = `<span style="background: var(--accent-orange); color: black; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">Awaiting Results</span>`;
+                    } else {
+                        statusDiv.innerHTML = `<span style="background: var(--accent-blue); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">Ready to Submit</span>`;
+                    }
+                }
             }
 
             // Check RTA status after loading
@@ -13253,6 +13266,256 @@ ${employeeReport || 'No activity recorded today'}
             const resultGroup = document.getElementById('testResultGroup');
             if (resultGroup) {
                 resultGroup.style.display = isRTA === 'yes' ? 'block' : 'none';
+            }
+        }
+
+        // Parse batch ID format M.D.XXXX to extract expiration and METRC
+        function parseBatchId(value) {
+            const parsedInfo = document.getElementById('parsedBatchInfo');
+            const parsedExpiration = document.getElementById('parsedExpiration');
+            const parsedMetrc = document.getElementById('parsedMetrc');
+            const expirationInput = document.getElementById('testExpirationDate');
+            const metrcInput = document.getElementById('metrcLast4');
+
+            if (!value || !value.includes('.')) {
+                parsedInfo.style.display = 'none';
+                return null;
+            }
+
+            // Parse M.D.XXXX format (e.g., 10.3.1212)
+            const parts = value.split('.');
+            if (parts.length < 3) {
+                parsedInfo.style.display = 'none';
+                return null;
+            }
+
+            const month = parseInt(parts[0]);
+            const day = parseInt(parts[1]);
+            const metrcLast4 = parts.slice(2).join(''); // Handle cases like 10.3.12.12 -> 1212
+
+            if (isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) {
+                parsedInfo.style.display = 'none';
+                return null;
+            }
+
+            // Determine year - if month is before current month, assume next year
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1;
+            const currentYear = now.getFullYear();
+            let year = currentYear;
+            if (month < currentMonth || (month === currentMonth && day < now.getDate())) {
+                year = currentYear + 1;
+            }
+
+            // Format expiration date
+            const expirationDate = new Date(year, month - 1, day);
+            const formattedDate = expirationDate.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            const isoDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+            // Update display
+            parsedExpiration.textContent = formattedDate;
+            parsedMetrc.textContent = metrcLast4 || '--';
+            parsedInfo.style.display = 'block';
+
+            // Update hidden inputs
+            expirationInput.value = isoDate;
+            metrcInput.value = metrcLast4;
+
+            return { month, day, year, metrcLast4, expirationDate: isoDate };
+        }
+
+        // Simplified submit to testing function
+        async function submitToTesting() {
+            if (blockDemoWrite('Submitting to testing')) return;
+
+            if (!currentRole) {
+                alert('Please select a user first!');
+                return;
+            }
+
+            const batchId = document.getElementById('testingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+
+            if (!batch) {
+                alert('Please select a batch first!');
+                return;
+            }
+
+            const finalProductName = document.getElementById('finalProductName').value.trim();
+            const newBatchId = document.getElementById('newBatchId').value.trim();
+            const isRTA = document.getElementById('isRTA').value;
+            const submittedDate = new Date().toISOString().split('T')[0]; // Auto-set to today
+
+            // Validate
+            if (!finalProductName) {
+                alert('Please enter a product name.');
+                return;
+            }
+            if (!newBatchId) {
+                alert('Please enter the batch ID (M.D.XXXX format).');
+                return;
+            }
+
+            // Parse batch ID for expiration and METRC
+            const parsed = parseBatchId(newBatchId);
+            if (!parsed) {
+                alert('Invalid batch ID format. Please use M.D.XXXX (e.g., 10.3.1212)');
+                return;
+            }
+
+            // Check for duplicate batch ID
+            if (newBatchId !== batchId) {
+                const existingBatch = batches.find(b => b.id === newBatchId);
+                if (existingBatch) {
+                    alert(`Batch ID "${newBatchId}" already exists. Please use a different ID.`);
+                    return;
+                }
+            }
+
+            // Confirm submission
+            let confirmMsg = `Submit batch to testing?\n\n`;
+            confirmMsg += `Product: ${finalProductName}\n`;
+            confirmMsg += `Batch ID: ${newBatchId}\n`;
+            confirmMsg += `Expiration: ${parsed.expirationDate}\n`;
+            confirmMsg += `METRC (last 4): ${parsed.metrcLast4}\n`;
+            confirmMsg += `RTA Full Panel: ${isRTA === 'yes' ? 'Yes' : 'No'}`;
+
+            if (!confirm(confirmMsg)) return;
+
+            const now = new Date().toISOString();
+            const timeline = batch.timeline || [];
+
+            timeline.push({
+                stage: 'testing',
+                user: currentRole.name,
+                date: now,
+                action: `Submitted to lab - ${finalProductName} | Batch ID: ${newBatchId}${isRTA === 'yes' ? ' | RTA Full Panel' : ''}`
+            });
+
+            // Build update object
+            const updates = {
+                strain: finalProductName,
+                test_submitted_date: submittedDate,
+                test_expiration_date: parsed.expirationDate,
+                is_rta: isRTA,
+                timeline: timeline
+            };
+
+            // Store METRC last 4 in notes for now (could add column later)
+            if (parsed.metrcLast4) {
+                updates.test_results_notes = `METRC Last 4: ${parsed.metrcLast4}`;
+            }
+
+            try {
+                // Handle batch ID change
+                if (newBatchId !== batchId) {
+                    // Delete old record
+                    const { error: deleteError } = await supabaseClient
+                        .from('wm_batches')
+                        .delete()
+                        .eq('id', batchId);
+
+                    if (deleteError) throw deleteError;
+
+                    // Insert with new ID
+                    const newBatchData = { ...batch, ...updates, id: newBatchId };
+                    delete newBatchData.created_at;
+
+                    const { error: insertError } = await supabaseClient
+                        .from('wm_batches')
+                        .insert(newBatchData);
+
+                    if (insertError) throw insertError;
+
+                    // Update local array
+                    const idx = batches.findIndex(b => b.id === batchId);
+                    if (idx !== -1) {
+                        batches[idx] = { ...batch, ...updates, id: newBatchId };
+                    }
+                } else {
+                    // Simple update
+                    const { error } = await supabaseClient
+                        .from('wm_batches')
+                        .update(updates)
+                        .eq('id', batchId);
+
+                    if (error) throw error;
+
+                    Object.assign(batch, updates);
+                }
+
+                // Refresh UI
+                populateTestingSelect();
+                document.getElementById('testingBatchSelect').value = '';
+                document.getElementById('testingForm').style.display = 'none';
+
+                alert(`Batch ${newBatchId} submitted to testing!\n\nProduct: ${finalProductName}\nExpiration: ${parsed.expirationDate}\n\nTest results will auto-import when COA sync runs.`);
+
+            } catch (err) {
+                console.error('Error submitting to testing:', err);
+                alert('Error: ' + err.message);
+            }
+        }
+
+        // Check if product type needs RTA full panel and show alert
+        function checkRTAAlert(productType) {
+            const rtaAlert = document.getElementById('rtaAlertBanner');
+            const isRTASelect = document.getElementById('isRTA');
+
+            if (!rtaAlert) return;
+
+            // Check if this product type requires full panel (qualifying or reauthorizing)
+            const needsFullPanel = requiresFullPanel(productType);
+
+            if (needsFullPanel) {
+                rtaAlert.style.display = 'block';
+                // Auto-select RTA full panel
+                if (isRTASelect) {
+                    isRTASelect.value = 'yes';
+                    updateTestResultVisibility();
+                }
+            } else {
+                rtaAlert.style.display = 'none';
+            }
+        }
+
+        // Update test results display section
+        function updateTestResultsDisplay(batch) {
+            const resultsSection = document.getElementById('testResultsSection');
+            const displayThc = document.getElementById('displayThc');
+            const displayCbd = document.getElementById('displayCbd');
+            const displayStatus = document.getElementById('displayStatus');
+            const notesDiv = document.getElementById('testResultsNotes');
+
+            if (!resultsSection) return;
+
+            // Show results section if we have THC data
+            if (batch.test_thc_percent !== null && batch.test_thc_percent !== undefined) {
+                resultsSection.style.display = 'block';
+                displayThc.textContent = batch.test_thc_percent + '%';
+                displayCbd.textContent = (batch.test_cbd_percent || 0) + '%';
+                displayStatus.textContent = 'Ready for Labeling';
+                displayStatus.style.color = 'var(--accent-green)';
+
+                if (batch.test_results_notes) {
+                    notesDiv.textContent = batch.test_results_notes;
+                    notesDiv.style.display = 'block';
+                } else {
+                    notesDiv.style.display = 'none';
+                }
+            } else if (batch.test_submitted_date) {
+                resultsSection.style.display = 'block';
+                displayThc.textContent = '--';
+                displayCbd.textContent = '--';
+                displayStatus.textContent = 'Awaiting Results';
+                displayStatus.style.color = 'var(--accent-orange)';
+                notesDiv.style.display = 'none';
+            } else {
+                resultsSection.style.display = 'none';
             }
         }
 
@@ -13891,55 +14154,15 @@ ${employeeReport || 'No activity recorded today'}
             }
         }
 
-        // Update the ready for testing UI based on batch status
+        // Update the ready for testing UI based on batch status (simplified version)
         function updateReadyForTestingUI(batch) {
-            const statusDiv = document.getElementById('readyForTestingStatus');
-            const btn = document.getElementById('markReadyForTestingBtn');
-
-            // Check timeline for extraction complete entry
-            const extractionCompleteEntry = batch.timeline?.find(t => t.stage === 'ready_for_testing' || t.stage === 'product_update');
-
-            if (extractionCompleteEntry) {
-                const readyDate = new Date(extractionCompleteEntry.date);
-                statusDiv.innerHTML = `
-                    <div style="background: rgba(34, 197, 94, 0.2); border: 2px solid #22c55e; padding: 15px; border-radius: 8px;">
-                        <strong style="color: #22c55e; font-size: 1.1rem;">✓ Extraction Complete - Ready for Testing</strong>
-                        <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-                            <p style="margin: 0; color: var(--text-primary);"><strong>Product Type:</strong> ${batch.product_made || 'N/A'}</p>
-                            <p style="margin: 0; color: var(--text-primary);"><strong>Strain Type:</strong> ${batch.strain_type}</p>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">By ${extractionCompleteEntry.user || 'Unknown'} on ${readyDate.toLocaleDateString()}</p>
-                        </div>
-                        <button type="button" onclick="editFinalizeInfo()" style="margin-top: 12px; background: rgba(245, 158, 11, 0.3); color: var(--accent-orange); border: 1px solid var(--accent-orange); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
-                            Edit Product Info
-                        </button>
-                    </div>
-                `;
-                btn.style.display = 'none';
-            } else if (batch.test_submitted_date) {
-                statusDiv.innerHTML = `
-                    <div style="background: rgba(59, 130, 246, 0.2); border: 2px solid #3b82f6; padding: 15px; border-radius: 8px;">
-                        <strong style="color: #3b82f6; font-size: 1.1rem;">📤 Submitted to Lab</strong>
-                        <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-                            <p style="margin: 0; color: var(--text-primary);"><strong>Product Type:</strong> ${batch.product_made || 'N/A'}</p>
-                            <p style="margin: 0; color: var(--text-primary);"><strong>Submitted:</strong> ${new Date(batch.test_submitted_date).toLocaleDateString()}</p>
-                        </div>
-                        <button type="button" onclick="editFinalizeInfo()" style="margin-top: 12px; background: rgba(245, 158, 11, 0.3); color: var(--accent-orange); border: 1px solid var(--accent-orange); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
-                            Edit Product Info
-                        </button>
-                    </div>
-                `;
-                btn.style.display = 'none';
-            } else {
-                statusDiv.innerHTML = '';
-                btn.style.display = 'flex';
-            }
+            // This function is now simplified - status is shown in the batch info header
+            // No longer need the old complex status div
         }
 
-        // Allow editing finalize info even after marked
+        // Allow editing finalize info even after marked (legacy function - now simplified)
         function editFinalizeInfo() {
-            const btn = document.getElementById('markReadyForTestingBtn');
-            btn.style.display = 'flex';
-            btn.innerHTML = '<span>💾</span> Update Product Info';
+            // No longer needed in simplified UI
         }
 
         // Refresh the batch details display after update
