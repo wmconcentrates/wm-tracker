@@ -17798,7 +17798,8 @@ ${employeeReport || 'No activity recorded today'}
                         netWeight: batch.net_weight || batch.final_weight || '',
                         cultivationLicense: batch.cultivation_license || '',
                         batchId: batch.id,
-                        useByDate: batch.test_expiration_date || ''
+                        useByDate: batch.test_expiration_date || '',
+                        unitsNeeded: batch.units_packaged || 0
                     };
 
                     const sheetResponse = await fetch('/api/google-sheets/add-label', {

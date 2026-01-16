@@ -1026,7 +1026,8 @@ app.post('/api/google-sheets/add-label', async (req, res) => {
             netWeight,
             cultivationLicense,
             batchId,
-            useByDate
+            useByDate,
+            unitsNeeded
         } = req.body;
 
         // Format the row data
@@ -1041,7 +1042,7 @@ app.post('/api/google-sheets/add-label', async (req, res) => {
             batchId || '',
             useByDate || '',
             today,
-            'New'
+            unitsNeeded || 0
         ];
 
         // Append to spreadsheet
