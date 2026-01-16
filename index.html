@@ -3118,6 +3118,14 @@
         </div>
     </div>
 
+    <!-- Batch Print Menu (Dropdown) -->
+    <div id="batchPrintMenu" style="display: none; position: fixed; background: var(--bg-secondary); border: 2px solid var(--accent-purple); border-radius: 12px; padding: 10px; z-index: 10001; box-shadow: 0 10px 40px rgba(0,0,0,0.5); min-width: 200px;">
+        <div style="color: var(--text-secondary); font-size: 0.8rem; padding: 5px 10px; border-bottom: 1px solid var(--border); margin-bottom: 5px;">Print Label</div>
+        <button onclick="printBatchLabel('intake')" style="display: block; width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; color: var(--text-primary); cursor: pointer; border-radius: 8px; font-size: 0.95rem;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'">📥 Intake Label</button>
+        <button onclick="printBatchLabel('postprod')" style="display: block; width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; color: var(--text-primary); cursor: pointer; border-radius: 8px; font-size: 0.95rem;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'">📦 Post-Production Label</button>
+        <button onclick="printBatchLabel('labeling')" style="display: block; width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; color: var(--text-primary); cursor: pointer; border-radius: 8px; font-size: 0.95rem;" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'">🏷️ Labeling Complete</button>
+    </div>
+
     <!-- METRC Manifest Import Modal -->
     <div id="metrcImportModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10000; overflow-y: auto;">
         <div style="max-width: 1200px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 40px; border: 3px solid var(--accent-blue);">
@@ -12507,6 +12515,7 @@ ${employeeReport || 'No activity recorded today'}
                         ${batch.is_sub_batch ? `<div style="color: var(--accent-purple); font-size: 0.8rem;">🔗${batch.parent_batch_id}</div>` : ''}
 
                         <div style="margin-left: auto; display: flex; align-items: center; gap: 6px;">
+                            <button class="btn" style="background: var(--accent-purple); padding: 8px 14px; font-size: 1rem;" onclick="event.stopPropagation(); openBatchPrintMenu('${batch.id}', event)">🖨️</button>
                             ${currentRole && currentRole.canEditBatches ? `
                                 <button class="btn" style="background: var(--accent-orange); padding: 8px 14px; font-size: 1rem;" onclick="event.stopPropagation(); openEditBatch('${batch.id}')">✏️</button>
                                 ${batch.is_sub_batch ? `
@@ -17129,6 +17138,68 @@ ${employeeReport || 'No activity recorded today'}
         });
 
         // ==============================================
+        // BATCH PRINT MENU FUNCTIONS
+        // ==============================================
+
+        let currentPrintBatchId = null;
+
+        function openBatchPrintMenu(batchId, event) {
+            currentPrintBatchId = batchId;
+            const menu = document.getElementById('batchPrintMenu');
+
+            // Position menu near the button
+            const rect = event.target.getBoundingClientRect();
+            menu.style.top = (rect.bottom + 5) + 'px';
+            menu.style.left = Math.min(rect.left, window.innerWidth - 220) + 'px';
+            menu.style.display = 'block';
+
+            // Close menu when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', closeBatchPrintMenuOnClickOutside);
+            }, 10);
+        }
+
+        function closeBatchPrintMenu() {
+            document.getElementById('batchPrintMenu').style.display = 'none';
+            document.removeEventListener('click', closeBatchPrintMenuOnClickOutside);
+            currentPrintBatchId = null;
+        }
+
+        function closeBatchPrintMenuOnClickOutside(event) {
+            const menu = document.getElementById('batchPrintMenu');
+            if (!menu.contains(event.target)) {
+                closeBatchPrintMenu();
+            }
+        }
+
+        async function printBatchLabel(labelType) {
+            if (!currentPrintBatchId) return;
+
+            const batch = batches.find(b => b.id === currentPrintBatchId);
+            if (!batch) {
+                alert('Batch not found');
+                closeBatchPrintMenu();
+                return;
+            }
+
+            closeBatchPrintMenu();
+
+            switch(labelType) {
+                case 'intake':
+                    await printIntakeLabelDirectly(batch);
+                    break;
+                case 'postprod':
+                    await printPostProductionLabelDirectly(batch, batch.final_weight || batch.net_weight, batch.sample_weight || 0);
+                    break;
+                case 'labeling':
+                    await printLabelingCompletionLabel(batch, currentRole ? currentRole.name : 'Unknown');
+                    break;
+                default:
+                    alert('Unknown label type');
+            }
+        }
+
+        // ==============================================
         // CREATE SUB-BATCH FUNCTIONS
         // ==============================================
 
@@ -17566,6 +17637,7 @@ ${employeeReport || 'No activity recorded today'}
                 if (importedCount > 0) {
                     await loadBatches();
                     populateTestingSelect();
+                    populateLabelingSelect();
                 }
 
             } catch (error) {
@@ -17787,6 +17859,9 @@ ${employeeReport || 'No activity recorded today'}
                     .eq('id', batch.id);
 
                 if (error) throw error;
+
+                // Update local batches array so UI reflects changes
+                Object.assign(batch, updates);
 
                 // Add to Google Sheets for Canva label generation
                 try {
