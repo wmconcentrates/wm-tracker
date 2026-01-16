@@ -4,6 +4,12 @@ WM TRACKER LOCAL PRINT SERVER SETUP
 This lets staff print directly to the Zebra printer from their phones
 while on the shop WiFi.
 
+SMART CONNECT PAGE:
+Staff can bookmark: https://app.whitemousse.com/connect.html
+- Automatically detects if local server is available
+- Redirects to local (for printing) or cloud (if off-site)
+- Update the LOCAL_SERVER IP in connect.html to match your shop PC
+
 REQUIREMENTS:
 - Windows PC connected to the shop network
 - Node.js installed (https://nodejs.org)

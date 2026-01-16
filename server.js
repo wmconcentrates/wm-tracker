@@ -84,6 +84,11 @@ app.use(express.json());
 const staticDir = process.cwd();
 app.use(express.static(staticDir));
 
+// Health check endpoint (for local server detection)
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', server: 'local' });
+});
+
 // ============================================
 // ENCRYPTION UTILITIES
 // ============================================
