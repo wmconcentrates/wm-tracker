@@ -89,6 +89,46 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', server: 'local' });
 });
 
+// Print proxy endpoint - forwards ZPL to Zebra printer
+// This allows HTTPS cloud clients to print via local HTTP server
+const ZEBRA_PRINTER_IP = process.env.ZEBRA_PRINTER_IP || '10.1.10.95';
+const ZEBRA_PRINTER_PORT = process.env.ZEBRA_PRINTER_PORT || 9100;
+
+app.post('/api/print', async (req, res) => {
+    const { zpl } = req.body;
+
+    if (!zpl) {
+        return res.status(400).json({ error: 'Missing zpl parameter' });
+    }
+
+    const net = require('net');
+    const client = new net.Socket();
+
+    client.setTimeout(5000);
+
+    client.connect(ZEBRA_PRINTER_PORT, ZEBRA_PRINTER_IP, () => {
+        console.log(`[print] Connected to Zebra printer at ${ZEBRA_PRINTER_IP}:${ZEBRA_PRINTER_PORT}`);
+        client.write(zpl);
+        client.end();
+    });
+
+    client.on('close', () => {
+        console.log('[print] Label sent successfully');
+        res.json({ success: true, printer: `${ZEBRA_PRINTER_IP}:${ZEBRA_PRINTER_PORT}` });
+    });
+
+    client.on('error', (err) => {
+        console.error('[print] Printer error:', err.message);
+        res.status(500).json({ error: `Printer connection failed: ${err.message}` });
+    });
+
+    client.on('timeout', () => {
+        console.error('[print] Printer connection timeout');
+        client.destroy();
+        res.status(500).json({ error: 'Printer connection timeout' });
+    });
+});
+
 // ============================================
 // ENCRYPTION UTILITIES
 // ============================================

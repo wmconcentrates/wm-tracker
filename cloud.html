@@ -6522,12 +6522,32 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             return isLocalhost || isHTTP;
         }
 
-        // Send ZPL to printer - direct IP only
-        async function sendZPLToPrinter(zpl, filename) {
-            const printerIP = '10.1.10.95';
+        // Local print server URL (for on-site printing via local server proxy)
+        const LOCAL_PRINT_SERVER = 'http://10.1.10.100:3000/api/print';
+        const DIRECT_PRINTER_IP = '10.1.10.95';
 
+        // Send ZPL to printer - tries local print server first, then direct IP
+        async function sendZPLToPrinter(zpl, filename) {
+            // Try local print server first (works from HTTPS cloud)
             try {
-                await fetch(`http://${printerIP}:9100`, {
+                const response = await fetch(LOCAL_PRINT_SERVER, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ zpl })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('[print] Sent via local server:', result.printer);
+                    return { success: true, method: 'proxy' };
+                }
+            } catch (error) {
+                console.log('[print] Local server not available, trying direct...');
+            }
+
+            // Fall back to direct IP printing (only works on HTTP/localhost)
+            try {
+                await fetch(`http://${DIRECT_PRINTER_IP}:9100`, {
                     method: 'POST',
                     mode: 'no-cors',
                     body: zpl
@@ -6535,7 +6555,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return { success: true, method: 'direct' };
             } catch (error) {
                 console.error('Print failed:', error.message);
-                alert(`❌ Print failed!\n\nCould not connect to printer at ${printerIP}:9100\n\nError: ${error.message}`);
+                alert(`❌ Print failed!\n\nCould not connect to printer.\n\nMake sure:\n1. Local server is running at 10.1.10.100:3000\n2. Or access via HTTP (not HTTPS)\n\nError: ${error.message}`);
                 return { success: false, method: 'error', error: error.message };
             }
         }
