@@ -2383,34 +2383,33 @@
                         </div>
                     </div>
 
-                    <!-- Weight Verification -->
+                    <!-- Units Labeled -->
                     <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-green);">
-                        <h3 style="color: var(--accent-green); margin-bottom: 15px;">📊 Total Grams Labeled</h3>
-                        
+                        <h3 style="color: var(--accent-green); margin-bottom: 15px;">📊 Units Labeled</h3>
+
                         <div class="form-group">
-                            <label>Total Grams Labeled (weighed after labeling)</label>
-                            <input type="number" id="gramsLabeled" step="0.1" placeholder="Total weight with labels" required>
-                            <div class="help-text">Actual weight after all labels applied</div>
+                            <label>How many units did you label?</label>
+                            <input type="number" id="unitsLabeled" step="1" min="0" placeholder="Enter number of units labeled" required>
                         </div>
 
-                        <!-- Expected Weight Display -->
+                        <!-- Expected vs Actual Display -->
                         <div id="expectedWeightDisplay" style="padding: 15px; background: var(--bg-primary); border-radius: 8px; margin-top: 15px;">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                                 <div>
-                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Expected Weight (from packaging)</div>
-                                    <div id="expectedWeight" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-blue); font-family: 'Space Mono', monospace;">-</div>
+                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Expected Units (from packaging)</div>
+                                    <div id="expectedUnits" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-blue); font-family: 'Space Mono', monospace;">-</div>
                                 </div>
                                 <div>
-                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Actual Weight Labeled</div>
-                                    <div id="actualWeight" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green); font-family: 'Space Mono', monospace;">-</div>
+                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Units Labeled</div>
+                                    <div id="actualUnits" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green); font-family: 'Space Mono', monospace;">-</div>
                                 </div>
                             </div>
                             <div id="discrepancyAlert" style="display: none; margin-top: 15px; padding: 15px; background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); border-radius: 8px;">
-                                <div style="color: var(--accent-red); font-weight: 700; margin-bottom: 10px;">⚠️ Weight Discrepancy Detected</div>
+                                <div style="color: var(--accent-red); font-weight: 700; margin-bottom: 10px;">⚠️ Unit Count Discrepancy</div>
                                 <div id="discrepancyDetails" style="color: var(--text-primary); margin-bottom: 15px;"></div>
                                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                                     <input type="checkbox" id="acceptDiscrepancy" style="width: 20px; height: 20px;">
-                                    <span style="font-weight: 600;">I verify this weight is correct and accept the discrepancy</span>
+                                    <span style="font-weight: 600;">I verify this count is correct and accept the discrepancy</span>
                                 </label>
                             </div>
                         </div>
@@ -2422,18 +2421,7 @@
                         <textarea id="labelingNotes" placeholder="Any issues with labeling, printer problems, etc..."></textarea>
                     </div>
                     
-                    <div style="background: rgba(59, 130, 246, 0.15); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 8px; margin: 20px 0;">
-                        <strong>💡 Workflow Options:</strong>
-                        <ul style="margin: 8px 0 0 20px; line-height: 1.8;">
-                            <li><strong>Print Labels:</strong> Open printable label page (use browser print)</li>
-                            <li><strong>Start Labeling:</strong> Mark batch as in-progress (tracking only, can finish later)</li>
-                            <li><strong>Pause/Resume:</strong> Temporarily pause work (breaks, end of shift, equipment issues)</li>
-                            <li><strong>Complete Labeling:</strong> Finish labeling with weight verification</li>
-                        </ul>
-                    </div>
-                    
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button type="button" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); flex: 1; min-width: 200px;" onclick="openPrintableLabels()">🖨️ Print Labels</button>
                         <button type="button" class="btn" style="background: var(--accent-blue); flex: 1; min-width: 200px;" onclick="startLabeling()">▶️ Start Labeling</button>
                         <button type="button" class="btn" id="pauseLabelingBtn" style="background: var(--accent-orange); flex: 1; min-width: 200px; display: none;" onclick="togglePauseLabeling()">⏸️ Pause</button>
                         <button type="button" class="btn" style="background: var(--accent-green); flex: 1; min-width: 200px;" onclick="markAsLabeled()">✅ Complete Labeling</button>
@@ -5694,11 +5682,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             const labelingBatchId = document.getElementById('labelingBatchSelect')?.value;
             const labelingBatch = batches.find(b => b.id === labelingBatchId);
             const labelingPauseBtn = document.getElementById('pauseLabelingBtn');
-            
+
             if (labelingPauseBtn && labelingBatch) {
-                const hasStarted = (labelingBatch.timeline || []).some(t => t.stage === 'labeling');
-                
-                if (hasStarted && labelingBatch.status === 'packaged') {
+                const hasStarted = labelingBatch.labeling_user || (labelingBatch.timeline || []).some(t => t.stage === 'labeling');
+
+                if (hasStarted && labelingBatch.status === 'complete' && !labelingBatch.labels_applied) {
                     labelingPauseBtn.style.display = 'block';
                     const isPaused = labelingBatch.labeling_paused || false;
                     labelingPauseBtn.innerHTML = isPaused ? '▶️ Resume' : '⏸️ Pause';
@@ -14439,55 +14427,54 @@ ${employeeReport || 'No activity recorded today'}
             if (this.value) {
                 const batch = batches.find(b => b.id === this.value);
                 displayLabelPreview(batch);
-                
-                // Initialize weight verification if elements exist
-                const gramsLabeledInput = document.getElementById('gramsLabeled');
-                const expectedWeightEl = document.getElementById('expectedWeight');
-                const actualWeightEl = document.getElementById('actualWeight');
-                
-                if (gramsLabeledInput && expectedWeightEl && actualWeightEl) {
-                    gramsLabeledInput.value = '';
+
+                // Initialize units verification
+                const unitsLabeledInput = document.getElementById('unitsLabeled');
+                const expectedUnitsEl = document.getElementById('expectedUnits');
+                const actualUnitsEl = document.getElementById('actualUnits');
+
+                if (unitsLabeledInput && expectedUnitsEl && actualUnitsEl) {
+                    unitsLabeledInput.value = '';
                     document.getElementById('acceptDiscrepancy').checked = false;
                     document.getElementById('discrepancyAlert').style.display = 'none';
-                    
-                    const expectedGrams = parseFloat(batch.total_grams_packaged) || 0;
-                    expectedWeightEl.textContent = expectedGrams.toFixed(1) + 'g';
-                    actualWeightEl.textContent = '-';
+
+                    const expectedUnits = parseInt(batch.units_packaged) || 0;
+                    expectedUnitsEl.textContent = expectedUnits;
+                    actualUnitsEl.textContent = '-';
                 }
-                
+
                 // Update pause button visibility
                 updatePauseButtons();
             }
         });
 
-        // Real-time weight comparison for labeling
-        const gramsLabeledInput = document.getElementById('gramsLabeled');
-        if (gramsLabeledInput) {
-            gramsLabeledInput.addEventListener('input', function() {
+        // Real-time units comparison for labeling
+        const unitsLabeledInput = document.getElementById('unitsLabeled');
+        if (unitsLabeledInput) {
+            unitsLabeledInput.addEventListener('input', function() {
                 const batchId = document.getElementById('labelingBatchSelect').value;
                 const batch = batches.find(b => b.id === batchId);
                 if (!batch) return;
-                
-                const gramsLabeled = parseFloat(this.value) || 0;
-                const expectedGrams = parseFloat(batch.total_grams_packaged) || 0;
-                
-                const actualWeightEl = document.getElementById('actualWeight');
-                if (actualWeightEl) {
-                    actualWeightEl.textContent = gramsLabeled.toFixed(1) + 'g';
+
+                const unitsLabeled = parseInt(this.value) || 0;
+                const expectedUnits = parseInt(batch.units_packaged) || 0;
+
+                const actualUnitsEl = document.getElementById('actualUnits');
+                if (actualUnitsEl) {
+                    actualUnitsEl.textContent = unitsLabeled;
                 }
-                
-                // Check for discrepancy (more than 2% difference)
-                const discrepancy = Math.abs(gramsLabeled - expectedGrams);
-                const percentDiff = expectedGrams > 0 ? (discrepancy / expectedGrams) * 100 : 0;
-                
+
+                // Check for discrepancy (any difference in unit count)
+                const discrepancy = Math.abs(unitsLabeled - expectedUnits);
+
                 const discrepancyAlert = document.getElementById('discrepancyAlert');
                 if (discrepancyAlert) {
-                    if (percentDiff > 2 && gramsLabeled > 0) {
+                    if (discrepancy > 0 && unitsLabeled > 0) {
                         discrepancyAlert.style.display = 'block';
                         document.getElementById('discrepancyDetails').innerHTML = `
-                            <div>Expected: <strong>${expectedGrams.toFixed(1)}g</strong></div>
-                            <div>Actual: <strong>${gramsLabeled.toFixed(1)}g</strong></div>
-                            <div style="color: var(--accent-orange); font-weight: 700;">Difference: ${discrepancy.toFixed(1)}g (${percentDiff.toFixed(1)}%)</div>
+                            <div>Expected: <strong>${expectedUnits} units</strong></div>
+                            <div>Labeled: <strong>${unitsLabeled} units</strong></div>
+                            <div style="color: var(--accent-orange); font-weight: 700;">Difference: ${discrepancy} unit${discrepancy !== 1 ? 's' : ''}</div>
                         `;
                     } else {
                         discrepancyAlert.style.display = 'none';
@@ -15058,12 +15045,12 @@ ${employeeReport || 'No activity recorded today'}
             if (updatedBatch) {
                 displayLabelPreview(updatedBatch);
                 
-                // Reinitialize weight verification
-                const gramsLabeledInput = document.getElementById('gramsLabeled');
-                const expectedWeightEl = document.getElementById('expectedWeight');
-                if (gramsLabeledInput && expectedWeightEl) {
-                    const expectedGrams = parseFloat(updatedBatch.total_grams_packaged) || 0;
-                    expectedWeightEl.textContent = expectedGrams.toFixed(1) + 'g';
+                // Reinitialize units verification
+                const unitsLabeledInput = document.getElementById('unitsLabeled');
+                const expectedUnitsEl = document.getElementById('expectedUnits');
+                if (unitsLabeledInput && expectedUnitsEl) {
+                    const expectedUnits = parseInt(updatedBatch.units_packaged) || 0;
+                    expectedUnitsEl.textContent = expectedUnits;
                 }
             }
         }
@@ -15146,70 +15133,63 @@ ${employeeReport || 'No activity recorded today'}
                 return;
             }
             
-            // Use units packaged as the quantity (no separate labelQuantity input anymore)
-            const quantity = batch.units_packaged || 0;
-            
-            // Check if weight verification fields exist
-            const gramsLabeledInput = document.getElementById('gramsLabeled');
-            let gramsLabeled = null;
+            // Get expected units from packaging
+            const expectedUnits = parseInt(batch.units_packaged) || 0;
+
+            // Get units labeled from input
+            const unitsLabeledInput = document.getElementById('unitsLabeled');
+            let unitsLabeled = null;
             let discrepancyData = null;
-            
-            if (gramsLabeledInput) {
-                gramsLabeled = parseFloat(gramsLabeledInput.value);
-                
-                if (!gramsLabeled || gramsLabeled <= 0) {
-                    alert('Please enter the total grams labeled');
+
+            if (unitsLabeledInput) {
+                unitsLabeled = parseInt(unitsLabeledInput.value);
+
+                if (!unitsLabeled || unitsLabeled <= 0) {
+                    alert('Please enter the number of units labeled');
                     return;
                 }
-                
+
                 // Check for discrepancy
-                const expectedGrams = parseFloat(batch.total_grams_packaged) || 0;
-                const discrepancy = Math.abs(gramsLabeled - expectedGrams);
-                const percentDiff = expectedGrams > 0 ? (discrepancy / expectedGrams) * 100 : 0;
-                
-                // If discrepancy > 2%, require acceptance
-                if (percentDiff > 2) {
+                const discrepancy = Math.abs(unitsLabeled - expectedUnits);
+
+                // If any discrepancy, require acceptance
+                if (discrepancy > 0) {
                     const acceptCheckbox = document.getElementById('acceptDiscrepancy');
                     if (!acceptCheckbox || !acceptCheckbox.checked) {
-                        alert('⚠️ Weight discrepancy detected!\n\nYou must check the box to verify and accept the discrepancy before proceeding.');
+                        alert('⚠️ Unit count discrepancy detected!\n\nYou must check the box to verify and accept the discrepancy before proceeding.');
                         return;
                     }
-                    discrepancyData = { discrepancy, percentDiff };
+                    discrepancyData = { discrepancy, expected: expectedUnits, actual: unitsLabeled };
                 }
             }
-            
-            const confirmMsg = gramsLabeled 
-                ? `Mark ${batchId} as labeled?\n\nGrams Labeled: ${gramsLabeled.toFixed(1)}g\nUnits: ${quantity}`
-                : `Mark ${batchId} as labeled?\n\n${quantity} units`;
-                
+
+            const confirmMsg = `Mark ${batchId} as labeled?\n\nUnits Labeled: ${unitsLabeled}\nExpected: ${expectedUnits}`;
+
             if (!confirm(confirmMsg)) {
                 return;
             }
-            
+
             const timeline = batch.timeline || [];
             timeline.push({
                 stage: 'labeling',
                 timestamp: new Date().toISOString(),
                 user: currentRole ? currentRole.name : "Unknown",
-                action: gramsLabeled ? `Labeled ${quantity} units - ${gramsLabeled.toFixed(1)}g total` : `Labeled ${quantity} units`
+                action: `Labeled ${unitsLabeled} units` + (discrepancyData ? ` (expected ${expectedUnits})` : '')
             });
-            
+
             const updateData = {
                 labels_applied: true,
                 labeling_date: new Date().toISOString().split('T')[0],
                 labeling_user: currentRole ? currentRole.name : "Unknown",
-                labels_applied_quantity: quantity,
+                labels_applied_quantity: unitsLabeled,
                 labeling_notes: document.getElementById('labelingNotes').value || null,
                 timeline: timeline
             };
-            
-            // Add weight data if verified
-            if (gramsLabeled) {
-                updateData.grams_labeled = gramsLabeled;
-                if (discrepancyData) {
-                    updateData.weight_discrepancy = discrepancyData.discrepancy;
-                    updateData.discrepancy_accepted = true;
-                }
+
+            // Add discrepancy data if any
+            if (discrepancyData) {
+                updateData.unit_discrepancy = discrepancyData.discrepancy;
+                updateData.discrepancy_accepted = true;
             }
             
             const { error } = await supabaseClient
@@ -15231,7 +15211,7 @@ ${employeeReport || 'No activity recorded today'}
             if (batch.material_agreement !== 'Custom Buyback') {
                 await queueForLeafLinkApproval({
                     ...batch,
-                    grams_labeled: gramsLabeled || batch.grams_labeled
+                    labels_applied_quantity: unitsLabeled
                 });
                 leafLinkMsg = '📋 Queued for LeafLink approval';
             } else {
@@ -15243,8 +15223,8 @@ ${employeeReport || 'No activity recorded today'}
                 title: 'Batch Complete!',
                 message: `${batchId} is fully labeled and ready for sale! ${leafLinkMsg}`,
                 stats: [
-                    { value: quantity, label: 'Labels Applied' },
-                    { value: gramsLabeled ? `${gramsLabeled.toFixed(1)}g` : batch.product_made || 'N/A', label: gramsLabeled ? 'Total Weight' : 'Product' }
+                    { value: unitsLabeled, label: 'Units Labeled' },
+                    { value: batch.packaged_product_type || 'N/A', label: 'Product' }
                 ],
                 confettiCount: 80
             });
@@ -15252,7 +15232,8 @@ ${employeeReport || 'No activity recorded today'}
             document.getElementById('labelingForm').style.display = 'none';
             document.getElementById('labelingBatchSelect').value = '';
             document.getElementById('labelingNotes').value = '';
-            
+            document.getElementById('unitsLabeled').value = '';
+
             await loadBatches();
             populateLabelingSelect();
         }
