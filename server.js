@@ -3,7 +3,6 @@ require('dotenv').config(); // fallback to .env
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
-const net = require('net');
 const { createClient } = require('@supabase/supabase-js');
 const { google } = require('googleapis');
 const app = express();
@@ -1066,50 +1065,6 @@ app.post('/api/google-sheets/add-label', async (req, res) => {
 
     } catch (error) {
         console.error('Google Sheets error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Print proxy endpoint - forwards ZPL to local Zebra printer via TCP
-app.post('/api/print', async (req, res) => {
-    const { zpl, printerIP, printerPort = 9100 } = req.body;
-
-    if (!zpl || !printerIP) {
-        return res.status(400).json({ error: 'Missing zpl or printerIP' });
-    }
-
-    // Validate IP is local network (security)
-    if (!printerIP.startsWith('10.') && !printerIP.startsWith('192.168.') && !printerIP.startsWith('172.')) {
-        return res.status(400).json({ error: 'Printer IP must be on local network' });
-    }
-
-    try {
-        await new Promise((resolve, reject) => {
-            const client = new net.Socket();
-            client.setTimeout(5000);
-
-            client.connect(printerPort, printerIP, () => {
-                client.write(zpl, () => {
-                    client.end();
-                    resolve();
-                });
-            });
-
-            client.on('error', (err) => {
-                client.destroy();
-                reject(err);
-            });
-
-            client.on('timeout', () => {
-                client.destroy();
-                reject(new Error('Connection timeout'));
-            });
-        });
-
-        console.log(`Print job sent to ${printerIP}:${printerPort}`);
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Print error:', error.message);
         res.status(500).json({ error: error.message });
     }
 });
