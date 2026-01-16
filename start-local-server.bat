@@ -16,6 +16,11 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+:: Pull latest code
+echo Updating to latest version...
+git pull
+echo.
+
 :: Install dependencies if needed
 if not exist "node_modules" (
     echo Installing dependencies...
