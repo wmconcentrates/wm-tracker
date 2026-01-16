@@ -6522,17 +6522,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             return isLocalhost || isHTTP;
         }
 
-        // Send ZPL to printer - direct IP only
+        // Send ZPL to printer via server proxy (works over HTTPS)
         async function sendZPLToPrinter(zpl, filename) {
             const printerIP = '10.1.10.95';
 
             try {
-                await fetch(`http://${printerIP}:9100`, {
+                const response = await fetch('/api/print', {
                     method: 'POST',
-                    mode: 'no-cors',
-                    body: zpl
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ zpl, printerIP })
                 });
-                return { success: true, method: 'direct' };
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Print failed');
+                }
+
+                return { success: true, method: 'proxy' };
             } catch (error) {
                 console.error('Print failed:', error.message);
                 alert(`❌ Print failed!\n\nCould not connect to printer at ${printerIP}:9100\n\nError: ${error.message}`);
