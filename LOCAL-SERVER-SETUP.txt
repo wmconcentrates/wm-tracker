@@ -1,0 +1,37 @@
+WM TRACKER LOCAL PRINT SERVER SETUP
+====================================
+
+This lets staff print directly to the Zebra printer from their phones
+while on the shop WiFi.
+
+REQUIREMENTS:
+- Windows PC connected to the shop network
+- Node.js installed (https://nodejs.org)
+- The .env.local file with your Supabase credentials
+
+QUICK START:
+1. Copy this entire wm-tracker folder to the shop PC
+2. Make sure .env.local is in the folder (contains your API keys)
+3. Double-click "start-local-server.bat"
+4. Note the IP address shown (e.g., http://10.1.10.100:3000)
+5. Staff bookmark that URL on their phones
+
+SET STATIC IP (Recommended):
+To keep the same URL, give the PC a static IP:
+1. Open Settings > Network & Internet > Ethernet (or WiFi)
+2. Click "Edit" under IP assignment
+3. Set to Manual, enable IPv4
+4. Set IP: 10.1.10.100 (or similar available IP)
+5. Subnet: 255.255.255.0
+6. Gateway: 10.1.10.1 (your router IP)
+7. Save
+
+AUTO-START ON BOOT:
+1. Press Win+R, type: shell:startup
+2. Create a shortcut to "start-local-server.bat" in that folder
+3. The server will start automatically when Windows boots
+
+TROUBLESHOOTING:
+- "Node.js not installed" - Download from https://nodejs.org
+- Can't connect from phone - Make sure phone is on shop WiFi
+- Printer not working - Check printer IP in index.html (search for 10.1.10.95)
