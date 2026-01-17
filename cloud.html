@@ -2954,25 +2954,25 @@
                         <div class="sales-stat-card" style="border-left-color: #22c55e;" onclick="showInvoiceList('paid')" title="Click to view paid orders">
                             <div class="sales-stat-value" style="color: #22c55e;" id="salesStatPaidOrdersSales">--</div>
                             <div class="sales-stat-label">Paid</div>
-                            <div class="sales-stat-hint">Fully paid invoices</div>
+                            <div class="sales-stat-amount" style="font-size: 0.9rem; font-weight: 600; color: #22c55e; margin-top: 4px;" id="salesStatPaidAmountSales">$0</div>
                         </div>
                         <!-- Unpaid Orders -->
                         <div class="sales-stat-card" style="border-left-color: var(--accent-orange);" onclick="showInvoiceList('unpaid')" title="Click to view unpaid orders">
                             <div class="sales-stat-value" style="color: var(--accent-orange);" id="salesStatUnpaidOrdersSales">--</div>
                             <div class="sales-stat-label">Unpaid</div>
-                            <div class="sales-stat-hint">Outstanding invoices</div>
+                            <div class="sales-stat-amount" style="font-size: 0.9rem; font-weight: 600; color: var(--accent-orange); margin-top: 4px;" id="salesStatUnpaidAmountSales">$0</div>
                         </div>
                         <!-- Not Yet Due -->
                         <div class="sales-stat-card" style="border-left-color: var(--accent-purple);" onclick="showInvoiceList('notDue')" title="Click to view accounts not yet due">
                             <div class="sales-stat-value" style="color: var(--accent-purple);" id="salesStatNotDueSales">--</div>
                             <div class="sales-stat-label">Not Yet Due</div>
-                            <div class="sales-stat-hint">Due date upcoming</div>
+                            <div class="sales-stat-amount" style="font-size: 0.9rem; font-weight: 600; color: var(--accent-purple); margin-top: 4px;" id="salesStatNotDueAmountSales">$0</div>
                         </div>
                         <!-- Overdue -->
                         <div class="sales-stat-card" style="border-left-color: #ef4444;" onclick="showInvoiceList('overdue')" title="Click to view overdue accounts">
                             <div class="sales-stat-value" style="color: #ef4444;" id="salesStatOverdueSales">--</div>
                             <div class="sales-stat-label">Overdue</div>
-                            <div class="sales-stat-hint">Past due date</div>
+                            <div class="sales-stat-amount" style="font-size: 0.9rem; font-weight: 600; color: #ef4444; margin-top: 4px;" id="salesStatOverdueAmountSales">$0</div>
                         </div>
                     </div>
 
@@ -20685,14 +20685,24 @@ ${employeeReport || 'No activity recorded today'}
                 if (el) el.textContent = val;
             };
 
+            // Calculate dollar amounts
+            const paidAmount = paidOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+            const unpaidAmount = unpaidOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+            const notYetDueAmount = notYetDue.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+            const overdueAmount = overdueOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+
             updateEl('salesStatTotalOrdersSales', totalOrdersCount.toLocaleString());
             updateEl('salesStatTotalValueSales', '$' + totalOrdersValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
             updateEl('salesStatShippedOrdersSales', shippedOrdersCount.toLocaleString());
             updateEl('salesStatRevenueSales', '$' + shippedRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
             updateEl('salesStatPaidOrdersSales', paidOrders.length.toLocaleString());
+            updateEl('salesStatPaidAmountSales', '$' + paidAmount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
             updateEl('salesStatUnpaidOrdersSales', unpaidOrders.length.toLocaleString());
+            updateEl('salesStatUnpaidAmountSales', '$' + unpaidAmount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
             updateEl('salesStatNotDueSales', notYetDue.length.toLocaleString());
+            updateEl('salesStatNotDueAmountSales', '$' + notYetDueAmount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
             updateEl('salesStatOverdueSales', overdueOrders.length.toLocaleString());
+            updateEl('salesStatOverdueAmountSales', '$' + overdueAmount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
 
             // Commission calculations
             const currentMonthPaid = getPaidOrdersForMonth(shippedOrders, currentYear, currentMonth);
