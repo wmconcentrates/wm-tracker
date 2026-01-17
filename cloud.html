@@ -20763,11 +20763,11 @@ ${employeeReport || 'No activity recorded today'}
             updateEl('commissionPrevMonthSales', '$' + prevMonthCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
             updateEl('commissionPrevMonthLabelSales', `${getMonthName(prevMonth)} ${prevYear}`);
 
-            // Monthly breakdown for Sales tab
-            renderMonthlyBreakdownSales(shippedOrders);
+            // Monthly breakdown for Sales tab - use UNFILTERED orders (independent of date filter)
+            renderMonthlyBreakdownSales(unfilteredShippedOrders);
 
-            // Chart
-            renderSalesBarChartSales(shippedOrders);
+            // Chart - also use unfiltered for full picture
+            renderSalesBarChartSales(unfilteredShippedOrders);
         }
 
         // Render monthly breakdown for Sales tab
