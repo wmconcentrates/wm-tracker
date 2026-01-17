@@ -1475,6 +1475,27 @@
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
             }
+
+            /* Fix Commission Calculator grid overflow on mobile */
+            #commissionCalculatorGrid {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Reduce padding on commission cards for mobile */
+            #commissionCalculatorGrid > div {
+                padding: 15px !important;
+            }
+
+            /* Fix Monthly Sales Breakdown table overflow */
+            #salesMonthlyBreakdown {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Improve table readability on mobile */
+            #salesMonthlyBreakdown table {
+                min-width: 500px;
+            }
         }
     </style>
 </head>
@@ -2802,7 +2823,7 @@
                         <h4 style="margin: 0 0 15px 0; color: var(--accent-purple); display: flex; align-items: center; gap: 10px;">
                             <span>💵</span> Commission Calculator (8% on Paid Invoices)
                         </h4>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <div id="commissionCalculatorGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
                             <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('prevMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                                 <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Last Month</div>
                                 <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);" id="commissionPrevMonth">$0.00</div>
