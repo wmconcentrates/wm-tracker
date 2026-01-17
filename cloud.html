@@ -2887,6 +2887,7 @@
                     <!-- Date Range Filter -->
                     <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
                         <button onclick="setSalesDateRange(7)" id="salesRange7" class="sales-range-btn" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s;">7 Days</button>
+                        <button onclick="setSalesDateRange('month')" id="salesRangemonth" class="sales-range-btn" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s;">This Month</button>
                         <button onclick="setSalesDateRange(30)" id="salesRange30" class="sales-range-btn active" style="background: #FFD700; border: 1px solid #FFD700; color: #000; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">30 Days</button>
                         <button onclick="setSalesDateRange(365)" id="salesRange365" class="sales-range-btn" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s;">365 Days</button>
                         <span id="salesDateRangeLabel" style="margin-left: auto; color: var(--text-secondary); font-size: 0.85rem; align-self: center;"></span>
@@ -20532,7 +20533,7 @@ ${employeeReport || 'No activity recorded today'}
         let allOrdersIncludingPending = [];
         let currentInvoiceFilter = 'all';
         let currentInvoiceData = [];
-        let salesDateRangeDays = 30; // Default to 30 days
+        let salesDateRangeDays = 30; // Default to 30 days, or 'month' for current month
 
         // Set date range and update dashboard
         function setSalesDateRange(days) {
@@ -20556,14 +20557,31 @@ ${employeeReport || 'No activity recorded today'}
 
             // Update date range label
             const now = new Date();
-            const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
             const label = document.getElementById('salesDateRangeLabel');
             if (label) {
-                label.textContent = `${startDate.toLocaleDateString()} - ${now.toLocaleDateString()}`;
+                if (days === 'month') {
+                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const monthName = monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    label.textContent = monthName;
+                } else {
+                    const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+                    label.textContent = `${startDate.toLocaleDateString()} - ${now.toLocaleDateString()}`;
+                }
             }
 
             // Refresh dashboard with new filter
             updateSalesDashboardSales();
+        }
+
+        // Helper to get date cutoff based on salesDateRangeDays
+        function getSalesDateCutoff() {
+            const now = new Date();
+            if (salesDateRangeDays === 'month') {
+                // First day of current month
+                return new Date(now.getFullYear(), now.getMonth(), 1);
+            } else {
+                return new Date(now.getTime() - salesDateRangeDays * 24 * 60 * 60 * 1000);
+            }
         }
 
         // Fetch ALL orders (no status filter) for a specific business
@@ -20670,14 +20688,19 @@ ${employeeReport || 'No activity recorded today'}
             const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
             // Apply date range filter
-            const cutoffDate = new Date(now.getTime() - salesDateRangeDays * 24 * 60 * 60 * 1000);
+            const cutoffDate = getSalesDateCutoff();
             shippedOrders = shippedOrders.filter(o => new Date(o.created_on) >= cutoffDate);
             allOrders = allOrders.filter(o => new Date(o.created_on) >= cutoffDate);
 
             // Update date range label
             const label = document.getElementById('salesDateRangeLabel');
             if (label) {
-                label.textContent = `${cutoffDate.toLocaleDateString()} - ${now.toLocaleDateString()}`;
+                if (salesDateRangeDays === 'month') {
+                    const monthName = cutoffDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    label.textContent = monthName;
+                } else {
+                    label.textContent = `${cutoffDate.toLocaleDateString()} - ${now.toLocaleDateString()}`;
+                }
             }
 
             // Total Orders - ALL orders (including pending)
@@ -20906,7 +20929,7 @@ ${employeeReport || 'No activity recorded today'}
             const now = new Date();
 
             // Apply date range filter
-            const cutoffDate = new Date(now.getTime() - salesDateRangeDays * 24 * 60 * 60 * 1000);
+            const cutoffDate = getSalesDateCutoff();
             shippedOrders = shippedOrders.filter(o => new Date(o.created_on) >= cutoffDate);
             allOrders = allOrders.filter(o => new Date(o.created_on) >= cutoffDate);
 
