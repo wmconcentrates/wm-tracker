@@ -1792,7 +1792,12 @@
             <div class="station-tab" data-station="frontofhouse">
                 <div class="icon">📣</div>
                 <h3>Front of House</h3>
-                <p>Blog & Social</p>
+                <p>Pipeline & Blog</p>
+            </div>
+            <div class="station-tab" data-station="sales">
+                <div class="icon">💰</div>
+                <h3>Sales</h3>
+                <p>Orders & Commission</p>
             </div>
         </div>
 
@@ -2776,106 +2781,6 @@
                     </div>
                 </div>
 
-<!-- Sales Dashboard -->
-                <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(147, 51, 234, 0.1)); border: 2px solid #FFD700; border-radius: 16px; padding: 25px; margin-bottom: 30px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                        <div>
-                            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; color: #FFD700;">
-                                <span>💰</span> Sales Dashboard
-                            </h3>
-                            <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 0.9rem;">Sales performance, commissions, and rep tracking</p>
-                        </div>
-                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-                            <button onclick="openDropCalendarModal()" class="btn" style="background: linear-gradient(135deg, #10B981, #059669); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Calendar</button>
-                            <select id="salesRepFilter" onchange="updateSalesDashboard()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px; min-width: 0; flex: 1 1 160px;">
-                                <option value="all">All Sales Reps</option>
-                            </select>
-                            <button onclick="forceRefreshSales()" class="btn" style="background: #FFD700; color: #000; padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Refresh</button>
-                        </div>
-                    </div>
-
-                    <!-- Sales Stats Grid -->
-                    <div id="salesDashboardStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px;">
-                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid var(--accent-blue);">
-                            <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-blue);" id="salesStatTotalOrders">--</div>
-                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Orders</div>
-                        </div>
-                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid #FFD700;">
-                            <div style="font-size: 2.2rem; font-weight: 700; color: #FFD700;" id="salesStatTotalRevenue">--</div>
-                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Last 30 Days</div>
-                        </div>
-                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid var(--accent-green);">
-                            <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-green);" id="salesStatPaidOrders">--</div>
-                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Paid Orders</div>
-                        </div>
-                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid var(--accent-orange);">
-                            <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-orange);" id="salesStatUnpaidOrders">--</div>
-                            <div style="color: var(--text-secondary); font-size: 0.85rem;">Unpaid Orders</div>
-                        </div>
-                        <div style="background: var(--bg-primary); padding: 20px; border-radius: 12px; text-align: center; border-left: 4px solid var(--accent-purple);">
-                            <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent-purple);" id="salesStatNewCustomers">--</div>
-                            <div style="color: var(--text-secondary); font-size: 0.85rem;">New Customers</div>
-                        </div>
-                    </div>
-
-                    <!-- Commission Calculator Section -->
-                    <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(147, 51, 234, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                        <h4 style="margin: 0 0 15px 0; color: var(--accent-purple); display: flex; align-items: center; gap: 10px;">
-                            <span>💵</span> Commission Calculator (8% on Paid Invoices)
-                        </h4>
-                        <div id="commissionCalculatorGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('prevMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Last Month</div>
-                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);" id="commissionPrevMonth">$0.00</div>
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionPrevMonthLabel">December 2024</div>
-                                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.7;">Click for details</div>
-                            </div>
-                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('currentMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(147, 51, 234, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">This Month</div>
-                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);" id="commissionCurrentMonth">$0.00</div>
-                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionCurrentMonthLabel">January 2025</div>
-                                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.7;">Click for details</div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 15px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary);">
-                            <strong style="color: var(--accent-purple);">Pay Schedule:</strong> Commission paid on the first paycheck of each month for the previous month's paid invoices.
-                        </div>
-                    </div>
-
-                    <!-- Monthly Breakdown -->
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px;">
-                        <h4 style="margin: 0 0 15px 0; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
-                            <span>📊</span> Monthly Sales Breakdown
-                        </h4>
-                        <div id="salesMonthlyBreakdown" style="max-height: 300px; overflow-y: auto;">
-                            <div style="text-align: center; padding: 30px; color: var(--text-secondary);">
-                                Loading sales data...
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Sales Bar Chart -->
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; margin-top: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h4 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
-                                Sales Trends (Last 6 Months)
-                            </h4>
-                            <div style="display: flex; gap: 8px;">
-                                <button onclick="setSalesChartType('revenue')" id="chartTypeRevenue" class="btn" style="background: var(--accent-orange); padding: 6px 12px; font-size: 0.8rem;">Revenue</button>
-                                <button onclick="setSalesChartType('orders')" id="chartTypeOrders" class="btn" style="background: var(--bg-tertiary); padding: 6px 12px; font-size: 0.8rem;">Orders</button>
-                            </div>
-                        </div>
-                        <div id="salesBarChart" style="min-height: 200px;">
-                            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading chart...</div>
-                        </div>
-                        <!-- Data cache status -->
-                        <div id="salesCacheStatus" style="margin-top: 15px; padding: 10px; background: var(--bg-tertiary); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;">
-                            <span id="cacheStatusText">Data not cached</span>
-                            <button onclick="forceSyncSalesData()" class="btn" style="background: var(--accent-purple); padding: 5px 10px; font-size: 0.75rem;">Sync to Cloud</button>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Blog Generator Toggle Button -->
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <button onclick="toggleBlogGenerator()" class="btn" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); padding: 15px 30px; font-size: 1.1rem; flex: 1;">📝 Blog Generator</button>
@@ -2953,6 +2858,228 @@
         </div>
 
         </div><!-- end appContent -->
+
+        <!-- Sales Station -->
+        <div class="station-content" id="sales">
+            <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
+            <div class="form-section">
+                <!-- Sales Dashboard Header -->
+                <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(147, 51, 234, 0.1)); border: 2px solid #FFD700; border-radius: 16px; padding: 25px; margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; color: #FFD700;">
+                                <span>💰</span> Sales Dashboard
+                            </h3>
+                            <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 0.9rem;">Click any card to view the underlying orders</p>
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                            <button onclick="openDropCalendarModal()" class="btn" style="background: linear-gradient(135deg, #10B981, #059669); padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Calendar</button>
+                            <select id="salesRepFilterSales" onchange="updateSalesDashboardSales()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px; min-width: 0; flex: 1 1 160px;">
+                                <option value="all">All Sales Reps</option>
+                            </select>
+                            <button onclick="forceRefreshSalesDashboard()" class="btn" style="background: #FFD700; color: #000; padding: 10px 20px; font-weight: 600; flex: 1 1 auto;">Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Clickable Sales Stats Grid -->
+                    <style>
+                        .sales-stat-card {
+                            background: var(--bg-primary);
+                            padding: 20px;
+                            border-radius: 12px;
+                            text-align: center;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            border-left: 4px solid;
+                        }
+                        .sales-stat-card:hover {
+                            transform: translateY(-3px);
+                            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+                        }
+                        .sales-stat-card:active {
+                            transform: translateY(-1px);
+                        }
+                        .sales-stat-value {
+                            font-size: 2.2rem;
+                            font-weight: 700;
+                        }
+                        .sales-stat-label {
+                            color: var(--text-secondary);
+                            font-size: 0.85rem;
+                        }
+                        .sales-stat-hint {
+                            font-size: 0.7rem;
+                            color: var(--text-secondary);
+                            margin-top: 8px;
+                            opacity: 0.6;
+                        }
+                    </style>
+                    <div id="salesDashboardStatsSales" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                        <!-- Total Orders (ALL) -->
+                        <div class="sales-stat-card" style="border-left-color: var(--accent-blue);" onclick="showInvoiceList('all')" title="Click to view all orders">
+                            <div class="sales-stat-value" style="color: var(--accent-blue);" id="salesStatTotalOrdersSales">--</div>
+                            <div class="sales-stat-label">Total Orders</div>
+                            <div class="sales-stat-hint">All LeafLink orders</div>
+                        </div>
+                        <!-- Total Order Value -->
+                        <div class="sales-stat-card" style="border-left-color: #FFD700;" onclick="showInvoiceList('all')" title="Click to view all orders">
+                            <div class="sales-stat-value" style="color: #FFD700;" id="salesStatTotalValueSales">--</div>
+                            <div class="sales-stat-label">Order Value</div>
+                            <div class="sales-stat-hint">All orders total</div>
+                        </div>
+                        <!-- Shipped Orders -->
+                        <div class="sales-stat-card" style="border-left-color: #10B981;" onclick="showInvoiceList('shipped')" title="Click to view shipped orders">
+                            <div class="sales-stat-value" style="color: #10B981;" id="salesStatShippedOrdersSales">--</div>
+                            <div class="sales-stat-label">Shipped</div>
+                            <div class="sales-stat-hint">Accepted/Shipped/Complete</div>
+                        </div>
+                        <!-- Revenue (Shipped) -->
+                        <div class="sales-stat-card" style="border-left-color: var(--accent-green);" onclick="showInvoiceList('shipped')" title="Click to view shipped orders">
+                            <div class="sales-stat-value" style="color: var(--accent-green);" id="salesStatRevenueSales">--</div>
+                            <div class="sales-stat-label">Revenue</div>
+                            <div class="sales-stat-hint">Shipped orders value</div>
+                        </div>
+                        <!-- Paid Orders -->
+                        <div class="sales-stat-card" style="border-left-color: #22c55e;" onclick="showInvoiceList('paid')" title="Click to view paid orders">
+                            <div class="sales-stat-value" style="color: #22c55e;" id="salesStatPaidOrdersSales">--</div>
+                            <div class="sales-stat-label">Paid</div>
+                            <div class="sales-stat-hint">Fully paid invoices</div>
+                        </div>
+                        <!-- Unpaid Orders -->
+                        <div class="sales-stat-card" style="border-left-color: var(--accent-orange);" onclick="showInvoiceList('unpaid')" title="Click to view unpaid orders">
+                            <div class="sales-stat-value" style="color: var(--accent-orange);" id="salesStatUnpaidOrdersSales">--</div>
+                            <div class="sales-stat-label">Unpaid</div>
+                            <div class="sales-stat-hint">Outstanding invoices</div>
+                        </div>
+                        <!-- Not Yet Due -->
+                        <div class="sales-stat-card" style="border-left-color: var(--accent-purple);" onclick="showInvoiceList('notDue')" title="Click to view accounts not yet due">
+                            <div class="sales-stat-value" style="color: var(--accent-purple);" id="salesStatNotDueSales">--</div>
+                            <div class="sales-stat-label">Not Yet Due</div>
+                            <div class="sales-stat-hint">Due date upcoming</div>
+                        </div>
+                        <!-- Overdue -->
+                        <div class="sales-stat-card" style="border-left-color: #ef4444;" onclick="showInvoiceList('overdue')" title="Click to view overdue accounts">
+                            <div class="sales-stat-value" style="color: #ef4444;" id="salesStatOverdueSales">--</div>
+                            <div class="sales-stat-label">Overdue</div>
+                            <div class="sales-stat-hint">Past due date</div>
+                        </div>
+                    </div>
+
+                    <!-- Commission Calculator Section -->
+                    <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(147, 51, 234, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--accent-purple); display: flex; align-items: center; gap: 10px;">
+                            <span>💵</span> Commission Calculator (8% on Paid Invoices)
+                        </h4>
+                        <div id="commissionCalculatorGridSales" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('prevMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Last Month</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);" id="commissionPrevMonthSales">$0.00</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionPrevMonthLabelSales">December 2024</div>
+                                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.7;">Click for details</div>
+                            </div>
+                            <div style="background: var(--bg-primary); padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showCommissionDetails('currentMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(147, 51, 234, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">This Month</div>
+                                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);" id="commissionCurrentMonthSales">$0.00</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px;" id="commissionCurrentMonthLabelSales">January 2025</div>
+                                <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 8px; opacity: 0.7;">Click for details</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary);">
+                            <strong style="color: var(--accent-purple);">Pay Schedule:</strong> Commission paid on the first paycheck of each month for the previous month's paid invoices.
+                        </div>
+                    </div>
+
+                    <!-- Monthly Breakdown -->
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                            <span>📊</span> Monthly Sales Breakdown
+                        </h4>
+                        <div id="salesMonthlyBreakdownSales" style="max-height: 300px; overflow-y: auto;">
+                            <div style="text-align: center; padding: 30px; color: var(--text-secondary);">
+                                Loading sales data...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sales Bar Chart -->
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; margin-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h4 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                                Sales Trends (Last 6 Months)
+                            </h4>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="setSalesChartTypeSales('revenue')" id="chartTypeRevenueSales" class="btn" style="background: var(--accent-orange); padding: 6px 12px; font-size: 0.8rem;">Revenue</button>
+                                <button onclick="setSalesChartTypeSales('orders')" id="chartTypeOrdersSales" class="btn" style="background: var(--bg-tertiary); padding: 6px 12px; font-size: 0.8rem;">Orders</button>
+                            </div>
+                        </div>
+                        <div id="salesBarChartSales" style="min-height: 200px;">
+                            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading chart...</div>
+                        </div>
+                        <!-- Data cache status -->
+                        <div id="salesCacheStatusSales" style="margin-top: 15px; padding: 10px; background: var(--bg-tertiary); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;">
+                            <span id="cacheStatusTextSales">Data not cached</span>
+                            <button onclick="forceSyncSalesData()" class="btn" style="background: var(--accent-purple); padding: 5px 10px; font-size: 0.75rem;">Sync to Cloud</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Invoice List Modal -->
+    <div id="invoiceListModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; overflow-y: auto;">
+        <div style="max-width: 1000px; margin: 30px auto; background: var(--bg-secondary); border-radius: 16px; padding: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h2 id="invoiceListTitle" style="margin: 0; color: var(--accent-blue);">Orders</h2>
+                <button onclick="closeInvoiceListModal()" style="background: none; border: none; color: var(--text-primary); font-size: 2rem; cursor: pointer; padding: 0; width: 40px; height: 40px;">&times;</button>
+            </div>
+
+            <!-- Controls -->
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="invoiceSearch" placeholder="Search by customer or invoice #..." oninput="filterInvoiceTable()" style="flex: 1; min-width: 200px; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+                <select id="invoiceSortBy" onchange="sortInvoiceTable()" style="padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary);">
+                    <option value="date-desc">Newest First</option>
+                    <option value="date-asc">Oldest First</option>
+                    <option value="amount-desc">Highest Amount</option>
+                    <option value="amount-asc">Lowest Amount</option>
+                    <option value="customer">Customer A-Z</option>
+                    <option value="status">Status</option>
+                </select>
+            </div>
+
+            <!-- Summary -->
+            <div style="display: flex; gap: 20px; margin-bottom: 20px; padding: 15px; background: var(--bg-primary); border-radius: 10px; flex-wrap: wrap;">
+                <div>
+                    <span style="color: var(--text-secondary);">Showing: </span>
+                    <strong id="invoiceListCount" style="color: var(--accent-blue);">0 orders</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-secondary);">Total: </span>
+                    <strong id="invoiceListTotal" style="color: var(--accent-green);">$0.00</strong>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div style="overflow-x: auto;">
+                <table id="invoiceListTable" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--bg-tertiary);">
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border-color);">Order #</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border-color);">Customer</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border-color);">Date</th>
+                            <th style="padding: 12px; text-align: right; border-bottom: 2px solid var(--border-color);">Amount</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid var(--border-color);">Status</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid var(--border-color);">Paid</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid var(--border-color);">Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoiceListBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- Edit Batch Modal -->
@@ -6383,7 +6510,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 } else if (station === 'frontofhouse') {
                     loadFOHRecentBatches();
                     loadFOHPosts();
-                    loadSalesDashboard();
+                    // Note: Sales dashboard moved to dedicated Sales tab
+                    loadSalesDashboard(); // Still needed for Pipeline/Inventory/Needs data
+                } else if (station === 'sales') {
+                    loadSalesDashboardSales();
                 }
             });
         });
@@ -20381,6 +20511,459 @@ ${employeeReport || 'No activity recorded today'}
 
             html += '</tbody></table>';
             container.innerHTML = html;
+        }
+
+        // ============================================
+        // SALES TAB FUNCTIONS (Separate from FOH)
+        // ============================================
+
+        // Store ALL orders (including pending/submitted) for Sales tab
+        let allOrdersIncludingPending = [];
+        let currentInvoiceFilter = 'all';
+        let currentInvoiceData = [];
+
+        // Fetch ALL LeafLink orders (no status filter) for the Sales tab
+        async function fetchAllLeafLinkOrdersIncludingPending() {
+            if (isDemoMode()) {
+                return generateDemoLeafLinkOrders();
+            }
+
+            try {
+                const twoMonthsAgo = new Date();
+                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
+
+                const businessSlug = businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse';
+                console.log('Fetching ALL LeafLink orders (including pending) for:', businessSlug);
+                let allOrders = [];
+                // No status filter - gets Submitted, Accepted, Shipped, Complete
+                let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=orders-received&created_on__gte=${dateFilter}&page_size=100`;
+
+                while (nextUrl && allOrders.length < 500) {
+                    const response = await fetch(nextUrl);
+                    if (!response.ok) throw new Error('API request failed');
+                    const data = await response.json();
+                    allOrders = allOrders.concat(data.results);
+                    nextUrl = data.next;
+                }
+
+                console.log(`Fetched ${allOrders.length} total orders (including pending)`);
+                allOrdersIncludingPending = allOrders;
+                return allOrders;
+            } catch (error) {
+                console.error('Error fetching ALL LeafLink orders:', error);
+                return [];
+            }
+        }
+
+        // Load Sales Dashboard for the dedicated Sales tab
+        async function loadSalesDashboardSales() {
+            try {
+                // Fetch both shipped orders and ALL orders
+                await ensureLeafLinkData();
+                await fetchAllLeafLinkOrdersIncludingPending();
+
+                // Populate sales rep dropdown for Sales tab
+                const salesReps = extractSalesReps(allLeafLinkOrders);
+                const dropdown = document.getElementById('salesRepFilterSales');
+                if (dropdown) {
+                    dropdown.innerHTML = '<option value="all">All Sales Reps</option>';
+                    salesReps.forEach(rep => {
+                        const option = document.createElement('option');
+                        option.value = JSON.stringify({ name: rep.name, ids: rep.ids });
+                        option.textContent = rep.name;
+                        dropdown.appendChild(option);
+                    });
+                }
+
+                updateSalesDashboardSales();
+            } catch (error) {
+                console.error('Error loading Sales Dashboard:', error);
+            }
+        }
+
+        // Update the Sales tab dashboard stats
+        function updateSalesDashboardSales() {
+            const rawFilter = document.getElementById('salesRepFilterSales')?.value || 'all';
+            let salesRepFilter = rawFilter;
+            if (rawFilter !== 'all') {
+                try {
+                    salesRepFilter = JSON.parse(rawFilter);
+                } catch (e) {}
+            }
+
+            // Filter both order sets
+            const shippedOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
+            const allOrders = filterOrdersBySalesRep(allOrdersIncludingPending, salesRepFilter);
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+            // Total Orders - ALL orders (including pending)
+            const totalOrdersCount = allOrders.length;
+            const totalOrdersValue = allOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+
+            // Shipped Orders
+            const shippedOrdersCount = shippedOrders.length;
+            const shippedRevenue = shippedOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+
+            // Paid/Unpaid (from shipped orders)
+            const paidOrders = shippedOrders.filter(o => o.paid === true);
+            const unpaidOrders = shippedOrders.filter(o => o.paid === false);
+
+            // Not Yet Due vs Overdue
+            const notYetDue = unpaidOrders.filter(o => {
+                if (!o.payment_due_date) return true; // No due date = not overdue yet
+                return new Date(o.payment_due_date) >= now;
+            });
+            const overdueOrders = unpaidOrders.filter(o => {
+                if (!o.payment_due_date) return false;
+                return new Date(o.payment_due_date) < now;
+            });
+
+            // Update Sales tab stats
+            const updateEl = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+
+            updateEl('salesStatTotalOrdersSales', totalOrdersCount.toLocaleString());
+            updateEl('salesStatTotalValueSales', '$' + totalOrdersValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
+            updateEl('salesStatShippedOrdersSales', shippedOrdersCount.toLocaleString());
+            updateEl('salesStatRevenueSales', '$' + shippedRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
+            updateEl('salesStatPaidOrdersSales', paidOrders.length.toLocaleString());
+            updateEl('salesStatUnpaidOrdersSales', unpaidOrders.length.toLocaleString());
+            updateEl('salesStatNotDueSales', notYetDue.length.toLocaleString());
+            updateEl('salesStatOverdueSales', overdueOrders.length.toLocaleString());
+
+            // Commission calculations
+            const currentMonthPaid = getPaidOrdersForMonth(shippedOrders, currentYear, currentMonth);
+            const prevMonthPaid = getPaidOrdersForMonth(shippedOrders, prevYear, prevMonth);
+            const currentMonthCommission = currentMonthPaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
+            const prevMonthCommission = prevMonthPaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
+
+            updateEl('commissionCurrentMonthSales', '$' + currentMonthCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            updateEl('commissionCurrentMonthLabelSales', `${getMonthName(currentMonth)} ${currentYear}`);
+            updateEl('commissionPrevMonthSales', '$' + prevMonthCommission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            updateEl('commissionPrevMonthLabelSales', `${getMonthName(prevMonth)} ${prevYear}`);
+
+            // Monthly breakdown for Sales tab
+            renderMonthlyBreakdownSales(shippedOrders);
+
+            // Chart
+            renderSalesBarChartSales(shippedOrders);
+        }
+
+        // Render monthly breakdown for Sales tab
+        function renderMonthlyBreakdownSales(orders) {
+            const container = document.getElementById('salesMonthlyBreakdownSales');
+            if (!container) return;
+
+            const monthlyData = {};
+            orders.forEach(order => {
+                const date = new Date(order.created_on);
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                if (!monthlyData[key]) {
+                    monthlyData[key] = {
+                        year: date.getFullYear(),
+                        month: date.getMonth(),
+                        orders: [],
+                        paidOrders: [],
+                        revenue: 0,
+                        paidRevenue: 0
+                    };
+                }
+                monthlyData[key].orders.push(order);
+                monthlyData[key].revenue += order.total?.amount || 0;
+                if (order.paid === true) {
+                    monthlyData[key].paidOrders.push(order);
+                    monthlyData[key].paidRevenue += order.total?.amount || 0;
+                }
+            });
+
+            const sortedMonths = Object.keys(monthlyData).sort().reverse();
+
+            if (sortedMonths.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-secondary);">No sales data available</div>';
+                return;
+            }
+
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<thead><tr style="border-bottom: 2px solid var(--border-color);">';
+            html += '<th style="text-align: left; padding: 10px; color: var(--text-secondary);">Month</th>';
+            html += '<th style="text-align: right; padding: 10px; color: var(--text-secondary);">Orders</th>';
+            html += '<th style="text-align: right; padding: 10px; color: var(--text-secondary);">Revenue</th>';
+            html += '<th style="text-align: right; padding: 10px; color: var(--text-secondary);">Paid</th>';
+            html += '<th style="text-align: right; padding: 10px; color: var(--text-secondary);">Commission</th>';
+            html += '</tr></thead><tbody>';
+
+            sortedMonths.forEach(key => {
+                const data = monthlyData[key];
+                const commission = data.paidRevenue * COMMISSION_RATE;
+                const monthName = getMonthName(data.month);
+
+                html += `<tr style="border-bottom: 1px solid var(--border-color);">`;
+                html += `<td style="padding: 12px 10px; font-weight: 600;">${monthName} ${data.year}</td>`;
+                html += `<td style="padding: 12px 10px; text-align: right; color: var(--accent-blue);">${data.orders.length}</td>`;
+                html += `<td style="padding: 12px 10px; text-align: right; color: #FFD700;">$${data.revenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>`;
+                html += `<td style="padding: 12px 10px; text-align: right; color: var(--accent-green);">$${data.paidRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>`;
+                html += `<td style="padding: 12px 10px; text-align: right; color: var(--accent-purple); font-weight: 600;">$${commission.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Sales bar chart for Sales tab
+        let salesChartTypeSales = 'revenue';
+
+        function setSalesChartTypeSales(type) {
+            salesChartTypeSales = type;
+            document.getElementById('chartTypeRevenueSales').style.background = type === 'revenue' ? 'var(--accent-orange)' : 'var(--bg-tertiary)';
+            document.getElementById('chartTypeOrdersSales').style.background = type === 'orders' ? 'var(--accent-orange)' : 'var(--bg-tertiary)';
+            renderSalesBarChartSales(filterOrdersBySalesRep(allLeafLinkOrders, document.getElementById('salesRepFilterSales')?.value || 'all'));
+        }
+
+        function renderSalesBarChartSales(orders) {
+            const container = document.getElementById('salesBarChartSales');
+            if (!container) return;
+
+            // Group by month
+            const monthlyData = {};
+            orders.forEach(order => {
+                const date = new Date(order.created_on);
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                if (!monthlyData[key]) {
+                    monthlyData[key] = { month: date.getMonth(), year: date.getFullYear(), revenue: 0, orders: 0 };
+                }
+                monthlyData[key].revenue += order.total?.amount || 0;
+                monthlyData[key].orders++;
+            });
+
+            const sortedMonths = Object.keys(monthlyData).sort().slice(-6);
+            if (sortedMonths.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No data for chart</div>';
+                return;
+            }
+
+            const maxValue = Math.max(...sortedMonths.map(k => salesChartTypeSales === 'revenue' ? monthlyData[k].revenue : monthlyData[k].orders));
+
+            let html = '<div style="display: flex; align-items: flex-end; height: 180px; gap: 10px; padding: 10px 0;">';
+            sortedMonths.forEach(key => {
+                const data = monthlyData[key];
+                const value = salesChartTypeSales === 'revenue' ? data.revenue : data.orders;
+                const height = maxValue > 0 ? (value / maxValue) * 150 : 0;
+                const label = getMonthName(data.month).substring(0, 3);
+                const displayValue = salesChartTypeSales === 'revenue' ? '$' + (value/1000).toFixed(0) + 'k' : value;
+
+                html += `<div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px;">${displayValue}</div>
+                    <div style="width: 100%; max-width: 50px; height: ${Math.max(height, 5)}px; background: linear-gradient(to top, var(--accent-purple), var(--accent-blue)); border-radius: 4px 4px 0 0;"></div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">${label}</div>
+                </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Force refresh for Sales tab
+        async function forceRefreshSalesDashboard() {
+            const btn = event?.target;
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Refreshing...';
+            }
+
+            try {
+                // Clear caches and refetch
+                allLeafLinkOrders = [];
+                allOrdersIncludingPending = [];
+                lastLeafLinkFetch = 0;
+
+                await loadSalesDashboardSales();
+
+                showToast('Sales data refreshed!', 'success');
+            } catch (error) {
+                console.error('Error refreshing sales:', error);
+                showToast('Error refreshing data', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Refresh';
+                }
+            }
+        }
+
+        // ============================================
+        // INVOICE LIST MODAL FUNCTIONS
+        // ============================================
+
+        function showInvoiceList(filterType) {
+            currentInvoiceFilter = filterType;
+
+            // Get filtered orders based on sales rep selection
+            const rawFilter = document.getElementById('salesRepFilterSales')?.value || 'all';
+            let salesRepFilter = rawFilter;
+            if (rawFilter !== 'all') {
+                try { salesRepFilter = JSON.parse(rawFilter); } catch (e) {}
+            }
+
+            const shippedOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
+            const allOrders = filterOrdersBySalesRep(allOrdersIncludingPending, salesRepFilter);
+
+            // Filter based on type
+            let filteredOrders = [];
+            let title = '';
+            const now = new Date();
+
+            switch (filterType) {
+                case 'all':
+                    filteredOrders = allOrders;
+                    title = '📋 All Orders';
+                    break;
+                case 'shipped':
+                    filteredOrders = shippedOrders;
+                    title = '📦 Shipped Orders';
+                    break;
+                case 'paid':
+                    filteredOrders = shippedOrders.filter(o => o.paid === true);
+                    title = '✅ Paid Orders';
+                    break;
+                case 'unpaid':
+                    filteredOrders = shippedOrders.filter(o => o.paid === false);
+                    title = '⏳ Unpaid Orders';
+                    break;
+                case 'notDue':
+                    filteredOrders = shippedOrders.filter(o => {
+                        if (o.paid === true) return false;
+                        if (!o.payment_due_date) return true;
+                        return new Date(o.payment_due_date) >= now;
+                    });
+                    title = '📅 Accounts Not Yet Due';
+                    break;
+                case 'overdue':
+                    filteredOrders = shippedOrders.filter(o => {
+                        if (o.paid === true) return false;
+                        if (!o.payment_due_date) return false;
+                        return new Date(o.payment_due_date) < now;
+                    });
+                    title = '🚨 Overdue Accounts';
+                    break;
+            }
+
+            currentInvoiceData = filteredOrders;
+            document.getElementById('invoiceListTitle').textContent = title;
+            document.getElementById('invoiceSearch').value = '';
+            document.getElementById('invoiceSortBy').value = 'date-desc';
+
+            renderInvoiceTable(filteredOrders);
+            document.getElementById('invoiceListModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeInvoiceListModal() {
+            document.getElementById('invoiceListModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function renderInvoiceTable(orders) {
+            const tbody = document.getElementById('invoiceListBody');
+            const countEl = document.getElementById('invoiceListCount');
+            const totalEl = document.getElementById('invoiceListTotal');
+
+            const total = orders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
+            countEl.textContent = `${orders.length} order${orders.length !== 1 ? 's' : ''}`;
+            totalEl.textContent = '$' + total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">No orders found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = orders.map((order, i) => {
+                const orderNum = order.short_id || order.number || order.id;
+                const customer = order.customer?.display_name || order.customer?.name || 'Unknown';
+                const date = order.created_on ? new Date(order.created_on).toLocaleDateString() : 'N/A';
+                const amount = order.total?.amount || 0;
+                const status = order.status || 'Unknown';
+                const paid = order.paid;
+                const dueDate = order.payment_due_date ? new Date(order.payment_due_date).toLocaleDateString() : 'N/A';
+
+                const statusColor = status === 'Complete' ? 'var(--accent-green)' :
+                                   status === 'Shipped' ? 'var(--accent-blue)' :
+                                   status === 'Accepted' ? 'var(--accent-purple)' :
+                                   status === 'Submitted' ? 'var(--accent-orange)' : 'var(--text-secondary)';
+
+                const paidColor = paid ? 'var(--accent-green)' : 'var(--accent-orange)';
+                const rowBg = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
+
+                // Check if overdue
+                let dueDateColor = 'var(--text-secondary)';
+                if (!paid && order.payment_due_date && new Date(order.payment_due_date) < new Date()) {
+                    dueDateColor = '#ef4444';
+                }
+
+                return `<tr style="background: ${rowBg}; border-bottom: 1px solid var(--border-color);" data-search="${customer.toLowerCase()} ${orderNum}">
+                    <td style="padding: 12px; font-family: 'Space Mono', monospace; color: var(--accent-blue);">${orderNum}</td>
+                    <td style="padding: 12px;">${escapeHtml(customer)}</td>
+                    <td style="padding: 12px; color: var(--text-secondary);">${date}</td>
+                    <td style="padding: 12px; text-align: right; font-weight: 600;">$${amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td style="padding: 12px; text-align: center;"><span style="background: ${statusColor}22; color: ${statusColor}; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem;">${status}</span></td>
+                    <td style="padding: 12px; text-align: center;"><span style="color: ${paidColor}; font-weight: 600;">${paid ? '✓ Paid' : 'Unpaid'}</span></td>
+                    <td style="padding: 12px; color: ${dueDateColor};">${dueDate}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function filterInvoiceTable() {
+            const query = document.getElementById('invoiceSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#invoiceListBody tr');
+
+            rows.forEach(row => {
+                const searchData = row.getAttribute('data-search') || '';
+                row.style.display = searchData.includes(query) ? '' : 'none';
+            });
+
+            // Update count for visible rows
+            const visibleRows = document.querySelectorAll('#invoiceListBody tr:not([style*="display: none"])');
+            document.getElementById('invoiceListCount').textContent = `${visibleRows.length} order${visibleRows.length !== 1 ? 's' : ''}`;
+        }
+
+        function sortInvoiceTable() {
+            const sortBy = document.getElementById('invoiceSortBy').value;
+            let sorted = [...currentInvoiceData];
+
+            switch (sortBy) {
+                case 'date-desc':
+                    sorted.sort((a, b) => new Date(b.created_on || 0) - new Date(a.created_on || 0));
+                    break;
+                case 'date-asc':
+                    sorted.sort((a, b) => new Date(a.created_on || 0) - new Date(b.created_on || 0));
+                    break;
+                case 'amount-desc':
+                    sorted.sort((a, b) => (b.total?.amount || 0) - (a.total?.amount || 0));
+                    break;
+                case 'amount-asc':
+                    sorted.sort((a, b) => (a.total?.amount || 0) - (b.total?.amount || 0));
+                    break;
+                case 'customer':
+                    sorted.sort((a, b) => {
+                        const nameA = a.customer?.display_name || a.customer?.name || '';
+                        const nameB = b.customer?.display_name || b.customer?.name || '';
+                        return nameA.localeCompare(nameB);
+                    });
+                    break;
+                case 'status':
+                    const statusOrder = { 'Complete': 0, 'Shipped': 1, 'Accepted': 2, 'Submitted': 3 };
+                    sorted.sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
+                    break;
+            }
+
+            renderInvoiceTable(sorted);
         }
 
 
