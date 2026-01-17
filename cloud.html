@@ -20566,38 +20566,61 @@ ${employeeReport || 'No activity recorded today'}
             updateSalesDashboardSales();
         }
 
+        // Fetch ALL orders (no status filter) for a specific business
+        async function fetchAllOrdersForBusiness(businessSlug) {
+            try {
+                const twoMonthsAgo = new Date();
+                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
+
+                console.log(`Fetching ALL LeafLink orders for: ${businessSlug}`);
+                let orders = [];
+                // No status filter - gets Submitted, Accepted, Shipped, Complete
+                let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=orders-received&created_on__gte=${dateFilter}&page_size=100`;
+
+                while (nextUrl && orders.length < 500) {
+                    const response = await fetch(nextUrl);
+                    if (!response.ok) throw new Error(`API request failed for ${businessSlug}`);
+                    const data = await response.json();
+                    orders = orders.concat(data.results);
+                    nextUrl = data.next;
+                }
+
+                console.log(`Fetched ${orders.length} total orders from ${businessSlug}`);
+                return orders;
+            } catch (error) {
+                console.error(`Error fetching all orders for ${businessSlug}:`, error);
+                return [];
+            }
+        }
+
         // Fetch ALL LeafLink orders (no status filter) for the Sales tab
         async function fetchAllLeafLinkOrdersIncludingPending() {
             if (isDemoMode()) {
                 return generateDemoLeafLinkOrders();
             }
 
-            try {
-                const twoMonthsAgo = new Date();
-                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
-
-                const businessSlug = businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse';
-                console.log('Fetching ALL LeafLink orders (including pending) for:', businessSlug);
-                let allOrders = [];
-                // No status filter - gets Submitted, Accepted, Shipped, Complete
-                let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=orders-received&created_on__gte=${dateFilter}&page_size=100`;
-
-                while (nextUrl && allOrders.length < 500) {
-                    const response = await fetch(nextUrl);
-                    if (!response.ok) throw new Error('API request failed');
-                    const data = await response.json();
-                    allOrders = allOrders.concat(data.results);
-                    nextUrl = data.next;
-                }
-
-                console.log(`Fetched ${allOrders.length} total orders (including pending)`);
-                allOrdersIncludingPending = allOrders;
-                return allOrders;
-            } catch (error) {
-                console.error('Error fetching ALL LeafLink orders:', error);
-                return [];
+            // If viewing all businesses, fetch from each in parallel and combine
+            if (currentBusinessId === 'all' && businessesList.length > 0) {
+                const activeBusinesses = businessesList.filter(b => b.is_active);
+                const orderPromises = activeBusinesses.map(async biz => {
+                    const orders = await fetchAllOrdersForBusiness(biz.slug);
+                    // Tag each order with business info for display
+                    orders.forEach(o => o._business = { id: biz.id, slug: biz.slug, name: biz.display_name });
+                    return orders;
+                });
+                const results = await Promise.all(orderPromises);
+                const combinedOrders = results.flat();
+                console.log(`Combined ${combinedOrders.length} total orders from all businesses`);
+                allOrdersIncludingPending = combinedOrders;
+                return combinedOrders;
             }
+
+            // Single business fetch
+            const businessSlug = businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse';
+            const orders = await fetchAllOrdersForBusiness(businessSlug);
+            allOrdersIncludingPending = orders;
+            return orders;
         }
 
         // Load Sales Dashboard for the dedicated Sales tab
