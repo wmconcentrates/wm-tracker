@@ -19449,7 +19449,7 @@ ${employeeReport || 'No activity recorded today'}
             const dateStr = new Date(year, month, day).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
             let modalHtml = `
-                <div id="dropDayModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;" onclick="if(event.target.id==='dropDayModal')this.remove()">
+                <div id="dropDayModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10002; display: flex; align-items: center; justify-content: center; padding: 20px;" onclick="if(event.target.id==='dropDayModal')this.remove()">
                     <div style="background: var(--bg-secondary); border-radius: 16px; padding: 25px; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                             <h3 style="margin: 0; color: var(--accent-green);">📅 ${dateStr}</h3>
