@@ -20750,9 +20750,11 @@ ${employeeReport || 'No activity recorded today'}
             updateEl('salesStatOverdueSales', overdueOrders.length.toLocaleString());
             updateEl('salesStatOverdueAmountSales', '$' + overdueAmount.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
 
-            // Commission calculations
-            const currentMonthPaid = getPaidOrdersForMonth(shippedOrders, currentYear, currentMonth);
-            const prevMonthPaid = getPaidOrdersForMonth(shippedOrders, prevYear, prevMonth);
+            // Commission calculations - use UNFILTERED orders (not affected by date range filter)
+            // Commission is always based on full current/previous month data
+            const unfilteredShippedOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
+            const currentMonthPaid = getPaidOrdersForMonth(unfilteredShippedOrders, currentYear, currentMonth);
+            const prevMonthPaid = getPaidOrdersForMonth(unfilteredShippedOrders, prevYear, prevMonth);
             const currentMonthCommission = currentMonthPaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
             const prevMonthCommission = prevMonthPaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0) * COMMISSION_RATE;
 
