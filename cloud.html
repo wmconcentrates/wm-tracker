@@ -2884,6 +2884,14 @@
                         </div>
                     </div>
 
+                    <!-- Date Range Filter -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <button onclick="setSalesDateRange(7)" id="salesRange7" class="sales-range-btn" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s;">7 Days</button>
+                        <button onclick="setSalesDateRange(30)" id="salesRange30" class="sales-range-btn active" style="background: #FFD700; border: 1px solid #FFD700; color: #000; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;">30 Days</button>
+                        <button onclick="setSalesDateRange(365)" id="salesRange365" class="sales-range-btn" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s;">365 Days</button>
+                        <span id="salesDateRangeLabel" style="margin-left: auto; color: var(--text-secondary); font-size: 0.85rem; align-self: center;"></span>
+                    </div>
+
                     <!-- Clickable Sales Stats Grid -->
                     <style>
                         .sales-stat-card {
@@ -20524,6 +20532,39 @@ ${employeeReport || 'No activity recorded today'}
         let allOrdersIncludingPending = [];
         let currentInvoiceFilter = 'all';
         let currentInvoiceData = [];
+        let salesDateRangeDays = 30; // Default to 30 days
+
+        // Set date range and update dashboard
+        function setSalesDateRange(days) {
+            salesDateRangeDays = days;
+
+            // Update button styles
+            document.querySelectorAll('.sales-range-btn').forEach(btn => {
+                btn.style.background = 'var(--bg-tertiary)';
+                btn.style.border = '1px solid var(--border-color)';
+                btn.style.color = 'var(--text-primary)';
+                btn.style.fontWeight = '500';
+            });
+
+            const activeBtn = document.getElementById(`salesRange${days}`);
+            if (activeBtn) {
+                activeBtn.style.background = '#FFD700';
+                activeBtn.style.border = '1px solid #FFD700';
+                activeBtn.style.color = '#000';
+                activeBtn.style.fontWeight = '600';
+            }
+
+            // Update date range label
+            const now = new Date();
+            const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+            const label = document.getElementById('salesDateRangeLabel');
+            if (label) {
+                label.textContent = `${startDate.toLocaleDateString()} - ${now.toLocaleDateString()}`;
+            }
+
+            // Refresh dashboard with new filter
+            updateSalesDashboardSales();
+        }
 
         // Fetch ALL LeafLink orders (no status filter) for the Sales tab
         async function fetchAllLeafLinkOrdersIncludingPending() {
@@ -20595,15 +20636,26 @@ ${employeeReport || 'No activity recorded today'}
                 } catch (e) {}
             }
 
-            // Filter both order sets
-            const shippedOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
-            const allOrders = filterOrdersBySalesRep(allOrdersIncludingPending, salesRepFilter);
+            // Filter both order sets by sales rep
+            let shippedOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
+            let allOrders = filterOrdersBySalesRep(allOrdersIncludingPending, salesRepFilter);
 
             const now = new Date();
             const currentMonth = now.getMonth();
             const currentYear = now.getFullYear();
             const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
             const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+            // Apply date range filter
+            const cutoffDate = new Date(now.getTime() - salesDateRangeDays * 24 * 60 * 60 * 1000);
+            shippedOrders = shippedOrders.filter(o => new Date(o.created_on) >= cutoffDate);
+            allOrders = allOrders.filter(o => new Date(o.created_on) >= cutoffDate);
+
+            // Update date range label
+            const label = document.getElementById('salesDateRangeLabel');
+            if (label) {
+                label.textContent = `${cutoffDate.toLocaleDateString()} - ${now.toLocaleDateString()}`;
+            }
 
             // Total Orders - ALL orders (including pending)
             const totalOrdersCount = allOrders.length;
@@ -20815,13 +20867,19 @@ ${employeeReport || 'No activity recorded today'}
                 try { salesRepFilter = JSON.parse(rawFilter); } catch (e) {}
             }
 
-            const shippedOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
-            const allOrders = filterOrdersBySalesRep(allOrdersIncludingPending, salesRepFilter);
+            let shippedOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
+            let allOrders = filterOrdersBySalesRep(allOrdersIncludingPending, salesRepFilter);
+
+            const now = new Date();
+
+            // Apply date range filter
+            const cutoffDate = new Date(now.getTime() - salesDateRangeDays * 24 * 60 * 60 * 1000);
+            shippedOrders = shippedOrders.filter(o => new Date(o.created_on) >= cutoffDate);
+            allOrders = allOrders.filter(o => new Date(o.created_on) >= cutoffDate);
 
             // Filter based on type
             let filteredOrders = [];
             let title = '';
-            const now = new Date();
 
             switch (filterType) {
                 case 'all':
