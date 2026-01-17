@@ -23445,6 +23445,24 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
         }
 
+        function closeActionsMenu() {
+            const dropdown = document.querySelector('.actions-dropdown');
+            if (dropdown) dropdown.style.display = 'none';
+        }
+
+        // Close actions dropdown when clicking a button inside it
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdown = document.querySelector('.actions-dropdown');
+            if (dropdown) {
+                dropdown.addEventListener('click', function(e) {
+                    if (e.target.tagName === 'BUTTON') {
+                        // Small delay to allow the button's onclick to fire first
+                        setTimeout(closeActionsMenu, 100);
+                    }
+                });
+            }
+        });
+
         // Initialize timeclock on page load
         async function initializeTimeclock() {
             if (supabaseClient) {
