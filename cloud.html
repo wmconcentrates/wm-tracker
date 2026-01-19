@@ -22764,14 +22764,45 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 return;
             }
 
-            // Group punches by date
-            const punchsByDate = {};
-            punches.forEach(punch => {
-                const date = new Date(punch.punch_time).toLocaleDateString('en-US');
-                if (!punchsByDate[date]) {
-                    punchsByDate[date] = [];
+            // First, pair IN/OUT punches chronologically (handles overnight shifts)
+            const shifts = [];
+            for (let i = 0; i < punches.length; i++) {
+                const punch = punches[i];
+                if (punch.punch_type === 'in') {
+                    const shift = {
+                        inPunch: punch,
+                        outPunch: null,
+                        inTime: punch.punch_time,
+                        outTime: null,
+                        hours: 0,
+                        date: new Date(punch.punch_time).toLocaleDateString('en-US') // Use IN punch date as shift date
+                    };
+
+                    // Look for matching OUT punch (may be next in sequence, even if on a different day)
+                    const nextPunch = punches[i + 1];
+                    if (nextPunch && nextPunch.punch_type === 'out') {
+                        shift.outPunch = nextPunch;
+                        shift.outTime = nextPunch.punch_time;
+                        shift.hours = calculateHours(shift.inTime, shift.outTime);
+                        i++; // Skip the OUT punch since we paired it
+                    } else {
+                        // Still clocked in - calculate to now
+                        shift.outTime = null;
+                        shift.hours = calculateHours(shift.inTime, new Date());
+                    }
+
+                    shifts.push(shift);
                 }
-                punchsByDate[date].push(punch);
+                // Note: Orphaned OUT punches (no preceding IN) are ignored
+            }
+
+            // Group shifts by date (using the IN punch date)
+            const shiftsByDate = {};
+            shifts.forEach(shift => {
+                if (!shiftsByDate[shift.date]) {
+                    shiftsByDate[shift.date] = [];
+                }
+                shiftsByDate[shift.date].push(shift);
             });
 
             let html = '';
@@ -22779,53 +22810,44 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             let totalDays = 0;
 
             // Sort dates
-            const sortedDates = Object.keys(punchsByDate).sort((a, b) => new Date(a) - new Date(b));
+            const sortedDates = Object.keys(shiftsByDate).sort((a, b) => new Date(a) - new Date(b));
 
             sortedDates.forEach(date => {
-                const dayPunches = punchsByDate[date];
-                const dayHours = calculateTotalHours(dayPunches);
+                const dayShifts = shiftsByDate[date];
+                const dayHours = dayShifts.reduce((sum, shift) => sum + shift.hours, 0);
                 totalHours += dayHours;
                 totalDays++;
 
-                // Pair up in/out punches
-                for (let i = 0; i < dayPunches.length; i++) {
-                    const punch = dayPunches[i];
-                    const punchTime = new Date(punch.punch_time);
-                    const timeStr = punchTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                // Render each shift for this day
+                dayShifts.forEach((shift, index) => {
+                    const inTime = new Date(shift.inTime);
+                    const inTimeStr = inTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-                    if (punch.punch_type === 'in') {
-                        const nextPunch = dayPunches[i + 1];
-                        let outTime = '--';
-                        let pairHours = 0;
-
-                        if (nextPunch && nextPunch.punch_type === 'out') {
-                            const outPunchTime = new Date(nextPunch.punch_time);
-                            outTime = outPunchTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-                            pairHours = calculateHours(punch.punch_time, nextPunch.punch_time);
-                            i++; // Skip the out punch
-                        } else {
-                            // Still clocked in
-                            outTime = '<span style="color: var(--accent-orange);">Still In</span>';
-                            pairHours = calculateHours(punch.punch_time, new Date());
-                        }
-
-                        const isFirst = i === 0 || (i === 1 && dayPunches[0].punch_type === 'in');
-                        html += '<tr style="border-bottom: 1px solid var(--border);">';
-                        html += '<td style="padding: 12px; color: var(--text-primary);">' + (isFirst ? new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '') + '</td>';
-                        html += '<td style="padding: 12px; text-align: center; color: var(--accent-green);">' + timeStr + '</td>';
-                        html += '<td style="padding: 12px; text-align: center; color: var(--accent-orange);">' + outTime + '</td>';
-                        html += '<td style="padding: 12px; text-align: right; color: var(--accent-blue);">' + pairHours.toFixed(2) + '</td>';
-                        html += '<td style="padding: 12px; text-align: right; font-weight: 600; color: ' + (dayHours > 8 ? 'var(--accent-orange)' : 'var(--accent-green)') + ';">' + (isFirst ? dayHours.toFixed(2) : '') + '</td>';
-                        // Check if this is a sick day
-                        const isSickDay = punch.ip_address && punch.ip_address.includes('sick-day');
-                        const sickDayNote = isSickDay ? '<span style="color: var(--accent-blue); font-weight: 600;">🤒 Sick Day</span>' : '';
-                        html += '<td style="padding: 12px; text-align: center;">' + sickDayNote + '</td>';
-
-                        const outPunchId = (nextPunch && nextPunch.punch_type === 'out') ? nextPunch.id : 'null';
-                        html += '<td style="padding: 12px; text-align: center;"><button onclick="openEditShiftModal(' + punch.id + ', ' + outPunchId + ')" style="padding: 6px 12px; background: var(--accent-blue); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem;" title="Edit Shift">Edit</button></td>';
-                        html += '</tr>';
+                    let outTimeStr;
+                    if (shift.outTime) {
+                        const outTime = new Date(shift.outTime);
+                        outTimeStr = outTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    } else {
+                        outTimeStr = '<span style="color: var(--accent-orange);">Still In</span>';
                     }
-                }
+
+                    const isFirst = index === 0;
+                    html += '<tr style="border-bottom: 1px solid var(--border);">';
+                    html += '<td style="padding: 12px; color: var(--text-primary);">' + (isFirst ? new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '') + '</td>';
+                    html += '<td style="padding: 12px; text-align: center; color: var(--accent-green);">' + inTimeStr + '</td>';
+                    html += '<td style="padding: 12px; text-align: center; color: var(--accent-orange);">' + outTimeStr + '</td>';
+                    html += '<td style="padding: 12px; text-align: right; color: var(--accent-blue);">' + shift.hours.toFixed(2) + '</td>';
+                    html += '<td style="padding: 12px; text-align: right; font-weight: 600; color: ' + (dayHours > 8 ? 'var(--accent-orange)' : 'var(--accent-green)') + ';">' + (isFirst ? dayHours.toFixed(2) : '') + '</td>';
+
+                    // Check if this is a sick day
+                    const isSickDay = shift.inPunch.ip_address && shift.inPunch.ip_address.includes('sick-day');
+                    const sickDayNote = isSickDay ? '<span style="color: var(--accent-blue); font-weight: 600;">🤒 Sick Day</span>' : '';
+                    html += '<td style="padding: 12px; text-align: center;">' + sickDayNote + '</td>';
+
+                    const outPunchId = shift.outPunch ? shift.outPunch.id : 'null';
+                    html += '<td style="padding: 12px; text-align: center;"><button onclick="openEditShiftModal(' + shift.inPunch.id + ', ' + outPunchId + ')" style="padding: 6px 12px; background: var(--accent-blue); border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem;" title="Edit Shift">Edit</button></td>';
+                    html += '</tr>';
+                });
             });
 
             tbody.innerHTML = html;
@@ -23247,41 +23269,67 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     csv += '"EMPLOYEE: ' + employeeName + '"\n';
                     csv += 'Date,Clock In,Clock Out,Hours,Notes\n';
 
-                    // Group by date
-                    const punchesByDate = {};
-                    punches.forEach(punch => {
-                        const date = new Date(punch.punch_time).toLocaleDateString('en-US');
-                        if (!punchesByDate[date]) punchesByDate[date] = [];
-                        punchesByDate[date].push(punch);
+                    // First, pair IN/OUT punches chronologically (handles overnight shifts)
+                    const shifts = [];
+                    for (let i = 0; i < punches.length; i++) {
+                        const punch = punches[i];
+                        if (punch.punch_type === 'in') {
+                            const shift = {
+                                inPunch: punch,
+                                outPunch: null,
+                                inTime: punch.punch_time,
+                                outTime: null,
+                                hours: 0,
+                                date: new Date(punch.punch_time).toLocaleDateString('en-US') // Use IN punch date
+                            };
+
+                            // Look for matching OUT punch (may be on a different day)
+                            const nextPunch = punches[i + 1];
+                            if (nextPunch && nextPunch.punch_type === 'out') {
+                                shift.outPunch = nextPunch;
+                                shift.outTime = nextPunch.punch_time;
+                                const inDate = new Date(shift.inTime);
+                                const outDate = new Date(shift.outTime);
+                                shift.hours = (outDate - inDate) / (1000 * 60 * 60);
+                                i++; // Skip the OUT punch since we paired it
+                            } else {
+                                // Still clocked in - don't count hours in payroll export
+                                shift.hours = 0;
+                            }
+
+                            shifts.push(shift);
+                        }
+                        // Orphaned OUT punches are ignored
+                    }
+
+                    // Group shifts by date
+                    const shiftsByDate = {};
+                    shifts.forEach(shift => {
+                        if (!shiftsByDate[shift.date]) {
+                            shiftsByDate[shift.date] = [];
+                        }
+                        shiftsByDate[shift.date].push(shift);
                     });
 
                     let employeeTotalHours = 0;
 
-                    for (const [date, dayPunches] of Object.entries(punchesByDate)) {
+                    for (const [date, dayShifts] of Object.entries(shiftsByDate)) {
                         let dayHours = 0;
 
-                        for (let i = 0; i < dayPunches.length; i++) {
-                            const punch = dayPunches[i];
-                            if (punch.punch_type === 'in') {
-                                const inTime = new Date(punch.punch_time);
-                                const inTimeStr = inTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                        dayShifts.forEach(shift => {
+                            const inTime = new Date(shift.inTime);
+                            const inTimeStr = inTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-                                let outTimeStr = 'Still In';
-                                let pairHours = 0;
-
-                                const nextPunch = dayPunches[i + 1];
-                                if (nextPunch && nextPunch.punch_type === 'out') {
-                                    const outTime = new Date(nextPunch.punch_time);
-                                    outTimeStr = outTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                                    pairHours = (outTime - inTime) / (1000 * 60 * 60);
-                                    i++; // Skip out punch
-                                }
-
-                                dayHours += pairHours;
-                                const sickNote = (punch.ip_address && punch.ip_address.includes('sick-day')) ? 'Sick Day' : '';
-                                csv += '"' + date + '",' + inTimeStr + ',' + outTimeStr + ',' + pairHours.toFixed(2) + ',"' + sickNote + '"\n';
+                            let outTimeStr = 'Still In';
+                            if (shift.outTime) {
+                                const outTime = new Date(shift.outTime);
+                                outTimeStr = outTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                             }
-                        }
+
+                            dayHours += shift.hours;
+                            const sickNote = (shift.inPunch.ip_address && shift.inPunch.ip_address.includes('sick-day')) ? 'Sick Day' : '';
+                            csv += '"' + date + '",' + inTimeStr + ',' + outTimeStr + ',' + shift.hours.toFixed(2) + ',"' + sickNote + '"\n';
+                        });
 
                         employeeTotalHours += dayHours;
                     }
@@ -23370,31 +23418,50 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     // Remove role suffix for cleaner QB import (e.g., "Ryan (Admin)" -> "Ryan")
                     const cleanName = employeeName.replace(/\s*\([^)]*\)\s*/g, '').trim();
 
-                    // Group by date
-                    const punchesByDate = {};
-                    punches.forEach(punch => {
-                        const date = new Date(punch.punch_time).toLocaleDateString('en-US');
-                        if (!punchesByDate[date]) punchesByDate[date] = [];
-                        punchesByDate[date].push(punch);
+                    // First, pair IN/OUT punches chronologically (handles overnight shifts)
+                    const shifts = [];
+                    for (let i = 0; i < punches.length; i++) {
+                        const punch = punches[i];
+                        if (punch.punch_type === 'in') {
+                            const shift = {
+                                inTime: punch.punch_time,
+                                outTime: null,
+                                hours: 0,
+                                date: new Date(punch.punch_time).toLocaleDateString('en-US')
+                            };
+
+                            // Look for matching OUT punch (may be on a different day)
+                            const nextPunch = punches[i + 1];
+                            if (nextPunch && nextPunch.punch_type === 'out') {
+                                shift.outTime = nextPunch.punch_time;
+                                const inDate = new Date(shift.inTime);
+                                const outDate = new Date(shift.outTime);
+                                shift.hours = (outDate - inDate) / (1000 * 60 * 60);
+                                i++; // Skip the OUT punch since we paired it
+                            }
+                            // Only include completed shifts (with OUT punch) in payroll
+                            if (shift.outTime) {
+                                shifts.push(shift);
+                            }
+                        }
+                    }
+
+                    // Group shifts by date
+                    const shiftsByDate = {};
+                    shifts.forEach(shift => {
+                        if (!shiftsByDate[shift.date]) {
+                            shiftsByDate[shift.date] = [];
+                        }
+                        shiftsByDate[shift.date].push(shift);
                     });
 
-                    for (const [date, dayPunches] of Object.entries(punchesByDate)) {
+                    for (const [date, dayShifts] of Object.entries(shiftsByDate)) {
                         let dayHours = 0;
 
                         // Calculate total hours for the day
-                        for (let i = 0; i < dayPunches.length; i++) {
-                            const punch = dayPunches[i];
-                            if (punch.punch_type === 'in') {
-                                const inTime = new Date(punch.punch_time);
-                                const nextPunch = dayPunches[i + 1];
-
-                                if (nextPunch && nextPunch.punch_type === 'out') {
-                                    const outTime = new Date(nextPunch.punch_time);
-                                    dayHours += (outTime - inTime) / (1000 * 60 * 60);
-                                    i++; // Skip out punch
-                                }
-                            }
-                        }
+                        dayShifts.forEach(shift => {
+                            dayHours += shift.hours;
+                        });
 
                         if (dayHours > 0) {
                             // Determine if regular or overtime
