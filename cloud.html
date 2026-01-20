@@ -21123,7 +21123,7 @@ ${employeeReport || 'No activity recorded today'}
                 const date = order.created_on ? new Date(order.created_on).toLocaleDateString() : 'N/A';
                 const amount = order.total?.amount || 0;
                 const status = order.status || 'Unknown';
-                const paid = order.paid;
+                const paid = isOrderPaid(order);
                 const dueDate = order.payment_due_date ? new Date(order.payment_due_date).toLocaleDateString() : 'N/A';
 
                 const statusColor = status === 'Complete' ? 'var(--accent-green)' :
