@@ -7618,6 +7618,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     pre_sift: batch.pre_sift,
                     cultivation_license: batch.cultivation_license,
                     grower_name: batch.grower_name,
+                    metrc_tags: batch.metrc_tags, // Inherit METRC tags from parent
                     intake_date: batch.intake_date,
                     planned_products: [split.productType],
                     intake_notes: `Sub-batch from ${batchId} - Allocated ${subBatchTrimWeight.toFixed(1)}g trim for ${split.weight}g final product`,
@@ -8226,6 +8227,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     pre_sift: batch.pre_sift,
                     cultivation_license: batch.cultivation_license,
                     grower_name: batch.grower_name,
+                    metrc_tags: batch.metrc_tags, // Inherit METRC tags from parent
                     intake_date: batch.intake_date,
                     planned_products: batch.planned_products,
                     intake_notes: batch.intake_notes,
