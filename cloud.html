@@ -2416,21 +2416,56 @@
                     <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-green);">
                         <h3 style="color: var(--accent-green); margin-bottom: 15px;">📊 Units Labeled</h3>
 
-                        <div class="form-group">
-                            <label>How many units did you label?</label>
-                            <input type="number" id="unitsLabeled" step="1" min="0" placeholder="Enter number of units labeled" required>
+                        <!-- 1g Units -->
+                        <div id="units1gSection" style="display: none; margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: end;">
+                                <div class="form-group" style="margin: 0;">
+                                    <label>1g Units Labeled</label>
+                                    <input type="number" id="units1gLabeled" step="1" min="0" placeholder="Enter 1g units" style="font-size: 1.2rem;">
+                                </div>
+                                <div style="padding: 10px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                                    <div style="color: var(--text-secondary); font-size: 0.8rem;">Expected from Packaging</div>
+                                    <div id="expected1gUnits" style="font-size: 1.3rem; font-weight: 700; color: var(--accent-blue);">0</div>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Expected vs Actual Display -->
-                        <div id="expectedWeightDisplay" style="padding: 15px; background: var(--bg-primary); border-radius: 8px; margin-top: 15px;">
+                        <!-- 4g Units -->
+                        <div id="units4gSection" style="display: none; margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: end;">
+                                <div class="form-group" style="margin: 0;">
+                                    <label>4g Units Labeled</label>
+                                    <input type="number" id="units4gLabeled" step="1" min="0" placeholder="Enter 4g units" style="font-size: 1.2rem;">
+                                </div>
+                                <div style="padding: 10px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                                    <div style="color: var(--text-secondary); font-size: 0.8rem;">Expected from Packaging</div>
+                                    <div id="expected4gUnits" style="font-size: 1.3rem; font-weight: 700; color: var(--accent-blue);">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fallback for batches without 1g/4g breakdown -->
+                        <div id="unitsGenericSection" style="display: none;">
+                            <div class="form-group">
+                                <label>How many units did you label?</label>
+                                <input type="number" id="unitsLabeled" step="1" min="0" placeholder="Enter number of units labeled">
+                            </div>
+                            <div style="padding: 10px; background: var(--bg-tertiary); border-radius: 8px; text-align: center; margin-top: 10px;">
+                                <div style="color: var(--text-secondary); font-size: 0.8rem;">Expected from Packaging</div>
+                                <div id="expectedUnits" style="font-size: 1.3rem; font-weight: 700; color: var(--accent-blue);">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Totals Summary -->
+                        <div id="labelingTotalsDisplay" style="padding: 15px; background: var(--bg-primary); border-radius: 8px; margin-top: 15px;">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                                 <div>
-                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Expected Units (from packaging)</div>
-                                    <div id="expectedUnits" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-blue); font-family: 'Space Mono', monospace;">-</div>
+                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Total Expected</div>
+                                    <div id="totalExpectedUnits" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-blue); font-family: 'Space Mono', monospace;">-</div>
                                 </div>
                                 <div>
-                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Units Labeled</div>
-                                    <div id="actualUnits" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green); font-family: 'Space Mono', monospace;">-</div>
+                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">Total Labeled</div>
+                                    <div id="totalLabeledUnits" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green); font-family: 'Space Mono', monospace;">-</div>
                                 </div>
                             </div>
                             <div id="discrepancyAlert" style="display: none; margin-top: 15px; padding: 15px; background: rgba(239, 68, 68, 0.2); border: 2px solid var(--accent-red); border-radius: 8px;">
@@ -8196,105 +8231,18 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 });
             }
             
-            // Check if we need to create a 4g sub-batch
+            // Store 1g and 4g unit counts - labeling will track what was actually labeled
             const units1g = packagingDetails.units_1g || 0;
             const units4g = packagingDetails.units_4g || 0;
-            let createdSubBatchId = null;
-
-            if (units4g > 0 && (packagedProductType === 'Wax' || packagedProductType === 'Sugar Wax' || packagedProductType === 'Brick Hash')) {
-                // Create a 4g sub-batch
-                const subBatchId = `${batchId}-4g`;
-                const productType4g = `${packagedProductType} 4g`;
-                const grams4g = units4g * 4;
-
-                const subBatchTimeline = [{
-                    stage: 'packaging',
-                    user: currentRole ? currentRole.name : "Unknown",
-                    date: new Date().toISOString(),
-                    action: `Created as 4g sub-batch from ${batchId} - ${units4g}x 4g units (${grams4g}g)`
-                }];
-
-                const subBatch = {
-                    id: subBatchId,
-                    parent_batch_id: batchId,
-                    is_sub_batch: true,
-                    business_id: batch.business_id,
-                    strain: batch.strain,
-                    strain_type: batch.strain_type,
-                    trim_weight: batch.trim_weight,
-                    material_cost: batch.material_cost,
-                    material_agreement: batch.material_agreement,
-                    pre_sift: batch.pre_sift,
-                    cultivation_license: batch.cultivation_license,
-                    grower_name: batch.grower_name,
-                    metrc_tags: batch.metrc_tags, // Inherit METRC tags from parent
-                    intake_date: batch.intake_date,
-                    planned_products: batch.planned_products,
-                    intake_notes: batch.intake_notes,
-                    intake_user: batch.intake_user,
-                    extraction_date: batch.extraction_date,
-                    extraction_method: batch.extraction_method,
-                    product_made: batch.product_made,
-                    product_type: batch.product_type,
-                    extraction_user: batch.extraction_user,
-                    finishing_date: batch.finishing_date,
-                    finishing_user: batch.finishing_user,
-                    final_weight: batch.final_weight,
-                    net_weight: batch.net_weight,
-                    // Packaging-specific data for 4g
-                    packaging_date: document.getElementById('packagingDate').value,
-                    packaged_product_type: productType4g,
-                    units_packaged: units4g,
-                    units_1g: null,
-                    units_4g: null,
-                    total_grams_packaged: grams4g,
-                    packaging_breakdown: `${units4g}x 4g`,
-                    wholesale_price: wholesalePrice,
-                    packaging_notes: document.getElementById('packagingNotes').value,
-                    packaging_user: currentRole ? currentRole.name : "Unknown",
-                    status: 'complete',
-                    completed_at: new Date().toISOString(),
-                    timeline: subBatchTimeline,
-                    created_at: new Date().toISOString()
-                };
-
-                const { error: subBatchError } = await supabaseClient
-                    .from('wm_batches')
-                    .insert([subBatch]);
-
-                if (subBatchError) {
-                    console.error('Error creating 4g sub-batch:', subBatchError);
-                    alert('Error creating 4g sub-batch. Please try again.');
-                    return;
-                }
-
-                createdSubBatchId = subBatchId;
-
-                // Update timeline to note the split
-                timeline.push({
-                    stage: 'packaging',
-                    user: currentRole ? currentRole.name : "Unknown",
-                    date: new Date().toISOString(),
-                    action: `Created 4g sub-batch ${subBatchId} with ${units4g}x 4g units`
-                });
-            }
-
-            // Prepare update data for main batch
-            // If we created a 4g sub-batch, main batch only gets 1g units
-            const mainUnits1g = units4g > 0 ? units1g : packagingDetails.units_1g;
-            const mainUnits4g = units4g > 0 ? null : packagingDetails.units_4g;
-            const mainUnitsPackaged = units4g > 0 ? units1g : unitsPackaged;
-            const mainTotalGrams = units4g > 0 ? (units1g * 1) : packagingDetails.total_grams;
-            const mainBreakdown = units4g > 0 ? `${units1g}x 1g` : packagingDetails.packaging_breakdown;
 
             const updateData = {
                 packaging_date: document.getElementById('packagingDate').value,
                 packaged_product_type: packagedProductType,
-                units_packaged: mainUnitsPackaged,
-                units_1g: mainUnits1g,
-                units_4g: mainUnits4g,
-                total_grams_packaged: mainTotalGrams,
-                packaging_breakdown: mainBreakdown,
+                units_packaged: unitsPackaged,
+                units_1g: units1g,
+                units_4g: units4g,
+                total_grams_packaged: packagingDetails.total_grams,
+                packaging_breakdown: packagingDetails.packaging_breakdown,
                 wholesale_price: wholesalePrice,
                 packaging_notes: document.getElementById('packagingNotes').value,
                 packaging_user: currentRole ? currentRole.name : "Unknown",
@@ -8332,26 +8280,19 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         { value: packagedProductType, label: 'Product' }
                     ]
                 });
-            } else if (createdSubBatchId) {
-                // Show celebration for both batches when 4g sub-batch was created
-                showCelebration({
-                    emoji: '📦',
-                    title: 'Packaging Complete!',
-                    message: `Created ${batchId} (1g) + ${createdSubBatchId} (4g) - Both ready for labeling!`,
-                    stats: [
-                        { value: `${mainUnitsPackaged}x 1g`, label: 'Main Batch' },
-                        { value: `${units4g}x 4g`, label: 'Sub-Batch' }
-                    ]
-                });
             } else {
+                // Build stats array based on what was packaged
+                const celebrationStats = [];
+                if (units1g > 0) celebrationStats.push({ value: `${units1g}x 1g`, label: '1g Units' });
+                if (units4g > 0) celebrationStats.push({ value: `${units4g}x 4g`, label: '4g Units' });
+                if (celebrationStats.length === 0) celebrationStats.push({ value: unitsPackaged, label: 'Units Packed' });
+                celebrationStats.push({ value: packagedProductType, label: 'Product' });
+
                 showCelebration({
                     emoji: '📦',
                     title: 'Packaging Complete!',
                     message: `${batchId} is packed and ready for labeling!`,
-                    stats: [
-                        { value: unitsPackaged, label: 'Units Packed' },
-                        { value: packagedProductType, label: 'Product' }
-                    ]
+                    stats: celebrationStats
                 });
             }
 
@@ -14619,67 +14560,99 @@ ${employeeReport || 'No activity recorded today'}
         document.getElementById('labelingBatchSelect').addEventListener('change', function() {
             const form = document.getElementById('labelingForm');
             form.style.display = this.value ? 'block' : 'none';
-            
+
             if (this.value) {
                 const batch = batches.find(b => b.id === this.value);
                 displayLabelPreview(batch);
 
-                // Initialize units verification
-                const unitsLabeledInput = document.getElementById('unitsLabeled');
-                const expectedUnitsEl = document.getElementById('expectedUnits');
-                const actualUnitsEl = document.getElementById('actualUnits');
+                // Determine which unit input sections to show
+                const units1g = parseInt(batch.units_1g) || 0;
+                const units4g = parseInt(batch.units_4g) || 0;
+                const hasBreakdown = units1g > 0 || units4g > 0;
 
-                if (unitsLabeledInput && expectedUnitsEl && actualUnitsEl) {
-                    unitsLabeledInput.value = '';
-                    document.getElementById('acceptDiscrepancy').checked = false;
-                    document.getElementById('discrepancyAlert').style.display = 'none';
+                // Show/hide appropriate sections
+                document.getElementById('units1gSection').style.display = units1g > 0 ? 'block' : 'none';
+                document.getElementById('units4gSection').style.display = units4g > 0 ? 'block' : 'none';
+                document.getElementById('unitsGenericSection').style.display = hasBreakdown ? 'none' : 'block';
 
-                    const expectedUnits = parseInt(batch.units_packaged) || 0;
-                    expectedUnitsEl.textContent = expectedUnits;
-                    actualUnitsEl.textContent = '-';
-                }
+                // Populate expected values
+                document.getElementById('expected1gUnits').textContent = units1g;
+                document.getElementById('expected4gUnits').textContent = units4g;
+                document.getElementById('expectedUnits').textContent = parseInt(batch.units_packaged) || 0;
+
+                // Set total expected
+                const totalExpected = hasBreakdown ? (units1g + units4g) : (parseInt(batch.units_packaged) || 0);
+                document.getElementById('totalExpectedUnits').textContent = totalExpected;
+                document.getElementById('totalLabeledUnits').textContent = '-';
+
+                // Clear inputs
+                document.getElementById('units1gLabeled').value = '';
+                document.getElementById('units4gLabeled').value = '';
+                document.getElementById('unitsLabeled').value = '';
+                document.getElementById('acceptDiscrepancy').checked = false;
+                document.getElementById('discrepancyAlert').style.display = 'none';
 
                 // Update pause button visibility
                 updatePauseButtons();
             }
         });
 
-        // Real-time units comparison for labeling
-        const unitsLabeledInput = document.getElementById('unitsLabeled');
-        if (unitsLabeledInput) {
-            unitsLabeledInput.addEventListener('input', function() {
-                const batchId = document.getElementById('labelingBatchSelect').value;
-                const batch = batches.find(b => b.id === batchId);
-                if (!batch) return;
+        // Helper function to update labeling totals and discrepancy
+        function updateLabelingTotals() {
+            const batchId = document.getElementById('labelingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) return;
 
-                const unitsLabeled = parseInt(this.value) || 0;
-                const expectedUnits = parseInt(batch.units_packaged) || 0;
+            const units1g = parseInt(batch.units_1g) || 0;
+            const units4g = parseInt(batch.units_4g) || 0;
+            const hasBreakdown = units1g > 0 || units4g > 0;
 
-                const actualUnitsEl = document.getElementById('actualUnits');
-                if (actualUnitsEl) {
-                    actualUnitsEl.textContent = unitsLabeled;
+            let totalLabeled = 0;
+            let totalExpected = 0;
+
+            if (hasBreakdown) {
+                const labeled1g = parseInt(document.getElementById('units1gLabeled').value) || 0;
+                const labeled4g = parseInt(document.getElementById('units4gLabeled').value) || 0;
+                totalLabeled = labeled1g + labeled4g;
+                totalExpected = units1g + units4g;
+            } else {
+                totalLabeled = parseInt(document.getElementById('unitsLabeled').value) || 0;
+                totalExpected = parseInt(batch.units_packaged) || 0;
+            }
+
+            document.getElementById('totalLabeledUnits').textContent = totalLabeled || '-';
+
+            // Check for discrepancy
+            const discrepancy = Math.abs(totalLabeled - totalExpected);
+            const discrepancyAlert = document.getElementById('discrepancyAlert');
+
+            if (discrepancy > 0 && totalLabeled > 0) {
+                discrepancyAlert.style.display = 'block';
+                let detailsHtml = '';
+                if (hasBreakdown) {
+                    const labeled1g = parseInt(document.getElementById('units1gLabeled').value) || 0;
+                    const labeled4g = parseInt(document.getElementById('units4gLabeled').value) || 0;
+                    if (units1g > 0) detailsHtml += `<div>1g: Expected ${units1g}, Labeled ${labeled1g}</div>`;
+                    if (units4g > 0) detailsHtml += `<div>4g: Expected ${units4g}, Labeled ${labeled4g}</div>`;
+                } else {
+                    detailsHtml = `<div>Expected: <strong>${totalExpected} units</strong></div>
+                                   <div>Labeled: <strong>${totalLabeled} units</strong></div>`;
                 }
-
-                // Check for discrepancy (any difference in unit count)
-                const discrepancy = Math.abs(unitsLabeled - expectedUnits);
-
-                const discrepancyAlert = document.getElementById('discrepancyAlert');
-                if (discrepancyAlert) {
-                    if (discrepancy > 0 && unitsLabeled > 0) {
-                        discrepancyAlert.style.display = 'block';
-                        document.getElementById('discrepancyDetails').innerHTML = `
-                            <div>Expected: <strong>${expectedUnits} units</strong></div>
-                            <div>Labeled: <strong>${unitsLabeled} units</strong></div>
-                            <div style="color: var(--accent-orange); font-weight: 700;">Difference: ${discrepancy} unit${discrepancy !== 1 ? 's' : ''}</div>
-                        `;
-                    } else {
-                        discrepancyAlert.style.display = 'none';
-                        const acceptCheckbox = document.getElementById('acceptDiscrepancy');
-                        if (acceptCheckbox) acceptCheckbox.checked = false;
-                    }
-                }
-            });
+                detailsHtml += `<div style="color: var(--accent-orange); font-weight: 700; margin-top: 8px;">Total Difference: ${discrepancy} unit${discrepancy !== 1 ? 's' : ''}</div>`;
+                document.getElementById('discrepancyDetails').innerHTML = detailsHtml;
+            } else {
+                discrepancyAlert.style.display = 'none';
+                document.getElementById('acceptDiscrepancy').checked = false;
+            }
         }
+
+        // Real-time units comparison for labeling - attach to all input fields
+        ['units1gLabeled', 'units4gLabeled', 'unitsLabeled'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('input', updateLabelingTotals);
+            }
+        });
 
 
         function displayLabelPreview(batch) {
@@ -15323,54 +15296,89 @@ ${employeeReport || 'No activity recorded today'}
 
             const batchId = document.getElementById('labelingBatchSelect').value;
             const batch = batches.find(b => b.id === batchId);
-            
+
             if (!batch) {
                 alert('Please select a batch first');
                 return;
             }
-            
-            // Get expected units from packaging
-            const expectedUnits = parseInt(batch.units_packaged) || 0;
 
-            // Get units labeled from input
-            const unitsLabeledInput = document.getElementById('unitsLabeled');
-            let unitsLabeled = null;
+            // Determine if this batch has 1g/4g breakdown
+            const expected1g = parseInt(batch.units_1g) || 0;
+            const expected4g = parseInt(batch.units_4g) || 0;
+            const hasBreakdown = expected1g > 0 || expected4g > 0;
+
+            let labeled1g = 0;
+            let labeled4g = 0;
+            let unitsLabeled = 0;
+            let totalExpected = 0;
             let discrepancyData = null;
 
-            if (unitsLabeledInput) {
-                unitsLabeled = parseInt(unitsLabeledInput.value);
+            if (hasBreakdown) {
+                // Get 1g and 4g labeled counts
+                labeled1g = parseInt(document.getElementById('units1gLabeled').value) || 0;
+                labeled4g = parseInt(document.getElementById('units4gLabeled').value) || 0;
+                unitsLabeled = labeled1g + labeled4g;
+                totalExpected = expected1g + expected4g;
 
-                if (!unitsLabeled || unitsLabeled <= 0) {
+                // Validate at least one field is filled
+                if (unitsLabeled <= 0) {
                     alert('Please enter the number of units labeled');
                     return;
                 }
+            } else {
+                // Get generic units labeled
+                unitsLabeled = parseInt(document.getElementById('unitsLabeled').value) || 0;
+                totalExpected = parseInt(batch.units_packaged) || 0;
 
-                // Check for discrepancy
-                const discrepancy = Math.abs(unitsLabeled - expectedUnits);
-
-                // If any discrepancy, require acceptance
-                if (discrepancy > 0) {
-                    const acceptCheckbox = document.getElementById('acceptDiscrepancy');
-                    if (!acceptCheckbox || !acceptCheckbox.checked) {
-                        alert('⚠️ Unit count discrepancy detected!\n\nYou must check the box to verify and accept the discrepancy before proceeding.');
-                        return;
-                    }
-                    discrepancyData = { discrepancy, expected: expectedUnits, actual: unitsLabeled };
+                if (unitsLabeled <= 0) {
+                    alert('Please enter the number of units labeled');
+                    return;
                 }
             }
 
-            const confirmMsg = `Mark ${batchId} as labeled?\n\nUnits Labeled: ${unitsLabeled}\nExpected: ${expectedUnits}`;
+            // Check for discrepancy
+            const discrepancy = Math.abs(unitsLabeled - totalExpected);
+            if (discrepancy > 0) {
+                const acceptCheckbox = document.getElementById('acceptDiscrepancy');
+                if (!acceptCheckbox || !acceptCheckbox.checked) {
+                    alert('⚠️ Unit count discrepancy detected!\n\nYou must check the box to verify and accept the discrepancy before proceeding.');
+                    return;
+                }
+                discrepancyData = { discrepancy, expected: totalExpected, actual: unitsLabeled };
+            }
+
+            // Build confirmation message
+            let confirmMsg = `Mark ${batchId} as labeled?\n\n`;
+            if (hasBreakdown) {
+                if (expected1g > 0) confirmMsg += `1g Units: ${labeled1g} labeled (expected ${expected1g})\n`;
+                if (expected4g > 0) confirmMsg += `4g Units: ${labeled4g} labeled (expected ${expected4g})\n`;
+                confirmMsg += `\nTotal: ${unitsLabeled} units`;
+            } else {
+                confirmMsg += `Units Labeled: ${unitsLabeled}\nExpected: ${totalExpected}`;
+            }
 
             if (!confirm(confirmMsg)) {
                 return;
             }
+
+            // Build timeline action text
+            let actionText = '';
+            if (hasBreakdown) {
+                const parts = [];
+                if (labeled1g > 0) parts.push(`${labeled1g}x 1g`);
+                if (labeled4g > 0) parts.push(`${labeled4g}x 4g`);
+                actionText = `Labeled ${parts.join(' + ')} (${unitsLabeled} total)`;
+            } else {
+                actionText = `Labeled ${unitsLabeled} units`;
+            }
+            if (discrepancyData) actionText += ` (expected ${totalExpected})`;
 
             const timeline = batch.timeline || [];
             timeline.push({
                 stage: 'labeling',
                 timestamp: new Date().toISOString(),
                 user: currentRole ? currentRole.name : "Unknown",
-                action: `Labeled ${unitsLabeled} units` + (discrepancyData ? ` (expected ${expectedUnits})` : '')
+                action: actionText
             });
 
             const updateData = {
@@ -15378,6 +15386,8 @@ ${employeeReport || 'No activity recorded today'}
                 labeling_date: new Date().toISOString().split('T')[0],
                 labeling_user: currentRole ? currentRole.name : "Unknown",
                 labels_applied_quantity: unitsLabeled,
+                units_1g_labeled: hasBreakdown ? labeled1g : null,
+                units_4g_labeled: hasBreakdown ? labeled4g : null,
                 labeling_notes: document.getElementById('labelingNotes').value || null,
                 timeline: timeline
             };
@@ -15387,12 +15397,12 @@ ${employeeReport || 'No activity recorded today'}
                 updateData.unit_discrepancy = discrepancyData.discrepancy;
                 updateData.discrepancy_accepted = true;
             }
-            
+
             const { error } = await supabaseClient
                 .from('wm_batches')
                 .update(updateData)
                 .eq('id', batchId);
-            
+
             if (error) {
                 console.error('Error marking as labeled:', error);
                 alert('Error saving labeling status. Please try again.');
@@ -15407,21 +15417,30 @@ ${employeeReport || 'No activity recorded today'}
             if (batch.material_agreement !== 'Custom Buyback') {
                 await queueForLeafLinkApproval({
                     ...batch,
-                    labels_applied_quantity: unitsLabeled
+                    labels_applied_quantity: unitsLabeled,
+                    units_1g_labeled: labeled1g,
+                    units_4g_labeled: labeled4g
                 });
                 leafLinkMsg = '📋 Queued for LeafLink approval';
             } else {
                 leafLinkMsg = '(Buyback - not listed)';
             }
 
+            // Build celebration stats
+            const celebrationStats = [];
+            if (hasBreakdown) {
+                if (labeled1g > 0) celebrationStats.push({ value: `${labeled1g}x 1g`, label: '1g Units' });
+                if (labeled4g > 0) celebrationStats.push({ value: `${labeled4g}x 4g`, label: '4g Units' });
+            } else {
+                celebrationStats.push({ value: unitsLabeled, label: 'Units Labeled' });
+            }
+            celebrationStats.push({ value: batch.packaged_product_type || 'N/A', label: 'Product' });
+
             showCelebration({
                 emoji: '🏆',
                 title: 'Batch Complete!',
                 message: `${batchId} is fully labeled and ready for sale! ${leafLinkMsg}`,
-                stats: [
-                    { value: unitsLabeled, label: 'Units Labeled' },
-                    { value: batch.packaged_product_type || 'N/A', label: 'Product' }
-                ],
+                stats: celebrationStats,
                 confettiCount: 80
             });
 
@@ -15429,6 +15448,8 @@ ${employeeReport || 'No activity recorded today'}
             document.getElementById('labelingBatchSelect').value = '';
             document.getElementById('labelingNotes').value = '';
             document.getElementById('unitsLabeled').value = '';
+            document.getElementById('units1gLabeled').value = '';
+            document.getElementById('units4gLabeled').value = '';
 
             await loadBatches();
             populateLabelingSelect();
