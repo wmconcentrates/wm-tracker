@@ -12416,40 +12416,45 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
         // Feature #8: End-of-Day Report Generator
         function generateDailyReport() {
             const today = new Date().toISOString().split('T')[0];
-            
+
+            // Helper to get date from timeline entry (handles both 'date' and 'timestamp' fields)
+            const getEntryDate = (t) => t.date || t.timestamp || '';
+
             // Filter batches with activity today
             const todaysBatches = batches.filter(b => {
                 const timeline = b.timeline || [];
-                return timeline.some(t => t.date && t.date.startsWith(today));
+                return timeline.some(t => getEntryDate(t).startsWith(today));
             });
-            
+
             // Count by stage
-            const extracted = todaysBatches.filter(b => 
-                (b.timeline || []).some(t => t.stage === 'extraction' && t.date.startsWith(today))
+            const extracted = todaysBatches.filter(b =>
+                (b.timeline || []).some(t => t.stage === 'extraction' && getEntryDate(t).startsWith(today))
             ).length;
-            
-            const packaged = todaysBatches.filter(b => 
-                (b.timeline || []).some(t => t.stage === 'packaging' && t.date.startsWith(today) && t.action.toLowerCase().includes('packaged'))
+
+            const packaged = todaysBatches.filter(b =>
+                (b.timeline || []).some(t => t.stage === 'packaging' && getEntryDate(t).startsWith(today) && (t.action || '').toLowerCase().includes('packaged'))
             ).length;
-            
-            const labeled = todaysBatches.filter(b => 
-                (b.timeline || []).some(t => t.stage === 'labeling' && t.date.startsWith(today))
+
+            const labeled = todaysBatches.filter(b =>
+                (b.timeline || []).some(t => t.stage === 'labeling' && getEntryDate(t).startsWith(today))
             ).length;
-            
+
             // Employee performance
             const employeeActivity = {};
             todaysBatches.forEach(b => {
                 (b.timeline || []).forEach(t => {
-                    if (!t.date || !t.date.startsWith(today)) return;
+                    const entryDate = getEntryDate(t);
+                    if (!entryDate || !entryDate.startsWith(today)) return;
+                    if (!t.user) return;
                     if (!employeeActivity[t.user]) {
                         employeeActivity[t.user] = { extracted: 0, packaged: 0, labeled: 0 };
                     }
                     if (t.stage === 'extraction') employeeActivity[t.user].extracted++;
-                    if (t.stage === 'packaging' && t.action.toLowerCase().includes('packaged')) employeeActivity[t.user].packaged++;
+                    if (t.stage === 'packaging' && (t.action || '').toLowerCase().includes('packaged')) employeeActivity[t.user].packaged++;
                     if (t.stage === 'labeling') employeeActivity[t.user].labeled++;
                 });
             });
-            
+
             return {
                 date: today,
                 batches: todaysBatches.length,
