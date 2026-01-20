@@ -3232,7 +3232,29 @@
                         <input type="text" id="editMetrcTags" placeholder="12345, 67890">
                     </div>
                 </div>
-                
+
+                <!-- Packaging Unit Counts -->
+                <div style="background: rgba(168, 85, 247, 0.1); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid var(--accent-purple);">
+                    <h3 style="color: var(--accent-purple); margin-bottom: 15px;">📦 Packaging Unit Counts</h3>
+                    <div class="form-grid">
+                        <div class="form-group" style="margin: 0;">
+                            <label>1g Units (Packaged)</label>
+                            <input type="number" id="editUnits1g" min="0" step="1">
+                            <div class="help-text">Number of 1 gram units packaged</div>
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label>4g Units (Packaged)</label>
+                            <input type="number" id="editUnits4g" min="0" step="1">
+                            <div class="help-text">Number of 4 gram units packaged</div>
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label>Total Units Packaged</label>
+                            <input type="number" id="editUnitsPackaged" min="0" step="1" readonly style="background: var(--bg-primary);">
+                            <div class="help-text">Auto-calculated from 1g + 4g</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>Edit Notes (Why are you making this change?)</label>
                     <textarea id="editNotes" placeholder="Explain what you're changing and why..." required></textarea>
@@ -17196,6 +17218,9 @@ ${employeeReport || 'No activity recorded today'}
             document.getElementById('editGrowerName').value = batch.grower_name || '';
             document.getElementById('editMetrcTags').value = batch.metrc_tags || '';
             document.getElementById('editLabelsApplied').checked = batch.labels_applied || false;
+            document.getElementById('editUnits1g').value = batch.units_1g || '';
+            document.getElementById('editUnits4g').value = batch.units_4g || '';
+            document.getElementById('editUnitsPackaged').value = batch.units_packaged || '';
             document.getElementById('editNotes').value = '';
 
             // Parse batch ID to extract info
@@ -17247,6 +17272,15 @@ ${employeeReport || 'No activity recorded today'}
         document.getElementById('editBatchId').addEventListener('input', function() {
             parseBatchIdForEdit(this.value);
         });
+
+        // Auto-calculate total units when 1g or 4g changes
+        function updateEditUnitsTotal() {
+            const units1g = parseInt(document.getElementById('editUnits1g').value) || 0;
+            const units4g = parseInt(document.getElementById('editUnits4g').value) || 0;
+            document.getElementById('editUnitsPackaged').value = units1g + units4g;
+        }
+        document.getElementById('editUnits1g').addEventListener('input', updateEditUnitsTotal);
+        document.getElementById('editUnits4g').addEventListener('input', updateEditUnitsTotal);
 
         function closeEditBatch() {
             document.getElementById('editBatchModal').style.display = 'none';
@@ -17308,7 +17342,10 @@ ${employeeReport || 'No activity recorded today'}
                 cultivation_license: document.getElementById('editCultivationLicense').value,
                 grower_name: document.getElementById('editGrowerName').value,
                 metrc_tags: document.getElementById('editMetrcTags').value || null,
-                labels_applied: document.getElementById('editLabelsApplied').checked
+                labels_applied: document.getElementById('editLabelsApplied').checked,
+                units_1g: parseInt(document.getElementById('editUnits1g').value) || null,
+                units_4g: parseInt(document.getElementById('editUnits4g').value) || null,
+                units_packaged: parseInt(document.getElementById('editUnitsPackaged').value) || null
             };
             
             // If expiration date was parsed, update it
