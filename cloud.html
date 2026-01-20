@@ -19904,9 +19904,12 @@ ${employeeReport || 'No activity recorded today'}
             return order.status !== 'Combined';
         }
 
-        // Helper: check if order is effectively paid (paid flag OR zero balance from credit memo)
+        // Helper: check if order is effectively paid
+        // Checks: paid flag, payment_status field, or zero balance (credit memo)
         function isOrderPaid(order) {
-            return order.paid === true || (order.total?.amount || 0) === 0;
+            return order.paid === true ||
+                   order.payment_status === 'paid' ||
+                   (order.total?.amount || 0) === 0;
         }
 
         // Calculate payment stats from orders
