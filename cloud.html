@@ -875,6 +875,7 @@
         .status-finishing { background: var(--accent-green); }
         .status-packaging { background: var(--accent-red); }
         .status-complete { background: #6b7280; }
+        .status-consumed { background: #9333ea; }
         
         .batch-details {
             display: grid;
@@ -5798,6 +5799,9 @@ CREATE TABLE wm_batches (
     sift_sub_batch_id TEXT,
     parent_batch_id TEXT,
     is_sub_batch BOOLEAN DEFAULT FALSE,
+    consumed_by TEXT,
+    combined_trim_weight DECIMAL(10,2),
+    total_socks_extracted INTEGER,
     pre_sift TEXT,
     
     -- Finishing fields
@@ -9434,6 +9438,10 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             // Remaining socks will still show in extraction queue based on socks_remaining > 0
             const socksRemaining = batch.socks_remaining ?? 0;
 
+            // Calculate combined trim weight from all sources (rounded to nearest tenth)
+            const combinedTrimWeight = Math.round(potLedger.reduce((sum, p) => sum + (p.trim_weight || 0), 0) * 10) / 10;
+            const totalSocksInPot = potLedger.reduce((sum, p) => sum + (p.socks || 0), 0);
+
             const updatedBatch = {
                 ...batch,
                 status: 'extraction',
@@ -9448,6 +9456,8 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 extraction_user: currentRole ? currentRole.name : 'Unknown',
                 extraction_date: new Date().toISOString().split('T')[0],
                 source_contributions: potLedger, // Save pot ledger as source contributions
+                combined_trim_weight: combinedTrimWeight, // Total trim from all sources in pot
+                total_socks_extracted: totalSocksInPot, // Total socks that went into this extraction
                 timeline: [
                     ...(batch.timeline || []),
                     {
@@ -9472,7 +9482,50 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         alert(`Error completing extraction:\n\n${error.message || JSON.stringify(error)}\n\nCheck console for details.`);
                         return;
                     }
-                    
+
+                    // Handle contributing batches that have no socks remaining
+                    // These batches contributed ALL their socks to this pot and should be marked as consumed
+                    const contributingBatchUpdates = potLedger
+                        .filter(p => p.batch_id !== batch.id) // Exclude primary batch
+                        .map(p => {
+                            const contributingBatch = batches.find(b => b.id === p.batch_id);
+                            if (!contributingBatch) return null;
+
+                            // Check if this batch has no socks remaining (all contributed)
+                            if ((contributingBatch.socks_remaining ?? contributingBatch.socks_total ?? 0) === 0) {
+                                return {
+                                    batchId: p.batch_id,
+                                    update: {
+                                        status: 'consumed',
+                                        consumed_by: batch.id,
+                                        timeline: [
+                                            ...(contributingBatch.timeline || []),
+                                            {
+                                                timestamp: new Date().toISOString(),
+                                                stage: 'consumed',
+                                                user: currentRole ? currentRole.name : 'Unknown',
+                                                action: `All ${p.socks} sock(s) contributed to ${batch.id} extraction - ${Math.round(p.trim_weight * 10) / 10}g trim`
+                                            }
+                                        ]
+                                    }
+                                };
+                            }
+                            return null;
+                        })
+                        .filter(u => u !== null);
+
+                    // Update contributing batches in database
+                    const updateContributingBatches = contributingBatchUpdates.map(u =>
+                        supabaseClient
+                            .from('wm_batches')
+                            .update(u.update)
+                            .eq('id', u.batchId)
+                    );
+
+                    Promise.all(updateContributingBatches).then(() => {
+                        console.log(`Updated ${contributingBatchUpdates.length} contributing batch(es) as consumed`);
+                    });
+
                     // Clear pot in machine status in Supabase
                     const clearedPotStatus = {
                         machine: currentPullMachine,
@@ -9515,6 +9568,8 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
             // Get batches with socks remaining (intake status OR any status with socks left)
             const queueBatches = batches.filter(b => {
+                // Never show consumed batches
+                if (b.status === 'consumed') return false;
                 // Always show intake batches with socks
                 if (b.status === 'intake') {
                     if (b.socks_total != null && b.socks_remaining === 0) return false;
