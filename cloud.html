@@ -6633,7 +6633,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             
             const trimWeight = parseFloat(document.getElementById('trimWeight').value);
             const socksTotal = parseInt(document.getElementById('socksTotal').value) || 1;
-            const trimPerSock = trimWeight / socksTotal;
+            const trimPerSock = Math.round((trimWeight / socksTotal) * 10) / 10; // Round to nearest tenth
 
             // Auto-detect material type based on Live Resin product selection
             const selectedProducts = Array.from(document.querySelectorAll('input[name="products"]:checked')).map(cb => cb.value);
@@ -9629,7 +9629,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             const batch = batches.find(b => b.id === batchId);
             if (!batch) return;
 
-            const trimPerSock = batch.trim_weight / socksNum;
+            const trimPerSock = Math.round((batch.trim_weight / socksNum) * 10) / 10; // Round to nearest tenth
             const socksUsed = (batch.socks_total || 0) - (batch.socks_remaining || 0);
             const socksRemaining = Math.max(0, socksNum - socksUsed);
 
@@ -10511,14 +10511,14 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 const batch = batches.find(b => b.id === c.batchId);
                 if (!batch) return;
 
-                const trimPerSock = batch.trim_per_sock || (batch.trim_weight / (batch.socks_total || 1));
-                const trimWeight = trimPerSock * c.socks;
+                const trimPerSock = batch.trim_per_sock || Math.round((batch.trim_weight / (batch.socks_total || 1)) * 10) / 10;
+                const trimWeight = Math.round(trimPerSock * c.socks * 10) / 10; // Round to nearest tenth
 
                 // Check if batch already in ledger
                 const existingEntry = potLedger.find(p => p.batch_id === c.batchId);
                 if (existingEntry) {
                     existingEntry.socks += c.socks;
-                    existingEntry.trim_weight += trimWeight;
+                    existingEntry.trim_weight = Math.round((existingEntry.trim_weight + trimWeight) * 10) / 10;
                 } else {
                     potLedger.push({
                         batch_id: c.batchId,
@@ -10593,13 +10593,13 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     .eq('id', batchId);
             });
 
-            // Calculate total trim for this run
-            const runTrimWeight = contributions.reduce((sum, c) => {
+            // Calculate total trim for this run (rounded to nearest tenth)
+            const runTrimWeight = Math.round(contributions.reduce((sum, c) => {
                 const batch = batches.find(b => b.id === c.batchId);
                 if (!batch) return sum;
-                const trimPerSock = batch.trim_per_sock || (batch.trim_weight / (batch.socks_total || 1));
+                const trimPerSock = batch.trim_per_sock || Math.round((batch.trim_weight / (batch.socks_total || 1)) * 10) / 10;
                 return sum + (trimPerSock * c.socks);
-            }, 0);
+            }, 0) * 10) / 10;
 
             // Log extraction run for performance tracking
             const extractionRun = {
