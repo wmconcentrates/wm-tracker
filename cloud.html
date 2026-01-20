@@ -9483,16 +9483,17 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         return;
                     }
 
-                    // Handle contributing batches that have no socks remaining
-                    // These batches contributed ALL their socks to this pot and should be marked as consumed
+                    // Handle contributing batches - track their sock contributions
                     const contributingBatchUpdates = potLedger
                         .filter(p => p.batch_id !== batch.id) // Exclude primary batch
                         .map(p => {
                             const contributingBatch = batches.find(b => b.id === p.batch_id);
                             if (!contributingBatch) return null;
 
-                            // Check if this batch has no socks remaining (all contributed)
-                            if ((contributingBatch.socks_remaining ?? contributingBatch.socks_total ?? 0) === 0) {
+                            const socksRemaining = contributingBatch.socks_remaining ?? contributingBatch.socks_total ?? 0;
+
+                            // Check if this batch has no socks remaining (all contributed) - mark as consumed
+                            if (socksRemaining === 0) {
                                 return {
                                     batchId: p.batch_id,
                                     update: {
@@ -9509,8 +9510,23 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                                         ]
                                     }
                                 };
+                            } else {
+                                // Batch still has remaining socks - add timeline entry for partial contribution
+                                return {
+                                    batchId: p.batch_id,
+                                    update: {
+                                        timeline: [
+                                            ...(contributingBatch.timeline || []),
+                                            {
+                                                timestamp: new Date().toISOString(),
+                                                stage: 'contribution',
+                                                user: currentRole ? currentRole.name : 'Unknown',
+                                                action: `${p.socks} sock(s) contributed to ${batch.id} extraction - ${Math.round(p.trim_weight * 10) / 10}g trim (${socksRemaining} socks remaining)`
+                                            }
+                                        ]
+                                    }
+                                };
                             }
-                            return null;
                         })
                         .filter(u => u !== null);
 
@@ -9523,7 +9539,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     );
 
                     Promise.all(updateContributingBatches).then(() => {
-                        console.log(`Updated ${contributingBatchUpdates.length} contributing batch(es) as consumed`);
+                        const consumedCount = contributingBatchUpdates.filter(u => u.update.status === 'consumed').length;
+                        const partialCount = contributingBatchUpdates.length - consumedCount;
+                        console.log(`Updated ${contributingBatchUpdates.length} contributing batch(es): ${consumedCount} consumed, ${partialCount} partial contributions`);
                     });
 
                     // Clear pot in machine status in Supabase
