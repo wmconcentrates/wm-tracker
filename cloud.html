@@ -19899,10 +19899,15 @@ ${employeeReport || 'No activity recorded today'}
             }
         }
 
+        // Helper: check if order is effectively paid (paid flag OR zero balance from credit memo)
+        function isOrderPaid(order) {
+            return order.paid === true || (order.total?.amount || 0) === 0;
+        }
+
         // Calculate payment stats from orders
         function calculatePaymentStats(orders) {
-            const paid = orders.filter(o => o.paid === true);
-            const unpaid = orders.filter(o => o.paid === false);
+            const paid = orders.filter(o => isOrderPaid(o));
+            const unpaid = orders.filter(o => !isOrderPaid(o));
             const paidTotal = paid.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
             const unpaidTotal = unpaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
 
@@ -20158,7 +20163,7 @@ ${employeeReport || 'No activity recorded today'}
         // Calculate commission for a set of orders
         function calculateCommission(orders, salesRepFilter = 'all') {
             const filteredOrders = filterOrdersBySalesRep(orders, salesRepFilter);
-            const paidOrders = filteredOrders.filter(o => o.paid === true);
+            const paidOrders = filteredOrders.filter(o => isOrderPaid(o));
             const paidTotal = paidOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
             return paidTotal * COMMISSION_RATE;
         }
@@ -20177,7 +20182,7 @@ ${employeeReport || 'No activity recorded today'}
         // Get paid orders for a specific month (for commission)
         function getPaidOrdersForMonth(orders, year, month) {
             return orders.filter(order => {
-                if (order.paid !== true) return false;
+                if (!isOrderPaid(order)) return false;
                 // Use paid_date if available, otherwise created_on
                 const dateField = order.paid_date || order.created_on;
                 if (!dateField) return false;
@@ -20264,7 +20269,7 @@ ${employeeReport || 'No activity recorded today'}
         // Uses paid_date field to determine when payment was received
         function getPaidOrdersBetweenDates(orders, startDate, endDate) {
             return orders.filter(order => {
-                if (order.paid !== true) return false;
+                if (!isOrderPaid(order)) return false;
                 if (!order.paid_date) return false;
                 const paidDate = new Date(order.paid_date);
                 // Include orders with paid_date > startDate and <= endDate
@@ -20341,8 +20346,8 @@ ${employeeReport || 'No activity recorded today'}
             const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
             const last30DaysOrders = filteredOrders.filter(o => new Date(o.created_on) >= thirtyDaysAgo);
             const totalRevenue = last30DaysOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
-            const paidOrders = filteredOrders.filter(o => o.paid === true);
-            const unpaidOrders = filteredOrders.filter(o => o.paid === false);
+            const paidOrders = filteredOrders.filter(o => isOrderPaid(o));
+            const unpaidOrders = filteredOrders.filter(o => !isOrderPaid(o));
 
             // Count unique new customers this month
             const currentMonthCustomers = new Set();
@@ -20584,7 +20589,7 @@ ${employeeReport || 'No activity recorded today'}
                 }
                 monthlyData[key].orders.push(order);
                 monthlyData[key].revenue += order.total?.amount || 0;
-                if (order.paid === true) {
+                if (isOrderPaid(order)) {
                     monthlyData[key].paidOrders.push(order);
                     monthlyData[key].paidRevenue += order.total?.amount || 0;
                 }
@@ -20812,8 +20817,8 @@ ${employeeReport || 'No activity recorded today'}
             const shippedRevenue = shippedOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
 
             // Paid/Unpaid (from shipped orders)
-            const paidOrders = shippedOrders.filter(o => o.paid === true);
-            const unpaidOrders = shippedOrders.filter(o => o.paid === false);
+            const paidOrders = shippedOrders.filter(o => isOrderPaid(o));
+            const unpaidOrders = shippedOrders.filter(o => !isOrderPaid(o));
 
             // Not Yet Due vs Overdue
             const notYetDue = unpaidOrders.filter(o => {
@@ -20891,7 +20896,7 @@ ${employeeReport || 'No activity recorded today'}
                 }
                 monthlyData[key].orders.push(order);
                 monthlyData[key].revenue += order.total?.amount || 0;
-                if (order.paid === true) {
+                if (isOrderPaid(order)) {
                     monthlyData[key].paidOrders.push(order);
                     monthlyData[key].paidRevenue += order.total?.amount || 0;
                 }
@@ -21049,16 +21054,16 @@ ${employeeReport || 'No activity recorded today'}
                     title = '📦 Shipped Orders';
                     break;
                 case 'paid':
-                    filteredOrders = shippedOrders.filter(o => o.paid === true);
+                    filteredOrders = shippedOrders.filter(o => isOrderPaid(o));
                     title = '✅ Paid Orders';
                     break;
                 case 'unpaid':
-                    filteredOrders = shippedOrders.filter(o => o.paid === false);
+                    filteredOrders = shippedOrders.filter(o => !isOrderPaid(o));
                     title = '⏳ Unpaid Orders';
                     break;
                 case 'notDue':
                     filteredOrders = shippedOrders.filter(o => {
-                        if (o.paid === true) return false;
+                        if (isOrderPaid(o)) return false;
                         if (!o.payment_due_date) return true;
                         return new Date(o.payment_due_date) >= now;
                     });
@@ -21066,7 +21071,7 @@ ${employeeReport || 'No activity recorded today'}
                     break;
                 case 'overdue':
                     filteredOrders = shippedOrders.filter(o => {
-                        if (o.paid === true) return false;
+                        if (isOrderPaid(o)) return false;
                         if (!o.payment_due_date) return false;
                         return new Date(o.payment_due_date) < now;
                     });
@@ -21462,7 +21467,7 @@ ${employeeReport || 'No activity recorded today'}
 
                     monthlyData[key].total_orders++;
                     monthlyData[key].total_revenue += order.total?.amount || 0;
-                    if (order.paid === true) {
+                    if (isOrderPaid(order)) {
                         monthlyData[key].paid_revenue += order.total?.amount || 0;
                     }
                 });
@@ -21642,7 +21647,7 @@ ${employeeReport || 'No activity recorded today'}
                     if (monthlyData[key]) {
                         monthlyData[key].orders++;
                         monthlyData[key].revenue += order.total?.amount || 0;
-                        if (order.paid === true) {
+                        if (isOrderPaid(order)) {
                             monthlyData[key].paidRevenue += order.total?.amount || 0;
                         }
                     }
