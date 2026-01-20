@@ -5936,6 +5936,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 renderBatches();
                 updateSuppliesButton();
                 updateMachineDisplays();
+                populateExtractionQueue(); // Refresh extraction queue
 
                 if (!window.searchFiltersInitialized) {
                     setTimeout(() => {
@@ -5969,6 +5970,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             renderWasteLog(); // Update waste log display
             updateSuppliesButton(); // Update supplies button display
             updateMachineDisplays(); // Update machine status displays
+            populateExtractionQueue(); // Refresh extraction queue
 
             // Initialize dropdown search filters (only once)
             if (!window.searchFiltersInitialized) {
@@ -15687,10 +15689,43 @@ ${employeeReport || 'No activity recorded today'}
             document.getElementById('modalBatchOverview').innerHTML = overview;
 
             // Batch Tracking Details
-            let sourceInfo = '';
+            let sourceContributionsHtml = '';
             if (batch.source_contributions && batch.source_contributions.length > 0) {
                 const sources = typeof batch.source_contributions === 'string' ? JSON.parse(batch.source_contributions) : batch.source_contributions;
-                sourceInfo = sources.map(s => `${s.batch_id} (${s.trim_weight || s.socks}${s.trim_weight ? 'g' : ' socks'}${s.metrc_tag ? ' - ' + s.metrc_tag : ''})`).join(', ');
+                const totalTrim = sources.reduce((sum, s) => sum + (parseFloat(s.trim_weight) || 0), 0);
+                const totalSocks = sources.reduce((sum, s) => sum + (s.socks || 0), 0);
+
+                if (sources.length > 1) {
+                    sourceContributionsHtml = `
+                        <div style="background: rgba(239, 68, 68, 0.15); padding: 15px; border-radius: 8px; margin-top: 15px; border: 2px solid var(--accent-red);">
+                            <p style="margin: 0 0 10px 0;"><strong style="color: var(--accent-red);">⚠️ MIXED SOURCE - ${sources.length} TAGS</strong></p>
+                            <p style="margin: 0 0 10px 0; font-size: 0.9rem;">Total: <strong>${totalTrim.toFixed(1)}g</strong> from ${totalSocks} socks</p>
+                            ${sources.map(s => {
+                                const trimUsed = parseFloat(s.trim_weight) || 0;
+                                return `<div style="background: var(--bg-tertiary); padding: 10px; border-radius: 6px; margin: 6px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div>
+                                        <strong>${s.batch_id}</strong><br>
+                                        <span style="font-family: 'Space Mono', monospace; font-size: 0.85rem; color: var(--accent-blue);">${s.metrc_tag || 'No tag'}</span>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <strong style="color: var(--accent-green);">${trimUsed.toFixed(1)}g</strong><br>
+                                        <span style="font-size: 0.85rem; color: var(--text-secondary);">${s.socks} socks</span>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    `;
+                } else {
+                    const s = sources[0];
+                    const trimUsed = parseFloat(s.trim_weight) || 0;
+                    sourceContributionsHtml = `
+                        <div style="background: rgba(16, 185, 129, 0.15); padding: 12px; border-radius: 8px; margin-top: 15px; border-left: 4px solid var(--accent-green);">
+                            <p style="margin: 0;"><strong style="color: var(--accent-green);">🏷️ Source:</strong> ${s.batch_id}</p>
+                            <p style="margin: 5px 0 0 0; font-family: 'Space Mono', monospace; color: var(--accent-blue);">${s.metrc_tag || 'No tag'}</p>
+                            <p style="margin: 5px 0 0 0;"><strong>${trimUsed.toFixed(1)}g</strong> (${s.socks} socks)</p>
+                        </div>
+                    `;
+                }
             }
             const allNotes = [batch.intake_notes, batch.extraction_notes, batch.finishing_notes, batch.packaging_notes, batch.labeling_notes].filter(n => n).join(' | ');
             const tracking = `
@@ -15701,7 +15736,7 @@ ${employeeReport || 'No activity recorded today'}
                     <div><strong>Grow License:</strong> ${batch.cultivation_license || 'N/A'}</div>
                 </div>
                 ${batch.parent_batch_id ? '<p style="margin-top: 15px;"><strong>Parent Batch:</strong> ' + batch.parent_batch_id + '</p>' : ''}
-                ${sourceInfo ? '<p style="margin-top: 10px;"><strong>Source Contributions:</strong> ' + sourceInfo + '</p>' : ''}
+                ${sourceContributionsHtml}
                 ${allNotes ? '<div style="margin-top: 15px; padding: 10px; background: var(--bg-secondary); border-radius: 8px;"><strong>Notes:</strong> ' + allNotes + '</div>' : ''}
             `;
             document.getElementById('modalTracking').innerHTML = tracking;
