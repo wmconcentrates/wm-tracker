@@ -19899,6 +19899,11 @@ ${employeeReport || 'No activity recorded today'}
             }
         }
 
+        // Helper: check if order should be counted (excludes Combined status to avoid duplicates)
+        function shouldCountOrder(order) {
+            return order.status !== 'Combined';
+        }
+
         // Helper: check if order is effectively paid (paid flag OR zero balance from credit memo)
         function isOrderPaid(order) {
             return order.paid === true || (order.total?.amount || 0) === 0;
@@ -19906,8 +19911,9 @@ ${employeeReport || 'No activity recorded today'}
 
         // Calculate payment stats from orders
         function calculatePaymentStats(orders) {
-            const paid = orders.filter(o => isOrderPaid(o));
-            const unpaid = orders.filter(o => !isOrderPaid(o));
+            const countableOrders = orders.filter(o => shouldCountOrder(o));
+            const paid = countableOrders.filter(o => isOrderPaid(o));
+            const unpaid = countableOrders.filter(o => !isOrderPaid(o));
             const paidTotal = paid.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
             const unpaidTotal = unpaid.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
 
@@ -20162,7 +20168,7 @@ ${employeeReport || 'No activity recorded today'}
 
         // Calculate commission for a set of orders
         function calculateCommission(orders, salesRepFilter = 'all') {
-            const filteredOrders = filterOrdersBySalesRep(orders, salesRepFilter);
+            const filteredOrders = filterOrdersBySalesRep(orders, salesRepFilter).filter(o => shouldCountOrder(o));
             const paidOrders = filteredOrders.filter(o => isOrderPaid(o));
             const paidTotal = paidOrders.reduce((sum, o) => sum + (o.total?.amount || 0), 0);
             return paidTotal * COMMISSION_RATE;
@@ -20794,8 +20800,8 @@ ${employeeReport || 'No activity recorded today'}
 
             // Apply date range filter
             const cutoffDate = getSalesDateCutoff();
-            shippedOrders = shippedOrders.filter(o => new Date(o.created_on) >= cutoffDate);
-            allOrders = allOrders.filter(o => new Date(o.created_on) >= cutoffDate);
+            shippedOrders = shippedOrders.filter(o => new Date(o.created_on) >= cutoffDate && shouldCountOrder(o));
+            allOrders = allOrders.filter(o => new Date(o.created_on) >= cutoffDate && shouldCountOrder(o));
 
             // Update date range label
             const label = document.getElementById('salesDateRangeLabel');
@@ -21037,8 +21043,8 @@ ${employeeReport || 'No activity recorded today'}
 
             // Apply date range filter
             const cutoffDate = getSalesDateCutoff();
-            shippedOrders = shippedOrders.filter(o => new Date(o.created_on) >= cutoffDate);
-            allOrders = allOrders.filter(o => new Date(o.created_on) >= cutoffDate);
+            shippedOrders = shippedOrders.filter(o => new Date(o.created_on) >= cutoffDate && shouldCountOrder(o));
+            allOrders = allOrders.filter(o => new Date(o.created_on) >= cutoffDate && shouldCountOrder(o));
 
             // Filter based on type
             let filteredOrders = [];
