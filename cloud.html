@@ -12950,7 +12950,7 @@ ${employeeReport || 'No activity recorded today'}
                                 ${(batch.timeline || []).length > 0 ? (batch.timeline || []).map(t =>
                                     '<div style="padding: 12px; border-bottom: 1px solid var(--border-color); font-size: 1rem;">' +
                                     '<div><strong style="color: var(--accent-purple);">' + t.user + '</strong> - ' + t.action + '</div>' +
-                                    '<div style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 4px;">' + new Date(t.date).toLocaleString() + '</div>' +
+                                    '<div style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 4px;">' + new Date(t.date || t.timestamp).toLocaleString() + '</div>' +
                                     '</div>'
                                 ).join('') : '<div style="padding: 12px; color: var(--text-secondary);">No activity recorded yet</div>'}
                             </div>
