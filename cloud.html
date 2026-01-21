@@ -7852,11 +7852,6 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 updateData.extraction_slabs = outputSlabsCount;
             }
 
-            // Generate batch display name: "Strain Name Product Type"
-            const finalProductType = newProductType || batch.product_made || 'Wax';
-            const strainName = batch.strain || 'Unknown';
-            updateData.batch_name = `${strainName} ${finalProductType}`;
-
             const { error } = await supabaseClient
                 .from('wm_batches')
                 .update(updateData)
