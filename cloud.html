@@ -23084,9 +23084,31 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             tbody.innerHTML = html;
 
-            // Update summary
-            const regularHours = Math.min(totalHours, 80); // Assuming 80 hours per pay period is regular
-            const overtimeHours = Math.max(0, totalHours - 80);
+            // Calculate overtime per week (40 hours per week)
+            // Group hours by week (Sunday = start of week)
+            const hoursByWeek = {};
+            sortedDates.forEach(date => {
+                const dateObj = new Date(date);
+                // Get Sunday of this week
+                const dayOfWeek = dateObj.getDay(); // 0 = Sunday
+                const sunday = new Date(dateObj);
+                sunday.setDate(dateObj.getDate() - dayOfWeek);
+                const weekKey = sunday.toISOString().split('T')[0];
+
+                const dayShifts = shiftsByDate[date];
+                const dayHours = dayShifts.reduce((sum, shift) => sum + shift.hours, 0);
+
+                if (!hoursByWeek[weekKey]) hoursByWeek[weekKey] = 0;
+                hoursByWeek[weekKey] += dayHours;
+            });
+
+            // Calculate regular and overtime per week
+            let regularHours = 0;
+            let overtimeHours = 0;
+            Object.values(hoursByWeek).forEach(weekHours => {
+                regularHours += Math.min(weekHours, 40);
+                overtimeHours += Math.max(0, weekHours - 40);
+            });
 
             document.getElementById('summaryRegularHours').textContent = regularHours.toFixed(2);
             document.getElementById('summaryOvertimeHours').textContent = overtimeHours.toFixed(2);
@@ -23566,13 +23588,32 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         employeeTotalHours += dayHours;
                     }
 
-                    const regularHours = Math.min(employeeTotalHours, 80);
-                    const overtimeHours = Math.max(employeeTotalHours - 80, 0);
+                    // Calculate overtime per week (40 hours per week)
+                    const hoursByWeek = {};
+                    for (const [date, dayShifts] of Object.entries(shiftsByDate)) {
+                        const dateObj = new Date(date);
+                        // Get Sunday of this week
+                        const dayOfWeek = dateObj.getDay();
+                        const sunday = new Date(dateObj);
+                        sunday.setDate(dateObj.getDate() - dayOfWeek);
+                        const weekKey = sunday.toISOString().split('T')[0];
+
+                        const dayHours = dayShifts.reduce((sum, shift) => sum + shift.hours, 0);
+                        if (!hoursByWeek[weekKey]) hoursByWeek[weekKey] = 0;
+                        hoursByWeek[weekKey] += dayHours;
+                    }
+
+                    let regularHours = 0;
+                    let overtimeHours = 0;
+                    Object.values(hoursByWeek).forEach(weekHours => {
+                        regularHours += Math.min(weekHours, 40);
+                        overtimeHours += Math.max(0, weekHours - 40);
+                    });
 
                     csv += '\n';
                     csv += 'TOTAL HOURS,' + employeeTotalHours.toFixed(2) + '\n';
-                    csv += 'Regular (up to 80),' + regularHours.toFixed(2) + '\n';
-                    csv += 'Overtime (over 80),' + overtimeHours.toFixed(2) + '\n';
+                    csv += 'Regular (40hr/week),' + regularHours.toFixed(2) + '\n';
+                    csv += 'Overtime (over 40/week),' + overtimeHours.toFixed(2) + '\n';
 
                     grandTotalRegular += regularHours;
                     grandTotalOvertime += overtimeHours;
@@ -23687,30 +23728,53 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         shiftsByDate[shift.date].push(shift);
                     });
 
-                    for (const [date, dayShifts] of Object.entries(shiftsByDate)) {
-                        let dayHours = 0;
+                    // Group dates by week (Sunday = start of week) for weekly overtime
+                    const datesByWeek = {};
+                    Object.keys(shiftsByDate).forEach(date => {
+                        const dateObj = new Date(date);
+                        const dayOfWeek = dateObj.getDay();
+                        const sunday = new Date(dateObj);
+                        sunday.setDate(dateObj.getDate() - dayOfWeek);
+                        const weekKey = sunday.toISOString().split('T')[0];
+                        if (!datesByWeek[weekKey]) datesByWeek[weekKey] = [];
+                        datesByWeek[weekKey].push(date);
+                    });
 
-                        // Calculate total hours for the day
-                        dayShifts.forEach(shift => {
-                            dayHours += shift.hours;
-                        });
+                    // Process each week to calculate weekly overtime
+                    for (const [weekKey, dates] of Object.entries(datesByWeek)) {
+                        // Sort dates within the week
+                        dates.sort((a, b) => new Date(a) - new Date(b));
 
-                        if (dayHours > 0) {
-                            // Determine if regular or overtime
-                            // QuickBooks uses Payroll Items to distinguish
-                            const regularHours = Math.min(dayHours, 8);
-                            const overtimeHours = Math.max(dayHours - 8, 0);
+                        let weeklyHoursUsed = 0;
 
-                            // Add regular hours row
-                            if (regularHours > 0) {
-                                csv += `"${cleanName}",${date},${regularHours.toFixed(2)},Regular Pay,,Auto-imported from WM Tracker\n`;
-                                totalRows++;
-                            }
+                        for (const date of dates) {
+                            const dayShifts = shiftsByDate[date];
+                            let dayHours = 0;
 
-                            // Add overtime hours row (if any)
-                            if (overtimeHours > 0) {
-                                csv += `"${cleanName}",${date},${overtimeHours.toFixed(2)},Overtime,,Auto-imported from WM Tracker\n`;
-                                totalRows++;
+                            // Calculate total hours for the day
+                            dayShifts.forEach(shift => {
+                                dayHours += shift.hours;
+                            });
+
+                            if (dayHours > 0) {
+                                // Determine regular vs overtime based on 40hr/week
+                                const regularRemaining = Math.max(0, 40 - weeklyHoursUsed);
+                                const regularHours = Math.min(dayHours, regularRemaining);
+                                const overtimeHours = Math.max(0, dayHours - regularRemaining);
+
+                                weeklyHoursUsed += dayHours;
+
+                                // Add regular hours row
+                                if (regularHours > 0) {
+                                    csv += `"${cleanName}",${date},${regularHours.toFixed(2)},Regular Pay,,Auto-imported from WM Tracker\n`;
+                                    totalRows++;
+                                }
+
+                                // Add overtime hours row (if any)
+                                if (overtimeHours > 0) {
+                                    csv += `"${cleanName}",${date},${overtimeHours.toFixed(2)},Overtime,,Auto-imported from WM Tracker\n`;
+                                    totalRows++;
+                                }
                             }
                         }
                     }
