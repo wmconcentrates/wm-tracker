@@ -23594,6 +23594,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     employeeData[punch.user_name].push(punch);
                 });
 
+                // Sort employees by last name initial (assumes "First Last" format)
+                const sortedEmployeeNames = Object.keys(employeeData).sort((a, b) => {
+                    const getLastNameInitial = (name) => {
+                        const parts = name.trim().split(' ');
+                        const lastName = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+                        return lastName.charAt(0).toUpperCase();
+                    };
+                    return getLastNameInitial(a).localeCompare(getLastNameInitial(b));
+                });
+
                 // Build CSV content
                 let csv = 'PAYROLL EXPORT - ' + periodLabel + '\n';
                 csv += 'Generated: ' + new Date().toLocaleString() + '\n\n';
@@ -23601,7 +23611,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 let grandTotalRegular = 0;
                 let grandTotalOvertime = 0;
 
-                for (const [employeeName, punches] of Object.entries(employeeData)) {
+                for (const employeeName of sortedEmployeeNames) {
+                    const punches = employeeData[employeeName];
                     csv += '\n';
                     csv += '"EMPLOYEE: ' + employeeName + '"\n';
                     csv += 'Date,Clock In,Clock Out,Hours,OT Hours,Notes\n';
