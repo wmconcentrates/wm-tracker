@@ -2033,9 +2033,9 @@
                         <div id="outputContainersSection" style="display: none; background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                             <div id="bulkJarsOutput" style="display: none;">
                                 <div class="form-group">
-                                    <label style="color: var(--accent-purple);">📦 Number of Output Jars</label>
-                                    <input type="number" id="outputJarsCount" min="1" value="1" style="max-width: 150px;">
-                                    <div class="help-text">How many jars after merging/post-extraction?</div>
+                                    <label style="color: var(--accent-purple);">🥣 Number of Bowls (for labels)</label>
+                                    <input type="number" id="outputBowlsCount" min="1" value="1" style="max-width: 150px;">
+                                    <div class="help-text">How many bowls after combining? Used for label numbering.</div>
                                 </div>
                             </div>
                             <div id="shatterSlabsOutput" style="display: none;">
@@ -7535,8 +7535,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     shatterSlabsOutput.style.display = isShatter ? 'block' : 'none';
 
                     // Set default values
-                    // Bulk (wax/sugar) defaults to 1 jar
-                    document.getElementById('outputJarsCount').value = 1;
+                    // Bulk (wax/sugar) defaults to extraction bowls count
+                    const inputBowls = batch.extraction_bowls || batch.bulk_jars_count || 1;
+                    document.getElementById('outputBowlsCount').value = inputBowls;
                     // Shatter defaults to same number of input slabs
                     const inputSlabs = batch.extraction_slabs || batch.shatter_slabs_count || 1;
                     document.getElementById('outputSlabsCount').value = inputSlabs;
@@ -7796,7 +7797,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             const netWeight = finalWeight - sampleWeight;
 
             // Get output container counts
-            const outputJarsCount = parseInt(document.getElementById('outputJarsCount').value) || 1;
+            const outputBowlsCount = parseInt(document.getElementById('outputBowlsCount').value) || 1;
             const outputSlabsCount = parseInt(document.getElementById('outputSlabsCount').value) || 1;
 
             // Get product type change if selected
@@ -7812,9 +7813,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             // Build container info for timeline
             let containerInfo = '';
             if (isBulk) {
-                containerInfo = `, ${outputJarsCount} output jar${outputJarsCount > 1 ? 's' : ''}`;
+                containerInfo = `, ${outputBowlsCount} bowl${outputBowlsCount > 1 ? 's' : ''}`;
             } else if (isShatter) {
-                containerInfo = `, ${outputSlabsCount} output slab${outputSlabsCount > 1 ? 's' : ''}`;
+                containerInfo = `, ${outputSlabsCount} slab${outputSlabsCount > 1 ? 's' : ''}`;
             }
 
             const timeline = batch.timeline || [];
@@ -7842,12 +7843,12 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 updateData.product_made = newProductType;
             }
 
-            // Add output container counts
+            // Add output container counts - update extraction_bowls for label printing
             if (isBulk) {
-                updateData.output_jars_count = outputJarsCount;
+                updateData.extraction_bowls = outputBowlsCount;
             }
             if (isShatter) {
-                updateData.output_slabs_count = outputSlabsCount;
+                updateData.extraction_slabs = outputSlabsCount;
             }
 
             // Generate batch display name: "Strain Name Product Type"
@@ -7874,9 +7875,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
             // Add container count to stats if applicable
             if (isBulk) {
-                celebrationStats.push({ value: `${outputJarsCount}`, label: outputJarsCount === 1 ? 'Output Jar' : 'Output Jars' });
+                celebrationStats.push({ value: `${outputBowlsCount}`, label: outputBowlsCount === 1 ? 'Bowl' : 'Bowls' });
             } else if (isShatter) {
-                celebrationStats.push({ value: `${outputSlabsCount}`, label: outputSlabsCount === 1 ? 'Output Slab' : 'Output Slabs' });
+                celebrationStats.push({ value: `${outputSlabsCount}`, label: outputSlabsCount === 1 ? 'Slab' : 'Slabs' });
             }
 
             // Register batch for RTA qualification tracking
@@ -7892,9 +7893,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 stats: celebrationStats
             });
 
-            // Auto-print post-production labels (one per slab/jar)
-            const labelCount = isShatter ? outputSlabsCount : (isBulk ? outputJarsCount : 1);
-            // Pass updated batch with new batch_name and product_made
+            // Auto-print post-production labels (one per bowl/slab)
+            const labelCount = isShatter ? outputSlabsCount : (isBulk ? outputBowlsCount : 1);
+            // Pass updated batch with new batch_name, product_made, and updated bowl count
             const updatedBatch = { ...batch, ...updateData };
             printPostProductionLabels(updatedBatch, finalWeight, sampleWeight, labelCount);
 
@@ -7904,7 +7905,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
             // Reset output containers section
             document.getElementById('outputContainersSection').style.display = 'none';
-            document.getElementById('outputJarsCount').value = 1;
+            document.getElementById('outputBowlsCount').value = 1;
             document.getElementById('outputSlabsCount').value = 1;
 
             await loadBatches();
