@@ -24369,9 +24369,13 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Redirect 4g products to their proper 4g categories
             if (is4gBucket) {
                 if (category === 'Wax') {
-                    category = '4g Wax';
+                    // Check which 4g wax category exists
+                    if (inventoryCategoryData['4g Wax']) category = '4g Wax';
+                    else if (inventoryCategoryData['Wax 4g']) category = 'Wax 4g';
                 } else if (category === 'Sugar Wax') {
-                    category = '4g Sugar';
+                    // Check which 4g sugar category exists
+                    if (inventoryCategoryData['4g Sugar']) category = '4g Sugar';
+                    else if (inventoryCategoryData['Sugar Wax 4g']) category = 'Sugar Wax 4g';
                 }
             }
 
@@ -25201,9 +25205,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const is4g = productName.includes('4 gram') || productName.includes('4g') || productName.includes('4-gram') || productName.includes('bucket');
                 if (is4g) {
                     if (category === 'Wax') {
-                        category = '4g Wax';
+                        if (salesByCategory['4g Wax']) category = '4g Wax';
+                        else if (salesByCategory['Wax 4g']) category = 'Wax 4g';
                     } else if (category === 'Sugar Wax') {
-                        category = '4g Sugar';
+                        if (salesByCategory['4g Sugar']) category = '4g Sugar';
+                        else if (salesByCategory['Sugar Wax 4g']) category = 'Sugar Wax 4g';
                     }
                 }
 
@@ -25251,9 +25257,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const is4g = matchText.includes('4 gram') || matchText.includes('4g') || matchText.includes('4-gram') || matchText.includes('bucket');
             if (is4g) {
                 if (category === 'Wax') {
-                    category = '4g Wax';
+                    if (inventoryByCategory['4g Wax']) category = '4g Wax';
+                    else if (inventoryByCategory['Wax 4g']) category = 'Wax 4g';
                 } else if (category === 'Sugar Wax') {
-                    category = '4g Sugar';
+                    if (inventoryByCategory['4g Sugar']) category = '4g Sugar';
+                    else if (inventoryByCategory['Sugar Wax 4g']) category = 'Sugar Wax 4g';
                 }
             }
 
