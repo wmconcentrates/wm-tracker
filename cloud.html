@@ -23957,6 +23957,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             // Filter batches in pipeline (all stages until listed on LeafLink)
             pipelineData = batches.filter(batch => {
+                // Exclude legacy 4g sub-batches (IDs ending in -4g)
+                if (batch.id && batch.id.endsWith('-4g')) return false;
+
                 const hasWeight = batch.final_weight || batch.net_weight || batch.grams_labeled;
                 if (!hasWeight) return false;
                 const salesPercent = getSalesPercentage(batch.material_agreement);
@@ -25185,6 +25188,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 let category = getProductCategoryDynamic(productName, dynamicCategories);
                 if (!category) return;
 
+                // Redirect 4g products to their proper 4g categories
+                const is4g = productName.includes('4 gram') || productName.includes('4g') || productName.includes('4-gram');
+                if (is4g) {
+                    if (category === 'Wax') {
+                        category = '4g Wax';
+                    } else if (category === 'Sugar Wax') {
+                        category = '4g Sugar';
+                    }
+                }
+
                 // Skip if category not in current business's categories
                 if (!salesByCategory[category]) return;
 
@@ -25224,6 +25237,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Determine category using dynamic matching
             let category = getProductCategoryDynamic(matchText, dynamicCategories);
             if (!category) return;
+
+            // Redirect 4g products to their proper 4g categories
+            const is4g = matchText.includes('4 gram') || matchText.includes('4g') || matchText.includes('4-gram');
+            if (is4g) {
+                if (category === 'Wax') {
+                    category = '4g Wax';
+                } else if (category === 'Sugar Wax') {
+                    category = '4g Sugar';
+                }
+            }
 
             // Skip if category not in current business's categories
             if (!inventoryByCategory[category]) return;
