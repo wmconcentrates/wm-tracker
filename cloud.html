@@ -7320,7 +7320,7 @@ ${growerName ? `^FO500,325^FD${growerName.substring(0, 25)}^FS` : ''}
                     metrcDisplay = `${fullTags} (${fullWeight.toLocaleString()}g)`;
                 }
 
-                // Format partial sources: "Partial tag (weight)"
+                // Format partial sources: each listed separately with its own weight
                 if (partialSources.length > 0) {
                     partialInfo = partialSources.map(p => `${p.tag} (${p.weight.toLocaleString()}g)`).join(', ');
                 }
