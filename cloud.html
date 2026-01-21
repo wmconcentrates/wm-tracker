@@ -7824,11 +7824,16 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 updateData.output_slabs_count = outputSlabsCount;
             }
 
+            // Generate batch display name: "Strain Name Product Type"
+            const finalProductType = newProductType || batch.product_made || 'Wax';
+            const strainName = batch.strain || 'Unknown';
+            updateData.batch_name = `${strainName} ${finalProductType}`;
+
             const { error } = await supabaseClient
                 .from('wm_batches')
                 .update(updateData)
                 .eq('id', batchId);
-            
+
             if (error) {
                 console.error('Error updating batch:', error);
                 alert('Error updating batch. Please try again.');
@@ -7857,7 +7862,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             showCelebration({
                 emoji: '✨',
                 title: 'Finishing Complete!',
-                message: `${batchId} has been processed and is ready for packaging.`,
+                message: `${updateData.batch_name} (${batchId}) is ready for packaging.`,
                 stats: celebrationStats
             });
 
