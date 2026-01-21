@@ -7521,7 +7521,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 const outputSection = document.getElementById('outputContainersSection');
                 const bulkJarsOutput = document.getElementById('bulkJarsOutput');
                 const shatterSlabsOutput = document.getElementById('shatterSlabsOutput');
-                const productMade = newProductType || batch.product_made || '';
+                const productMade = batch.product_made || '';
 
                 // Check if it's a bulk product (Wax, Sugar Wax) or Shatter
                 const isBulk = productMade === 'Wax' || productMade === 'Sugar Wax' ||
