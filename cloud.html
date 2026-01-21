@@ -23862,6 +23862,21 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 if (product.includes(catKey)) return cat.key;
             }
 
+            // Check for common abbreviations (e.g., "Quackers W" = Wax, "Quackers SW" = Sugar Wax)
+            // Match " W " or " W)" or ends with " W" for Wax
+            if (/ sw[)\s]| sw$/.test(product)) {
+                const swCat = categories.find(c => c.key.toLowerCase() === 'sugar wax');
+                if (swCat) return swCat.key;
+            }
+            if (/ w[)\s]| w$/.test(product)) {
+                const waxCat = categories.find(c => c.key.toLowerCase() === 'wax');
+                if (waxCat) return waxCat.key;
+            }
+            if (/ s[)\s]| s$/.test(product)) {
+                const shatterCat = categories.find(c => c.key.toLowerCase() === 'shatter');
+                if (shatterCat) return shatterCat.key;
+            }
+
             // Special handling for AIOs (check BEFORE carts since AIOs might contain "cart")
             if (product.includes('aio') || product.includes('all-in-one') || product.includes('all in one') || product.includes('disposable')) {
                 const aioCat = categories.find(c => c.key.toLowerCase().includes('aio'));
