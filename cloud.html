@@ -24366,6 +24366,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             // Map to categories using dynamic matching
             let category = getProductCategoryDynamic(matchText, dynamicCategories);
 
+            // Redirect 4g products to their proper 4g categories
+            if (is4gBucket) {
+                if (category === 'Wax') {
+                    category = '4g Wax';
+                } else if (category === 'Sugar Wax') {
+                    category = '4g Sugar';
+                }
+            }
+
             if (category && inventoryCategoryData[category]) {
                 inventoryCategoryData[category].count++;
                 inventoryCategoryData[category].totalQty += qty;
@@ -25189,7 +25198,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 if (!category) return;
 
                 // Redirect 4g products to their proper 4g categories
-                const is4g = productName.includes('4 gram') || productName.includes('4g') || productName.includes('4-gram');
+                const is4g = productName.includes('4 gram') || productName.includes('4g') || productName.includes('4-gram') || productName.includes('bucket');
                 if (is4g) {
                     if (category === 'Wax') {
                         category = '4g Wax';
@@ -25239,7 +25248,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (!category) return;
 
             // Redirect 4g products to their proper 4g categories
-            const is4g = matchText.includes('4 gram') || matchText.includes('4g') || matchText.includes('4-gram');
+            const is4g = matchText.includes('4 gram') || matchText.includes('4g') || matchText.includes('4-gram') || matchText.includes('bucket');
             if (is4g) {
                 if (category === 'Wax') {
                     category = '4g Wax';
