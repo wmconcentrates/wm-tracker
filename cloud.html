@@ -23604,7 +23604,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 for (const [employeeName, punches] of Object.entries(employeeData)) {
                     csv += '\n';
                     csv += '"EMPLOYEE: ' + employeeName + '"\n';
-                    csv += 'Date,Clock In,Clock Out,Hours,Notes\n';
+                    csv += 'Date,Clock In,Clock Out,Hours,OT Hours,Notes\n';
 
                     // First, pair IN/OUT punches chronologically (handles overnight shifts)
                     const shifts = [];
@@ -23639,7 +23639,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         // Orphaned OUT punches are ignored
                     }
 
-                    // Group shifts by date
+                    // Group shifts by date and calculate week key for each
                     const shiftsByDate = {};
                     shifts.forEach(shift => {
                         if (!shiftsByDate[shift.date]) {
@@ -23648,10 +23648,25 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         shiftsByDate[shift.date].push(shift);
                     });
 
+                    // Sort dates chronologically
+                    const sortedDates = Object.keys(shiftsByDate).sort((a, b) => new Date(a) - new Date(b));
+
+                    // Track cumulative hours per week for OT calculation
+                    const weekCumulativeHours = {};
                     let employeeTotalHours = 0;
 
-                    for (const [date, dayShifts] of Object.entries(shiftsByDate)) {
-                        let dayHours = 0;
+                    for (const date of sortedDates) {
+                        const dayShifts = shiftsByDate[date];
+
+                        // Get week key for this date (Saturday start)
+                        const dateObj = new Date(date);
+                        const dayOfWeek = dateObj.getDay();
+                        const daysFromSaturday = (dayOfWeek + 1) % 7;
+                        const saturday = new Date(dateObj);
+                        saturday.setDate(dateObj.getDate() - daysFromSaturday);
+                        const weekKey = saturday.toISOString().split('T')[0];
+
+                        if (!weekCumulativeHours[weekKey]) weekCumulativeHours[weekKey] = 0;
 
                         dayShifts.forEach(shift => {
                             const inTime = new Date(shift.inTime);
@@ -23663,33 +23678,23 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                                 outTimeStr = outTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                             }
 
-                            dayHours += shift.hours;
+                            // Add this shift's hours to week cumulative
+                            weekCumulativeHours[weekKey] += shift.hours;
+
+                            // Calculate accumulated OT (hours over 40 for this week)
+                            const accumulatedOT = Math.max(0, weekCumulativeHours[weekKey] - 40);
+
                             const sickNote = (shift.inPunch.ip_address && shift.inPunch.ip_address.includes('sick-day')) ? 'Sick Day' : '';
-                            csv += '"' + date + '",' + inTimeStr + ',' + outTimeStr + ',' + shift.hours.toFixed(2) + ',"' + sickNote + '"\n';
+                            csv += '"' + date + '",' + inTimeStr + ',' + outTimeStr + ',' + shift.hours.toFixed(2) + ',' + accumulatedOT.toFixed(2) + ',"' + sickNote + '"\n';
                         });
 
-                        employeeTotalHours += dayHours;
+                        employeeTotalHours += dayShifts.reduce((sum, s) => sum + s.hours, 0);
                     }
 
-                    // Calculate overtime per week (40 hours per week)
-                    const hoursByWeek = {};
-                    for (const [date, dayShifts] of Object.entries(shiftsByDate)) {
-                        const dateObj = new Date(date);
-                        // Get Saturday of this week (Saturday = day 6)
-                        const dayOfWeek = dateObj.getDay();
-                        const daysFromSaturday = (dayOfWeek + 1) % 7; // Sat=0, Sun=1, Mon=2, etc.
-                        const saturday = new Date(dateObj);
-                        saturday.setDate(dateObj.getDate() - daysFromSaturday);
-                        const weekKey = saturday.toISOString().split('T')[0];
-
-                        const dayHours = dayShifts.reduce((sum, shift) => sum + shift.hours, 0);
-                        if (!hoursByWeek[weekKey]) hoursByWeek[weekKey] = 0;
-                        hoursByWeek[weekKey] += dayHours;
-                    }
-
+                    // Calculate final overtime per week (40 hours per week)
                     let regularHours = 0;
                     let overtimeHours = 0;
-                    Object.values(hoursByWeek).forEach(weekHours => {
+                    Object.values(weekCumulativeHours).forEach(weekHours => {
                         regularHours += Math.min(weekHours, 40);
                         overtimeHours += Math.max(0, weekHours - 40);
                     });
