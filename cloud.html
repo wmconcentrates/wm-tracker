@@ -24342,7 +24342,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const matchText = (parentName + ' ' + productLine + ' ' + category_field + ' ' + displayName).toLowerCase();
 
             // Check if this is a 4g bucket product (allow Internal for these)
-            const is4gBucket = matchText.includes('4 gram') || matchText.includes('4gram') || matchText.includes('bucket');
+            const is4gBucket = matchText.includes('4 gram') || matchText.includes('4gram') || matchText.includes('4g') || matchText.includes('4-gram') || matchText.includes('bucket');
 
             // Skip archived products always, skip internal unless it's a 4g bucket
             if (product.listing_state === 'Archived') return;
