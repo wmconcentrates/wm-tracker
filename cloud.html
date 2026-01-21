@@ -7289,26 +7289,51 @@ ${growerName ? `^FO500,325^FD${growerName.substring(0, 25)}^FS` : ''}
             // Calculate yield
             const yieldPercent = trimWeight > 0 ? ((finalWt / trimWeight) * 100).toFixed(1) : '0.0';
 
-            // METRC tags
-            let metrcTags = batch.metrc_tags || '';
-            if (metrcTags.length > 35) {
-                metrcTags = metrcTags.substring(0, 32) + '...';
-            }
-
-            // Source contributions for partial tag info - show METRC tag and trim weight
+            // Source contributions for METRC tags and weights
+            let metrcDisplay = '';
             let partialInfo = '';
             let sourceContributions = batch.source_contributions || [];
             if (typeof sourceContributions === 'string') {
                 try { sourceContributions = JSON.parse(sourceContributions); } catch(e) { sourceContributions = []; }
             }
+
             if (sourceContributions.length > 0) {
-                const firstSource = sourceContributions[0];
-                const trimUsed = parseFloat(firstSource.trim_weight) || 0;
-                // Use METRC tag if available, otherwise fall back to batch_id
-                const sourceTag = firstSource.metrc_tag || firstSource.batch_id || 'N/A';
-                partialInfo = `${sourceTag} (${trimUsed.toFixed(0)}g)`;
-                if (sourceContributions.length > 1) {
-                    partialInfo += ` +${sourceContributions.length - 1}`;
+                // Separate full and partial sources
+                const fullSources = [];
+                const partialSources = [];
+
+                sourceContributions.forEach(s => {
+                    const tag = s.metrc_tag || 'N/A';
+                    const weight = parseFloat(s.trim_weight) || 0;
+
+                    if (s.is_partial) {
+                        partialSources.push({ tag, weight });
+                    } else {
+                        fullSources.push({ tag, weight });
+                    }
+                });
+
+                // Format full sources: "tag1,tag2,tag3 (combined weight)"
+                if (fullSources.length > 0) {
+                    const fullTags = fullSources.map(s => s.tag).join(',');
+                    const fullWeight = fullSources.reduce((sum, s) => sum + s.weight, 0);
+                    metrcDisplay = `${fullTags} (${fullWeight.toLocaleString()}g)`;
+                }
+
+                // Format partial sources: "Partial tag (weight)"
+                if (partialSources.length > 0) {
+                    partialInfo = partialSources.map(p => `${p.tag} (${p.weight.toLocaleString()}g)`).join(', ');
+                }
+
+                // Truncate if too long
+                if (metrcDisplay.length > 40) {
+                    metrcDisplay = metrcDisplay.substring(0, 37) + '...';
+                }
+            } else {
+                // Fallback to batch's metrc_tags field
+                metrcDisplay = batch.metrc_tags || 'N/A';
+                if (metrcDisplay.length > 40) {
+                    metrcDisplay = metrcDisplay.substring(0, 37) + '...';
                 }
             }
 
@@ -7363,8 +7388,7 @@ ${bowlLabel ? `^CF0,70
 ^FO65,305^GB${width - 80},3,3^FS
 
 ^CF0,28
-^FO65,325^FDMETRC: ${metrcTags || 'N/A'}^FS
-${partialInfo ? `^FO450,325^FDPartial: ${partialInfo}^FS` : ''}
+^FO65,325^FDMETRC: ${metrcDisplay}${partialInfo ? ` Partial: ${partialInfo}` : ''}^FS
 
 ^CF0,28
 ^FO65,360^FDGrower: ${license}^FS
@@ -10541,11 +10565,17 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 const trimPerSock = batch.trim_per_sock || Math.round((batch.trim_weight / (batch.socks_total || 1)) * 10) / 10;
                 const trimWeight = Math.round(trimPerSock * c.socks * 10) / 10; // Round to nearest tenth
 
+                // Check if this will be a partial use (not all socks from batch)
+                const currentRemaining = batch.socks_remaining ?? batch.socks_total ?? 0;
+                const willHaveRemaining = currentRemaining - c.socks > 0;
+
                 // Check if batch already in ledger
                 const existingEntry = potLedger.find(p => p.batch_id === c.batchId);
                 if (existingEntry) {
                     existingEntry.socks += c.socks;
                     existingEntry.trim_weight = Math.round((existingEntry.trim_weight + trimWeight) * 10) / 10;
+                    // Update is_partial - partial if batch will still have remaining socks
+                    existingEntry.is_partial = willHaveRemaining;
                 } else {
                     potLedger.push({
                         batch_id: c.batchId,
@@ -10554,7 +10584,8 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         trim_weight: trimWeight,
                         cultivation_license: batch.partner || batch.cultivation_license || '',
                         material_agreement: batch.material_agreement || '',
-                        strain: batch.strain || ''
+                        strain: batch.strain || '',
+                        is_partial: willHaveRemaining
                     });
                 }
 
