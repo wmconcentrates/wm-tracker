@@ -24416,9 +24416,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     // Fetch inventory from a specific business
     async function fetchInventoryForBusiness(businessSlug) {
         let products = [];
-        let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=products&page_size=100`;
+        let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=products&page_size=200`;
         let pageCount = 0;
-        const maxPages = 15;
+        const maxPages = 25; // Increased to support more products
 
         while (nextUrl && pageCount < maxPages) {
             try {
@@ -24461,9 +24461,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         // Single business fetch
         let allProducts = [];
         const businessSlug = businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse';
-        let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=products&page_size=100`;
+        let nextUrl = `${window.location.origin}/api/leaflink?slug=${businessSlug}&endpoint=products&page_size=200`;
         let pageCount = 0;
-        const maxPages = 15; // Safety limit to prevent infinite loops
+        const maxPages = 25; // Increased to support 5000+ products
 
         while (nextUrl && pageCount < maxPages) {
             try {
