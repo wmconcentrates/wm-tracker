@@ -23683,6 +23683,10 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     const weekCumulativeHours = {};
                     let employeeTotalHours = 0;
 
+                    // Track daily OT (over 12hr shifts) and weekly hours (excluding sick)
+                    let totalDailyOT = 0;
+                    const weekNonSickHours = {}; // Only non-sick hours count towards 40hr weekly OT
+
                     for (const date of sortedDates) {
                         const dayShifts = shiftsByDate[date];
 
@@ -23695,6 +23699,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         const weekKey = saturday.toISOString().split('T')[0];
 
                         if (!weekCumulativeHours[weekKey]) weekCumulativeHours[weekKey] = 0;
+                        if (!weekNonSickHours[weekKey]) weekNonSickHours[weekKey] = 0;
 
                         dayShifts.forEach(shift => {
                             const inTime = new Date(shift.inTime);
@@ -23706,34 +23711,49 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                                 outTimeStr = outTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                             }
 
-                            // Add this shift's hours to week cumulative
+                            const isSickDay = shift.inPunch.ip_address && shift.inPunch.ip_address.includes('sick-day');
+                            const sickNote = isSickDay ? 'Sick Day' : '';
+
+                            // Daily OT: hours over 12 in a single shift (not for sick days)
+                            const shiftDailyOT = (!isSickDay && shift.hours > 12) ? shift.hours - 12 : 0;
+                            totalDailyOT += shiftDailyOT;
+
+                            // Add all hours to cumulative for display
                             weekCumulativeHours[weekKey] += shift.hours;
 
-                            // Calculate accumulated OT (hours over 40 for this week)
-                            const accumulatedOT = Math.max(0, weekCumulativeHours[weekKey] - 40);
+                            // Only non-sick hours count towards 40hr weekly OT
+                            if (!isSickDay) {
+                                weekNonSickHours[weekKey] += shift.hours;
+                            }
 
-                            const sickNote = (shift.inPunch.ip_address && shift.inPunch.ip_address.includes('sick-day')) ? 'Sick Day' : '';
-                            csv += '"' + date + '",' + inTimeStr + ',' + outTimeStr + ',' + shift.hours.toFixed(2) + ',' + accumulatedOT.toFixed(2) + ',"' + sickNote + '"\n';
+                            // Calculate accumulated weekly OT (hours over 40, excluding sick)
+                            const accumulatedWeeklyOT = Math.max(0, weekNonSickHours[weekKey] - 40);
+                            // Total accumulated OT = daily OT so far + weekly OT
+                            const accumulatedOT = totalDailyOT + accumulatedWeeklyOT - shiftDailyOT + (shiftDailyOT > 0 ? shiftDailyOT : Math.max(0, weekNonSickHours[weekKey] - 40) - Math.max(0, weekNonSickHours[weekKey] - shift.hours - 40));
+
+                            csv += '"' + date + '",' + inTimeStr + ',' + outTimeStr + ',' + shift.hours.toFixed(2) + ',' + accumulatedWeeklyOT.toFixed(2) + (shiftDailyOT > 0 ? ' (+' + shiftDailyOT.toFixed(2) + ' daily)' : '') + ',"' + sickNote + '"\n';
                         });
 
                         employeeTotalHours += dayShifts.reduce((sum, s) => sum + s.hours, 0);
                     }
 
-                    // Calculate final overtime per week (40 hours per week)
-                    let regularHours = 0;
-                    let overtimeHours = 0;
-                    Object.values(weekCumulativeHours).forEach(weekHours => {
-                        regularHours += Math.min(weekHours, 40);
-                        overtimeHours += Math.max(0, weekHours - 40);
+                    // Calculate final overtime
+                    let weeklyOT = 0;
+                    Object.values(weekNonSickHours).forEach(weekHours => {
+                        weeklyOT += Math.max(0, weekHours - 40);
                     });
+                    const totalOT = totalDailyOT + weeklyOT;
+                    const regularHours = employeeTotalHours - totalOT;
 
                     csv += '\n';
                     csv += 'TOTAL HOURS,' + employeeTotalHours.toFixed(2) + '\n';
-                    csv += 'Regular (40hr/week),' + regularHours.toFixed(2) + '\n';
-                    csv += 'Overtime (over 40/week),' + overtimeHours.toFixed(2) + '\n';
+                    csv += 'Regular Hours,' + regularHours.toFixed(2) + '\n';
+                    csv += 'Daily OT (over 12hr shifts),' + totalDailyOT.toFixed(2) + '\n';
+                    csv += 'Weekly OT (over 40hr/week),' + weeklyOT.toFixed(2) + '\n';
+                    csv += 'TOTAL OVERTIME,' + totalOT.toFixed(2) + '\n';
 
                     grandTotalRegular += regularHours;
-                    grandTotalOvertime += overtimeHours;
+                    grandTotalOvertime += totalOT;
                 }
 
                 // Grand totals
