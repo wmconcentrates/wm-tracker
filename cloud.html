@@ -7698,6 +7698,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     id: subBatchId,
                     parent_batch_id: batchId,
                     is_sub_batch: true,
+                    business_id: batch.business_id, // Inherit business from parent
                     strain: batch.strain,
                     strain_type: batch.strain_type,
                     trim_weight: subBatchTrimWeight, // Proportional trim weight based on actual yield
@@ -9024,6 +9025,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 const cartsSubId = batchBase + '-CARTS';
                 subBatches.push({
                     id: cartsSubId,
+                    business_id: parentBatch.business_id, // Inherit business from parent
                     strain: parentBatch.strain,
                     strain_type: parentBatch.strain_type,
                     material_type: parentBatch.material_type || 'Fresh Frozen',
@@ -9053,6 +9055,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 const aiosSubId = batchBase + '-AIOs';
                 subBatches.push({
                     id: aiosSubId,
+                    business_id: parentBatch.business_id, // Inherit business from parent
                     strain: parentBatch.strain,
                     strain_type: parentBatch.strain_type,
                     material_type: parentBatch.material_type || 'Fresh Frozen',
@@ -17715,6 +17718,7 @@ ${employeeReport || 'No activity recorded today'}
             // Create sub-batch
             const subBatch = {
                 id: newSubBatchId,
+                business_id: parentBatch.business_id, // Inherit business from parent
                 strain: parentBatch.strain,
                 strain_type: parentBatch.strain_type,
                 trim_weight: trimUsed,
@@ -17729,7 +17733,7 @@ ${employeeReport || 'No activity recorded today'}
                 intake_notes: `Retroactive sub-batch created from ${parentBatchId}. ${notes}`,
                 status: newStatus,
                 intake_user: parentBatch.intake_user,
-                
+
                 // Mark as sub-batch
                 is_sub_batch: true,
                 parent_batch_id: parentBatchId,
