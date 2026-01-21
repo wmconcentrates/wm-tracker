@@ -9436,7 +9436,19 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 try { potLedger = JSON.parse(potLedger); } catch(e) { potLedger = []; }
             }
 
-            // Create pull record
+            // Calculate common values
+            const productTypeText = productType === 'shatter' ? 'Shatter' : productType === 'wax' ? 'Wax' : productType === 'sugar_wax' ? 'Sugar Wax' : productType === 'live_resin' ? 'Live Resin Oil' : 'Unknown';
+            const amountText = productType === 'shatter' ? `${slabs} slab(s)` : `${bowls} bowl(s)`;
+            const combinedTrimWeight = Math.round(potLedger.reduce((sum, p) => sum + (p.trim_weight || 0), 0) * 10) / 10;
+            const totalSocksInPot = potLedger.reduce((sum, p) => sum + (p.socks || 0), 0);
+
+            // Build source contributions summary for timeline
+            let sourcesSummary = '';
+            if (potLedger.length > 1) {
+                sourcesSummary = ' | Sources: ' + potLedger.map(p => `${p.batch_id}(${p.socks}socks)`).join(', ');
+            }
+
+            // Create pull record for localStorage
             const pullRecord = {
                 batchId: machineStatus.pot_batch,
                 batchNumber: batch.id,
@@ -9450,100 +9462,97 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 pulledBy: currentRole ? currentRole.name : 'Unknown',
                 source_contributions: potLedger
             };
-
-            // Save to localStorage
             const pullHistory = JSON.parse(localStorage.getItem('wm_pull_history') || '[]');
             pullHistory.push(pullRecord);
             localStorage.setItem('wm_pull_history', JSON.stringify(pullHistory));
 
-            // Update batch status to 'extraction' (completing extraction phase)
-            const productTypeText = productType === 'shatter' ? 'Shatter' : productType === 'wax' ? 'Wax' : productType === 'sugar_wax' ? 'Sugar Wax' : productType === 'live_resin' ? 'Live Resin Oil' : 'Unknown';
-            const amountText = productType === 'shatter' ? `${slabs} slab(s)` : `${bowls} bowl(s)`;
-
-            // Build source contributions summary for timeline
-            let sourcesSummary = '';
+            // CHECK: If multiple source batches, create a NEW combined sub-batch
             if (potLedger.length > 1) {
-                sourcesSummary = ' | Sources: ' + potLedger.map(p => `${p.batch_id}(${p.socks}socks)`).join(', ');
-            }
+                // Create new sub-batch for combined extraction
+                const newBatchId = `WM-${batchCounter}`;
+                batchCounter++;
 
-            // Always move to extraction status when pot is pulled
-            // Remaining socks will still show in extraction queue based on socks_remaining > 0
-            const socksRemaining = batch.socks_remaining ?? 0;
+                const newSubBatch = {
+                    id: newBatchId,
+                    strain: batch.strain,
+                    strain_type: batch.strain_type,
+                    grower_name: 'Combined Sources',
+                    cultivation_license: potLedger.map(p => p.metrc_tag || p.batch_id).join(', '),
+                    metrc_tags: potLedger.map(p => p.metrc_tag).filter(t => t).join(', '),
+                    trim_weight: combinedTrimWeight,
+                    socks_total: totalSocksInPot,
+                    socks_remaining: 0,
+                    material_agreement: batch.material_agreement,
+                    intake_date: new Date().toISOString().split('T')[0],
+                    status: 'extraction',
+                    extraction_method: 'BHO',
+                    product_type: productTypeText,
+                    product_made: productTypeText,
+                    extraction_machine: currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)',
+                    extraction_runs: machineStatus.pot_runs || 0,
+                    extraction_slabs: productType === 'shatter' ? slabs : null,
+                    extraction_bowls: (productType === 'wax' || productType === 'sugar_wax' || productType === 'live_resin') ? bowls : null,
+                    extraction_notes: notes,
+                    extraction_user: currentRole ? currentRole.name : 'Unknown',
+                    extraction_date: new Date().toISOString().split('T')[0],
+                    source_contributions: potLedger,
+                    combined_trim_weight: combinedTrimWeight,
+                    total_socks_extracted: totalSocksInPot,
+                    is_sub_batch: true,
+                    parent_batch_id: batch.id,
+                    timeline: [
+                        {
+                            timestamp: new Date().toISOString(),
+                            stage: 'created',
+                            user: currentRole ? currentRole.name : 'Unknown',
+                            action: `Combined batch created from ${potLedger.length} sources: ${potLedger.map(p => p.batch_id).join(', ')}`
+                        },
+                        {
+                            timestamp: new Date().toISOString(),
+                            stage: 'extraction',
+                            user: currentRole ? currentRole.name : 'Unknown',
+                            action: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.pot_runs || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}${sourcesSummary}`
+                        }
+                    ],
+                    created_at: new Date().toISOString()
+                };
 
-            // Calculate combined trim weight from all sources (rounded to nearest tenth)
-            const combinedTrimWeight = Math.round(potLedger.reduce((sum, p) => sum + (p.trim_weight || 0), 0) * 10) / 10;
-            const totalSocksInPot = potLedger.reduce((sum, p) => sum + (p.socks || 0), 0);
+                // Insert new sub-batch
+                supabaseClient
+                    .from('wm_batches')
+                    .insert([newSubBatch])
+                    .then(({ error }) => {
+                        if (error) {
+                            console.error('Error creating combined sub-batch:', error);
+                            alert(`Error creating combined batch:\n\n${error.message || JSON.stringify(error)}`);
+                            return;
+                        }
 
-            const updatedBatch = {
-                ...batch,
-                status: 'extraction',
-                extraction_method: 'BHO',
-                product_type: productTypeText,
-                product_made: productTypeText, // Also set product_made for finishing dropdown
-                extraction_machine: currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)',
-                extraction_runs: machineStatus.pot_runs || 0,
-                extraction_slabs: productType === 'shatter' ? slabs : null,
-                extraction_bowls: (productType === 'wax' || productType === 'sugar_wax' || productType === 'live_resin') ? bowls : null,
-                extraction_notes: notes,
-                extraction_user: currentRole ? currentRole.name : 'Unknown',
-                extraction_date: new Date().toISOString().split('T')[0],
-                source_contributions: potLedger, // Save pot ledger as source contributions
-                combined_trim_weight: combinedTrimWeight, // Total trim from all sources in pot
-                total_socks_extracted: totalSocksInPot, // Total socks that went into this extraction
-                timeline: [
-                    ...(batch.timeline || []),
-                    {
-                        timestamp: new Date().toISOString(),
-                        stage: 'extraction',
-                        user: currentRole ? currentRole.name : 'Unknown',
-                        action: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.pot_runs || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}${sourcesSummary}`
-                    }
-                ]
-            };
-            
-            // Update batch in Supabase
-            supabaseClient
-                .from('wm_batches')
-                .update(updatedBatch)
-                .eq('id', batch.id)
-                .then(({ error, data }) => {
-                    if (error) {
-                        console.error('Error updating batch:', error);
-                        console.error('Error details:', JSON.stringify(error, null, 2));
-                        console.error('Batch data being sent:', updatedBatch);
-                        alert(`Error completing extraction:\n\n${error.message || JSON.stringify(error)}\n\nCheck console for details.`);
-                        return;
-                    }
-
-                    // Handle contributing batches - track their sock contributions
-                    const contributingBatchUpdates = potLedger
-                        .filter(p => p.batch_id !== batch.id) // Exclude primary batch
-                        .map(p => {
+                        // Update all contributing batches (mark as consumed or add contribution note)
+                        const contributingBatchUpdates = potLedger.map(p => {
                             const contributingBatch = batches.find(b => b.id === p.batch_id);
                             if (!contributingBatch) return null;
 
                             const socksRemaining = contributingBatch.socks_remaining ?? contributingBatch.socks_total ?? 0;
 
-                            // Check if this batch has no socks remaining (all contributed) - mark as consumed
                             if (socksRemaining === 0) {
                                 return {
                                     batchId: p.batch_id,
                                     update: {
                                         status: 'consumed',
-                                        consumed_by: batch.id,
+                                        consumed_by: newBatchId,
                                         timeline: [
                                             ...(contributingBatch.timeline || []),
                                             {
                                                 timestamp: new Date().toISOString(),
                                                 stage: 'consumed',
                                                 user: currentRole ? currentRole.name : 'Unknown',
-                                                action: `All ${p.socks} sock(s) contributed to ${batch.id} extraction - ${Math.round(p.trim_weight * 10) / 10}g trim`
+                                                action: `All ${p.socks} sock(s) contributed to combined batch ${newBatchId} - ${Math.round(p.trim_weight * 10) / 10}g trim`
                                             }
                                         ]
                                     }
                                 };
                             } else {
-                                // Batch still has remaining socks - add timeline entry for partial contribution
                                 return {
                                     batchId: p.batch_id,
                                     update: {
@@ -9553,28 +9562,88 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                                                 timestamp: new Date().toISOString(),
                                                 stage: 'contribution',
                                                 user: currentRole ? currentRole.name : 'Unknown',
-                                                action: `${p.socks} sock(s) contributed to ${batch.id} extraction - ${Math.round(p.trim_weight * 10) / 10}g trim (${socksRemaining} socks remaining)`
+                                                action: `${p.socks} sock(s) contributed to combined batch ${newBatchId} - ${Math.round(p.trim_weight * 10) / 10}g trim (${socksRemaining} socks remaining)`
                                             }
                                         ]
                                     }
                                 };
                             }
-                        })
-                        .filter(u => u !== null);
+                        }).filter(u => u !== null);
 
-                    // Update contributing batches in database
-                    const updateContributingBatches = contributingBatchUpdates.map(u =>
+                        Promise.all(contributingBatchUpdates.map(u =>
+                            supabaseClient.from('wm_batches').update(u.update).eq('id', u.batchId)
+                        )).then(() => {
+                            console.log(`Created combined batch ${newBatchId} from ${potLedger.length} sources`);
+                        });
+
+                        // Clear pot in machine status
+                        const clearedPotStatus = {
+                            machine: currentPullMachine,
+                            pot_batch: null,
+                            pot_runs: 0,
+                            pot_ledger: [],
+                            column_batch: machineStatus.column_batch,
+                            column_b_batch: machineStatus.column_b_batch,
+                            filter_clay: machineStatus.filter_clay,
+                            filter_silica: machineStatus.filter_silica,
+                            filter_runs: machineStatus.filter_runs,
+                            last_updated: new Date().toISOString(),
+                            updated_by: currentRole ? currentRole.name : 'Unknown'
+                        };
+
                         supabaseClient
-                            .from('wm_batches')
-                            .update(u.update)
-                            .eq('id', u.batchId)
-                    );
-
-                    Promise.all(updateContributingBatches).then(() => {
-                        const consumedCount = contributingBatchUpdates.filter(u => u.update.status === 'consumed').length;
-                        const partialCount = contributingBatchUpdates.length - consumedCount;
-                        console.log(`Updated ${contributingBatchUpdates.length} contributing batch(es): ${consumedCount} consumed, ${partialCount} partial contributions`);
+                            .from('wm_machine_status')
+                            .upsert(clearedPotStatus, { onConflict: 'machine' })
+                            .then(() => {
+                                loadBatches();
+                                updateMachineDisplays();
+                                closePullBatchModal();
+                                alert(`✅ Combined Batch Created!\n\n${newBatchId}\n${productTypeText}: ${amountText}\n${machineStatus.pot_runs || 0} runs\n${combinedTrimWeight}g total trim from ${potLedger.length} sources\n\nPot has been emptied.`);
+                            });
                     });
+
+                return; // Exit early - combined batch flow handled above
+            }
+
+            // SINGLE SOURCE BATCH - Update existing batch (original behavior)
+            const socksRemaining = batch.socks_remaining ?? 0;
+            const updatedBatch = {
+                ...batch,
+                status: 'extraction',
+                extraction_method: 'BHO',
+                product_type: productTypeText,
+                product_made: productTypeText,
+                extraction_machine: currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)',
+                extraction_runs: machineStatus.pot_runs || 0,
+                extraction_slabs: productType === 'shatter' ? slabs : null,
+                extraction_bowls: (productType === 'wax' || productType === 'sugar_wax' || productType === 'live_resin') ? bowls : null,
+                extraction_notes: notes,
+                extraction_user: currentRole ? currentRole.name : 'Unknown',
+                extraction_date: new Date().toISOString().split('T')[0],
+                source_contributions: potLedger,
+                combined_trim_weight: combinedTrimWeight,
+                total_socks_extracted: totalSocksInPot,
+                timeline: [
+                    ...(batch.timeline || []),
+                    {
+                        timestamp: new Date().toISOString(),
+                        stage: 'extraction',
+                        user: currentRole ? currentRole.name : 'Unknown',
+                        action: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.pot_runs || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}`
+                    }
+                ]
+            };
+
+            supabaseClient
+                .from('wm_batches')
+                .update(updatedBatch)
+                .eq('id', batch.id)
+                .then(({ error, data }) => {
+                    if (error) {
+                        console.error('Error updating batch:', error);
+                        alert(`Error completing extraction:\n\n${error.message || JSON.stringify(error)}`);
+                        return;
+                    }
 
                     // Clear pot in machine status in Supabase
                     const clearedPotStatus = {
