@@ -23569,6 +23569,21 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 ' - ' + period.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
             try {
+                // Get current employee names from wm_employees
+                const { data: employees } = await supabaseClient
+                    .from('wm_employees')
+                    .select('name');
+
+                // Create mapping from first name to full name
+                const nameMapping = {};
+                if (employees) {
+                    employees.forEach(emp => {
+                        const firstName = emp.name.split(' ')[0];
+                        nameMapping[firstName] = emp.name;
+                        nameMapping[emp.name] = emp.name; // Also map full name to itself
+                    });
+                }
+
                 // Get all punches for the pay period
                 const { data: allPunches, error } = await supabaseClient
                     .from('timeclock')
@@ -23585,13 +23600,15 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     return;
                 }
 
-                // Group by employee
+                // Group by employee (using full name from mapping)
                 const employeeData = {};
                 allPunches.forEach(punch => {
-                    if (!employeeData[punch.user_name]) {
-                        employeeData[punch.user_name] = [];
+                    // Map old name to current full name
+                    const fullName = nameMapping[punch.user_name] || punch.user_name;
+                    if (!employeeData[fullName]) {
+                        employeeData[fullName] = [];
                     }
-                    employeeData[punch.user_name].push(punch);
+                    employeeData[fullName].push(punch);
                 });
 
                 // Sort employees by last name initial (assumes "First Last" format)
