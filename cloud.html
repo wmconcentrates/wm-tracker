@@ -7272,8 +7272,10 @@ ${growerName ? `^FO500,325^FD${growerName.substring(0, 25)}^FS` : ''}
             const width = 812;
             const height = 406;
 
-            // Get product name and batch ID
-            const productName = (batch.strain || 'Unknown').toUpperCase();
+            // Get product name: use batch_name if set, otherwise "Strain ProductType"
+            const productName = batch.batch_name
+                ? batch.batch_name.toUpperCase()
+                : `${(batch.strain || 'Unknown')} ${(batch.product_made || 'Wax')}`.toUpperCase();
             const batchId = batch.id || '';
 
             // Bowl numbering (e.g., "1/2", "2/2")
@@ -7868,7 +7870,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
             // Auto-print post-production labels (one per slab/jar)
             const labelCount = isShatter ? outputSlabsCount : (isBulk ? outputJarsCount : 1);
-            printPostProductionLabels(batch, finalWeight, sampleWeight, labelCount);
+            // Pass updated batch with new batch_name and product_made
+            const updatedBatch = { ...batch, ...updateData };
+            printPostProductionLabels(updatedBatch, finalWeight, sampleWeight, labelCount);
 
             document.getElementById('finishingForm').style.display = 'none';
             document.getElementById('finishingBatchSelect').value = '';
