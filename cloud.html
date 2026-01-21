@@ -22457,10 +22457,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         async function getWeeklyHours(userName) {
             if (!supabaseClient) return 0;
 
-            // Get start of current week (Sunday)
+            // Get start of current week (Saturday)
             const now = new Date();
             const startOfWeek = new Date(now);
-            startOfWeek.setDate(now.getDate() - now.getDay());
+            const daysFromSaturday = (now.getDay() + 1) % 7; // Sat=0, Sun=1, Mon=2, etc.
+            startOfWeek.setDate(now.getDate() - daysFromSaturday);
             startOfWeek.setHours(0, 0, 0, 0);
 
             try {
@@ -23166,15 +23167,16 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             tbody.innerHTML = html;
 
             // Calculate overtime per week (40 hours per week)
-            // Group hours by week (Sunday = start of week)
+            // Group hours by week (Saturday = start of week)
             const hoursByWeek = {};
             sortedDates.forEach(date => {
                 const dateObj = new Date(date);
-                // Get Sunday of this week
-                const dayOfWeek = dateObj.getDay(); // 0 = Sunday
-                const sunday = new Date(dateObj);
-                sunday.setDate(dateObj.getDate() - dayOfWeek);
-                const weekKey = sunday.toISOString().split('T')[0];
+                // Get Saturday of this week (Saturday = day 6)
+                const dayOfWeek = dateObj.getDay();
+                const daysFromSaturday = (dayOfWeek + 1) % 7; // Sat=0, Sun=1, Mon=2, etc.
+                const saturday = new Date(dateObj);
+                saturday.setDate(dateObj.getDate() - daysFromSaturday);
+                const weekKey = saturday.toISOString().split('T')[0];
 
                 const dayShifts = shiftsByDate[date];
                 const dayHours = dayShifts.reduce((sum, shift) => sum + shift.hours, 0);
@@ -23673,11 +23675,12 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     const hoursByWeek = {};
                     for (const [date, dayShifts] of Object.entries(shiftsByDate)) {
                         const dateObj = new Date(date);
-                        // Get Sunday of this week
+                        // Get Saturday of this week (Saturday = day 6)
                         const dayOfWeek = dateObj.getDay();
-                        const sunday = new Date(dateObj);
-                        sunday.setDate(dateObj.getDate() - dayOfWeek);
-                        const weekKey = sunday.toISOString().split('T')[0];
+                        const daysFromSaturday = (dayOfWeek + 1) % 7; // Sat=0, Sun=1, Mon=2, etc.
+                        const saturday = new Date(dateObj);
+                        saturday.setDate(dateObj.getDate() - daysFromSaturday);
+                        const weekKey = saturday.toISOString().split('T')[0];
 
                         const dayHours = dayShifts.reduce((sum, shift) => sum + shift.hours, 0);
                         if (!hoursByWeek[weekKey]) hoursByWeek[weekKey] = 0;
