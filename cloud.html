@@ -3203,6 +3203,21 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label>Product Type</label>
+                        <select id="editProductType">
+                            <option value="">-- Not Set --</option>
+                            <option value="Sugar Wax">Sugar Wax</option>
+                            <option value="Shatter">Shatter</option>
+                            <option value="Live Resin Carts">Live Resin Carts</option>
+                            <option value="Live Resin AIOs">Live Resin AIOs</option>
+                            <option value="Brick Hash">Brick Hash</option>
+                            <option value="Bubble Hash">Bubble Hash</option>
+                            <option value="Rosin">Rosin</option>
+                            <option value="Badder">Badder</option>
+                            <option value="Diamonds">Diamonds</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>Trim Weight (g)</label>
                         <input type="number" id="editTrimWeight" step="0.1">
                     </div>
@@ -17429,6 +17444,7 @@ ${employeeReport || 'No activity recorded today'}
             document.getElementById('editBatchStatus').value = batch.status;
             document.getElementById('editStrainName').value = batch.strain;
             document.getElementById('editStrainType').value = batch.strain_type;
+            document.getElementById('editProductType').value = batch.product_made || '';
             document.getElementById('editTrimWeight').value = batch.trim_weight;
             document.getElementById('editSocksRemaining').value = batch.socks_remaining ?? batch.socks_total ?? '';
             document.getElementById('editBulkWeight').value = batch.final_weight || '';
@@ -17553,6 +17569,7 @@ ${employeeReport || 'No activity recorded today'}
                 status: document.getElementById('editBatchStatus').value,
                 strain: document.getElementById('editStrainName').value,
                 strain_type: document.getElementById('editStrainType').value,
+                product_made: document.getElementById('editProductType').value || null,
                 trim_weight: parseFloat(document.getElementById('editTrimWeight').value),
                 socks_remaining: socksRemainingVal !== '' ? parseInt(socksRemainingVal) : null,
                 final_weight: parsedBulkWeight,
