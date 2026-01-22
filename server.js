@@ -1272,6 +1272,69 @@ app.post('/api/google-sheets/update-split-finished', async (req, res) => {
     }
 });
 
+// Google Sheets - Rewrite all 50/50 splits (for reorganizing)
+app.post('/api/google-sheets/rewrite-splits', async (req, res) => {
+    if (!googleSheets) {
+        return res.status(503).json({ error: 'Google Sheets not configured' });
+    }
+    if (!GOOGLE_LABEL_SPREADSHEET_ID) {
+        return res.status(503).json({ error: 'GOOGLE_LABEL_SPREADSHEET_ID not configured' });
+    }
+
+    try {
+        const { rows } = req.body;
+        const sheetName = '50/50 Splits';
+
+        // Check if sheet exists, create if not
+        const spreadsheet = await googleSheets.spreadsheets.get({
+            spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID
+        });
+
+        let splitSheet = spreadsheet.data.sheets.find(s => s.properties.title === sheetName);
+
+        if (!splitSheet) {
+            // Create the sheet
+            await googleSheets.spreadsheets.batchUpdate({
+                spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
+                resource: {
+                    requests: [{
+                        addSheet: {
+                            properties: { title: sheetName }
+                        }
+                    }]
+                }
+            });
+        }
+
+        // Clear existing data (except we'll rewrite everything including headers)
+        await googleSheets.spreadsheets.values.clear({
+            spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
+            range: `'${sheetName}'!A:G`
+        });
+
+        // Build all rows with headers
+        const allRows = [
+            ['Intake Date', 'Customer', 'Batch #', 'Batch Name', 'Trim Weight (lbs)', "Customer's Half (lbs)", 'Date Finished'],
+            ...rows
+        ];
+
+        // Write all data
+        await googleSheets.spreadsheets.values.update({
+            spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
+            range: `'${sheetName}'!A1`,
+            valueInputOption: 'USER_ENTERED',
+            resource: { values: allRows }
+        });
+
+        console.log(`Rewrote 50/50 splits sheet with ${rows.length} data rows`);
+        res.json({ success: true, rowsWritten: rows.length });
+
+    } catch (error) {
+        console.error('Google Sheets rewrite error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Google Sheets - Get all 50/50 splits for a customer (to check if all batches are done)
 app.get('/api/google-sheets/splits-by-customer/:customer', async (req, res) => {
     if (!googleSheets) {
