@@ -6685,7 +6685,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 alert('Error creating batch. Please try again.');
                 return;
             }
-            
+
+            // Track 50/50 splits in Google Sheets
+            if (batch.material_agreement === '50/50 Split' || batch.material_agreement === '50-50 Split') {
+                try {
+                    await add5050SplitToSheet(batch);
+                } catch (splitError) {
+                    console.error('Failed to track 50/50 split in Google Sheets:', splitError);
+                    // Don't block batch creation if sheet tracking fails
+                }
+            }
+
             batchCounter++;
             
             // Auto-print batch tracking label
@@ -14681,6 +14691,12 @@ ${employeeReport || 'No activity recorded today'}
                 }
             }
 
+            // Update 50/50 split tracking for bulk sales that are now complete
+            if (batch.packaged_product_type === 'Bulk Sale' &&
+                (batch.material_agreement === '50/50 Split' || batch.material_agreement === '50-50 Split')) {
+                await update5050SplitFinished(batchIdChanged ? newBatchId : batchId);
+            }
+
             // Apply test results to any 4g sub-batches (they share the same test)
             const finalBatchIdForSubBatch = batchIdChanged ? newBatchId : batchId;
             const subBatches = batches.filter(b => b.parent_batch_id === batchId || b.parent_batch_id === finalBatchIdForSubBatch);
@@ -15628,6 +15644,11 @@ ${employeeReport || 'No activity recorded today'}
                 console.error('Error marking as labeled:', error);
                 alert('Error saving labeling status. Please try again.');
                 return;
+            }
+
+            // Update 50/50 split tracking if applicable
+            if (batch.material_agreement === '50/50 Split' || batch.material_agreement === '50-50 Split') {
+                await update5050SplitFinished(batchId);
             }
 
             // Print labeling completion label
@@ -18385,6 +18406,66 @@ ${employeeReport || 'No activity recorded today'}
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(initCOASync, 1000);
         });
+
+        // ==============================================
+        // 50/50 SPLIT GOOGLE SHEETS TRACKING
+        // ==============================================
+
+        // Add a 50/50 split batch to the tracking spreadsheet
+        async function add5050SplitToSheet(batch) {
+            const trimWeight = parseFloat(batch.trim_weight) || 0;
+            const customersHalf = Math.round(trimWeight / 2 * 10) / 10; // Round to nearest tenth
+
+            const splitData = {
+                intakeDate: batch.intake_date || new Date().toLocaleDateString('en-US'),
+                customer: batch.grower_name || batch.cultivation_license || 'Unknown',
+                batchNumber: batch.id,
+                batchName: batch.strain || '',
+                trimWeight: trimWeight,
+                customersHalf: customersHalf
+            };
+
+            const response = await fetch('/api/google-sheets/add-split', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(splitData)
+            });
+
+            if (response.ok) {
+                console.log(`50/50 split tracked in Google Sheets for batch ${batch.id}`);
+            } else {
+                const error = await response.text();
+                console.warn('Failed to add 50/50 split to spreadsheet:', error);
+            }
+        }
+
+        // Update 50/50 split finish date when batch completes
+        async function update5050SplitFinished(batchNumber) {
+            try {
+                const response = await fetch('/api/google-sheets/update-split-finished', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        batchNumber: batchNumber,
+                        dateFinished: new Date().toLocaleDateString('en-US')
+                    })
+                });
+
+                if (response.ok) {
+                    console.log(`50/50 split finish date updated for batch ${batchNumber}`);
+                    return true;
+                } else {
+                    // 404 is expected if batch isn't a 50/50 split
+                    if (response.status !== 404) {
+                        console.warn('Failed to update 50/50 split finish date:', await response.text());
+                    }
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error updating 50/50 split finish date:', error);
+                return false;
+            }
+        }
 
         // ==============================================
         // METRC INTEGRATION FUNCTIONS

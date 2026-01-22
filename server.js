@@ -1119,6 +1119,211 @@ app.post('/api/google-sheets/add-label', async (req, res) => {
     }
 });
 
+// Google Sheets - Add 50/50 split row when intake has a 50/50 split customer
+app.post('/api/google-sheets/add-split', async (req, res) => {
+    if (!googleSheets) {
+        return res.status(503).json({ error: 'Google Sheets not configured' });
+    }
+    if (!GOOGLE_LABEL_SPREADSHEET_ID) {
+        return res.status(503).json({ error: 'GOOGLE_LABEL_SPREADSHEET_ID not configured' });
+    }
+
+    try {
+        const {
+            intakeDate,
+            customer,
+            batchNumber,
+            batchName,
+            trimWeight,
+            customersHalf
+        } = req.body;
+
+        // Format the row data
+        const row = [
+            intakeDate || new Date().toLocaleDateString('en-US'),
+            customer || '',
+            batchNumber || '',
+            batchName || '',
+            trimWeight || 0,
+            customersHalf || 0,
+            '' // Date finished - empty initially
+        ];
+
+        // Check if "50/50 Splits" sheet exists, create if not
+        const sheetName = '50/50 Splits';
+
+        try {
+            // Try to get sheet info
+            const spreadsheet = await googleSheets.spreadsheets.get({
+                spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID
+            });
+
+            const splitSheet = spreadsheet.data.sheets.find(s => s.properties.title === sheetName);
+
+            if (!splitSheet) {
+                // Create the sheet
+                await googleSheets.spreadsheets.batchUpdate({
+                    spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
+                    resource: {
+                        requests: [{
+                            addSheet: {
+                                properties: {
+                                    title: sheetName
+                                }
+                            }
+                        }]
+                    }
+                });
+
+                // Add headers
+                await googleSheets.spreadsheets.values.update({
+                    spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
+                    range: `'${sheetName}'!A1:G1`,
+                    valueInputOption: 'USER_ENTERED',
+                    resource: {
+                        values: [['Intake Date', 'Customer', 'Batch #', 'Batch Name', 'Trim Weight (lbs)', "Customer's Half (lbs)", 'Date Finished']]
+                    }
+                });
+
+                console.log('Created 50/50 Splits sheet with headers');
+            }
+        } catch (sheetError) {
+            console.error('Error checking/creating sheet:', sheetError);
+        }
+
+        // Append to spreadsheet
+        const response = await googleSheets.spreadsheets.values.append({
+            spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
+            range: `'${sheetName}'!A:G`,
+            valueInputOption: 'USER_ENTERED',
+            insertDataOption: 'INSERT_ROWS',
+            resource: {
+                values: [row]
+            }
+        });
+
+        console.log(`50/50 split row added for batch ${batchNumber}: ${batchName}`);
+        res.json({
+            success: true,
+            updatedRange: response.data.updates?.updatedRange,
+            batchNumber
+        });
+
+    } catch (error) {
+        console.error('Google Sheets 50/50 split error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Google Sheets - Update 50/50 split date finished when batch is complete
+app.post('/api/google-sheets/update-split-finished', async (req, res) => {
+    if (!googleSheets) {
+        return res.status(503).json({ error: 'Google Sheets not configured' });
+    }
+    if (!GOOGLE_LABEL_SPREADSHEET_ID) {
+        return res.status(503).json({ error: 'GOOGLE_LABEL_SPREADSHEET_ID not configured' });
+    }
+
+    try {
+        const { batchNumber, dateFinished } = req.body;
+        const sheetName = '50/50 Splits';
+
+        // Find the row with this batch number
+        const readResponse = await googleSheets.spreadsheets.values.get({
+            spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
+            range: `'${sheetName}'!A:G`
+        });
+
+        const rows = readResponse.data.values || [];
+        let rowIndex = -1;
+
+        for (let i = 1; i < rows.length; i++) { // Start at 1 to skip header
+            if (rows[i][2] === batchNumber) { // Column C is batch number
+                rowIndex = i + 1; // Sheets are 1-indexed
+                break;
+            }
+        }
+
+        if (rowIndex === -1) {
+            return res.status(404).json({ error: `Batch ${batchNumber} not found in 50/50 splits` });
+        }
+
+        // Update the date finished column (G)
+        const updateResponse = await googleSheets.spreadsheets.values.update({
+            spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
+            range: `'${sheetName}'!G${rowIndex}`,
+            valueInputOption: 'USER_ENTERED',
+            resource: {
+                values: [[dateFinished || new Date().toLocaleDateString('en-US')]]
+            }
+        });
+
+        console.log(`Updated 50/50 split finish date for batch ${batchNumber}`);
+        res.json({
+            success: true,
+            batchNumber,
+            dateFinished: dateFinished || new Date().toLocaleDateString('en-US'),
+            row: rowIndex
+        });
+
+    } catch (error) {
+        console.error('Google Sheets 50/50 split update error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Google Sheets - Get all 50/50 splits for a customer (to check if all batches are done)
+app.get('/api/google-sheets/splits-by-customer/:customer', async (req, res) => {
+    if (!googleSheets) {
+        return res.status(503).json({ error: 'Google Sheets not configured' });
+    }
+    if (!GOOGLE_LABEL_SPREADSHEET_ID) {
+        return res.status(503).json({ error: 'GOOGLE_LABEL_SPREADSHEET_ID not configured' });
+    }
+
+    try {
+        const { customer } = req.params;
+        const sheetName = '50/50 Splits';
+
+        const readResponse = await googleSheets.spreadsheets.values.get({
+            spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
+            range: `'${sheetName}'!A:G`
+        });
+
+        const rows = readResponse.data.values || [];
+        const customerBatches = [];
+
+        for (let i = 1; i < rows.length; i++) { // Skip header
+            if (rows[i][1]?.toLowerCase() === customer.toLowerCase()) {
+                customerBatches.push({
+                    intakeDate: rows[i][0],
+                    customer: rows[i][1],
+                    batchNumber: rows[i][2],
+                    batchName: rows[i][3],
+                    trimWeight: parseFloat(rows[i][4]) || 0,
+                    customersHalf: parseFloat(rows[i][5]) || 0,
+                    dateFinished: rows[i][6] || null
+                });
+            }
+        }
+
+        const allFinished = customerBatches.length > 0 &&
+            customerBatches.every(b => b.dateFinished);
+
+        res.json({
+            customer,
+            batches: customerBatches,
+            totalBatches: customerBatches.length,
+            finishedBatches: customerBatches.filter(b => b.dateFinished).length,
+            allFinished
+        });
+
+    } catch (error) {
+        console.error('Google Sheets customer splits error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Legacy: POST /api/* (uses env var API key)
 app.post('/api/*', async (req, res) => {
     if (!LEGACY_LEAFLINK_API_KEY) {
