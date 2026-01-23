@@ -993,6 +993,7 @@ app.get('/api/google-drive/list-coas/:slug', async (req, res) => {
     try {
         const { slug } = req.params;
         const folderName = req.query.folder || 'COAs';
+        const since = req.query.since; // ISO date string to filter files modified after this time
 
         // Find the COAs folder
         const folderResponse = await googleDrive.files.list({
@@ -1009,13 +1010,23 @@ app.get('/api/google-drive/list-coas/:slug', async (req, res) => {
 
         const folderId = folderResponse.data.files[0].id;
 
+        // Build query - filter by modifiedTime if 'since' is provided
+        let query = `'${folderId}' in parents and mimeType='application/pdf' and trashed=false`;
+        if (since) {
+            // Only get files modified after the last sync time
+            query += ` and modifiedTime > '${since}'`;
+            console.log(`[COA sync] Filtering files modified after: ${since}`);
+        }
+
         // List PDF files in the folder
         const filesResponse = await googleDrive.files.list({
-            q: `'${folderId}' in parents and mimeType='application/pdf' and trashed=false`,
+            q: query,
             fields: 'files(id, name, createdTime, modifiedTime)',
             orderBy: 'modifiedTime desc',
             pageSize: 100
         });
+
+        console.log(`[COA sync] Found ${filesResponse.data.files?.length || 0} files${since ? ' (filtered by date)' : ''}`);
 
         res.json({
             folderId,

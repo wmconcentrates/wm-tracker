@@ -18065,17 +18065,27 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         // Sync COAs from Google Drive (via backend service account)
-        async function syncCOAsFromDrive() {
+        async function syncCOAsFromDrive(forceFullSync = false) {
             const syncBtn = document.getElementById('coaSyncBtn');
             syncBtn.textContent = '🔄 Syncing...';
             syncBtn.disabled = true;
+
+            // Check if SHIFT is held for full rescan
+            const isShiftHeld = event && event.shiftKey;
+            if (isShiftHeld || forceFullSync) {
+                console.log('[COA sync] Full rescan requested');
+            }
 
             try {
                 // Get current business slug
                 const businessSlug = businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse';
 
-                // List COA files via our backend
-                const listResponse = await fetch(`/api/google-drive/list-coas/${businessSlug}`);
+                // Get last sync time to only fetch new files (unless full sync requested)
+                const lastSync = (!isShiftHeld && !forceFullSync) ? localStorage.getItem('coaLastSync') : null;
+                const sinceParam = lastSync ? `?since=${encodeURIComponent(lastSync)}` : '';
+
+                // List COA files via our backend (only files modified since last sync)
+                const listResponse = await fetch(`/api/google-drive/list-coas/${businessSlug}${sinceParam}`);
                 const listData = await listResponse.json();
 
                 if (!listResponse.ok) {
@@ -18083,7 +18093,10 @@ ${employeeReport || 'No activity recorded today'}
                 }
 
                 if (!listData.files || listData.files.length === 0) {
-                    alert('No PDF files found in COAs folder.');
+                    const msg = lastSync
+                        ? `No new COA files since last sync (${new Date(lastSync).toLocaleString()}).\n\nHold SHIFT and click Sync to force a full rescan.`
+                        : 'No PDF files found in COAs folder.';
+                    alert(msg);
                     syncBtn.textContent = '🔄 Sync Now';
                     syncBtn.disabled = false;
                     return;
