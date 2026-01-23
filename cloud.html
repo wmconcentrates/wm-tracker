@@ -14706,10 +14706,14 @@ ${employeeReport || 'No activity recorded today'}
                 }
             }
 
-            // Update 50/50 split tracking for bulk sales that are now complete
+            // Update 50/50 split tracking for bulk sales that are now complete (non-blocking)
             if (batch.packaged_product_type === 'Bulk Sale' &&
                 (batch.material_agreement === '50/50 Split' || batch.material_agreement === '50-50 Split')) {
-                await update5050SplitFinished(batchIdChanged ? newBatchId : batchId);
+                try {
+                    await update5050SplitFinished(batchIdChanged ? newBatchId : batchId);
+                } catch (splitErr) {
+                    console.warn('50/50 split tracking failed (non-critical):', splitErr);
+                }
             }
 
             // Apply test results to any 4g sub-batches (they share the same test)
@@ -15661,9 +15665,13 @@ ${employeeReport || 'No activity recorded today'}
                 return;
             }
 
-            // Update 50/50 split tracking if applicable
+            // Update 50/50 split tracking if applicable (non-blocking)
             if (batch.material_agreement === '50/50 Split' || batch.material_agreement === '50-50 Split') {
-                await update5050SplitFinished(batchId);
+                try {
+                    await update5050SplitFinished(batchId);
+                } catch (splitErr) {
+                    console.warn('50/50 split tracking failed (non-critical):', splitErr);
+                }
             }
 
             // Print labeling completion label
