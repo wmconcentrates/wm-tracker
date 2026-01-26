@@ -3877,31 +3877,31 @@
 
                     <!-- Filter Status (BHO only) -->
                     <div id="machineFilterSection" style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--accent-green); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                        <h3 style="color: var(--accent-green); margin: 0 0 15px 0;">🔬 Filter Column</h3>
-                        <div class="help-text" style="margin-bottom: 15px; text-align: center;">Filter stacking order (top to bottom)</div>
+                        <h3 style="color: var(--accent-green); margin: 0 0 15px 0;">Filter Column</h3>
+                        <div class="help-text" style="margin-bottom: 15px;">Filter media stack (top to bottom)</div>
 
-                        <!-- Visual filter stack representation -->
-                        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
-                            <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 2px solid #60a5fa;">
-                                <span style="font-size: 1.2rem;">⬆️</span>
-                                <div style="flex: 1;">
-                                    <label style="font-size: 0.85rem; color: #60a5fa; font-weight: 600;">Silica TOP (cups)</label>
-                                    <input type="number" id="machineFilterSilicaTop" step="0.5" min="0" placeholder="0" style="margin-top: 5px;">
-                                </div>
+                        <!-- Filter stack inputs -->
+                        <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px;">
+                            <div class="form-group" style="margin: 0; background: var(--bg-tertiary); padding: 12px 15px; border-radius: 8px 8px 0 0; border-left: 3px solid var(--accent-blue);">
+                                <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="color: var(--accent-blue); font-size: 0.75rem; font-weight: 700; background: rgba(0, 85, 255, 0.2); padding: 2px 6px; border-radius: 4px;">TOP</span>
+                                    <span>Silica (cups)</span>
+                                </label>
+                                <input type="number" id="machineFilterSilicaTop" step="0.5" min="0" placeholder="0">
                             </div>
-                            <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 2px solid #f59e0b;">
-                                <span style="font-size: 1.2rem;">🔶</span>
-                                <div style="flex: 1;">
-                                    <label style="font-size: 0.85rem; color: #f59e0b; font-weight: 600;">Clay MIDDLE (cups)</label>
-                                    <input type="number" id="machineFilterClay" step="0.5" min="0" placeholder="0" style="margin-top: 5px;">
-                                </div>
+                            <div class="form-group" style="margin: 0; background: var(--bg-tertiary); padding: 12px 15px; border-left: 3px solid var(--accent-orange);">
+                                <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="color: var(--accent-orange); font-size: 0.75rem; font-weight: 700; background: rgba(255, 107, 0, 0.2); padding: 2px 6px; border-radius: 4px;">MID</span>
+                                    <span>Clay (cups)</span>
+                                </label>
+                                <input type="number" id="machineFilterClay" step="0.5" min="0" placeholder="0">
                             </div>
-                            <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 2px solid #60a5fa;">
-                                <span style="font-size: 1.2rem;">⬇️</span>
-                                <div style="flex: 1;">
-                                    <label style="font-size: 0.85rem; color: #60a5fa; font-weight: 600;">Silica BOTTOM (cups)</label>
-                                    <input type="number" id="machineFilterSilicaBottom" step="0.5" min="0" placeholder="0" style="margin-top: 5px;">
-                                </div>
+                            <div class="form-group" style="margin: 0; background: var(--bg-tertiary); padding: 12px 15px; border-radius: 0 0 8px 8px; border-left: 3px solid var(--accent-blue);">
+                                <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="color: var(--accent-blue); font-size: 0.75rem; font-weight: 700; background: rgba(0, 85, 255, 0.2); padding: 2px 6px; border-radius: 4px;">BTM</span>
+                                    <span>Silica (cups)</span>
+                                </label>
+                                <input type="number" id="machineFilterSilicaBottom" step="0.5" min="0" placeholder="0">
                             </div>
                         </div>
 
