@@ -7301,9 +7301,18 @@ ${growerName ? `^FO500,325^FD${growerName.substring(0, 25)}^FS` : ''}
             const height = 406;
 
             // Get product name: use batch_name if set, otherwise "Strain ProductType"
+            // Strip any existing product type suffix from strain name to avoid duplication
+            const productTypes = ['Wax', 'Sugar Wax', 'Shatter', 'Badder', 'Diamonds', 'Sauce', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', 'Bubble Hash', 'Hash Hits', 'Rosin', 'Live Resin'];
+            let baseStrain = batch.strain || 'Unknown';
+            for (const pt of productTypes) {
+                if (baseStrain.toLowerCase().endsWith(' ' + pt.toLowerCase())) {
+                    baseStrain = baseStrain.slice(0, -(pt.length + 1)).trim();
+                    break;
+                }
+            }
             const productName = batch.batch_name
                 ? batch.batch_name.toUpperCase()
-                : `${(batch.strain || 'Unknown')} ${(batch.product_made || 'Wax')}`.toUpperCase();
+                : `${baseStrain} ${(batch.product_made || 'Wax')}`.toUpperCase();
             const batchId = batch.id || '';
 
             // Bowl numbering (e.g., "1/2", "2/2")
