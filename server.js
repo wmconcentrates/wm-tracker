@@ -1144,20 +1144,18 @@ app.post('/api/google-sheets/add-split', async (req, res) => {
             intakeDate,
             customer,
             batchNumber,
-            batchName,
-            trimWeight,
-            customersHalf
+            batchName
         } = req.body;
 
-        // Format the row data
+        // Format the row data - weight columns left as "Pending" until batch finishes
         const row = [
             intakeDate || new Date().toLocaleDateString('en-US'),
             customer || '',
             batchNumber || '',
             batchName || '',
-            trimWeight || 0,
-            customersHalf || 0,
-            '' // Date finished - empty initially
+            'Pending',  // Finished weight - filled when batch completes
+            'Pending',  // Customer's half - filled when batch completes
+            ''          // Date finished - empty initially
         ];
 
         // Check if "50/50 Splits" sheet exists, create if not
@@ -1192,7 +1190,7 @@ app.post('/api/google-sheets/add-split', async (req, res) => {
                     range: `'${sheetName}'!A1:G1`,
                     valueInputOption: 'USER_ENTERED',
                     resource: {
-                        values: [['Intake Date', 'Customer', 'Batch #', 'Batch Name', 'Trim Weight (lbs)', "Customer's Half (lbs)", 'Date Finished']]
+                        values: [['Intake Date', 'Customer', 'Batch #', 'Batch Name', 'Finished Weight (g)', "Customer's Half (g)", 'Date Finished']]
                     }
                 });
 
@@ -1236,7 +1234,7 @@ app.post('/api/google-sheets/update-split-finished', async (req, res) => {
     }
 
     try {
-        const { batchNumber, dateFinished } = req.body;
+        const { batchNumber, dateFinished, finishedWeight, customersHalf } = req.body;
         const sheetName = '50/50 Splits';
 
         // Find the row with this batch number
@@ -1259,20 +1257,26 @@ app.post('/api/google-sheets/update-split-finished', async (req, res) => {
             return res.status(404).json({ error: `Batch ${batchNumber} not found in 50/50 splits` });
         }
 
-        // Update the date finished column (G)
+        // Update columns E (finished weight), F (customer's half), and G (date finished)
         const updateResponse = await googleSheets.spreadsheets.values.update({
             spreadsheetId: GOOGLE_LABEL_SPREADSHEET_ID,
-            range: `'${sheetName}'!G${rowIndex}`,
+            range: `'${sheetName}'!E${rowIndex}:G${rowIndex}`,
             valueInputOption: 'USER_ENTERED',
             resource: {
-                values: [[dateFinished || new Date().toLocaleDateString('en-US')]]
+                values: [[
+                    finishedWeight || 0,
+                    customersHalf || 0,
+                    dateFinished || new Date().toLocaleDateString('en-US')
+                ]]
             }
         });
 
-        console.log(`Updated 50/50 split finish date for batch ${batchNumber}`);
+        console.log(`Updated 50/50 split for batch ${batchNumber}: ${finishedWeight}g finished, ${customersHalf}g owed`);
         res.json({
             success: true,
             batchNumber,
+            finishedWeight,
+            customersHalf,
             dateFinished: dateFinished || new Date().toLocaleDateString('en-US'),
             row: rowIndex
         });
@@ -1325,7 +1329,7 @@ app.post('/api/google-sheets/rewrite-splits', async (req, res) => {
 
         // Build all rows with headers
         const allRows = [
-            ['Intake Date', 'Customer', 'Batch #', 'Batch Name', 'Trim Weight (lbs)', "Customer's Half (lbs)", 'Date Finished'],
+            ['Intake Date', 'Customer', 'Batch #', 'Batch Name', 'Finished Weight (g)', "Customer's Half (g)", 'Date Finished'],
             ...rows
         ];
 

@@ -14722,7 +14722,8 @@ ${employeeReport || 'No activity recorded today'}
             if (batch.packaged_product_type === 'Bulk Sale' &&
                 (batch.material_agreement === '50/50 Split' || batch.material_agreement === '50-50 Split')) {
                 try {
-                    await update5050SplitFinished(batchIdChanged ? newBatchId : batchId);
+                    const updatedBatch = { ...batch, ...updates, id: batchIdChanged ? newBatchId : batchId };
+                    await update5050SplitFinished(updatedBatch);
                 } catch (splitErr) {
                     console.warn('50/50 split tracking failed (non-critical):', splitErr);
                 }
@@ -15680,7 +15681,7 @@ ${employeeReport || 'No activity recorded today'}
             // Update 50/50 split tracking if applicable (non-blocking)
             if (batch.material_agreement === '50/50 Split' || batch.material_agreement === '50-50 Split') {
                 try {
-                    await update5050SplitFinished(batchId);
+                    await update5050SplitFinished(batch);
                 } catch (splitErr) {
                     console.warn('50/50 split tracking failed (non-critical):', splitErr);
                 }
@@ -18461,18 +18462,14 @@ ${employeeReport || 'No activity recorded today'}
         // 50/50 SPLIT GOOGLE SHEETS TRACKING
         // ==============================================
 
-        // Add a 50/50 split batch to the tracking spreadsheet
+        // Add a 50/50 split batch to the tracking spreadsheet (at intake - weights pending)
         async function add5050SplitToSheet(batch) {
-            const trimWeight = parseFloat(batch.trim_weight) || 0;
-            const customersHalf = Math.round(trimWeight / 2 * 10) / 10; // Round to nearest tenth
-
             const splitData = {
                 intakeDate: batch.intake_date || new Date().toLocaleDateString('en-US'),
                 customer: batch.grower_name || batch.cultivation_license || 'Unknown',
                 batchNumber: batch.id,
-                batchName: batch.strain || '',
-                trimWeight: trimWeight,
-                customersHalf: customersHalf
+                batchName: batch.strain || ''
+                // Weight columns will show "Pending" until batch finishes
             };
 
             const response = await fetch('/api/google-sheets/add-split', {
@@ -18489,20 +18486,26 @@ ${employeeReport || 'No activity recorded today'}
             }
         }
 
-        // Update 50/50 split finish date when batch completes
-        async function update5050SplitFinished(batchNumber) {
+        // Update 50/50 split with finished weight and date when batch completes
+        async function update5050SplitFinished(batch) {
+            // Get the final weight (net_weight or final_weight after extraction/finishing)
+            const finishedWeight = parseFloat(batch.net_weight) || parseFloat(batch.final_weight) || 0;
+            const customersHalf = Math.round(finishedWeight / 2 * 10) / 10; // Round to nearest tenth
+
             try {
                 const response = await fetch('/api/google-sheets/update-split-finished', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        batchNumber: batchNumber,
+                        batchNumber: batch.id,
+                        finishedWeight: finishedWeight,
+                        customersHalf: customersHalf,
                         dateFinished: new Date().toLocaleDateString('en-US')
                     })
                 });
 
                 if (response.ok) {
-                    console.log(`50/50 split finish date updated for batch ${batchNumber}`);
+                    console.log(`50/50 split updated for batch ${batch.id}: ${finishedWeight}g finished, ${customersHalf}g owed`);
                     return true;
                 } else {
                     // 404 is expected if batch isn't a 50/50 split
