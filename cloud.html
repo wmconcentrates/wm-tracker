@@ -3878,16 +3878,33 @@
                     <!-- Filter Status (BHO only) -->
                     <div id="machineFilterSection" style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--accent-green); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                         <h3 style="color: var(--accent-green); margin: 0 0 15px 0;">🔬 Filter Column</h3>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Clay (cups)</label>
-                                <input type="number" id="machineFilterClay" step="0.5" min="0" placeholder="0">
+                        <div class="help-text" style="margin-bottom: 15px; text-align: center;">Filter stacking order (top to bottom)</div>
+
+                        <!-- Visual filter stack representation -->
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+                            <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 2px solid #60a5fa;">
+                                <span style="font-size: 1.2rem;">⬆️</span>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.85rem; color: #60a5fa; font-weight: 600;">Silica TOP (cups)</label>
+                                    <input type="number" id="machineFilterSilicaTop" step="0.5" min="0" placeholder="0" style="margin-top: 5px;">
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Silica (cups)</label>
-                                <input type="number" id="machineFilterSilica" step="0.5" min="0" placeholder="0">
+                            <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 2px solid #f59e0b;">
+                                <span style="font-size: 1.2rem;">🔶</span>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.85rem; color: #f59e0b; font-weight: 600;">Clay MIDDLE (cups)</label>
+                                    <input type="number" id="machineFilterClay" step="0.5" min="0" placeholder="0" style="margin-top: 5px;">
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 2px solid #60a5fa;">
+                                <span style="font-size: 1.2rem;">⬇️</span>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.85rem; color: #60a5fa; font-weight: 600;">Silica BOTTOM (cups)</label>
+                                    <input type="number" id="machineFilterSilicaBottom" step="0.5" min="0" placeholder="0" style="margin-top: 5px;">
+                                </div>
                             </div>
                         </div>
+
                         <div class="form-group" style="margin-bottom: 0;">
                             <label>Runs Through Filter</label>
                             <input type="number" id="machineFilterRuns" min="0" placeholder="0">
@@ -9509,6 +9526,14 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 const newBatchId = `WM-${batchCounter}`;
                 batchCounter++;
 
+                // Capture filter media used for this extraction
+                const filterMediaUsedCombined = {
+                    silica_top: machineStatus.filter_silica_top || 0,
+                    clay: machineStatus.filter_clay || 0,
+                    silica_bottom: machineStatus.filter_silica_bottom || 0,
+                    runs_through_filter: machineStatus.filter_runs || 0
+                };
+
                 const newSubBatch = {
                     id: newBatchId,
                     strain: batch.strain,
@@ -9539,6 +9564,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     source_contributions: potLedger,
                     combined_trim_weight: combinedTrimWeight,
                     total_socks_extracted: totalSocksInPot,
+                    filter_media_used: filterMediaUsedCombined,
                     is_sub_batch: true,
                     parent_batch_id: batch.id,
                     labels_applied: false,
@@ -9558,7 +9584,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                             timestamp: new Date().toISOString(),
                             stage: 'extraction',
                             user: currentRole ? currentRole.name : 'Unknown',
-                            action: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.pot_runs || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}${sourcesSummary}`
+                            action: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.pot_runs || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}${sourcesSummary} | Filter: ${filterMediaUsedCombined.silica_top}c silica / ${filterMediaUsedCombined.clay}c clay / ${filterMediaUsedCombined.silica_bottom}c silica (${filterMediaUsedCombined.runs_through_filter} runs)`
                         }
                     ],
                     created_at: new Date().toISOString()
@@ -9631,8 +9657,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                             pot_ledger: [],
                             column_batch: machineStatus.column_batch,
                             column_b_batch: machineStatus.column_b_batch,
+                            filter_silica_top: machineStatus.filter_silica_top,
                             filter_clay: machineStatus.filter_clay,
-                            filter_silica: machineStatus.filter_silica,
+                            filter_silica_bottom: machineStatus.filter_silica_bottom,
                             filter_runs: machineStatus.filter_runs,
                             last_updated: new Date().toISOString(),
                             updated_by: currentRole ? currentRole.name : 'Unknown'
@@ -9654,6 +9681,15 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
             // SINGLE SOURCE BATCH - Update existing batch (original behavior)
             const socksRemaining = batch.socks_remaining ?? 0;
+
+            // Capture filter media used for this extraction
+            const filterMediaUsed = {
+                silica_top: machineStatus.filter_silica_top || 0,
+                clay: machineStatus.filter_clay || 0,
+                silica_bottom: machineStatus.filter_silica_bottom || 0,
+                runs_through_filter: machineStatus.filter_runs || 0
+            };
+
             const updatedBatch = {
                 ...batch,
                 status: 'extraction',
@@ -9670,13 +9706,14 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 source_contributions: potLedger,
                 combined_trim_weight: combinedTrimWeight,
                 total_socks_extracted: totalSocksInPot,
+                filter_media_used: filterMediaUsed,
                 timeline: [
                     ...(batch.timeline || []),
                     {
                         timestamp: new Date().toISOString(),
                         stage: 'extraction',
                         user: currentRole ? currentRole.name : 'Unknown',
-                        action: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.pot_runs || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'}`
+                        action: `Extraction completed - ${productTypeText} - ${amountText} - ${machineStatus.pot_runs || 0} runs - ${currentPullMachine === 'left' ? 'Machine 1 (Left)' : 'Machine 2 (Right)'} | Filter: ${filterMediaUsed.silica_top}c silica / ${filterMediaUsed.clay}c clay / ${filterMediaUsed.silica_bottom}c silica (${filterMediaUsed.runs_through_filter} runs)`
                     }
                 ]
             };
@@ -9700,8 +9737,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         pot_ledger: [], // Clear the pot ledger
                         column_batch: machineStatus.column_batch, // Keep column A
                         column_b_batch: machineStatus.column_b_batch, // Keep column B
-                        filter_clay: machineStatus.filter_clay, // Keep filter
-                        filter_silica: machineStatus.filter_silica,
+                        filter_silica_top: machineStatus.filter_silica_top, // Keep filter
+                        filter_clay: machineStatus.filter_clay,
+                        filter_silica_bottom: machineStatus.filter_silica_bottom,
                         filter_runs: machineStatus.filter_runs,
                         last_updated: new Date().toISOString(),
                         updated_by: currentRole ? currentRole.name : 'Unknown'
@@ -10067,8 +10105,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         pullBatchBtn.style.display = potBatchId ? 'block' : 'none';
                     }
 
+                    document.getElementById('machineFilterSilicaTop').value = machineStatus.filter_silica_top || '';
                     document.getElementById('machineFilterClay').value = machineStatus.filter_clay || '';
-                    document.getElementById('machineFilterSilica').value = machineStatus.filter_silica || '';
+                    document.getElementById('machineFilterSilicaBottom').value = machineStatus.filter_silica_bottom || '';
                     document.getElementById('machineFilterRuns').value = machineStatus.filter_runs || '';
 
                     // Handle secondary sock selectors visibility and trigger UI updates (for BHO machines)
@@ -10878,8 +10917,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 pot_batch: potBatch,
                 pot_runs: potRuns,
                 pot_ledger: potLedger,
+                filter_silica_top: parseFloat(document.getElementById('machineFilterSilicaTop').value) || 0,
                 filter_clay: parseFloat(document.getElementById('machineFilterClay').value) || 0,
-                filter_silica: parseFloat(document.getElementById('machineFilterSilica').value) || 0,
+                filter_silica_bottom: parseFloat(document.getElementById('machineFilterSilicaBottom').value) || 0,
                 filter_runs: parseInt(document.getElementById('machineFilterRuns').value) || 0,
                 last_updated: new Date().toISOString(),
                 updated_by: currentRole ? currentRole.name : 'Unknown'
@@ -10983,8 +11023,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
             const potBatch = document.getElementById('machinePotBatch').value;
             const potRuns = parseInt(document.getElementById('machinePotRuns').value) || 0;
+            const filterSilicaTop = parseFloat(document.getElementById('machineFilterSilicaTop').value) || 0;
             const filterClay = parseFloat(document.getElementById('machineFilterClay').value) || 0;
-            const filterSilica = parseFloat(document.getElementById('machineFilterSilica').value) || 0;
+            const filterSilicaBottom = parseFloat(document.getElementById('machineFilterSilicaBottom').value) || 0;
             const filterRuns = parseInt(document.getElementById('machineFilterRuns').value) || 0;
 
             // Preserve pot_ledger from current status
@@ -10997,8 +11038,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 pot_batch: potBatch,
                 pot_runs: potRuns,
                 pot_ledger: potLedger,
+                filter_silica_top: filterSilicaTop,
                 filter_clay: filterClay,
-                filter_silica: filterSilica,
+                filter_silica_bottom: filterSilicaBottom,
                 filter_runs: filterRuns,
                 last_updated: new Date().toISOString(),
                 updated_by: currentRole ? currentRole.name : 'Unknown'
