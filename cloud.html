@@ -9652,9 +9652,30 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             // 2. Single source but batch already pulled from another pot (status is already 'extraction')
             const needsSubBatch = potLedger.length > 1 || batch.status === 'extraction';
             if (needsSubBatch) {
-                // Create new sub-batch for combined extraction
-                const newBatchId = `WM-${batchCounter}`;
-                batchCounter++;
+                // Determine sub-batch ID:
+                // - Split extraction (single source, already extracted): use parent-A, parent-B, etc.
+                // - Combined batch (multiple sources): use WM-{counter}
+                let newBatchId;
+                if (potLedger.length === 1 && batch.status === 'extraction') {
+                    // Split extraction - find next available letter suffix
+                    const parentId = batch.id;
+                    const existingSuffixes = batches
+                        .filter(b => b.id.startsWith(parentId + '-'))
+                        .map(b => b.id.slice(parentId.length + 1))
+                        .filter(s => /^[A-Z]$/.test(s));
+
+                    // Find next letter (A, B, C, ...)
+                    let nextLetter = 'A';
+                    if (existingSuffixes.length > 0) {
+                        const maxLetter = existingSuffixes.sort().pop();
+                        nextLetter = String.fromCharCode(maxLetter.charCodeAt(0) + 1);
+                    }
+                    newBatchId = `${parentId}-${nextLetter}`;
+                } else {
+                    // Combined batch from multiple sources
+                    newBatchId = `WM-${batchCounter}`;
+                    batchCounter++;
+                }
 
                 // Capture filter media used for this extraction
                 const filterMediaUsedCombined = {
