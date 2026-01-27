@@ -21155,14 +21155,11 @@ ${employeeReport || 'No activity recorded today'}
         // Calculate line item total (qty × unit price)
         function getLineItemTotal(item) {
             const qty = parseFloat(item.quantity) || 0;
-            // Try various price field names that LeafLink might use
-            const price = parseFloat(item.price) ||
-                          parseFloat(item.sale_price) ||
-                          parseFloat(item.ordered_unit_price) ||
-                          parseFloat(item.unit_price) ||
-                          parseFloat(item.frozen_data?.ordered_unit_price) ||
-                          parseFloat(item.frozen_data?.sale_price) ||
-                          parseFloat(item.frozen_data?.price) || 0;
+            // LeafLink stores prices as objects with amount/currency or as strings
+            const price = parseFloat(item.ordered_unit_price?.amount) ||
+                          parseFloat(item.frozen_data?.product?.price) ||
+                          parseFloat(item.sale_price?.amount) ||
+                          parseFloat(item.price) || 0;
             return qty * price;
         }
 
