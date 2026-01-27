@@ -10170,9 +10170,32 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             let html = `<div style="font-weight: 700; margin-bottom: 8px;">📦 Pot Contents (${totalSocks} socks total):</div>`;
             potLedger.forEach(p => {
                 const percentage = ((p.socks / totalSocks) * 100).toFixed(0);
-                html += `<div style="padding: 4px 0; border-bottom: 1px solid var(--border);">
+                const filter = p.filter_at_drop;
+                let filterHtml = '';
+                if (filter) {
+                    filterHtml = `
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; display: flex; align-items: center; gap: 8px;">
+                        <span style="display: inline-flex; align-items: center; gap: 4px;">
+                            🔬 Filter:
+                            <span style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-family: monospace;">
+                                ${filter.silica_top || 0}g
+                            </span>
+                            <span style="color: var(--text-tertiary);">/</span>
+                            <span style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-family: monospace;">
+                                ${filter.clay || 0}g
+                            </span>
+                            <span style="color: var(--text-tertiary);">/</span>
+                            <span style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-family: monospace;">
+                                ${filter.silica_bottom || 0}g
+                            </span>
+                        </span>
+                        <span style="color: var(--accent-purple);">• Run #${filter.filter_runs || 1}</span>
+                    </div>`;
+                }
+                html += `<div style="padding: 8px 0; border-bottom: 1px solid var(--border);">
                     <strong>${p.batch_id}</strong> - ${p.strain || 'Unknown'}: ${p.socks} socks (${percentage}%) • ${Math.round(p.trim_weight)}g
                     <div style="font-size: 0.8rem; color: var(--text-secondary);">Tag: ${p.metrc_tag || 'Not set'}</div>
+                    ${filterHtml}
                 </div>`;
             });
             potLedgerDisplay.innerHTML = html;
@@ -10731,6 +10754,14 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     // Update is_partial - partial if batch will still have remaining socks
                     existingEntry.is_partial = willHaveRemaining;
                 } else {
+                    // Capture current filter state at time of drop
+                    const currentFilterState = {
+                        silica_top: parseFloat(document.getElementById('machineFilterSilicaTop')?.value) || 0,
+                        clay: parseFloat(document.getElementById('machineFilterClay')?.value) || 0,
+                        silica_bottom: parseFloat(document.getElementById('machineFilterSilicaBottom')?.value) || 0,
+                        filter_runs: parseInt(document.getElementById('machineFilterRuns')?.value) || 0
+                    };
+
                     potLedger.push({
                         batch_id: c.batchId,
                         metrc_tag: batch.metrc_tags || batch.metrc_source_tag || '',
@@ -10739,7 +10770,8 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         cultivation_license: batch.partner || batch.cultivation_license || '',
                         material_agreement: batch.material_agreement || '',
                         strain: batch.strain || '',
-                        is_partial: willHaveRemaining
+                        is_partial: willHaveRemaining,
+                        filter_at_drop: currentFilterState
                     });
                 }
 
