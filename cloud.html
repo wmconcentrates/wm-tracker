@@ -3037,6 +3037,57 @@
                         </div>
                     </div>
 
+                    <!-- Bubbleman Royalty Calculator Section -->
+                    <div id="royaltyCalculatorSection" style="display: none; background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(249, 115, 22, 0.1)); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--accent-orange); display: flex; align-items: center; gap: 10px;">
+                            <span>Bubbleman Royalty Calculator</span>
+                        </h4>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                            <!-- 1-11 LLC Card -->
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; border: 1px solid var(--border);">
+                                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">1-11 LLC (92%)</div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showRoyaltyDetails('1-11 LLC', 'prevMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(245, 158, 11, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 3px;">Last Month</div>
+                                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-orange);" id="royalty1_11PrevMonth">$0.00</div>
+                                        <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 3px;" id="royalty1_11PrevMonthLabel">December 2024</div>
+                                        <div style="font-size: 0.6rem; color: var(--text-secondary); margin-top: 5px; opacity: 0.7;">Click for details</div>
+                                    </div>
+                                    <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showRoyaltyDetails('1-11 LLC', 'currentMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(245, 158, 11, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 3px;">This Month</div>
+                                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-orange);" id="royalty1_11CurrentMonth">$0.00</div>
+                                        <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 3px;" id="royalty1_11CurrentMonthLabel">January 2025</div>
+                                        <div style="font-size: 0.6rem; color: var(--text-secondary); margin-top: 5px; opacity: 0.7;">Click for details</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 0.75rem; color: var(--text-secondary);">
+                                    Products: Bubble Hash, Cold Cure, Rosin
+                                </div>
+                            </div>
+                            <!-- Ted Card -->
+                            <div style="background: var(--bg-primary); padding: 15px; border-radius: 10px; border: 1px solid var(--border);">
+                                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">Ted (Per Unit)</div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showRoyaltyDetails('Ted', 'prevMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(245, 158, 11, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 3px;">Last Month</div>
+                                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-orange);" id="royaltyTedPrevMonth">$0.00</div>
+                                        <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 3px;" id="royaltyTedPrevMonthLabel">December 2024</div>
+                                        <div style="font-size: 0.6rem; color: var(--text-secondary); margin-top: 5px; opacity: 0.7;">Click for details</div>
+                                    </div>
+                                    <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.3s ease;" onclick="showRoyaltyDetails('Ted', 'currentMonth')" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(245, 158, 11, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 3px;">This Month</div>
+                                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-orange);" id="royaltyTedCurrentMonth">$0.00</div>
+                                        <div style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 3px;" id="royaltyTedCurrentMonthLabel">January 2025</div>
+                                        <div style="font-size: 0.6rem; color: var(--text-secondary); margin-top: 5px; opacity: 0.7;">Click for details</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 0.75rem; color: var(--text-secondary);">
+                                    Brick Hash 4g: $2.90/unit | Hash Hits: $1.80/unit
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Monthly Breakdown -->
                     <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px;">
                         <h4 style="margin: 0 0 15px 0; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
@@ -3741,6 +3792,77 @@
         </div>
     </div>
 
+    <!-- Royalty Details Modal -->
+    <div id="royaltyDetailsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10002; overflow-y: auto;">
+        <div style="max-width: 1100px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);">
+            <!-- Header -->
+            <div id="royaltyModalHeader" style="background: linear-gradient(135deg, var(--accent-orange), #f97316); padding: 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 1.8rem;" id="royaltyModalTitle">Royalty Details</h2>
+                        <p style="color: rgba(255,255,255,0.9); margin: 0;" id="royaltyModalSubtitle">January 2025</p>
+                    </div>
+                    <button onclick="closeRoyaltyDetailsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px; transition: all 0.3s ease;">&times;</button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 30px;">
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button onclick="copyRoyaltyToClipboard()" class="btn" style="background: var(--accent-blue); padding: 10px 20px; display: flex; align-items: center; gap: 8px;">
+                        <span>Copy to Clipboard</span>
+                    </button>
+                    <span id="royaltyCopyStatus" style="color: var(--accent-green); display: none; align-self: center;">Copied!</span>
+                </div>
+
+                <!-- Table Container -->
+                <div style="background: var(--bg-primary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        <table id="royaltyDetailsTable" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
+                                <tr>
+                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Invoice #</th>
+                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Customer</th>
+                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Product</th>
+                                    <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Qty</th>
+                                    <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Amount</th>
+                                    <th style="padding: 15px 12px; text-align: right; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Royalty</th>
+                                    <th style="padding: 15px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Paid Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="royaltyDetailsBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Totals Footer -->
+                <div id="royaltyTotalsFooter" style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(249, 115, 22, 0.15)); border-radius: 12px; border: 2px solid var(--accent-orange);">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; text-align: center;">
+                        <div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Line Items</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);" id="royaltyTotalItems">0</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Quantity</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);" id="royaltyTotalQty">0</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Amount</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-blue);" id="royaltyTotalAmount">$0.00</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">Total Royalty</div>
+                            <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-orange);" id="royaltyTotalPay">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Inventory Management Modal -->
     <div id="inventoryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10001; overflow-y: auto;">
         <div style="max-width: 600px; margin: 50px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);">
@@ -3756,7 +3878,7 @@
                     <button onclick="closeInventoryModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px; transition: all 0.3s ease;">&times;</button>
                 </div>
             </div>
-            
+
             <!-- Content -->
             <div style="padding: 30px;">
                 <p style="text-align: center; color: var(--text-secondary);">Use the Gas Logging button in the Extraction tab to manage butane.</p>
@@ -20528,6 +20650,29 @@ ${employeeReport || 'No activity recorded today'}
 
         const COMMISSION_RATE = 0.08; // 8% commission
 
+        // Bubbleman Royalty Constants
+        const BUBBLEMAN_SLUG = 'bubblman';
+
+        const ROYALTY_1_11_LLC = {
+            name: '1-11 LLC',
+            type: 'percentage',
+            rate: 0.92,
+            products: [
+                { pattern: 'bubble hash', match: 'contains' },
+                { pattern: 'cold cure', match: 'contains' },
+                { pattern: 'rosin', match: 'contains' }
+            ]
+        };
+
+        const ROYALTY_TED = {
+            name: 'Ted',
+            type: 'per_unit',
+            products: [
+                { pattern: 'brick hash', match: 'contains', size: '4g', unitRate: 2.90 },
+                { pattern: 'hash hit', match: 'contains', unitRate: 1.80 }
+            ]
+        };
+
         // Extract unique sales reps from orders (dedupe by name for multi-business)
         function extractSalesReps(orders) {
             const repsMap = new Map();
@@ -20976,12 +21121,323 @@ ${employeeReport || 'No activity recorded today'}
         // Close modal on Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                const modal = document.getElementById('commissionDetailsModal');
-                if (modal && modal.style.display === 'block') {
+                const commissionModal = document.getElementById('commissionDetailsModal');
+                if (commissionModal && commissionModal.style.display === 'block') {
                     closeCommissionDetailsModal();
+                }
+                const royaltyModal = document.getElementById('royaltyDetailsModal');
+                if (royaltyModal && royaltyModal.style.display === 'block') {
+                    closeRoyaltyDetailsModal();
                 }
             }
         });
+
+        // ==================== BUBBLEMAN ROYALTY CALCULATOR ====================
+
+        // Store current royalty items for clipboard copy
+        let currentRoyaltyItems = [];
+
+        // Filter orders to Bubbleman business only
+        function getBubblemanOrders(orders) {
+            return orders.filter(order => order._business?.slug === BUBBLEMAN_SLUG);
+        }
+
+        // Case-insensitive product name matching
+        function productMatchesPattern(productName, pattern, matchType = 'contains') {
+            const name = (productName || '').toLowerCase();
+            const pat = pattern.toLowerCase();
+            if (matchType === 'contains') {
+                return name.includes(pat);
+            }
+            return name === pat;
+        }
+
+        // Calculate line item total (qty × unit price)
+        function getLineItemTotal(item) {
+            const qty = parseFloat(item.quantity) || 0;
+            const price = parseFloat(item.ordered_unit_price) || parseFloat(item.unit_price) || 0;
+            return qty * price;
+        }
+
+        // Calculate 1-11 LLC royalty (92% on qualifying products)
+        function calculateRoyalty1_11LLC(orders) {
+            const items = [];
+            const paidOrders = orders.filter(o => isOrderPaid(o) && shouldCountOrder(o));
+
+            paidOrders.forEach(order => {
+                (order.line_items || []).forEach(item => {
+                    const productName = item.frozen_data?.product?.name || item.product?.name || '';
+
+                    // Check if product matches any 1-11 LLC pattern
+                    const matches = ROYALTY_1_11_LLC.products.some(p =>
+                        productMatchesPattern(productName, p.pattern, p.match)
+                    );
+
+                    if (matches) {
+                        const qty = parseFloat(item.quantity) || 0;
+                        const lineTotal = getLineItemTotal(item);
+                        const royalty = lineTotal * ROYALTY_1_11_LLC.rate;
+
+                        items.push({
+                            invoiceNumber: order.short_id || order.number || 'N/A',
+                            customer: order.customer?.display_name || order.customer?.name || 'Unknown',
+                            product: productName,
+                            qty: qty,
+                            amount: lineTotal,
+                            royalty: royalty,
+                            paidDate: order.paid_date || order.created_on
+                        });
+                    }
+                });
+            });
+
+            return items;
+        }
+
+        // Calculate Ted royalty (per-unit on qualifying products)
+        function calculateRoyaltyTed(orders) {
+            const items = [];
+            const paidOrders = orders.filter(o => isOrderPaid(o) && shouldCountOrder(o));
+
+            paidOrders.forEach(order => {
+                (order.line_items || []).forEach(item => {
+                    const productName = item.frozen_data?.product?.name || item.product?.name || '';
+
+                    // Check if product matches any Ted pattern
+                    ROYALTY_TED.products.forEach(p => {
+                        if (productMatchesPattern(productName, p.pattern, p.match)) {
+                            const qty = parseFloat(item.quantity) || 0;
+                            const lineTotal = getLineItemTotal(item);
+                            const royalty = qty * p.unitRate;
+
+                            items.push({
+                                invoiceNumber: order.short_id || order.number || 'N/A',
+                                customer: order.customer?.display_name || order.customer?.name || 'Unknown',
+                                product: productName,
+                                qty: qty,
+                                amount: lineTotal,
+                                royalty: royalty,
+                                paidDate: order.paid_date || order.created_on,
+                                unitRate: p.unitRate
+                            });
+                        }
+                    });
+                });
+            });
+
+            return items;
+        }
+
+        // Filter royalty items by paid_date month
+        function getRoyaltyItemsForMonth(items, year, month) {
+            return items.filter(item => {
+                if (!item.paidDate) return false;
+                const paidDate = new Date(item.paidDate);
+                return paidDate.getFullYear() === year && paidDate.getMonth() === month;
+            });
+        }
+
+        // Show royalty details modal
+        function showRoyaltyDetails(agreementName, period) {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+            let targetYear, targetMonth, periodLabel;
+            if (period === 'currentMonth') {
+                targetYear = currentYear;
+                targetMonth = currentMonth;
+                periodLabel = `${getMonthName(currentMonth)} ${currentYear}`;
+            } else {
+                targetYear = prevYear;
+                targetMonth = prevMonth;
+                periodLabel = `${getMonthName(prevMonth)} ${prevYear}`;
+            }
+
+            // Get Bubbleman orders
+            const bubblemanOrders = getBubblemanOrders(allLeafLinkOrders);
+
+            // Calculate items based on agreement
+            let allItems;
+            if (agreementName === '1-11 LLC') {
+                allItems = calculateRoyalty1_11LLC(bubblemanOrders);
+            } else {
+                allItems = calculateRoyaltyTed(bubblemanOrders);
+            }
+
+            // Filter by month
+            const items = getRoyaltyItemsForMonth(allItems, targetYear, targetMonth);
+            currentRoyaltyItems = items;
+
+            // Update modal header
+            document.getElementById('royaltyModalTitle').textContent = `${agreementName} Royalty Details`;
+            document.getElementById('royaltyModalSubtitle').textContent = periodLabel;
+
+            // Populate table
+            const tbody = document.getElementById('royaltyDetailsBody');
+            let totalQty = 0;
+            let totalAmount = 0;
+            let totalRoyalty = 0;
+
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="padding: 30px; text-align: center; color: var(--text-secondary);">No royalty items found for this period</td></tr>`;
+            } else {
+                // Sort by paid_date
+                const sortedItems = [...items].sort((a, b) => {
+                    const dateA = new Date(a.paidDate);
+                    const dateB = new Date(b.paidDate);
+                    return dateA - dateB;
+                });
+
+                tbody.innerHTML = sortedItems.map((item, index) => {
+                    totalQty += item.qty;
+                    totalAmount += item.amount;
+                    totalRoyalty += item.royalty;
+
+                    const rowBg = index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
+                    const paidDate = item.paidDate ? formatDateShort(new Date(item.paidDate)) : 'N/A';
+
+                    return `<tr style="background: ${rowBg}; border-bottom: 1px solid var(--border);">
+                        <td style="padding: 12px; color: var(--accent-blue); font-family: 'Space Mono', monospace;">${item.invoiceNumber}</td>
+                        <td style="padding: 12px; color: var(--text-primary);">${escapeHtml(item.customer)}</td>
+                        <td style="padding: 12px; color: var(--text-primary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.product)}">${escapeHtml(item.product)}</td>
+                        <td style="padding: 12px; text-align: right; color: var(--text-primary);">${item.qty}</td>
+                        <td style="padding: 12px; text-align: right; color: var(--text-primary);">$${item.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td style="padding: 12px; text-align: right; color: var(--accent-orange); font-weight: 600;">$${item.royalty.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td style="padding: 12px; color: var(--text-secondary);">${paidDate}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            // Update totals
+            document.getElementById('royaltyTotalItems').textContent = items.length.toLocaleString();
+            document.getElementById('royaltyTotalQty').textContent = totalQty.toLocaleString();
+            document.getElementById('royaltyTotalAmount').textContent = '$' + totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('royaltyTotalPay').textContent = '$' + totalRoyalty.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            // Show modal
+            document.getElementById('royaltyDetailsModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close royalty details modal
+        function closeRoyaltyDetailsModal() {
+            document.getElementById('royaltyDetailsModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Copy royalty details to clipboard
+        function copyRoyaltyToClipboard() {
+            if (currentRoyaltyItems.length === 0) {
+                alert('No royalty items to copy');
+                return;
+            }
+
+            // Sort items by paid_date
+            const sortedItems = [...currentRoyaltyItems].sort((a, b) => {
+                const dateA = new Date(a.paidDate);
+                const dateB = new Date(b.paidDate);
+                return dateA - dateB;
+            });
+
+            // Build tab-separated data (for pasting into spreadsheet)
+            let clipboardData = 'Invoice #\tCustomer\tProduct\tQty\tAmount\tRoyalty\tPaid Date\n';
+            let totalQty = 0;
+            let totalAmount = 0;
+            let totalRoyalty = 0;
+
+            sortedItems.forEach(item => {
+                const paidDate = item.paidDate ? formatDateShort(new Date(item.paidDate)) : 'N/A';
+                totalQty += item.qty;
+                totalAmount += item.amount;
+                totalRoyalty += item.royalty;
+
+                clipboardData += `${item.invoiceNumber}\t${item.customer}\t${item.product}\t${item.qty}\t$${item.amount.toFixed(2)}\t$${item.royalty.toFixed(2)}\t${paidDate}\n`;
+            });
+
+            // Add totals row
+            clipboardData += `\nTOTAL\t${sortedItems.length} items\t\t${totalQty}\t$${totalAmount.toFixed(2)}\t$${totalRoyalty.toFixed(2)}\t\n`;
+
+            navigator.clipboard.writeText(clipboardData).then(() => {
+                const statusEl = document.getElementById('royaltyCopyStatus');
+                statusEl.style.display = 'inline';
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        // Close royalty modal on backdrop click
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('royaltyDetailsModal');
+            if (e.target === modal) {
+                closeRoyaltyDetailsModal();
+            }
+        });
+
+        // Update royalty calculator display
+        function updateRoyaltyCalculator() {
+            // Check if Bubbleman business exists
+            const bubblemanExists = businessesList.some(b => b.slug === BUBBLEMAN_SLUG);
+            const royaltySection = document.getElementById('royaltyCalculatorSection');
+
+            if (!royaltySection) return;
+
+            if (!bubblemanExists) {
+                royaltySection.style.display = 'none';
+                return;
+            }
+
+            royaltySection.style.display = 'block';
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+            // Get Bubbleman orders
+            const bubblemanOrders = getBubblemanOrders(allLeafLinkOrders);
+
+            // Calculate 1-11 LLC royalties
+            const items1_11 = calculateRoyalty1_11LLC(bubblemanOrders);
+            const currentMonth1_11 = getRoyaltyItemsForMonth(items1_11, currentYear, currentMonth);
+            const prevMonth1_11 = getRoyaltyItemsForMonth(items1_11, prevYear, prevMonth);
+            const current1_11Total = currentMonth1_11.reduce((sum, item) => sum + item.royalty, 0);
+            const prev1_11Total = prevMonth1_11.reduce((sum, item) => sum + item.royalty, 0);
+
+            // Calculate Ted royalties
+            const itemsTed = calculateRoyaltyTed(bubblemanOrders);
+            const currentMonthTed = getRoyaltyItemsForMonth(itemsTed, currentYear, currentMonth);
+            const prevMonthTed = getRoyaltyItemsForMonth(itemsTed, prevYear, prevMonth);
+            const currentTedTotal = currentMonthTed.reduce((sum, item) => sum + item.royalty, 0);
+            const prevTedTotal = prevMonthTed.reduce((sum, item) => sum + item.royalty, 0);
+
+            // Update UI elements
+            const updateEl = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+
+            // 1-11 LLC
+            updateEl('royalty1_11CurrentMonth', '$' + current1_11Total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            updateEl('royalty1_11CurrentMonthLabel', `${getMonthName(currentMonth)} ${currentYear}`);
+            updateEl('royalty1_11PrevMonth', '$' + prev1_11Total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            updateEl('royalty1_11PrevMonthLabel', `${getMonthName(prevMonth)} ${prevYear}`);
+
+            // Ted
+            updateEl('royaltyTedCurrentMonth', '$' + currentTedTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            updateEl('royaltyTedCurrentMonthLabel', `${getMonthName(currentMonth)} ${currentYear}`);
+            updateEl('royaltyTedPrevMonth', '$' + prevTedTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            updateEl('royaltyTedPrevMonthLabel', `${getMonthName(prevMonth)} ${prevYear}`);
+        }
+
+        // ==================== END ROYALTY CALCULATOR ====================
 
         // Render monthly sales breakdown
         function renderMonthlyBreakdown(orders) {
@@ -21289,6 +21745,9 @@ ${employeeReport || 'No activity recorded today'}
 
             // Chart - also use unfiltered for full picture
             renderSalesBarChartSales(unfilteredShippedOrders);
+
+            // Update royalty calculator (Bubbleman only)
+            updateRoyaltyCalculator();
         }
 
         // Render monthly breakdown for Sales tab
