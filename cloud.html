@@ -9642,8 +9642,11 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             pullHistory.push(pullRecord);
             localStorage.setItem('wm_pull_history', JSON.stringify(pullHistory));
 
-            // CHECK: If multiple source batches, create a NEW combined sub-batch
-            if (potLedger.length > 1) {
+            // CHECK: Create a NEW sub-batch if:
+            // 1. Multiple source batches in pot, OR
+            // 2. Single source but batch already pulled from another pot (status is already 'extraction')
+            const needsSubBatch = potLedger.length > 1 || batch.status === 'extraction';
+            if (needsSubBatch) {
                 // Create new sub-batch for combined extraction
                 const newBatchId = `WM-${batchCounter}`;
                 batchCounter++;
@@ -9660,9 +9663,13 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     id: newBatchId,
                     strain: batch.strain,
                     strain_type: batch.strain_type,
-                    grower_name: 'Combined Sources',
-                    cultivation_license: potLedger.map(p => p.metrc_tag || p.batch_id).join(', '),
-                    metrc_tags: potLedger.map(p => p.metrc_tag).filter(t => t).join(', '),
+                    grower_name: potLedger.length > 1 ? 'Combined Sources' : batch.grower_name,
+                    cultivation_license: potLedger.length > 1
+                        ? potLedger.map(p => p.metrc_tag || p.batch_id).join(', ')
+                        : batch.cultivation_license,
+                    metrc_tags: potLedger.length > 1
+                        ? potLedger.map(p => p.metrc_tag).filter(t => t).join(', ')
+                        : batch.metrc_tags,
                     trim_weight: combinedTrimWeight,
                     socks_total: totalSocksInPot,
                     socks_remaining: 0,
@@ -9700,7 +9707,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                             timestamp: new Date().toISOString(),
                             stage: 'created',
                             user: currentRole ? currentRole.name : 'Unknown',
-                            action: `Combined batch created from ${potLedger.length} sources: ${potLedger.map(p => p.batch_id).join(', ')}`
+                            action: potLedger.length > 1
+                                ? `Combined batch created from ${potLedger.length} sources: ${potLedger.map(p => p.batch_id).join(', ')}`
+                                : `Sub-batch created from ${batch.id} (split extraction)`
                         },
                         {
                             timestamp: new Date().toISOString(),
