@@ -21155,12 +21155,14 @@ ${employeeReport || 'No activity recorded today'}
         // Calculate line item total (qty × unit price)
         function getLineItemTotal(item) {
             const qty = parseFloat(item.quantity) || 0;
-            // LeafLink stores prices as objects with amount/currency or as strings
-            const price = parseFloat(item.ordered_unit_price?.amount) ||
-                          parseFloat(item.frozen_data?.product?.price) ||
-                          parseFloat(item.sale_price?.amount) ||
-                          parseFloat(item.price) || 0;
-            return qty * price;
+            const unitMultiplier = parseFloat(item.unit_multiplier) || 1;
+            // LeafLink stores case prices - divide by unit_multiplier to get unit price
+            const casePrice = parseFloat(item.ordered_unit_price?.amount) ||
+                              parseFloat(item.frozen_data?.product?.price) ||
+                              parseFloat(item.sale_price?.amount) ||
+                              parseFloat(item.price) || 0;
+            const unitPrice = casePrice / unitMultiplier;
+            return qty * unitPrice;
         }
 
         // Check if product name indicates 4g size
