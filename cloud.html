@@ -20668,7 +20668,7 @@ ${employeeReport || 'No activity recorded today'}
             name: 'Ted',
             type: 'per_unit',
             products: [
-                { pattern: 'brick hash', match: 'contains', size: '4g', unitRate: 2.90 },
+                { pattern: 'brick hash', match: 'contains', requires4g: true, unitRate: 2.90 },
                 { pattern: 'hash hit', match: 'contains', unitRate: 1.80 }
             ]
         };
@@ -21155,8 +21155,21 @@ ${employeeReport || 'No activity recorded today'}
         // Calculate line item total (qty × unit price)
         function getLineItemTotal(item) {
             const qty = parseFloat(item.quantity) || 0;
-            const price = parseFloat(item.ordered_unit_price) || parseFloat(item.unit_price) || 0;
+            // Try various price field names that LeafLink might use
+            const price = parseFloat(item.price) ||
+                          parseFloat(item.sale_price) ||
+                          parseFloat(item.ordered_unit_price) ||
+                          parseFloat(item.unit_price) ||
+                          parseFloat(item.frozen_data?.ordered_unit_price) ||
+                          parseFloat(item.frozen_data?.sale_price) ||
+                          parseFloat(item.frozen_data?.price) || 0;
             return qty * price;
+        }
+
+        // Check if product name indicates 4g size
+        function isProduct4g(productName) {
+            const name = (productName || '').toLowerCase();
+            return name.includes('4g') || name.includes('4 gram') || name.includes('4-gram');
         }
 
         // Calculate 1-11 LLC royalty (92% on qualifying products)
@@ -21206,6 +21219,11 @@ ${employeeReport || 'No activity recorded today'}
                     // Check if product matches any Ted pattern
                     ROYALTY_TED.products.forEach(p => {
                         if (productMatchesPattern(productName, p.pattern, p.match)) {
+                            // Check 4g requirement (Brick Hash must be 4g)
+                            if (p.requires4g && !isProduct4g(productName)) {
+                                return; // Skip non-4g products
+                            }
+
                             const qty = parseFloat(item.quantity) || 0;
                             const lineTotal = getLineItemTotal(item);
                             const royalty = qty * p.unitRate;
