@@ -7457,12 +7457,17 @@ ${growerName ? `^FO500,325^FD${growerName.substring(0, 25)}^FS` : ''}
             // Bowl numbering (e.g., "1/2", "2/2")
             const bowlLabel = totalBowls > 1 ? `${bowlNumber}/${totalBowls}` : '';
 
-            // Weights
-            const trimWeight = parseFloat(batch.trim_weight) || 0;
+            // Weights - use combined_trim_weight (trim actually used) if available
+            let sourceContributionsForTrim = batch.source_contributions || [];
+            if (typeof sourceContributionsForTrim === 'string') {
+                try { sourceContributionsForTrim = JSON.parse(sourceContributionsForTrim); } catch(e) { sourceContributionsForTrim = []; }
+            }
+            const trimFromSources = sourceContributionsForTrim.reduce((sum, s) => sum + (parseFloat(s.trim_weight) || 0), 0);
+            const trimWeight = parseFloat(batch.combined_trim_weight) || trimFromSources || parseFloat(batch.trim_weight) || 0;
             const finalWt = parseFloat(finalWeight) || 0;
             const sampleWt = parseFloat(sampleWeight) || 0;
 
-            // Calculate yield
+            // Calculate yield based on trim actually used
             const yieldPercent = trimWeight > 0 ? ((finalWt / trimWeight) * 100).toFixed(1) : '0.0';
 
             // Source contributions for METRC tags and weights
