@@ -11411,11 +11411,32 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 filterState: currentFilterState
             };
 
-            // Store in localStorage for performance tracking
-            const extractionRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
-            extractionRuns.push(extractionRun);
-            localStorage.setItem('wm_extraction_runs', JSON.stringify(extractionRuns));
-            console.log('Logged extraction run:', extractionRun);
+            // Store in database for cross-contamination tracking
+            if (!DEMO_MODE) {
+                supabaseClient
+                    .from('wm_machine_runs')
+                    .insert({
+                        timestamp: extractionRun.timestamp,
+                        user_name: extractionRun.user,
+                        machine: extractionRun.machine,
+                        column_letter: extractionRun.column,
+                        trim_weight: extractionRun.trimWeight,
+                        socks: extractionRun.socks,
+                        batches: extractionRun.batches,
+                        strain: extractionRun.strain,
+                        filter_state: extractionRun.filterState
+                    })
+                    .then(({ error }) => {
+                        if (error) console.error('Error logging machine run:', error);
+                        else console.log('Logged extraction run to database:', extractionRun);
+                    });
+            } else {
+                // Demo mode - store in localStorage
+                const extractionRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
+                extractionRuns.push(extractionRun);
+                localStorage.setItem('wm_extraction_runs', JSON.stringify(extractionRuns));
+                console.log('Logged extraction run (demo):', extractionRun);
+            }
 
             Promise.all(decrementPromises).then(() => {
                 // Auto-save pot status to database (so it persists if modal is closed)
@@ -21840,22 +21861,55 @@ ${employeeReport || 'No activity recorded today'}
         // ===== Machine Run Log Functions =====
         let allMachineRuns = [];
 
-        function openMachineLogModal() {
-            // Load runs from localStorage
-            allMachineRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
-
-            // Sort by timestamp descending (newest first)
-            allMachineRuns.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        async function openMachineLogModal() {
+            // Show modal immediately with loading state
+            document.getElementById('machineLogModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            document.getElementById('machineLogBody').innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">
+                        Loading machine runs...
+                    </td>
+                </tr>
+            `;
 
             // Reset filters
             document.getElementById('machineLogFilterMachine').value = 'all';
             document.getElementById('machineLogFilterDays').value = '7';
             document.getElementById('machineLogSearch').value = '';
 
-            // Populate and show modal
-            filterMachineLog();
-            document.getElementById('machineLogModal').style.display = 'block';
-            document.body.style.overflow = 'hidden';
+            // Load runs from database (or localStorage in demo mode)
+            if (DEMO_MODE) {
+                allMachineRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
+                allMachineRuns.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                filterMachineLog();
+            } else {
+                const { data, error } = await supabaseClient
+                    .from('wm_machine_runs')
+                    .select('*')
+                    .order('timestamp', { ascending: false });
+
+                if (error) {
+                    console.error('Error loading machine runs:', error);
+                    // Fall back to localStorage
+                    allMachineRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
+                } else {
+                    // Map database columns to expected format
+                    allMachineRuns = (data || []).map(r => ({
+                        timestamp: r.timestamp,
+                        user: r.user_name,
+                        machine: r.machine,
+                        column: r.column_letter,
+                        trimWeight: r.trim_weight,
+                        socks: r.socks,
+                        batches: r.batches || [],
+                        strain: r.strain,
+                        filterState: r.filter_state,
+                        backfilled: r.backfilled
+                    }));
+                }
+                filterMachineLog();
+            }
         }
 
         function closeMachineLogModal() {
@@ -21970,16 +22024,26 @@ ${employeeReport || 'No activity recorded today'}
         async function backfillMachineLogFromTimelines() {
             console.log('Starting machine run log backfill from batch timelines...');
 
-            // Get existing runs to avoid duplicates
-            const existingRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
-            const existingKeys = new Set(existingRuns.map(r => `${r.timestamp}-${(r.batches || []).join(',')}`));
+            // Get existing runs from database to avoid duplicates
+            let existingKeys = new Set();
+            if (!DEMO_MODE) {
+                const { data: existingData } = await supabaseClient
+                    .from('wm_machine_runs')
+                    .select('timestamp, batches');
+                if (existingData) {
+                    existingData.forEach(r => {
+                        existingKeys.add(`${r.timestamp}-${(r.batches || []).join(',')}`);
+                    });
+                }
+            }
 
             let addedCount = 0;
             let skippedCount = 0;
+            const runsToInsert = [];
 
             // Process all batches with timelines
             for (const batch of batches) {
-                const timeline = batch.timeline || [];
+                let timeline = batch.timeline || [];
                 if (typeof timeline === 'string') {
                     try { timeline = JSON.parse(timeline); } catch(e) { continue; }
                 }
@@ -22048,40 +22112,48 @@ ${employeeReport || 'No activity recorded today'}
                             socks = contributions.reduce((sum, c) => sum + (c.socks || 0), 0);
                         }
 
-                        // Create run entry
-                        const runEntry = {
+                        // Create run entry for database
+                        runsToInsert.push({
                             timestamp: entry.timestamp,
-                            user: entry.user || 'Unknown',
+                            user_name: entry.user || 'Unknown',
                             machine: machine,
-                            column: null, // Not available from timeline
-                            trimWeight: parseFloat(batch.combined_trim_weight) || parseFloat(batch.trim_weight) || 0,
+                            column_letter: null,
+                            trim_weight: parseFloat(batch.combined_trim_weight) || parseFloat(batch.trim_weight) || 0,
                             socks: socks,
                             batches: batchIds,
                             strain: batch.strain || 'Unknown',
-                            filterState: filterState,
-                            productType: productType,
+                            filter_state: filterState,
+                            product_type: productType,
                             backfilled: true
-                        };
+                        });
 
-                        existingRuns.push(runEntry);
                         existingKeys.add(key);
                         addedCount++;
 
-                        console.log(`Added: ${batch.id} - ${batch.strain} - ${entry.timestamp}`);
+                        console.log(`Queued: ${batch.id} - ${batch.strain} - ${entry.timestamp}`);
                     }
                 }
             }
 
-            // Sort by timestamp descending
-            existingRuns.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-            // Save back to localStorage
-            localStorage.setItem('wm_extraction_runs', JSON.stringify(existingRuns));
+            // Insert all runs in batches of 100
+            if (runsToInsert.length > 0 && !DEMO_MODE) {
+                console.log(`Inserting ${runsToInsert.length} runs to database...`);
+                for (let i = 0; i < runsToInsert.length; i += 100) {
+                    const batch = runsToInsert.slice(i, i + 100);
+                    const { error } = await supabaseClient
+                        .from('wm_machine_runs')
+                        .insert(batch);
+                    if (error) {
+                        console.error('Error inserting batch:', error);
+                    } else {
+                        console.log(`Inserted ${Math.min(i + 100, runsToInsert.length)} / ${runsToInsert.length}`);
+                    }
+                }
+            }
 
             console.log(`Backfill complete! Added ${addedCount} entries, skipped ${skippedCount} duplicates.`);
-            console.log(`Total entries now: ${existingRuns.length}`);
 
-            return { added: addedCount, skipped: skippedCount, total: existingRuns.length };
+            return { added: addedCount, skipped: skippedCount };
         }
 
         // Update royalty calculator display
