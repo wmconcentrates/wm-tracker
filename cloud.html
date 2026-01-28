@@ -7422,13 +7422,13 @@ ${growerName ? `^FO250,370^FD${growerName.substring(0, 35)}^FS` : ''}
         <button onclick="setSize('4g', this)">4g Label</button>
     </div>
     <p class="note">Actual print may vary slightly from preview</p>
-    <script>
+    <scr` + `ipt>
         function setSize(size, btn) {
             document.getElementById('netWeight').textContent = size;
             document.querySelectorAll('.size-toggle button').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
-    </script>
+    </scr` + `ipt>
 </body>
 </html>
             `);
