@@ -98,7 +98,9 @@ app.get('/api/health', (req, res) => {
 // This allows HTTPS cloud clients to print via local HTTP server
 const ZEBRA_PRINTER_IP = process.env.ZEBRA_PRINTER_IP || '10.1.10.95';
 const ZEBRA_PRINTER_PORT = process.env.ZEBRA_PRINTER_PORT || 9100;
+const ZEBRA_USB_PRINTER = process.env.ZEBRA_USB_PRINTER || 'ZDesigner ZT410-203dpi ZPL';
 
+// Network print endpoint (original)
 app.post('/api/print', async (req, res) => {
     const { zpl } = req.body;
 
@@ -132,6 +134,181 @@ app.post('/api/print', async (req, res) => {
         client.destroy();
         res.status(500).json({ error: 'Printer connection timeout' });
     });
+});
+
+// USB print endpoint - for locally connected Zebra printers on Windows
+// Uses Windows raw printing API via PowerShell
+app.post('/api/print-usb', async (req, res) => {
+    const { zpl, printerName } = req.body;
+
+    if (!zpl) {
+        return res.status(400).json({ error: 'Missing zpl parameter' });
+    }
+
+    const printer = printerName || ZEBRA_USB_PRINTER;
+    const fs = require('fs');
+    const { exec } = require('child_process');
+    const os = require('os');
+    const path = require('path');
+
+    // Create temp file for ZPL
+    const tempFile = path.join(os.tmpdir(), `label_${Date.now()}.zpl`);
+
+    try {
+        // Write ZPL to temp file
+        fs.writeFileSync(tempFile, zpl);
+        console.log(`[print-usb] ZPL written to ${tempFile}`);
+
+        // Use Windows raw print via PowerShell with .NET RawPrinterHelper
+        // This sends raw ZPL directly to the printer without processing
+        const psScript = `
+$printerName = '${printer.replace(/'/g, "''")}'
+$filePath = '${tempFile.replace(/\\/g, '\\\\').replace(/'/g, "''")}'
+
+# Define RawPrinterHelper class for raw printing
+$signature = @'
+[DllImport("winspool.drv", CharSet = CharSet.Unicode, SetLastError = true)]
+public static extern bool OpenPrinter(string pPrinterName, out IntPtr phPrinter, IntPtr pDefault);
+
+[DllImport("winspool.drv", SetLastError = true)]
+public static extern bool ClosePrinter(IntPtr hPrinter);
+
+[DllImport("winspool.drv", CharSet = CharSet.Unicode, SetLastError = true)]
+public static extern bool StartDocPrinter(IntPtr hPrinter, int Level, ref DOCINFO pDocInfo);
+
+[DllImport("winspool.drv", SetLastError = true)]
+public static extern bool EndDocPrinter(IntPtr hPrinter);
+
+[DllImport("winspool.drv", SetLastError = true)]
+public static extern bool StartPagePrinter(IntPtr hPrinter);
+
+[DllImport("winspool.drv", SetLastError = true)]
+public static extern bool EndPagePrinter(IntPtr hPrinter);
+
+[DllImport("winspool.drv", SetLastError = true)]
+public static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes, int dwCount, out int dwWritten);
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+public struct DOCINFO {
+    [MarshalAs(UnmanagedType.LPWStr)] public string pDocName;
+    [MarshalAs(UnmanagedType.LPWStr)] public string pOutputFile;
+    [MarshalAs(UnmanagedType.LPWStr)] public string pDataType;
+}
+'@
+
+Add-Type -MemberDefinition $signature -Name RawPrinter -Namespace WinSpool -PassThru | Out-Null
+
+function Send-RawData($printerName, $data) {
+    $hPrinter = [IntPtr]::Zero
+
+    if (-not [WinSpool.RawPrinter]::OpenPrinter($printerName, [ref]$hPrinter, [IntPtr]::Zero)) {
+        throw "Cannot open printer: $printerName"
+    }
+
+    try {
+        $docInfo = New-Object WinSpool.RawPrinter+DOCINFO
+        $docInfo.pDocName = "ZPL Label"
+        $docInfo.pOutputFile = $null
+        $docInfo.pDataType = "RAW"
+
+        if (-not [WinSpool.RawPrinter]::StartDocPrinter($hPrinter, 1, [ref]$docInfo)) {
+            throw "StartDocPrinter failed"
+        }
+
+        try {
+            if (-not [WinSpool.RawPrinter]::StartPagePrinter($hPrinter)) {
+                throw "StartPagePrinter failed"
+            }
+
+            try {
+                $bytes = [System.Text.Encoding]::ASCII.GetBytes($data)
+                $pBytes = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($bytes.Length)
+                [System.Runtime.InteropServices.Marshal]::Copy($bytes, 0, $pBytes, $bytes.Length)
+
+                $written = 0
+                if (-not [WinSpool.RawPrinter]::WritePrinter($hPrinter, $pBytes, $bytes.Length, [ref]$written)) {
+                    throw "WritePrinter failed"
+                }
+
+                [System.Runtime.InteropServices.Marshal]::FreeHGlobal($pBytes)
+                return $written
+            } finally {
+                [WinSpool.RawPrinter]::EndPagePrinter($hPrinter) | Out-Null
+            }
+        } finally {
+            [WinSpool.RawPrinter]::EndDocPrinter($hPrinter) | Out-Null
+        }
+    } finally {
+        [WinSpool.RawPrinter]::ClosePrinter($hPrinter) | Out-Null
+    }
+}
+
+try {
+    $zplData = Get-Content -Path $filePath -Raw
+    $bytesWritten = Send-RawData $printerName $zplData
+    Write-Output "SUCCESS:$bytesWritten"
+} catch {
+    Write-Error $_.Exception.Message
+    exit 1
+}
+`;
+
+        // Write PS script to temp file and execute
+        const psFile = path.join(os.tmpdir(), `print_${Date.now()}.ps1`);
+        fs.writeFileSync(psFile, psScript);
+
+        const command = `powershell -ExecutionPolicy Bypass -File "${psFile}"`;
+
+        exec(command, { timeout: 15000 }, (error, stdout, stderr) => {
+            // Clean up temp files
+            try { fs.unlinkSync(tempFile); } catch (e) {}
+            try { fs.unlinkSync(psFile); } catch (e) {}
+
+            if (error) {
+                console.error('[print-usb] Error:', stderr || error.message);
+                res.status(500).json({
+                    error: `USB print failed: ${stderr || error.message}`,
+                    hint: 'Make sure the Zebra printer driver is installed correctly'
+                });
+                return;
+            }
+
+            if (stdout.includes('SUCCESS')) {
+                const match = stdout.match(/SUCCESS:(\d+)/);
+                const bytes = match ? match[1] : 'unknown';
+                console.log(`[print-usb] Label sent successfully (${bytes} bytes)`);
+                res.json({ success: true, printer: printer, method: 'raw', bytes: parseInt(bytes) || 0 });
+            } else {
+                console.error('[print-usb] Unexpected output:', stdout);
+                res.status(500).json({ error: 'Print result unclear', output: stdout });
+            }
+        });
+
+    } catch (err) {
+        console.error('[print-usb] Error:', err.message);
+        try { fs.unlinkSync(tempFile); } catch (e) {}
+        res.status(500).json({ error: `USB print failed: ${err.message}` });
+    }
+});
+
+// List available printers (helpful for configuration)
+app.get('/api/printers', (req, res) => {
+    const { exec } = require('child_process');
+
+    exec('powershell -Command "Get-Printer | Select-Object Name, PortName, DriverName | ConvertTo-Json"',
+        { timeout: 5000 },
+        (error, stdout, stderr) => {
+            if (error) {
+                return res.status(500).json({ error: 'Failed to list printers' });
+            }
+            try {
+                const printers = JSON.parse(stdout);
+                res.json({ printers: Array.isArray(printers) ? printers : [printers] });
+            } catch (e) {
+                res.json({ printers: [], raw: stdout });
+            }
+        }
+    );
 });
 
 // ============================================

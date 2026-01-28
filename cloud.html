@@ -2480,12 +2480,43 @@
                         </div>
                     </div>
 
+                    <!-- Print Product Labels Section -->
+                    <div style="background: rgba(139, 92, 246, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--accent-purple);">
+                        <h3 style="color: var(--accent-purple); margin-bottom: 15px;">🖨️ Print Product Labels (1.25" Round)</h3>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div id="print1gSection" style="display: none;">
+                                <div class="form-group" style="margin: 0;">
+                                    <label>1g Labels to Print</label>
+                                    <input type="number" id="print1gQty" step="1" min="0" placeholder="Quantity" style="font-size: 1.1rem;">
+                                </div>
+                            </div>
+                            <div id="print4gSection" style="display: none;">
+                                <div class="form-group" style="margin: 0;">
+                                    <label>4g Labels to Print</label>
+                                    <input type="number" id="print4gQty" step="1" min="0" placeholder="Quantity" style="font-size: 1.1rem;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button type="button" class="btn" style="background: var(--accent-purple); flex: 1;" onclick="printProductLabelsFromStation()">
+                                🖨️ Print Labels
+                            </button>
+                            <button type="button" class="btn" style="background: var(--bg-tertiary); border: 2px solid var(--accent-purple); flex: 1;" onclick="previewProductLabel()">
+                                👁️ Preview Label
+                            </button>
+                        </div>
+
+                        <div id="labelPrintStatus" style="display: none; margin-top: 15px; padding: 12px; border-radius: 8px; text-align: center;"></div>
+                    </div>
+
                     <!-- Mark as Labeled -->
                     <div class="form-group">
                         <label>Labeling Notes</label>
                         <textarea id="labelingNotes" placeholder="Any issues with labeling, printer problems, etc..."></textarea>
                     </div>
-                    
+
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button type="button" class="btn" style="background: var(--accent-blue); flex: 1; min-width: 200px;" onclick="startLabeling()">▶️ Start Labeling</button>
                         <button type="button" class="btn" id="pauseLabelingBtn" style="background: var(--accent-orange); flex: 1; min-width: 200px; display: none;" onclick="togglePauseLabeling()">⏸️ Pause</button>
@@ -6915,13 +6946,32 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
             return isLocalhost || isHTTP;
         }
 
-        // Local print server URL (for on-site printing via local server proxy)
-        const LOCAL_PRINT_SERVER = 'http://10.1.10.160:3000/api/print';
+        // Local print server URLs
+        const LOCAL_USB_PRINT = 'http://localhost:3001/api/print-usb';
+        const LOCAL_PRINT_SERVER = 'http://localhost:3001/api/print';
+        const REMOTE_PRINT_SERVER = 'http://10.1.10.160:3001/api/print';
         const DIRECT_PRINTER_IP = '10.1.10.95';
 
-        // Send ZPL to printer - tries local print server first, then direct IP
+        // Send ZPL to printer - tries USB first, then network, then direct IP
         async function sendZPLToPrinter(zpl, filename) {
-            // Try local print server first (works from HTTPS cloud)
+            // Try USB print first (for locally connected Zebra)
+            try {
+                const usbResponse = await fetch(LOCAL_USB_PRINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ zpl })
+                });
+
+                if (usbResponse.ok) {
+                    const result = await usbResponse.json();
+                    console.log('[print] Sent via USB:', result.printer);
+                    return { success: true, method: 'usb' };
+                }
+            } catch (error) {
+                console.log('[print] USB print not available, trying network...');
+            }
+
+            // Try local print server (works from HTTPS cloud)
             try {
                 const response = await fetch(LOCAL_PRINT_SERVER, {
                     method: 'POST',
@@ -6948,7 +6998,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                 return { success: true, method: 'direct' };
             } catch (error) {
                 console.error('Print failed:', error.message);
-                alert(`❌ Print failed!\n\nCould not connect to printer.\n\nMake sure:\n1. Local server is running at 10.1.10.100:3000\n2. Or access via HTTP (not HTTPS)\n\nError: ${error.message}`);
+                alert(`❌ Print failed!\n\nCould not connect to printer.\n\nMake sure:\n1. Local server is running: node server.js\n2. Zebra printer is connected via USB\n3. Printer name matches in server.js (ZEBRA_USB_PRINTER)\n\nError: ${error.message}`);
                 return { success: false, method: 'error', error: error.message };
             }
         }
@@ -7127,6 +7177,262 @@ ${growerName ? `^FO250,370^FD${growerName.substring(0, 35)}^FS` : ''}
 ^XZ`;
 
             return zpl;
+        }
+
+        // Generate ZPL for 1.25" round product labels (jar labels)
+        // Contains: Product type, strain, THC/CBD boxes, net weight, licenses, batch ID, use-by, FDA text, serving size dot
+        function generateRoundProductLabelZPL(batch, unitSize) {
+            // 1.1875" diameter round label at 203 DPI = 241 dots
+            // Get data
+            const productType = (batch.product_made || batch.packaged_product_type || 'CONCENTRATE').toUpperCase();
+            const strainName = (batch.strain || batch.strain_name || '').toUpperCase();
+            const thc = batch.test_thc_percent || 0;
+            const cbd = batch.test_cbd_percent || 0;
+            const netWeight = unitSize === 4 ? '4 Grams' : '1 Gram';
+            const opcLicense = batch.cultivation_license || '';
+            const mipLicense = '404R-00016';
+
+            // Format batch ID as date (MM.DD.YYYY from intake_date or created_at)
+            const batchDate = batch.intake_date || batch.created_at;
+            const batchId = batchDate ?
+                new Date(batchDate).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: 'numeric'}).replace(/\//g, '.') : '';
+
+            // Format use by date
+            const useByDate = batch.test_expiration_date ?
+                new Date(batch.test_expiration_date).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: '2-digit'}) : '';
+
+            const zpl = `^XA
+^MMT
+^PW241
+^LL241
+~SD22
+
+^A0N,18,16
+^FO0,20^FB241,1,0,C^FD${productType}^FS
+
+^FO54,36^GB134,36,2^FS
+^A0N,18,16
+^FO54,40^FB134,1,0,C^FDTotal THC:${thc}%^FS
+^FO54,56^FB134,1,0,C^FDTotal CBD:${cbd}%^FS
+
+^A0N,28,26
+^FO0,76^FB241,1,0,C^FD${strainName}^FS
+
+^A0N,20,18
+^FO0,104^FB241,1,0,C^FDIntended Use:Inhaled Product^FS
+
+^A0N,16,14
+^FO0,124^FB241,1,0,C^FDUse By:${useByDate} Batch:${batchId}^FS
+
+^A0N,18,16
+^FO0,144^FB241,1,0,C^FD${opcLicense} ${mipLicense}^FS
+
+^A0N,20,18
+^FO0,164^FB241,1,0,C^FDNot Approved by the FDA^FS
+
+^A0N,20,18
+^FO0,184^FB241,1,0,C^FDNet Weight:${netWeight}^FS
+
+^A0N,20,18
+^FO0,204^FB241,1,0,C^FDServing Size:^FS
+^FO200,202^GC16,16,B^FS
+
+^XZ`;
+
+            return zpl;
+        }
+
+        // Print round product labels for a batch (one design per unit size)
+        async function printRoundProductLabels(batch, quantity1g, quantity4g) {
+            let printed = 0;
+
+            // Print 1g labels
+            if (quantity1g > 0) {
+                const zpl1g = generateRoundProductLabelZPL(batch, 1);
+                // Send label with quantity command
+                const zplWithQty = zpl1g.replace('^XZ', `^PQ${quantity1g}^XZ`);
+                const result = await sendZPLToPrinter(zplWithQty, `product-${batch.id}-1g.zpl`);
+                if (result.success) printed += quantity1g;
+            }
+
+            // Print 4g labels
+            if (quantity4g > 0) {
+                const zpl4g = generateRoundProductLabelZPL(batch, 4);
+                const zplWithQty = zpl4g.replace('^XZ', `^PQ${quantity4g}^XZ`);
+                const result = await sendZPLToPrinter(zplWithQty, `product-${batch.id}-4g.zpl`);
+                if (result.success) printed += quantity4g;
+            }
+
+            return printed;
+        }
+
+        // Print product labels from the labeling station UI
+        async function printProductLabelsFromStation() {
+            const batchId = document.getElementById('labelingBatchSelect').value;
+            if (!batchId) {
+                alert('Please select a batch first!');
+                return;
+            }
+
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) {
+                alert('Batch not found!');
+                return;
+            }
+
+            const qty1g = parseInt(document.getElementById('print1gQty').value) || 0;
+            const qty4g = parseInt(document.getElementById('print4gQty').value) || 0;
+
+            if (qty1g === 0 && qty4g === 0) {
+                alert('Please enter a quantity to print!');
+                return;
+            }
+
+            const statusDiv = document.getElementById('labelPrintStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.style.background = 'rgba(59, 130, 246, 0.2)';
+            statusDiv.style.border = '2px solid var(--accent-blue)';
+            statusDiv.innerHTML = '🖨️ Sending to printer...';
+
+            try {
+                const printed = await printRoundProductLabels(batch, qty1g, qty4g);
+
+                if (printed > 0) {
+                    statusDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+                    statusDiv.style.border = '2px solid var(--accent-green)';
+                    statusDiv.innerHTML = `✅ Sent ${printed} label(s) to printer!<br><small>${qty1g > 0 ? qty1g + ' × 1g' : ''} ${qty4g > 0 ? qty4g + ' × 4g' : ''}</small>`;
+                } else {
+                    statusDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                    statusDiv.style.border = '2px solid var(--accent-red)';
+                    statusDiv.innerHTML = '❌ Print failed - check printer connection';
+                }
+            } catch (error) {
+                statusDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                statusDiv.style.border = '2px solid var(--accent-red)';
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+            }
+        }
+
+        // Preview the product label in a popup
+        function previewProductLabel() {
+            const batchId = document.getElementById('labelingBatchSelect').value;
+            if (!batchId) {
+                alert('Please select a batch first!');
+                return;
+            }
+
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) {
+                alert('Batch not found!');
+                return;
+            }
+
+            // Get batch data
+            const productType = (batch.product_made || batch.packaged_product_type || 'CONCENTRATE').toUpperCase();
+            const strainName = (batch.strain || batch.strain_name || '').toUpperCase();
+            const thc = batch.test_thc_percent || 0;
+            const cbd = batch.test_cbd_percent || 0;
+            const sourceLicense = batch.cultivation_license || 'N/A';
+            const useByDate = batch.test_expiration_date ?
+                new Date(batch.test_expiration_date).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: '2-digit'}) : 'N/A';
+
+            const popup = window.open('', 'LabelPreview', 'width=400,height=500');
+            popup.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Label Preview - ${batch.id}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h3 { margin-bottom: 20px; color: #bf00ff; }
+        .label-preview {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: white;
+            color: black;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            font-size: 9px;
+            text-align: center;
+            line-height: 1.3;
+            border: 3px solid #333;
+        }
+        .product-type { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
+        .strain { font-size: 11px; font-weight: bold; margin-bottom: 5px; }
+        .thc-cbd { display: flex; gap: 8px; margin: 5px 0; }
+        .thc-cbd div {
+            border: 1px solid black;
+            padding: 3px 6px;
+            font-size: 8px;
+        }
+        .thc-cbd .value { font-weight: bold; font-size: 10px; }
+        .net-weight { font-size: 14px; font-weight: bold; margin: 5px 0; }
+        .details { font-size: 7px; line-height: 1.4; }
+        .fda-text { font-size: 6px; margin-top: 3px; }
+        .serving { font-size: 7px; display: flex; align-items: center; gap: 3px; }
+        .dot { width: 8px; height: 8px; background: black; border-radius: 50%; }
+        .license { font-size: 7px; margin-top: 2px; }
+        .size-toggle { margin-top: 20px; display: flex; gap: 10px; }
+        .size-toggle button {
+            padding: 10px 20px;
+            background: #333;
+            border: 2px solid #bf00ff;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .size-toggle button.active { background: #bf00ff; }
+        .note { margin-top: 15px; color: #888; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <h3>1.25" Round Label Preview</h3>
+    <div class="label-preview">
+        <div class="product-type">${productType}</div>
+        <div class="strain">${strainName.length > 14 ? strainName.substring(0, 12) + '..' : strainName}</div>
+        <div class="thc-cbd">
+            <div>TOTAL THC<br><span class="value">${thc}%</span></div>
+            <div>TOTAL CBD<br><span class="value">${cbd}%</span></div>
+        </div>
+        <div class="net-weight" id="netWeight">1g</div>
+        <div class="details">
+            Source: ${sourceLicense.substring(0, 12)}<br>
+            Batch: ${batch.id}<br>
+            Use By: ${useByDate}
+        </div>
+        <div class="fda-text">Intended Use: Inhaled Product<br>Not Approved By The FDA</div>
+        <div class="serving">Serving Size: <span class="dot"></span></div>
+        <div class="license">Mfg: 404R-00016</div>
+    </div>
+    <div class="size-toggle">
+        <button class="active" onclick="setSize('1g', this)">1g Label</button>
+        <button onclick="setSize('4g', this)">4g Label</button>
+    </div>
+    <p class="note">Actual print may vary slightly from preview</p>
+    <script>
+        function setSize(size, btn) {
+            document.getElementById('netWeight').textContent = size;
+            document.querySelectorAll('.size-toggle button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+    </script>
+</body>
+</html>
+            `);
+            popup.document.close();
         }
 
         // Print labeling completion labels directly to Zebra IP (one for 1g, one for 4g)
@@ -15074,6 +15380,13 @@ ${employeeReport || 'No activity recorded today'}
                 document.getElementById('units1gSection').style.display = units1g > 0 ? 'block' : 'none';
                 document.getElementById('units4gSection').style.display = units4g > 0 ? 'block' : 'none';
                 document.getElementById('unitsGenericSection').style.display = hasBreakdown ? 'none' : 'block';
+
+                // Show/hide print sections and set default quantities
+                document.getElementById('print1gSection').style.display = units1g > 0 ? 'block' : 'none';
+                document.getElementById('print4gSection').style.display = units4g > 0 ? 'block' : 'none';
+                document.getElementById('print1gQty').value = units1g || '';
+                document.getElementById('print4gQty').value = units4g || '';
+                document.getElementById('labelPrintStatus').style.display = 'none';
 
                 // Populate expected values
                 document.getElementById('expected1gUnits').textContent = units1g;
