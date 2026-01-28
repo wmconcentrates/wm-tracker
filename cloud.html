@@ -1955,6 +1955,14 @@
                         </div>
                     </button>
                 </div>
+
+                <!-- Machine Run Log Button -->
+                <div style="margin-bottom: 25px;">
+                    <button class="btn" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); padding: 15px 20px; width: 100%; font-size: 1rem;" onclick="openMachineLogModal()">
+                        <span style="font-weight: 700;">📋 Machine Run Log</span>
+                        <span style="font-size: 0.85rem; opacity: 0.9; margin-left: 10px;">Cross-Contamination Tracking</span>
+                    </button>
+                </div>
                 
                 <!-- Machine Status Buttons (Dynamic from CONFIG) -->
                 <div id="machineButtonsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
@@ -4249,7 +4257,77 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Machine Run Log Modal -->
+    <div id="machineLogModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10002; overflow-y: auto;">
+        <div style="max-width: 1000px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(0, 85, 255, 0.4);">
+            <div style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); padding: 30px; border-radius: 20px 20px 0 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="color: white; margin: 0 0 5px 0; font-size: 1.8rem;">Machine Run Log</h2>
+                        <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 0.9rem;">Cross-Contamination Tracking</p>
+                    </div>
+                    <button onclick="closeMachineLogModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 10px;">&times;</button>
+                </div>
+            </div>
+            <div style="padding: 30px;">
+                <!-- Filter Controls -->
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <select id="machineLogFilterMachine" onchange="filterMachineLog()" style="padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary);">
+                        <option value="all">All Machines</option>
+                        <option value="left">Machine 1 (Left)</option>
+                        <option value="right">Machine 2 (Right)</option>
+                    </select>
+                    <select id="machineLogFilterDays" onchange="filterMachineLog()" style="padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary);">
+                        <option value="7">Last 7 Days</option>
+                        <option value="14">Last 14 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                    <input type="text" id="machineLogSearch" placeholder="Search strain or batch..." oninput="filterMachineLog()" style="flex: 1; min-width: 200px; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary);">
+                </div>
+
+                <!-- Log Table -->
+                <div style="background: var(--bg-primary); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        <table id="machineLogTable" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-tertiary); z-index: 1;">
+                                <tr>
+                                    <th style="padding: 12px 10px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Date/Time</th>
+                                    <th style="padding: 12px 10px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Machine</th>
+                                    <th style="padding: 12px 10px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Batch</th>
+                                    <th style="padding: 12px 10px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Strain</th>
+                                    <th style="padding: 12px 10px; text-align: center; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Socks</th>
+                                    <th style="padding: 12px 10px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Operator</th>
+                                    <th style="padding: 12px 10px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Filter State</th>
+                                </tr>
+                            </thead>
+                            <tbody id="machineLogBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div style="margin-top: 20px; padding: 15px; background: var(--bg-tertiary); border-radius: 10px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <span style="color: var(--text-secondary);">Total Runs: </span>
+                        <strong id="machineLogTotalRuns" style="color: var(--accent-blue);">0</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-secondary);">Total Socks: </span>
+                        <strong id="machineLogTotalSocks" style="color: var(--accent-green);">0</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-secondary);">Unique Strains: </span>
+                        <strong id="machineLogUniqueStrains" style="color: var(--accent-purple);">0</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
         .personal-time-btn {
             padding: 10px 20px;
@@ -11308,7 +11386,19 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 return sum + (trimPerSock * c.socks);
             }, 0) * 10) / 10;
 
-            // Log extraction run for performance tracking
+            // Log extraction run for cross-contamination tracking
+            const strainList = [...new Set(contributions.map(c => {
+                const batch = batches.find(b => b.id === c.batchId);
+                return batch?.strain || 'Unknown';
+            }))].join(', ');
+
+            const currentFilterState = {
+                silica_top: parseFloat(document.getElementById('machineFilterSilicaTop')?.value) || 0,
+                clay: parseFloat(document.getElementById('machineFilterClay')?.value) || 0,
+                silica_bottom: parseFloat(document.getElementById('machineFilterSilicaBottom')?.value) || 0,
+                filter_runs: parseInt(document.getElementById('machineFilterRuns')?.value) || 0
+            };
+
             const extractionRun = {
                 timestamp: new Date().toISOString(),
                 user: currentRole ? currentRole.name : 'Unknown',
@@ -11316,7 +11406,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 column: column,
                 trimWeight: runTrimWeight,
                 socks: contributions.reduce((sum, c) => sum + c.socks, 0),
-                batches: contributions.map(c => c.batchId)
+                batches: contributions.map(c => c.batchId),
+                strain: strainList,
+                filterState: currentFilterState
             };
 
             // Store in localStorage for performance tracking
@@ -21742,6 +21834,134 @@ ${employeeReport || 'No activity recorded today'}
             const modal = document.getElementById('royaltyDetailsModal');
             if (e.target === modal) {
                 closeRoyaltyDetailsModal();
+            }
+        });
+
+        // ===== Machine Run Log Functions =====
+        let allMachineRuns = [];
+
+        function openMachineLogModal() {
+            // Load runs from localStorage
+            allMachineRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
+
+            // Sort by timestamp descending (newest first)
+            allMachineRuns.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            // Reset filters
+            document.getElementById('machineLogFilterMachine').value = 'all';
+            document.getElementById('machineLogFilterDays').value = '7';
+            document.getElementById('machineLogSearch').value = '';
+
+            // Populate and show modal
+            filterMachineLog();
+            document.getElementById('machineLogModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMachineLogModal() {
+            document.getElementById('machineLogModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function filterMachineLog() {
+            const machineFilter = document.getElementById('machineLogFilterMachine').value;
+            const daysFilter = document.getElementById('machineLogFilterDays').value;
+            const searchFilter = document.getElementById('machineLogSearch').value.toLowerCase().trim();
+
+            let filtered = [...allMachineRuns];
+
+            // Filter by machine
+            if (machineFilter !== 'all') {
+                filtered = filtered.filter(run => run.machine === machineFilter);
+            }
+
+            // Filter by days
+            if (daysFilter !== 'all') {
+                const daysAgo = new Date();
+                daysAgo.setDate(daysAgo.getDate() - parseInt(daysFilter));
+                filtered = filtered.filter(run => new Date(run.timestamp) >= daysAgo);
+            }
+
+            // Filter by search (strain or batch)
+            if (searchFilter) {
+                filtered = filtered.filter(run => {
+                    const strainMatch = (run.strain || '').toLowerCase().includes(searchFilter);
+                    const batchMatch = (run.batches || []).some(b => b.toLowerCase().includes(searchFilter));
+                    return strainMatch || batchMatch;
+                });
+            }
+
+            populateMachineLogTable(filtered);
+        }
+
+        function populateMachineLogTable(runs) {
+            const tbody = document.getElementById('machineLogBody');
+            tbody.innerHTML = '';
+
+            let totalSocks = 0;
+            const uniqueStrains = new Set();
+
+            runs.forEach(run => {
+                const date = new Date(run.timestamp);
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+                const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                const machineDisplay = run.machine === 'left' ? 'Machine 1 (Left)' :
+                                       run.machine === 'right' ? 'Machine 2 (Right)' : run.machine;
+
+                const batchDisplay = (run.batches || []).join(', ');
+                const strainDisplay = run.strain || 'Unknown';
+
+                // Build filter state display
+                let filterDisplay = 'N/A';
+                if (run.filterState) {
+                    const fs = run.filterState;
+                    filterDisplay = `${fs.filter_runs}r (${fs.silica_top}/${fs.clay}/${fs.silica_bottom})`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding: 10px; border-bottom: 1px solid var(--border); white-space: nowrap;">
+                        <div style="font-weight: 500;">${dateStr}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">${timeStr}</div>
+                    </td>
+                    <td style="padding: 10px; border-bottom: 1px solid var(--border);">${machineDisplay}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid var(--border); font-family: monospace; font-weight: 600;">${batchDisplay}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid var(--border);">${strainDisplay}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid var(--border); text-align: center; font-weight: 600;">${run.socks || 0}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid var(--border);">${run.user || 'Unknown'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-secondary);">${filterDisplay}</td>
+                `;
+                tbody.appendChild(tr);
+
+                totalSocks += run.socks || 0;
+                if (run.strain) {
+                    run.strain.split(', ').forEach(s => uniqueStrains.add(s.trim()));
+                }
+            });
+
+            // Update summary
+            document.getElementById('machineLogTotalRuns').textContent = runs.length;
+            document.getElementById('machineLogTotalSocks').textContent = totalSocks;
+            document.getElementById('machineLogUniqueStrains').textContent = uniqueStrains.size;
+
+            // Show empty state if no runs
+            if (runs.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">
+                            No machine runs found matching the current filters.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Close machine log modal on backdrop click
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('machineLogModal');
+            if (e.target === modal) {
+                closeMachineLogModal();
             }
         });
 
