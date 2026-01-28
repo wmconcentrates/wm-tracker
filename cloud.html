@@ -21965,6 +21965,125 @@ ${employeeReport || 'No activity recorded today'}
             }
         });
 
+        // Backfill machine run log from batch timeline data
+        // Run this from console: backfillMachineLogFromTimelines()
+        async function backfillMachineLogFromTimelines() {
+            console.log('Starting machine run log backfill from batch timelines...');
+
+            // Get existing runs to avoid duplicates
+            const existingRuns = JSON.parse(localStorage.getItem('wm_extraction_runs') || '[]');
+            const existingKeys = new Set(existingRuns.map(r => `${r.timestamp}-${(r.batches || []).join(',')}`));
+
+            let addedCount = 0;
+            let skippedCount = 0;
+
+            // Process all batches with timelines
+            for (const batch of batches) {
+                const timeline = batch.timeline || [];
+                if (typeof timeline === 'string') {
+                    try { timeline = JSON.parse(timeline); } catch(e) { continue; }
+                }
+
+                for (const entry of timeline) {
+                    // Look for extraction completed entries
+                    if (entry.stage === 'extraction' && entry.action && entry.action.includes('Extraction completed')) {
+                        const action = entry.action;
+
+                        // Parse machine from action string
+                        let machine = null;
+                        if (action.includes('Machine 1') || action.includes('Left')) {
+                            machine = 'left';
+                        } else if (action.includes('Machine 2') || action.includes('Right')) {
+                            machine = 'right';
+                        }
+
+                        // Parse runs from action string (e.g., "2 runs")
+                        const runsMatch = action.match(/(\d+)\s*runs?/i);
+                        const runs = runsMatch ? parseInt(runsMatch[1]) : 0;
+
+                        // Parse product type
+                        let productType = 'unknown';
+                        if (action.includes('Shatter')) productType = 'shatter';
+                        else if (action.includes('Sugar Wax')) productType = 'sugar_wax';
+                        else if (action.includes('Wax')) productType = 'wax';
+                        else if (action.includes('Live Resin')) productType = 'live_resin';
+
+                        // Get batch IDs - check for combined batches
+                        let batchIds = [batch.id];
+                        const sourcesMatch = action.match(/Sources:\s*([^|]+)/);
+                        if (sourcesMatch) {
+                            const sourcesStr = sourcesMatch[1];
+                            const sourceMatches = sourcesStr.match(/([A-Z0-9-]+)\(\d+socks?\)/gi);
+                            if (sourceMatches) {
+                                batchIds = sourceMatches.map(s => s.replace(/\(\d+socks?\)/i, ''));
+                            }
+                        }
+
+                        // Parse filter state from action string
+                        let filterState = null;
+                        const filterMatch = action.match(/Filter:\s*(\d+)c?\s*silica\s*\/\s*(\d+)c?\s*clay\s*\/\s*(\d+)c?\s*silica\s*\((\d+)\s*runs?\)/i);
+                        if (filterMatch) {
+                            filterState = {
+                                silica_top: parseFloat(filterMatch[1]),
+                                clay: parseFloat(filterMatch[2]),
+                                silica_bottom: parseFloat(filterMatch[3]),
+                                filter_runs: parseInt(filterMatch[4])
+                            };
+                        }
+
+                        // Create unique key for deduplication
+                        const key = `${entry.timestamp}-${batchIds.join(',')}`;
+                        if (existingKeys.has(key)) {
+                            skippedCount++;
+                            continue;
+                        }
+
+                        // Get socks from batch or source contributions
+                        let socks = batch.socks_total || 0;
+                        if (batch.source_contributions) {
+                            let contributions = batch.source_contributions;
+                            if (typeof contributions === 'string') {
+                                try { contributions = JSON.parse(contributions); } catch(e) { contributions = []; }
+                            }
+                            socks = contributions.reduce((sum, c) => sum + (c.socks || 0), 0);
+                        }
+
+                        // Create run entry
+                        const runEntry = {
+                            timestamp: entry.timestamp,
+                            user: entry.user || 'Unknown',
+                            machine: machine,
+                            column: null, // Not available from timeline
+                            trimWeight: parseFloat(batch.combined_trim_weight) || parseFloat(batch.trim_weight) || 0,
+                            socks: socks,
+                            batches: batchIds,
+                            strain: batch.strain || 'Unknown',
+                            filterState: filterState,
+                            productType: productType,
+                            backfilled: true
+                        };
+
+                        existingRuns.push(runEntry);
+                        existingKeys.add(key);
+                        addedCount++;
+
+                        console.log(`Added: ${batch.id} - ${batch.strain} - ${entry.timestamp}`);
+                    }
+                }
+            }
+
+            // Sort by timestamp descending
+            existingRuns.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            // Save back to localStorage
+            localStorage.setItem('wm_extraction_runs', JSON.stringify(existingRuns));
+
+            console.log(`Backfill complete! Added ${addedCount} entries, skipped ${skippedCount} duplicates.`);
+            console.log(`Total entries now: ${existingRuns.length}`);
+
+            return { added: addedCount, skipped: skippedCount, total: existingRuns.length };
+        }
+
         // Update royalty calculator display
         function updateRoyaltyCalculator() {
             // Check if Bubbleman business exists
