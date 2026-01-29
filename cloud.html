@@ -5860,13 +5860,13 @@
                 });
 
                 // Also get product types from LeafLink mappings
-                const { data: mappings } = await supabaseClient
+                const { data: productMappings } = await supabaseClient
                     .from('leaflink_product_mappings')
                     .select('app_product_type')
                     .eq('business_id', bizId);
 
-                if (mappings) {
-                    mappings.forEach(m => batchProductTypes.add(m.app_product_type));
+                if (productMappings) {
+                    productMappings.forEach(m => batchProductTypes.add(m.app_product_type));
                 }
 
                 // Convert to array and sort
