@@ -6343,6 +6343,17 @@
                 }
 
                 const cogs = calculateBatchCOGS(batch, employeeRates);
+                // Detailed logging for high-cost batches
+                if (cogs.consumables_cost > 5000 || cogs.labor_cost > 5000) {
+                    console.warn(`⚠️ HIGH COST Batch ${batch.id}:`, {
+                        consumables: cogs.breakdown?.consumables,
+                        labor: cogs.breakdown?.labor,
+                        butane_used: batch.butane_used,
+                        nitrogen_tanks: batch.nitrogen_tanks_used,
+                        units: batch.units_packaged,
+                        costConfig: { butane: costConfig.butane_per_lb, jar_1g: costConfig.jar_1g, jar_4g: costConfig.jar_4g }
+                    });
+                }
                 console.log(`Batch ${batch.id} COGS:`, cogs);
 
                 const { error } = await supabaseClient
