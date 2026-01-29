@@ -5976,6 +5976,12 @@
             console.log('Product types in ALL batches:', allProductTypes);
 
             const byType = {};
+            console.log('=== DETAILED BATCH COGS CALCULATIONS ===');
+            console.log('Cost Config:', JSON.stringify(costConfig, null, 2));
+            console.log('Employee Rates:', employeeRates);
+            console.log('Avg Monthly Grams:', window.calculatedAvgMonthlyGrams);
+            console.log('');
+
             relevantBatches.forEach(b => {
                 // Use packaged_product_type, fallback to product_made
                 const pt = b.packaged_product_type || b.product_made || 'Other';
@@ -5988,7 +5994,8 @@
 
                 // Get units (adjust for 50/50 splits)
                 let units = b.labels_applied_quantity || b.units_packaged || 0;
-                if (b.material_agreement === '50-50 Split') {
+                const isSplit = b.material_agreement === '50-50 Split' || b.material_agreement === '50/50 Split';
+                if (isSplit) {
                     units = units * 0.5;
                 }
 
@@ -6002,16 +6009,52 @@
                         units: units,
                         costPerUnit: cogs.cost_per_unit
                     });
+
+                    // Log detailed breakdown for each batch
+                    console.log(`BATCH: ${b.strain_name} (${pt})`);
+                    console.log(`  ID: ${b.id}`);
+                    console.log(`  Material Cost: $${cogs.material_cost.toFixed(2)} (from batch.material_cost: ${b.material_cost})`);
+                    console.log(`  Consumables: $${cogs.consumables_cost.toFixed(2)}`);
+                    if (cogs.breakdown.consumables.butane?.cost > 0) {
+                        console.log(`    - Butane: ${cogs.breakdown.consumables.butane.qty} lb × $${costConfig.butane_per_lb || 3.50}/lb = $${cogs.breakdown.consumables.butane.cost.toFixed(2)}`);
+                    }
+                    if (cogs.breakdown.consumables.nitrogen?.cost > 0) {
+                        console.log(`    - Nitrogen: ${cogs.breakdown.consumables.nitrogen.qty} tanks × $${costConfig.nitrogen_per_tank || 45}/tank = $${cogs.breakdown.consumables.nitrogen.cost.toFixed(2)}`);
+                    }
+                    if (cogs.breakdown.consumables.filter_media?.cost > 0) {
+                        console.log(`    - Filter Media: silica ${cogs.breakdown.consumables.filter_media.silica}g, clay ${cogs.breakdown.consumables.filter_media.clay}g = $${cogs.breakdown.consumables.filter_media.cost.toFixed(2)}`);
+                    }
+                    if (cogs.breakdown.consumables.packaging) {
+                        const pkg = cogs.breakdown.consumables.packaging;
+                        if (pkg.type) {
+                            console.log(`    - Packaging (${pkg.type}): ${pkg.qty} units = $${pkg.cost.toFixed(2)}`);
+                        } else if (pkg.total_cost) {
+                            console.log(`    - Jars 1g: ${pkg.jars_1g?.qty || 0} × $${costConfig.jar_1g || 0.25} = $${(pkg.jars_1g?.cost || 0).toFixed(2)}`);
+                            console.log(`    - Jars 4g: ${pkg.jars_4g?.qty || 0} × $${costConfig.jar_4g || 0.40} = $${(pkg.jars_4g?.cost || 0).toFixed(2)}`);
+                            console.log(`    - Lids: ${pkg.lids?.qty || 0} × $${costConfig.lid || 0.10} = $${(pkg.lids?.cost || 0).toFixed(2)}`);
+                            console.log(`    - Labels: ${pkg.labels?.qty || 0} × $${costConfig.label || 0.05} = $${(pkg.labels?.cost || 0).toFixed(2)}`);
+                        }
+                    }
+                    console.log(`  Labor: $${cogs.labor_cost.toFixed(2)}`);
+                    Object.entries(cogs.breakdown.labor).forEach(([stage, data]) => {
+                        console.log(`    - ${stage}: ${data.user} × ${data.hours}hr × $${data.rate}/hr = $${data.cost.toFixed(2)}`);
+                    });
+                    console.log(`  Overhead: $${cogs.overhead_allocated.toFixed(2)} (${cogs.breakdown.grams_produced}g / ${window.calculatedAvgMonthlyGrams}g monthly)`);
+                    console.log(`  ---`);
+                    console.log(`  TOTAL COGS: $${cogs.calculated_cogs.toFixed(2)}`);
+                    console.log(`  Units: ${b.units_packaged || b.labels_applied_quantity}${isSplit ? ` (50/50 split → ${units} kept)` : ''}`);
+                    console.log(`  COST PER UNIT: $${cogs.cost_per_unit.toFixed(2)}`);
+                    console.log('');
                 }
             });
 
-            // Log breakdown by type
-            console.log('COGS by product type breakdown:');
+            // Log summary by type
+            console.log('=== SUMMARY BY PRODUCT TYPE ===');
             Object.keys(byType).forEach(pt => {
                 const data = byType[pt];
                 if (data.totalUnits > 0) {
                     avgCOGS[pt] = data.totalCost / data.totalUnits;
-                    console.log(`  ${pt}: $${avgCOGS[pt].toFixed(2)}/unit (${data.batches.length} batches, ${data.totalUnits} units)`);
+                    console.log(`${pt}: $${avgCOGS[pt].toFixed(2)}/unit (${data.batches.length} batches, ${data.totalUnits} total units, $${data.totalCost.toFixed(2)} total cost)`);
                 }
             });
 
