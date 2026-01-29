@@ -5577,14 +5577,20 @@
         }
 
         async function loadCostingData() {
-            if (!supabaseClient || !currentBusiness) return;
+            if (!supabaseClient) return;
+
+            // Get business ID (use first business if 'all' selected)
+            let bizId = currentBusinessId;
+            if (bizId === 'all' && businessesList.length > 0) {
+                bizId = businessesList[0].id;
+            }
 
             try {
                 // Load cost config
                 const { data: configData, error: configError } = await supabaseClient
                     .from('wm_cost_config')
                     .select('*')
-                    .eq('business_id', currentBusiness.id);
+                    .eq('business_id', bizId);
 
                 if (!configError && configData) {
                     configData.forEach(c => {
@@ -5663,9 +5669,15 @@
         }
 
         async function saveCostConfig() {
-            if (!supabaseClient || !currentBusiness) {
+            if (!supabaseClient) {
                 alert('Database not connected');
                 return;
+            }
+
+            // Get business ID
+            let bizId = currentBusinessId;
+            if (bizId === 'all' && businessesList.length > 0) {
+                bizId = businessesList[0].id;
             }
 
             try {
@@ -5678,7 +5690,7 @@
                     costConfig[key] = value;
 
                     updates.push({
-                        business_id: currentBusiness.id,
+                        business_id: bizId,
                         config_type: key.includes('monthly') ? 'overhead' : 'consumable',
                         config_key: key,
                         config_value: value,
@@ -5701,17 +5713,16 @@
         }
 
         async function loadLaborRates() {
-            if (!supabaseClient || !currentBusiness) return;
+            if (!supabaseClient) return;
 
             const grid = document.getElementById('laborRatesGrid');
             if (!grid) return;
 
             try {
-                // Load employees
+                // Load employees (no business filter - employees are global)
                 const { data: employees, error } = await supabaseClient
                     .from('wm_employees')
                     .select('id, name, hourly_rate, is_active')
-                    .eq('business_id', currentBusiness.id)
                     .eq('is_active', true)
                     .order('name');
 
@@ -5769,10 +5780,16 @@
         }
 
         async function loadTargetMargins() {
-            if (!supabaseClient || !currentBusiness) return;
+            if (!supabaseClient) return;
 
             const tbody = document.getElementById('targetMarginsBody');
             if (!tbody) return;
+
+            // Get business ID
+            let bizId = currentBusinessId;
+            if (bizId === 'all' && businessesList.length > 0) {
+                bizId = businessesList[0].id;
+            }
 
             try {
                 // Get product types
@@ -5782,7 +5799,7 @@
                 const { data: margins, error: marginsError } = await supabaseClient
                     .from('wm_target_margins')
                     .select('*')
-                    .eq('business_id', currentBusiness.id);
+                    .eq('business_id', bizId);
 
                 if (!marginsError && margins) {
                     margins.forEach(m => {
@@ -5794,7 +5811,7 @@
                 const { data: mappings } = await supabaseClient
                     .from('leaflink_product_mappings')
                     .select('app_product_type, price_per_unit')
-                    .eq('business_id', currentBusiness.id);
+                    .eq('business_id', bizId);
 
                 const priceMap = {};
                 if (mappings) {
@@ -5869,9 +5886,15 @@
         }
 
         async function saveTargetMargins() {
-            if (!supabaseClient || !currentBusiness) {
+            if (!supabaseClient) {
                 alert('Database not connected');
                 return;
+            }
+
+            // Get business ID
+            let bizId = currentBusinessId;
+            if (bizId === 'all' && businessesList.length > 0) {
+                bizId = businessesList[0].id;
             }
 
             try {
@@ -5884,7 +5907,7 @@
                     targetMargins[productType] = marginPct;
 
                     updates.push({
-                        business_id: currentBusiness.id,
+                        business_id: bizId,
                         product_type: productType,
                         target_margin_pct: marginPct
                     });
