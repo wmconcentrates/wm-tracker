@@ -5722,7 +5722,7 @@
                 // Load employees (no business filter - employees are global)
                 const { data: employees, error } = await supabaseClient
                     .from('wm_employees')
-                    .select('id, name, hourly_rate, is_active')
+                    .select('id, name, hourly_rate, annual_salary, is_salary, is_active')
                     .eq('is_active', true)
                     .order('name');
 
@@ -5733,21 +5733,55 @@
                     return;
                 }
 
-                grid.innerHTML = employees.map(emp => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-tertiary); border-radius: 8px;">
-                        <span style="color: var(--text-primary); font-weight: 500;">${emp.name}</span>
-                        <div style="display: flex; align-items: center; gap: 5px;">
-                            <span style="color: var(--text-secondary);">$</span>
-                            <input type="number" step="0.01" value="${emp.hourly_rate || 0}" data-employee-id="${emp.id}" class="labor-rate-input" style="width: 80px; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; border-radius: 4px; text-align: right;">
-                            <span style="color: var(--text-secondary);">/hr</span>
-                        </div>
-                    </div>
-                `).join('');
+                grid.innerHTML = employees.map(emp => {
+                    const isSalary = emp.is_salary || false;
+                    const effectiveHourly = isSalary && emp.annual_salary ? (emp.annual_salary / 2080).toFixed(2) : (emp.hourly_rate || 0);
+
+                    if (isSalary) {
+                        return `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-tertiary); border-radius: 8px; border-left: 3px solid var(--accent-purple);">
+                                <div>
+                                    <span style="color: var(--text-primary); font-weight: 500;">${emp.name}</span>
+                                    <span style="color: var(--accent-purple); font-size: 0.75rem; margin-left: 8px;">SALARY</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="display: flex; align-items: center; gap: 5px;">
+                                        <span style="color: var(--text-secondary);">$</span>
+                                        <input type="number" step="1000" value="${emp.annual_salary || 0}" data-employee-id="${emp.id}" data-is-salary="true" class="labor-rate-input" style="width: 100px; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; border-radius: 4px; text-align: right;" onchange="updateEffectiveHourly(this)">
+                                        <span style="color: var(--text-secondary);">/yr</span>
+                                    </div>
+                                    <span style="color: var(--text-secondary); font-size: 0.8rem;">≈ $<span class="effective-hourly">${effectiveHourly}</span>/hr</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-tertiary); border-radius: 8px;">
+                                <div>
+                                    <span style="color: var(--text-primary); font-weight: 500;">${emp.name}</span>
+                                    <span style="color: var(--accent-green); font-size: 0.75rem; margin-left: 8px;">HOURLY</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span style="color: var(--text-secondary);">$</span>
+                                    <input type="number" step="0.50" value="${emp.hourly_rate || 0}" data-employee-id="${emp.id}" data-is-salary="false" class="labor-rate-input" style="width: 80px; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; border-radius: 4px; text-align: right;">
+                                    <span style="color: var(--text-secondary);">/hr</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }).join('');
 
             } catch (err) {
                 console.error('Error loading labor rates:', err);
                 grid.innerHTML = '<p style="color: var(--accent-red);">Error loading employees</p>';
             }
+        }
+
+        function updateEffectiveHourly(input) {
+            const annualSalary = parseFloat(input.value) || 0;
+            const effectiveHourly = (annualSalary / 2080).toFixed(2); // 2080 = 40hrs * 52 weeks
+            const span = input.closest('div').parentElement.querySelector('.effective-hourly');
+            if (span) span.textContent = effectiveHourly;
         }
 
         async function saveLaborRates() {
@@ -5762,11 +5796,22 @@
 
                 for (const input of inputs) {
                     const employeeId = input.dataset.employeeId;
-                    const hourlyRate = parseFloat(input.value) || 0;
+                    const isSalary = input.dataset.isSalary === 'true';
+                    const value = parseFloat(input.value) || 0;
+
+                    let updateData;
+                    if (isSalary) {
+                        // Save annual salary and calculate effective hourly rate
+                        const effectiveHourly = value / 2080; // 40hrs * 52 weeks
+                        updateData = { annual_salary: value, hourly_rate: effectiveHourly };
+                    } else {
+                        // Save hourly rate directly
+                        updateData = { hourly_rate: value };
+                    }
 
                     const { error } = await supabaseClient
                         .from('wm_employees')
-                        .update({ hourly_rate: hourlyRate })
+                        .update(updateData)
                         .eq('id', employeeId);
 
                     if (!error) savedCount++;
