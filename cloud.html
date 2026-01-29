@@ -5945,7 +5945,7 @@
         }
 
         async function calculateAvgCOGSByProductType() {
-            // Calculate average COGS per unit for each product type from all batches with data
+            // Calculate average COGS per unit for each product type from all batches
             const avgCOGS = {};
 
             console.log('=== Calculate Avg COGS Debug ===');
@@ -5956,43 +5956,62 @@
                 return avgCOGS;
             }
 
-            // Include all non-sub-batches that have calculated cost_per_unit
-            const relevantBatches = batches.filter(b => !b.is_sub_batch && (b.cost_per_unit > 0 || b.calculated_cogs > 0));
-            console.log('Relevant batches (with cost data):', relevantBatches.length);
+            // Load employee rates for COGS calculation
+            const employeeRates = await loadEmployeeRates();
 
-            if (relevantBatches.length === 0 && batches.length > 0) {
-                // Show sample batch to see what fields it has
-                const sampleBatch = batches.find(b => !b.is_sub_batch);
-                console.log('Sample batch fields:', sampleBatch ? Object.keys(sampleBatch) : 'none');
-                console.log('Sample batch cost_per_unit:', sampleBatch?.cost_per_unit);
-                console.log('Sample batch calculated_cogs:', sampleBatch?.calculated_cogs);
-            }
+            // Include all non-sub-batches that have units (completed packaging)
+            const relevantBatches = batches.filter(b => {
+                if (b.is_sub_batch) return false;
+                const units = b.labels_applied_quantity || b.units_packaged || 0;
+                return units > 0;
+            });
+            console.log('Relevant batches (with units):', relevantBatches.length);
+
+            // Debug: Show all product types found in batches
+            const allProductTypes = {};
+            batches.forEach(b => {
+                const pt = b.packaged_product_type || b.product_made || 'NO TYPE';
+                allProductTypes[pt] = (allProductTypes[pt] || 0) + 1;
+            });
+            console.log('Product types in ALL batches:', allProductTypes);
 
             const byType = {};
             relevantBatches.forEach(b => {
                 // Use packaged_product_type, fallback to product_made
                 const pt = b.packaged_product_type || b.product_made || 'Other';
-                if (!pt || pt === 'Other') return; // Skip if no meaningful product type
+                if (!pt || pt === 'Other') return;
 
-                if (!byType[pt]) byType[pt] = { totalCost: 0, totalUnits: 0, costPerUnitSum: 0, count: 0 };
+                if (!byType[pt]) byType[pt] = { totalCost: 0, totalUnits: 0, batches: [] };
 
-                // Use stored cost_per_unit if available, otherwise calculate
-                if (b.cost_per_unit > 0) {
-                    byType[pt].costPerUnitSum += b.cost_per_unit;
-                    byType[pt].count += 1;
-                } else if (b.calculated_cogs > 0 && b.units_packaged > 0) {
-                    const cogs = calculateBatchCOGS(b);
+                // Calculate COGS dynamically for this batch
+                const cogs = calculateBatchCOGS(b, employeeRates);
+
+                // Get units (adjust for 50/50 splits)
+                let units = b.labels_applied_quantity || b.units_packaged || 0;
+                if (b.material_agreement === '50-50 Split') {
+                    units = units * 0.5;
+                }
+
+                if (cogs.calculated_cogs > 0 && units > 0) {
                     byType[pt].totalCost += cogs.calculated_cogs;
-                    byType[pt].totalUnits += b.units_packaged;
+                    byType[pt].totalUnits += units;
+                    byType[pt].batches.push({
+                        id: b.id,
+                        strain: b.strain_name,
+                        cogs: cogs.calculated_cogs,
+                        units: units,
+                        costPerUnit: cogs.cost_per_unit
+                    });
                 }
             });
 
+            // Log breakdown by type
+            console.log('COGS by product type breakdown:');
             Object.keys(byType).forEach(pt => {
-                // Prefer average of cost_per_unit values if available
-                if (byType[pt].count > 0) {
-                    avgCOGS[pt] = byType[pt].costPerUnitSum / byType[pt].count;
-                } else if (byType[pt].totalUnits > 0) {
-                    avgCOGS[pt] = byType[pt].totalCost / byType[pt].totalUnits;
+                const data = byType[pt];
+                if (data.totalUnits > 0) {
+                    avgCOGS[pt] = data.totalCost / data.totalUnits;
+                    console.log(`  ${pt}: $${avgCOGS[pt].toFixed(2)}/unit (${data.batches.length} batches, ${data.totalUnits} units)`);
                 }
             });
 
