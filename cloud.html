@@ -3948,7 +3948,6 @@
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button onclick="saveTargetMargins()" class="btn" style="background: var(--accent-green); padding: 12px 30px;">Save Target Margins</button>
-                    <button onclick="pushPricesToLeafLink()" class="btn" style="background: var(--accent-blue); padding: 12px 30px;">Push Prices to LeafLink</button>
                 </div>
             </div>
 
@@ -5969,10 +5968,6 @@
                 console.error('Error saving margins:', err);
                 alert('Error saving: ' + err.message);
             }
-        }
-
-        async function pushPricesToLeafLink() {
-            alert('This will update LeafLink product mappings with suggested prices. Feature coming soon!');
         }
 
         function calculateBatchCOGS(batch) {
