@@ -5932,8 +5932,9 @@
 
             const byType = {};
             relevantBatches.forEach(b => {
-                const pt = b.packaged_product_type || b.product_made;
-                if (!pt) return;
+                // Use packaged_product_type, fallback to product_made
+                const pt = b.packaged_product_type || b.product_made || 'Other';
+                if (!pt || pt === 'Other') return; // Skip if no meaningful product type
 
                 if (!byType[pt]) byType[pt] = { totalCost: 0, totalUnits: 0, costPerUnitSum: 0, count: 0 };
 
@@ -6140,16 +6141,19 @@
                     break;
             }
 
-            // Filter batches - include all non-sub-batches with calculated COGS
+            // Filter batches - only include packaged batches (have units)
             const periodBatches = batches.filter(b => {
                 // Skip sub-batches (they're part of parent batch)
                 if (b.is_sub_batch) return false;
 
-                // If no date filter (all time), include all
+                // Must have been packaged (has units)
+                if (!b.units_packaged || b.units_packaged <= 0) return false;
+
+                // If no date filter (all time), include all packaged batches
                 if (!startDate) return true;
 
-                // Use best available date: completed_at > labeling_date > created_at
-                const batchDate = b.completed_at || b.labeling_date || b.created_at;
+                // Use best available date: completed_at > labeling_date > packaging_date > created_at
+                const batchDate = b.completed_at || b.labeling_date || b.packaging_date || b.created_at;
                 if (!batchDate) return true; // Include if no date at all
 
                 const date = new Date(batchDate);
@@ -6161,18 +6165,23 @@
             console.log('Total batches loaded:', batches.length);
             console.log('Period batches (after filter):', periodBatches.length);
 
+            // Count batches excluded for having no units
+            const excludedCount = batches.filter(b => !b.is_sub_batch && (!b.units_packaged || b.units_packaged <= 0)).length;
+            console.log(`Excluded ${excludedCount} batches without units_packaged`);
+
             // Show product type distribution
             const productTypeCounts = {};
             periodBatches.forEach(b => {
-                const pt = b.packaged_product_type || 'NOT SET';
+                const pt = b.packaged_product_type || b.product_made || 'NOT SET';
                 productTypeCounts[pt] = (productTypeCounts[pt] || 0) + 1;
             });
             console.log('Product types in batches:', productTypeCounts);
 
             // Show first 5 batches with their product types and units
-            console.log('First 5 batches:');
+            console.log('First 5 packaged batches:');
             periodBatches.slice(0, 5).forEach(b => {
-                console.log(`  ${b.id}: ${b.packaged_product_type || 'NO TYPE'} - ${b.units_packaged} units @ $${b.wholesale_price || 'no price'}`);
+                const pt = b.packaged_product_type || b.product_made || 'NO TYPE';
+                console.log(`  ${b.id}: ${pt} - ${b.units_packaged} units @ $${b.wholesale_price || priceMap[pt] || 'no price'}`);
             });
 
             // Get business ID for price mappings
@@ -6225,7 +6234,8 @@
                 }
 
                 const units = b.units_packaged || 0;
-                const pt = b.packaged_product_type || 'Other';
+                // Use packaged_product_type, fallback to product_made
+                const pt = b.packaged_product_type || b.product_made || 'Other';
 
                 // Use batch wholesale_price if set, otherwise use LeafLink mapping
                 let price = parseFloat(b.wholesale_price) || 0;
