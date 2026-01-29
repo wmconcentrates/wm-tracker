@@ -3898,6 +3898,10 @@
                                 <input type="number" id="avgBatchesPerMonth" value="30" min="1" style="width: 80px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px 10px; border-radius: 4px; text-align: right;" onchange="updateOverheadPerBatch()">
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                <span style="color: var(--text-secondary);">Avg Grams/Month:</span>
+                                <input type="number" id="avgMonthlyGrams" value="15000" min="1" style="width: 80px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px 10px; border-radius: 4px; text-align: right;" onchange="updateOverheadPerBatch()">
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                                 <span style="color: var(--text-secondary);">Overhead Per Batch:</span>
                                 <span id="overheadPerBatch" style="font-size: 1.1rem; font-weight: 600; color: var(--accent-green);">$0.00</span>
                             </div>
@@ -6002,69 +6006,246 @@
             }
         }
 
-        function calculateBatchCOGS(batch) {
-            // 1. Material Cost
+        // Cache for employee rates (loaded once)
+        let employeeRatesCache = {};
+
+        async function loadEmployeeRates() {
+            if (Object.keys(employeeRatesCache).length > 0) return employeeRatesCache;
+
+            try {
+                const { data } = await supabaseClient
+                    .from('wm_employees')
+                    .select('name, hourly_rate, annual_salary, is_salary')
+                    .eq('is_active', true);
+
+                if (data) {
+                    data.forEach(emp => {
+                        // Calculate effective hourly rate
+                        let rate = parseFloat(emp.hourly_rate) || 0;
+                        if (emp.is_salary && emp.annual_salary) {
+                            rate = parseFloat(emp.annual_salary) / 2080; // 40hrs × 52 weeks
+                        }
+                        employeeRatesCache[emp.name] = rate || 18; // Default $18/hr
+                    });
+                }
+            } catch (e) {
+                console.log('Could not load employee rates:', e);
+            }
+
+            return employeeRatesCache;
+        }
+
+        function calculateBatchCOGS(batch, employeeRates = {}) {
+            // ============================================
+            // 1. MATERIAL COST - Direct from batch
+            // ============================================
             const materialCost = parseFloat(batch.material_cost) || 0;
 
-            // 2. Consumables Cost
+            // ============================================
+            // 2. CONSUMABLES COST - Actual usage from batch
+            // ============================================
             let consumablesCost = 0;
+            const consumablesBreakdown = {};
 
-            // Butane and Nitrogen
-            consumablesCost += (parseFloat(batch.butane_used) || 0) * (costConfig.butane_per_lb || 3.50);
-            consumablesCost += (parseFloat(batch.nitrogen_tanks_used) || 0) * (costConfig.nitrogen_per_tank || 45);
+            // Butane (per lb)
+            const butaneUsed = parseFloat(batch.butane_used) || 0;
+            const butaneCost = butaneUsed * (costConfig.butane_per_lb || 3.50);
+            consumablesCost += butaneCost;
+            consumablesBreakdown.butane = { qty: butaneUsed, unit: 'lb', cost: butaneCost };
 
-            // Filter media
+            // Nitrogen (per tank)
+            const nitrogenUsed = parseFloat(batch.nitrogen_tanks_used) || 0;
+            const nitrogenCost = nitrogenUsed * (costConfig.nitrogen_per_tank || 45);
+            consumablesCost += nitrogenCost;
+            consumablesBreakdown.nitrogen = { qty: nitrogenUsed, unit: 'tank', cost: nitrogenCost };
+
+            // Filter media (from JSON field)
             if (batch.filter_media_used) {
-                const fm = typeof batch.filter_media_used === 'string' ? JSON.parse(batch.filter_media_used) : batch.filter_media_used;
-                consumablesCost += (parseFloat(fm.silica_top) || 0) * (costConfig.silica_per_gram || 0.05);
-                consumablesCost += (parseFloat(fm.clay) || 0) * (costConfig.clay_per_gram || 0.03);
-                consumablesCost += (parseFloat(fm.silica_bottom) || 0) * (costConfig.silica_per_gram || 0.05);
+                try {
+                    const fm = typeof batch.filter_media_used === 'string'
+                        ? JSON.parse(batch.filter_media_used)
+                        : batch.filter_media_used;
+
+                    const silicaTop = parseFloat(fm.silica_top) || 0;
+                    const silicaBottom = parseFloat(fm.silica_bottom) || 0;
+                    const clay = parseFloat(fm.t5_clay || fm.clay) || 0;
+
+                    const silicaCost = (silicaTop + silicaBottom) * (costConfig.silica_per_gram || 0.05);
+                    const clayCost = clay * (costConfig.clay_per_gram || 0.03);
+
+                    consumablesCost += silicaCost + clayCost;
+                    consumablesBreakdown.filter_media = {
+                        silica: silicaTop + silicaBottom,
+                        clay: clay,
+                        cost: silicaCost + clayCost
+                    };
+                } catch (e) {
+                    console.log('Could not parse filter_media_used:', e);
+                }
             }
 
-            // Packaging materials
+            // Packaging materials (based on actual units packaged)
             if (batch.units_packaged) {
                 const productType = batch.packaged_product_type || '';
+                let packagingCost = 0;
+
                 if (productType.includes('Cart')) {
-                    consumablesCost += batch.units_packaged * (costConfig.cart_hardware || 2.50);
+                    // Cartridges
+                    packagingCost = batch.units_packaged * (costConfig.cart_hardware || 2.50);
+                    consumablesBreakdown.packaging = { type: 'carts', qty: batch.units_packaged, cost: packagingCost };
                 } else if (productType.includes('AIO')) {
-                    consumablesCost += batch.units_packaged * (costConfig.aio_hardware || 5.00);
+                    // All-in-ones
+                    packagingCost = batch.units_packaged * (costConfig.aio_hardware || 5.00);
+                    consumablesBreakdown.packaging = { type: 'aio', qty: batch.units_packaged, cost: packagingCost };
                 } else {
-                    // Jars + lids + labels
+                    // Jars (1g and 4g) + lids + labels
                     const jars1g = parseInt(batch.units_1g) || 0;
                     const jars4g = parseInt(batch.units_4g) || 0;
-                    consumablesCost += jars1g * (costConfig.jar_1g || 0.25);
-                    consumablesCost += jars4g * (costConfig.jar_4g || 0.40);
-                    consumablesCost += batch.units_packaged * ((costConfig.lid || 0.10) + (costConfig.label || 0.05));
+                    const totalJars = jars1g + jars4g || batch.units_packaged;
+
+                    const jar1gCost = jars1g * (costConfig.jar_1g || 0.25);
+                    const jar4gCost = jars4g * (costConfig.jar_4g || 0.40);
+                    const lidCost = totalJars * (costConfig.lid || 0.10);
+                    const labelCost = totalJars * (costConfig.label || 0.05);
+
+                    packagingCost = jar1gCost + jar4gCost + lidCost + labelCost;
+                    consumablesBreakdown.packaging = {
+                        jars_1g: { qty: jars1g, cost: jar1gCost },
+                        jars_4g: { qty: jars4g, cost: jar4gCost },
+                        lids: { qty: totalJars, cost: lidCost },
+                        labels: { qty: totalJars, cost: labelCost },
+                        total_cost: packagingCost
+                    };
                 }
+                consumablesCost += packagingCost;
             }
 
-            // 3. Labor Cost (estimate based on timeline)
+            // ============================================
+            // 3. LABOR COST - From timeline + employee rates
+            // ============================================
             let laborCost = 0;
-            // Simple estimate: 1 hour per stage at avg rate
-            const avgRate = 18; // Default average hourly rate
-            const stages = ['extraction', 'finishing', 'packaging', 'labeling'];
-            stages.forEach(stage => {
-                if (batch[stage + '_user'] || batch[stage + '_date']) {
-                    laborCost += avgRate * 0.5; // 30 min per stage average
-                }
-            });
+            const laborBreakdown = {};
+            const timeline = batch.timeline || [];
 
-            // 4. Overhead allocation
-            const avgBatches = parseFloat(document.getElementById('avgBatchesPerMonth')?.value) || 30;
-            const monthlyOverhead = (costConfig.rent_monthly || 0) + (costConfig.utilities_monthly || 0) +
-                                   (costConfig.equipment_monthly || 0) + (costConfig.insurance_monthly || 0);
-            const overheadAllocated = monthlyOverhead / avgBatches;
+            // Method 1: Calculate from timeline entries with timestamps
+            if (timeline.length > 0) {
+                // Group timeline entries by stage
+                const stageEntries = {};
+                timeline.forEach((entry, idx) => {
+                    const stage = entry.stage || 'unknown';
+                    if (!stageEntries[stage]) stageEntries[stage] = [];
+                    stageEntries[stage].push({
+                        ...entry,
+                        timestamp: new Date(entry.timestamp || entry.date),
+                        nextTimestamp: timeline[idx + 1] ? new Date(timeline[idx + 1].timestamp || timeline[idx + 1].date) : null
+                    });
+                });
 
-            // Total COGS
+                // Calculate time spent per stage
+                Object.entries(stageEntries).forEach(([stage, entries]) => {
+                    let stageHours = 0;
+                    let stageUser = entries[0]?.user || 'Unknown';
+
+                    // If we have start/end timestamps, calculate actual time
+                    entries.forEach(entry => {
+                        if (entry.timestamp && entry.nextTimestamp) {
+                            const hours = (entry.nextTimestamp - entry.timestamp) / (1000 * 60 * 60);
+                            // Cap at 8 hours per entry (reasonable workday)
+                            stageHours += Math.min(hours, 8);
+                        }
+                    });
+
+                    // If no time calculated, estimate based on stage type
+                    if (stageHours === 0) {
+                        const trimWeight = parseFloat(batch.trim_weight) || 0;
+                        switch (stage) {
+                            case 'extraction':
+                                // ~1 hour per 10 lbs of trim
+                                stageHours = Math.max(0.5, trimWeight / 10);
+                                break;
+                            case 'finishing':
+                                // ~30 min per batch
+                                stageHours = 0.5;
+                                break;
+                            case 'packaging':
+                                // ~5 min per 10 units
+                                stageHours = Math.max(0.25, (batch.units_packaged || 0) / 120);
+                                break;
+                            case 'labeling':
+                                // ~3 min per 10 units
+                                stageHours = Math.max(0.15, (batch.units_packaged || 0) / 200);
+                                break;
+                            default:
+                                stageHours = 0.25;
+                        }
+                    }
+
+                    // Get employee's hourly rate
+                    const hourlyRate = employeeRates[stageUser] || 18;
+                    const stageCost = stageHours * hourlyRate;
+
+                    laborCost += stageCost;
+                    laborBreakdown[stage] = {
+                        user: stageUser,
+                        hours: parseFloat(stageHours.toFixed(2)),
+                        rate: hourlyRate,
+                        cost: parseFloat(stageCost.toFixed(2))
+                    };
+                });
+            } else {
+                // Method 2: Estimate from stage completion fields
+                const stages = [
+                    { name: 'extraction', userField: 'extraction_user', weight: 1.0 },
+                    { name: 'finishing', userField: 'finishing_user', weight: 0.5 },
+                    { name: 'packaging', userField: 'packaging_user', weight: 0.5 },
+                    { name: 'labeling', userField: 'labeling_user', weight: 0.25 }
+                ];
+
+                stages.forEach(({ name, userField, weight }) => {
+                    const user = batch[userField];
+                    if (user) {
+                        const rate = employeeRates[user] || 18;
+                        const hours = weight;
+                        const stageCost = hours * rate;
+                        laborCost += stageCost;
+                        laborBreakdown[name] = { user, hours, rate, cost: stageCost };
+                    }
+                });
+            }
+
+            // ============================================
+            // 4. OVERHEAD ALLOCATION - By production weight
+            // ============================================
+            const monthlyOverhead = (costConfig.rent_monthly || 0) +
+                                   (costConfig.utilities_monthly || 0) +
+                                   (costConfig.equipment_monthly || 0) +
+                                   (costConfig.insurance_monthly || 0);
+
+            // Allocate overhead by grams produced (fairer than per-batch)
+            // Estimate: avg 500g output per batch, 30 batches/month = 15,000g/month
+            const batchGrams = parseFloat(batch.total_grams_packaged) ||
+                              parseFloat(batch.final_weight) ||
+                              parseFloat(batch.crude_weight) || 0;
+            const avgMonthlyGrams = parseFloat(document.getElementById('avgMonthlyGrams')?.value) || 15000;
+            const overheadAllocated = batchGrams > 0
+                ? monthlyOverhead * (batchGrams / avgMonthlyGrams)
+                : monthlyOverhead / 30; // Fallback to per-batch
+
+            // ============================================
+            // 5. TOTAL COGS
+            // ============================================
             const calculatedCOGS = materialCost + consumablesCost + laborCost + overheadAllocated;
 
-            // Cost per unit - adjust for material agreement type
-            // 50/50 Split: You only keep 50% of units, so cost per unit is higher
-            // Buyback/Wholesale: You keep 100% of units
-            let unitsKept = batch.units_packaged || 0;
-            if (batch.material_agreement === '50-50 Split' && unitsKept > 0) {
-                unitsKept = unitsKept * 0.5; // You only keep half
+            // ============================================
+            // 6. COST PER UNIT - Adjust for split agreements
+            // ============================================
+            let unitsKept = batch.labels_applied_quantity || batch.units_packaged || 0;
+
+            // 50/50 Split: Customer gets half, you keep half
+            if (batch.material_agreement === '50-50 Split' || batch.material_agreement === '50/50 Split') {
+                unitsKept = unitsKept * 0.5;
             }
+
             const costPerUnit = unitsKept > 0 ? calculatedCOGS / unitsKept : 0;
 
             return {
@@ -6073,7 +6254,14 @@
                 labor_cost: laborCost,
                 overhead_allocated: overheadAllocated,
                 calculated_cogs: calculatedCOGS,
-                cost_per_unit: costPerUnit
+                cost_per_unit: costPerUnit,
+                breakdown: {
+                    consumables: consumablesBreakdown,
+                    labor: laborBreakdown,
+                    units_produced: batch.units_packaged || 0,
+                    units_kept: unitsKept,
+                    grams_produced: batchGrams
+                }
             };
         }
 
@@ -6083,8 +6271,12 @@
                 return;
             }
 
-            const confirm = window.confirm('This will recalculate COGS for all batches. Continue?');
+            const confirm = window.confirm('This will recalculate COGS for all batches using actual labor rates and consumables. Continue?');
             if (!confirm) return;
+
+            // Load employee rates first
+            const employeeRates = await loadEmployeeRates();
+            console.log('Loaded employee rates:', employeeRates);
 
             let updated = 0;
             let skipped = 0;
@@ -6095,7 +6287,8 @@
                     continue;
                 }
 
-                const cogs = calculateBatchCOGS(batch);
+                const cogs = calculateBatchCOGS(batch, employeeRates);
+                console.log(`Batch ${batch.id} COGS:`, cogs);
 
                 const { error } = await supabaseClient
                     .from('wm_batches')
@@ -6212,6 +6405,9 @@
 
             console.log('Price mappings loaded:', priceMap);
 
+            // Load employee rates for COGS calculation
+            const employeeRates = await loadEmployeeRates();
+
             // Calculate totals
             let totalRevenue = 0;
             let totalCOGS = 0;
@@ -6234,7 +6430,7 @@
                         overhead_allocated: parseFloat(b.overhead_allocated) || 0
                     };
                 } else {
-                    cogs = calculateBatchCOGS(b);
+                    cogs = calculateBatchCOGS(b, employeeRates);
                 }
 
                 // Use actual labeled quantity if available, otherwise packaged
