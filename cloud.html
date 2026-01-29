@@ -5852,8 +5852,26 @@
             }
 
             try {
-                // Get product types
-                const productTypes = ['Wax', 'Sugar Wax', 'Shatter', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', 'Hash Hits', 'RSO Syringes'];
+                // Get product types from actual batch data + LeafLink mappings
+                const batchProductTypes = new Set();
+                batches.forEach(b => {
+                    if (b.packaged_product_type) batchProductTypes.add(b.packaged_product_type);
+                    if (b.product_made) batchProductTypes.add(b.product_made);
+                });
+
+                // Also get product types from LeafLink mappings
+                const { data: mappings } = await supabaseClient
+                    .from('leaflink_product_mappings')
+                    .select('app_product_type')
+                    .eq('business_id', bizId);
+
+                if (mappings) {
+                    mappings.forEach(m => batchProductTypes.add(m.app_product_type));
+                }
+
+                // Convert to array and sort
+                const productTypes = [...batchProductTypes].filter(pt => pt && pt !== 'Bulk Sale').sort();
+                console.log('Product types found:', productTypes);
 
                 // Load saved margins
                 const { data: margins, error: marginsError } = await supabaseClient
