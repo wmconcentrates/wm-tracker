@@ -3956,8 +3956,9 @@
                 <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
                     <span style="color: var(--text-secondary);">Analysis Period:</span>
                     <select id="analysisperiod" onchange="updateProfitabilityAnalysis()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px;">
+                        <option value="all" selected>All Time</option>
                         <option value="week">This Week</option>
-                        <option value="month" selected>This Month</option>
+                        <option value="month">This Month</option>
                         <option value="quarter">This Quarter</option>
                         <option value="year">This Year</option>
                     </select>
@@ -5578,6 +5579,11 @@
         async function loadCostingData() {
             if (!supabaseClient) return;
 
+            // Ensure batches are loaded (needed for analysis and margins)
+            if (!batches || batches.length === 0) {
+                await loadBatches();
+            }
+
             // Get business ID (use first business if 'all' selected)
             let bizId = currentBusinessId;
             if (bizId === 'all' && businessesList.length > 0) {
@@ -5901,27 +5907,52 @@
         }
 
         async function calculateAvgCOGSByProductType() {
-            // Calculate average COGS per unit for each product type from completed batches
+            // Calculate average COGS per unit for each product type from all batches with data
             const avgCOGS = {};
 
-            if (!batches || batches.length === 0) return avgCOGS;
+            console.log('=== Calculate Avg COGS Debug ===');
+            console.log('Total batches:', batches?.length);
 
-            const completedBatches = batches.filter(b => b.status === 'completed' && b.units_packaged > 0);
+            if (!batches || batches.length === 0) {
+                console.log('No batches available!');
+                return avgCOGS;
+            }
+
+            // Include all non-sub-batches that have calculated cost_per_unit
+            const relevantBatches = batches.filter(b => !b.is_sub_batch && (b.cost_per_unit > 0 || b.calculated_cogs > 0));
+            console.log('Relevant batches (with cost data):', relevantBatches.length);
+
+            if (relevantBatches.length === 0 && batches.length > 0) {
+                // Show sample batch to see what fields it has
+                const sampleBatch = batches.find(b => !b.is_sub_batch);
+                console.log('Sample batch fields:', sampleBatch ? Object.keys(sampleBatch) : 'none');
+                console.log('Sample batch cost_per_unit:', sampleBatch?.cost_per_unit);
+                console.log('Sample batch calculated_cogs:', sampleBatch?.calculated_cogs);
+            }
 
             const byType = {};
-            completedBatches.forEach(b => {
+            relevantBatches.forEach(b => {
                 const pt = b.packaged_product_type || b.product_made;
                 if (!pt) return;
 
-                if (!byType[pt]) byType[pt] = { totalCost: 0, totalUnits: 0 };
+                if (!byType[pt]) byType[pt] = { totalCost: 0, totalUnits: 0, costPerUnitSum: 0, count: 0 };
 
-                const batchCOGS = calculateBatchCOGS(b);
-                byType[pt].totalCost += batchCOGS.calculated_cogs;
-                byType[pt].totalUnits += b.units_packaged;
+                // Use stored cost_per_unit if available, otherwise calculate
+                if (b.cost_per_unit > 0) {
+                    byType[pt].costPerUnitSum += b.cost_per_unit;
+                    byType[pt].count += 1;
+                } else if (b.calculated_cogs > 0 && b.units_packaged > 0) {
+                    const cogs = calculateBatchCOGS(b);
+                    byType[pt].totalCost += cogs.calculated_cogs;
+                    byType[pt].totalUnits += b.units_packaged;
+                }
             });
 
             Object.keys(byType).forEach(pt => {
-                if (byType[pt].totalUnits > 0) {
+                // Prefer average of cost_per_unit values if available
+                if (byType[pt].count > 0) {
+                    avgCOGS[pt] = byType[pt].costPerUnitSum / byType[pt].count;
+                } else if (byType[pt].totalUnits > 0) {
                     avgCOGS[pt] = byType[pt].totalCost / byType[pt].totalUnits;
                 }
             });
@@ -6088,8 +6119,11 @@
 
             // Calculate date range
             const now = new Date();
-            let startDate;
+            let startDate = null;
             switch (period) {
+                case 'all':
+                    startDate = null; // No date filter
+                    break;
                 case 'week':
                     startDate = new Date(now);
                     startDate.setDate(now.getDate() - 7);
@@ -6106,12 +6140,61 @@
                     break;
             }
 
-            // Filter batches by completion date
+            // Filter batches - include all non-sub-batches with calculated COGS
             const periodBatches = batches.filter(b => {
-                if (b.status !== 'completed' || !b.completed_at) return false;
-                const completedDate = new Date(b.completed_at);
-                return completedDate >= startDate && completedDate <= now;
+                // Skip sub-batches (they're part of parent batch)
+                if (b.is_sub_batch) return false;
+
+                // If no date filter (all time), include all
+                if (!startDate) return true;
+
+                // Use best available date: completed_at > labeling_date > created_at
+                const batchDate = b.completed_at || b.labeling_date || b.created_at;
+                if (!batchDate) return true; // Include if no date at all
+
+                const date = new Date(batchDate);
+                return date >= startDate && date <= now;
             });
+
+            // Debug logging
+            console.log('=== Profitability Analysis Debug ===');
+            console.log('Total batches loaded:', batches.length);
+            console.log('Period batches (after filter):', periodBatches.length);
+            if (periodBatches.length > 0) {
+                console.log('Sample batch:', {
+                    id: periodBatches[0].id,
+                    strain: periodBatches[0].strain_name,
+                    calculated_cogs: periodBatches[0].calculated_cogs,
+                    cost_per_unit: periodBatches[0].cost_per_unit,
+                    units_packaged: periodBatches[0].units_packaged,
+                    wholesale_price: periodBatches[0].wholesale_price,
+                    packaged_product_type: periodBatches[0].packaged_product_type
+                });
+            }
+
+            // Get business ID for price mappings
+            let bizId = currentBusinessId;
+            if (bizId === 'all' && businessesList.length > 0) {
+                bizId = businessesList[0].id;
+            }
+
+            // Load LeafLink price mappings as fallback
+            const priceMap = {};
+            try {
+                const { data: mappings } = await supabaseClient
+                    .from('leaflink_product_mappings')
+                    .select('app_product_type, price_per_unit')
+                    .eq('business_id', bizId);
+                if (mappings) {
+                    mappings.forEach(m => {
+                        priceMap[m.app_product_type] = m.price_per_unit;
+                    });
+                }
+            } catch (e) {
+                console.log('Could not load price mappings:', e);
+            }
+
+            console.log('Price mappings loaded:', priceMap);
 
             // Calculate totals
             let totalRevenue = 0;
@@ -6124,9 +6207,28 @@
             const byProduct = {};
 
             periodBatches.forEach(b => {
-                const cogs = calculateBatchCOGS(b);
+                // Use stored COGS if available, otherwise calculate fresh
+                let cogs;
+                if (b.calculated_cogs > 0) {
+                    cogs = {
+                        calculated_cogs: parseFloat(b.calculated_cogs) || 0,
+                        material_cost: parseFloat(b.material_cost) || 0,
+                        consumables_cost: parseFloat(b.consumables_cost) || 0,
+                        labor_cost: parseFloat(b.labor_cost) || 0,
+                        overhead_allocated: parseFloat(b.overhead_allocated) || 0
+                    };
+                } else {
+                    cogs = calculateBatchCOGS(b);
+                }
+
                 const units = b.units_packaged || 0;
-                const price = parseFloat(b.wholesale_price) || 0;
+                const pt = b.packaged_product_type || 'Other';
+
+                // Use batch wholesale_price if set, otherwise use LeafLink mapping
+                let price = parseFloat(b.wholesale_price) || 0;
+                if (price === 0 && priceMap[pt]) {
+                    price = priceMap[pt];
+                }
                 const revenue = units * price;
 
                 totalRevenue += revenue;
@@ -6136,7 +6238,6 @@
                 totalLabor += cogs.labor_cost;
                 totalOverhead += cogs.overhead_allocated;
 
-                const pt = b.packaged_product_type || 'Other';
                 if (!byProduct[pt]) byProduct[pt] = { units: 0, revenue: 0, cogs: 0 };
                 byProduct[pt].units += units;
                 byProduct[pt].revenue += revenue;
@@ -6145,6 +6246,14 @@
 
             const grossProfit = totalRevenue - totalCOGS;
             const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
+
+            console.log('Calculated totals:', {
+                totalRevenue,
+                totalCOGS,
+                grossProfit,
+                grossMargin,
+                byProduct
+            });
 
             // Update summary cards
             document.getElementById('analysisRevenue').textContent = '$' + totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
