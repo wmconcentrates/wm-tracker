@@ -6160,17 +6160,20 @@
             console.log('=== Profitability Analysis Debug ===');
             console.log('Total batches loaded:', batches.length);
             console.log('Period batches (after filter):', periodBatches.length);
-            if (periodBatches.length > 0) {
-                console.log('Sample batch:', {
-                    id: periodBatches[0].id,
-                    strain: periodBatches[0].strain_name,
-                    calculated_cogs: periodBatches[0].calculated_cogs,
-                    cost_per_unit: periodBatches[0].cost_per_unit,
-                    units_packaged: periodBatches[0].units_packaged,
-                    wholesale_price: periodBatches[0].wholesale_price,
-                    packaged_product_type: periodBatches[0].packaged_product_type
-                });
-            }
+
+            // Show product type distribution
+            const productTypeCounts = {};
+            periodBatches.forEach(b => {
+                const pt = b.packaged_product_type || 'NOT SET';
+                productTypeCounts[pt] = (productTypeCounts[pt] || 0) + 1;
+            });
+            console.log('Product types in batches:', productTypeCounts);
+
+            // Show first 5 batches with their product types and units
+            console.log('First 5 batches:');
+            periodBatches.slice(0, 5).forEach(b => {
+                console.log(`  ${b.id}: ${b.packaged_product_type || 'NO TYPE'} - ${b.units_packaged} units @ $${b.wholesale_price || 'no price'}`);
+            });
 
             // Get business ID for price mappings
             let bizId = currentBusinessId;
