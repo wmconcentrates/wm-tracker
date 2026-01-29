@@ -6049,8 +6049,10 @@
             if (!confirm) return;
 
             let updated = 0;
+            let skipped = 0;
             for (const batch of batches) {
-                if (batch.status === 'completed' && batch.units_packaged > 0) {
+                // Calculate COGS for any batch with material_cost (tracks costs as batch progresses)
+                if (batch.material_cost > 0) {
                     const cogs = calculateBatchCOGS(batch);
 
                     const { error } = await supabaseClient
@@ -6065,10 +6067,12 @@
                         .eq('id', batch.id);
 
                     if (!error) updated++;
+                } else {
+                    skipped++;
                 }
             }
 
-            alert(`Recalculated COGS for ${updated} batches!`);
+            alert(`Recalculated COGS for ${updated} batches! (${skipped} skipped - no material cost)`);
             loadBatches();
         }
 
