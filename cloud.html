@@ -6026,8 +6026,14 @@
             // Total COGS
             const calculatedCOGS = materialCost + consumablesCost + laborCost + overheadAllocated;
 
-            // Cost per unit
-            const costPerUnit = batch.units_packaged > 0 ? calculatedCOGS / batch.units_packaged : 0;
+            // Cost per unit - adjust for material agreement type
+            // 50/50 Split: You only keep 50% of units, so cost per unit is higher
+            // Buyback/Wholesale: You keep 100% of units
+            let unitsKept = batch.units_packaged || 0;
+            if (batch.material_agreement === '50-50 Split' && unitsKept > 0) {
+                unitsKept = unitsKept * 0.5; // You only keep half
+            }
+            const costPerUnit = unitsKept > 0 ? calculatedCOGS / unitsKept : 0;
 
             return {
                 material_cost: materialCost,
@@ -6051,28 +6057,29 @@
             let updated = 0;
             let skipped = 0;
             for (const batch of batches) {
-                // Calculate COGS for any batch with material_cost (tracks costs as batch progresses)
-                if (batch.material_cost > 0) {
-                    const cogs = calculateBatchCOGS(batch);
-
-                    const { error } = await supabaseClient
-                        .from('wm_batches')
-                        .update({
-                            calculated_cogs: cogs.calculated_cogs,
-                            labor_cost: cogs.labor_cost,
-                            consumables_cost: cogs.consumables_cost,
-                            overhead_allocated: cogs.overhead_allocated,
-                            cost_per_unit: cogs.cost_per_unit
-                        })
-                        .eq('id', batch.id);
-
-                    if (!error) updated++;
-                } else {
+                // Skip sub-batches (they inherit from parent)
+                if (batch.is_sub_batch) {
                     skipped++;
+                    continue;
                 }
+
+                const cogs = calculateBatchCOGS(batch);
+
+                const { error } = await supabaseClient
+                    .from('wm_batches')
+                    .update({
+                        calculated_cogs: cogs.calculated_cogs,
+                        labor_cost: cogs.labor_cost,
+                        consumables_cost: cogs.consumables_cost,
+                        overhead_allocated: cogs.overhead_allocated,
+                        cost_per_unit: cogs.cost_per_unit
+                    })
+                    .eq('id', batch.id);
+
+                if (!error) updated++;
             }
 
-            alert(`Recalculated COGS for ${updated} batches! (${skipped} skipped - no material cost)`);
+            alert(`Recalculated COGS for ${updated} batches! (${skipped} sub-batches skipped)`);
             loadBatches();
         }
 
