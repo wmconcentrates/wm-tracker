@@ -5956,6 +5956,14 @@
                 return avgCOGS;
             }
 
+            // Pre-calculate labor cost per gram from timeclock data
+            console.log('Calculating labor cost per gram from timeclock...');
+            await calculateLaborCostPerGram();
+
+            // Pre-calculate butane cost per gram from gas log
+            console.log('Calculating butane cost per gram from gas log...');
+            await calculateButaneCostPerGram();
+
             // Load employee rates for COGS calculation
             const employeeRates = await loadEmployeeRates();
 
@@ -6016,7 +6024,12 @@
                     console.log(`  Material Cost: $${cogs.material_cost.toFixed(2)} (from batch.material_cost: ${b.material_cost})`);
                     console.log(`  Consumables: $${cogs.consumables_cost.toFixed(2)}`);
                     if (cogs.breakdown.consumables.butane?.cost > 0) {
-                        console.log(`    - Butane: ${cogs.breakdown.consumables.butane.qty} lb × $${costConfig.butane_per_lb || 3.50}/lb = $${cogs.breakdown.consumables.butane.cost.toFixed(2)}`);
+                        const butane = cogs.breakdown.consumables.butane;
+                        if (butane.source === 'gas_log_calculated') {
+                            console.log(`    - Butane: ${butane.grams}g × $${butane.costPerGram}/g = $${butane.cost.toFixed(2)} (from gas log)`);
+                        } else {
+                            console.log(`    - Butane: ${butane.qty} lb × $${costConfig.butane_per_lb || 3.50}/lb = $${butane.cost.toFixed(2)}`);
+                        }
                     }
                     if (cogs.breakdown.consumables.nitrogen?.cost > 0) {
                         console.log(`    - Nitrogen: ${cogs.breakdown.consumables.nitrogen.qty} tanks × $${costConfig.nitrogen_per_tank || 45}/tank = $${cogs.breakdown.consumables.nitrogen.cost.toFixed(2)}`);
@@ -6035,9 +6048,13 @@
                             console.log(`    - Labels: ${pkg.labels?.qty || 0} × $${costConfig.label || 0.05} = $${(pkg.labels?.cost || 0).toFixed(2)}`);
                         }
                     }
-                    console.log(`  Labor: $${cogs.labor_cost.toFixed(2)}`);
+                    console.log(`  Labor: $${cogs.labor_cost.toFixed(2)} (from timeclock data)`);
                     Object.entries(cogs.breakdown.labor).forEach(([stage, data]) => {
-                        console.log(`    - ${stage}: ${data.user} × ${data.hours}hr × $${data.rate}/hr = $${data.cost.toFixed(2)}`);
+                        if (data.source === 'timeclock') {
+                            console.log(`    - ${stage}: ${data.user} × ${data.grams}g × $${data.costPerGram}/g = $${data.cost.toFixed(2)}`);
+                        } else {
+                            console.log(`    - ${stage}: ${data.user} × ${data.grams}g × $${data.costPerGram}/g = $${data.cost.toFixed(2)} (default rate)`);
+                        }
                     });
                     console.log(`  Overhead: $${cogs.overhead_allocated.toFixed(2)} (${cogs.breakdown.grams_produced}g / ${window.calculatedAvgMonthlyGrams}g monthly)`);
                     console.log(`  ---`);
@@ -6166,6 +6183,236 @@
             return employeeRatesCache;
         }
 
+        // Calculate actual labor cost per gram from timeclock data and production
+        async function calculateLaborCostPerGram() {
+            if (!supabaseClient) return {};
+
+            // Use last 3 months of data for accuracy
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+            try {
+                // 1. Get timeclock entries for the period
+                const { data: clockEntries } = await supabaseClient
+                    .from('timeclock')
+                    .select('user_name, punch_type, punch_time')
+                    .gte('punch_time', threeMonthsAgo.toISOString())
+                    .order('user_name')
+                    .order('punch_time');
+
+                if (!clockEntries || clockEntries.length === 0) {
+                    console.log('No timeclock data found for labor calculation');
+                    return {};
+                }
+
+                // 2. Calculate hours per employee (pair in/out punches)
+                const employeeHours = {};
+                const punchPairs = {};
+
+                clockEntries.forEach(entry => {
+                    const user = entry.user_name;
+                    if (!punchPairs[user]) punchPairs[user] = [];
+                    punchPairs[user].push(entry);
+                });
+
+                Object.entries(punchPairs).forEach(([user, punches]) => {
+                    let totalHours = 0;
+                    let lastIn = null;
+
+                    punches.forEach(punch => {
+                        if (punch.punch_type === 'in') {
+                            lastIn = new Date(punch.punch_time);
+                        } else if (punch.punch_type === 'out' && lastIn) {
+                            const outTime = new Date(punch.punch_time);
+                            const hours = (outTime - lastIn) / (1000 * 60 * 60);
+                            // Cap at 16 hours per shift (reasonable max)
+                            totalHours += Math.min(hours, 16);
+                            lastIn = null;
+                        }
+                    });
+
+                    employeeHours[user] = totalHours;
+                });
+
+                console.log('Employee hours from timeclock:', employeeHours);
+
+                // 3. Get employee hourly rates
+                const rates = await loadEmployeeRates();
+
+                // 4. Calculate total grams each employee worked on from batches
+                const employeeGrams = {};
+                const periodBatches = batches.filter(b => {
+                    if (b.is_sub_batch) return false;
+                    const batchDate = new Date(b.packaging_date || b.labeling_date || b.created_at);
+                    return batchDate >= threeMonthsAgo;
+                });
+
+                periodBatches.forEach(b => {
+                    const grams = parseFloat(b.total_grams_packaged) || parseFloat(b.final_weight) || 0;
+
+                    // Track grams per employee (they might do multiple stages)
+                    ['extraction_user', 'finishing_user', 'packaging_user', 'labeling_user'].forEach(field => {
+                        const user = b[field];
+                        if (user && grams > 0) {
+                            if (!employeeGrams[user]) employeeGrams[user] = 0;
+                            // Don't double count - use max of their grams across stages
+                            employeeGrams[user] = Math.max(employeeGrams[user], employeeGrams[user] + grams);
+                        }
+                    });
+                });
+
+                // Actually, let's track grams per stage per employee more accurately
+                const employeeStageGrams = {};
+                periodBatches.forEach(b => {
+                    const stages = {
+                        extraction: { user: b.extraction_user, grams: parseFloat(b.trim_weight) || parseFloat(b.crude_weight) || 0 },
+                        finishing: { user: b.finishing_user, grams: parseFloat(b.crude_weight) || parseFloat(b.final_weight) || 0 },
+                        packaging: { user: b.packaging_user, grams: parseFloat(b.total_grams_packaged) || b.units_packaged || 0 },
+                        labeling: { user: b.labeling_user, grams: parseFloat(b.total_grams_packaged) || b.units_packaged || 0 }
+                    };
+
+                    Object.entries(stages).forEach(([stage, data]) => {
+                        if (data.user && data.grams > 0) {
+                            if (!employeeStageGrams[data.user]) {
+                                employeeStageGrams[data.user] = { total: 0, stages: {} };
+                            }
+                            if (!employeeStageGrams[data.user].stages[stage]) {
+                                employeeStageGrams[data.user].stages[stage] = 0;
+                            }
+                            employeeStageGrams[data.user].stages[stage] += data.grams;
+                            employeeStageGrams[data.user].total += data.grams;
+                        }
+                    });
+                });
+
+                console.log('Employee grams by stage:', employeeStageGrams);
+
+                // 5. Calculate cost per gram for each employee
+                const laborCostPerGram = {};
+                let totalLaborCost = 0;
+                let totalGrams = 0;
+
+                Object.entries(employeeHours).forEach(([user, hours]) => {
+                    const rate = rates[user] || 18;
+                    const laborCost = hours * rate;
+                    const grams = employeeStageGrams[user]?.total || 0;
+
+                    totalLaborCost += laborCost;
+                    totalGrams += grams;
+
+                    if (grams > 0) {
+                        laborCostPerGram[user] = {
+                            hours: parseFloat(hours.toFixed(2)),
+                            rate: rate,
+                            laborCost: parseFloat(laborCost.toFixed(2)),
+                            grams: grams,
+                            costPerGram: parseFloat((laborCost / grams).toFixed(4))
+                        };
+                        console.log(`${user}: $${laborCost.toFixed(2)} labor / ${grams}g = $${(laborCost / grams).toFixed(4)}/gram`);
+                    }
+                });
+
+                // Calculate default cost per gram (total labor / total grams)
+                if (totalGrams > 0) {
+                    laborCostPerGram._default = {
+                        totalLaborCost: parseFloat(totalLaborCost.toFixed(2)),
+                        totalGrams: totalGrams,
+                        costPerGram: parseFloat((totalLaborCost / totalGrams).toFixed(4))
+                    };
+                    console.log(`Default labor rate: $${totalLaborCost.toFixed(2)} / ${totalGrams}g = $${(totalLaborCost / totalGrams).toFixed(4)}/gram`);
+                }
+
+                // Cache for use in calculateBatchCOGS
+                window.laborCostPerGram = laborCostPerGram;
+                return laborCostPerGram;
+
+            } catch (e) {
+                console.error('Error calculating labor cost per gram:', e);
+                return {};
+            }
+        }
+
+        // Calculate actual butane cost per gram from gas log and production
+        async function calculateButaneCostPerGram() {
+            if (!supabaseClient) return 0;
+
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+            try {
+                // 1. Get butane transactions (adds) for the period
+                const { data: gasTransactions } = await supabaseClient
+                    .from('wm_inventory_transactions')
+                    .select('amount, transaction_type, timestamp')
+                    .eq('supply_type', 'butane')
+                    .gte('timestamp', threeMonthsAgo.toISOString());
+
+                if (!gasTransactions || gasTransactions.length === 0) {
+                    console.log('No butane transaction data found');
+                    return 0;
+                }
+
+                // Sum total butane added (in lbs)
+                let totalButaneLbs = 0;
+                gasTransactions.forEach(t => {
+                    if (t.transaction_type === 'add' || t.transaction_type === 'deposit') {
+                        totalButaneLbs += parseFloat(t.amount) || 0;
+                    }
+                });
+
+                console.log(`Total butane added (last 3 months): ${totalButaneLbs} lbs`);
+
+                // 2. Get total grams produced by butane extraction in the period
+                // These are batches that use butane (not solventless)
+                const butaneProductTypes = ['Wax', 'Sugar Wax', 'Shatter', 'Live Resin', 'Carts', 'AIOs', 'Live Resin Carts', 'Live Resin AIOs', 'Live Resin Oil'];
+                const periodBatches = batches.filter(b => {
+                    if (b.is_sub_batch) return false;
+                    const batchDate = new Date(b.packaging_date || b.extraction_date || b.created_at);
+                    if (batchDate < threeMonthsAgo) return false;
+
+                    // Check if it's a butane product (not solventless/hash)
+                    const productType = b.packaged_product_type || b.product_made || '';
+                    const isSolventless = productType.toLowerCase().includes('hash') ||
+                                         productType.toLowerCase().includes('rosin') ||
+                                         productType.toLowerCase().includes('solventless');
+                    return !isSolventless;
+                });
+
+                let totalGrams = 0;
+                periodBatches.forEach(b => {
+                    totalGrams += parseFloat(b.total_grams_packaged) || parseFloat(b.final_weight) || parseFloat(b.crude_weight) || 0;
+                });
+
+                console.log(`Total grams produced by butane extraction (last 3 months): ${totalGrams}g`);
+
+                // 3. Calculate butane cost per gram
+                const butanePricePerLb = costConfig.butane_per_lb || 3.50;
+                const totalButaneCost = totalButaneLbs * butanePricePerLb;
+
+                let butaneCostPerGram = 0;
+                if (totalGrams > 0) {
+                    butaneCostPerGram = totalButaneCost / totalGrams;
+                }
+
+                console.log(`Butane cost: $${totalButaneCost.toFixed(2)} / ${totalGrams}g = $${butaneCostPerGram.toFixed(4)}/gram`);
+
+                // Cache for use in calculateBatchCOGS
+                window.butaneCostPerGram = butaneCostPerGram;
+                window.butaneStats = {
+                    totalLbs: totalButaneLbs,
+                    totalCost: totalButaneCost,
+                    totalGrams: totalGrams,
+                    costPerGram: butaneCostPerGram
+                };
+
+                return butaneCostPerGram;
+
+            } catch (e) {
+                console.error('Error calculating butane cost per gram:', e);
+                return 0;
+            }
+        }
+
         function calculateBatchCOGS(batch, employeeRates = {}) {
             // ============================================
             // 1. MATERIAL COST - Direct from batch
@@ -6178,13 +6425,37 @@
             let consumablesCost = 0;
             const consumablesBreakdown = {};
 
-            // Butane (per lb)
-            const butaneUsed = parseFloat(batch.butane_used) || 0;
-            const butaneCost = butaneUsed * (costConfig.butane_per_lb || 3.50);
-            consumablesCost += butaneCost;
-            consumablesBreakdown.butane = { qty: butaneUsed, unit: 'lb', cost: butaneCost };
+            // Check if this is a butane product (not solventless)
+            const productType = batch.packaged_product_type || batch.product_made || '';
+            const isSolventless = productType.toLowerCase().includes('hash') ||
+                                 productType.toLowerCase().includes('rosin') ||
+                                 productType.toLowerCase().includes('solventless');
 
-            // Nitrogen (per tank)
+            // Butane cost - use actual cost per gram from gas log (calculated from total butane / total grams)
+            let butaneCost = 0;
+            if (!isSolventless) {
+                const batchGrams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || parseFloat(batch.crude_weight) || 0;
+
+                // Method 1: If butane_used is recorded on batch, use that
+                const butaneUsed = parseFloat(batch.butane_used) || 0;
+                if (butaneUsed > 0) {
+                    butaneCost = butaneUsed * (costConfig.butane_per_lb || 3.50);
+                    consumablesBreakdown.butane = { qty: butaneUsed, unit: 'lb', cost: butaneCost, source: 'batch' };
+                }
+                // Method 2: Use calculated butane cost per gram from gas log
+                else if (window.butaneCostPerGram && batchGrams > 0) {
+                    butaneCost = batchGrams * window.butaneCostPerGram;
+                    consumablesBreakdown.butane = {
+                        grams: batchGrams,
+                        costPerGram: window.butaneCostPerGram.toFixed(4),
+                        cost: butaneCost,
+                        source: 'gas_log_calculated'
+                    };
+                }
+            }
+            consumablesCost += butaneCost;
+
+            // Nitrogen (per tank) - could also calculate per gram like butane if needed
             const nitrogenUsed = parseFloat(batch.nitrogen_tanks_used) || 0;
             const nitrogenCost = nitrogenUsed * (costConfig.nitrogen_per_tank || 45);
             consumablesCost += nitrogenCost;
@@ -6252,101 +6523,61 @@
             }
 
             // ============================================
-            // 3. LABOR COST - From timeline + employee rates
+            // 3. LABOR COST - From actual cost per gram rates
             // ============================================
             let laborCost = 0;
             const laborBreakdown = {};
-            const timeline = batch.timeline || [];
 
-            // Method 1: Calculate from timeline entries with timestamps
-            if (timeline.length > 0) {
-                // Group timeline entries by stage
-                const stageEntries = {};
-                timeline.forEach((entry, idx) => {
-                    const stage = entry.stage || 'unknown';
-                    if (!stageEntries[stage]) stageEntries[stage] = [];
-                    stageEntries[stage].push({
-                        ...entry,
-                        timestamp: new Date(entry.timestamp || entry.date),
-                        nextTimestamp: timeline[idx + 1] ? new Date(timeline[idx + 1].timestamp || timeline[idx + 1].date) : null
-                    });
-                });
+            // Use pre-calculated labor cost per gram (from timeclock + production data)
+            // This is calculated in calculateLaborCostPerGram() and cached in window.laborCostPerGram
+            const laborRates = window.laborCostPerGram || {};
+            const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+            const units = batch.units_packaged || 0;
 
-                // Calculate time spent per stage
-                Object.entries(stageEntries).forEach(([stage, entries]) => {
-                    let stageHours = 0;
-                    let stageUser = entries[0]?.user || 'Unknown';
+            // Apply labor cost based on who did each stage
+            const stages = [
+                { name: 'extraction', userField: 'extraction_user', gramsField: 'trim_weight' },
+                { name: 'finishing', userField: 'finishing_user', gramsField: 'crude_weight' },
+                { name: 'packaging', userField: 'packaging_user', gramsField: 'total_grams_packaged' },
+                { name: 'labeling', userField: 'labeling_user', gramsField: 'total_grams_packaged' }
+            ];
 
-                    // If we have start/end timestamps, calculate actual time
-                    entries.forEach(entry => {
-                        if (entry.timestamp && entry.nextTimestamp) {
-                            const hours = (entry.nextTimestamp - entry.timestamp) / (1000 * 60 * 60);
-                            // Cap at 8 hours per entry (reasonable workday)
-                            stageHours += Math.min(hours, 8);
-                        }
-                    });
+            stages.forEach(({ name, userField, gramsField }) => {
+                const user = batch[userField];
+                if (user) {
+                    // Get this employee's cost per gram (calculated from their actual timeclock hours / grams produced)
+                    const costPerGram = laborRates[user]?.costPerGram || laborRates._default?.costPerGram || 0.10;
+                    const stageGrams = parseFloat(batch[gramsField]) || grams || 0;
 
-                    // If no time calculated, estimate based on stage type (with reasonable caps)
-                    if (stageHours === 0) {
-                        const trimWeight = parseFloat(batch.trim_weight) || 0;
-                        const unitsPackaged = batch.units_packaged || 0;
-                        switch (stage) {
-                            case 'intake':
-                                // Intake is quick - 15-30 min
-                                stageHours = 0.25;
-                                break;
-                            case 'extraction':
-                                // ~1 hour per 10 lbs of trim, max 8 hours (one shift)
-                                stageHours = Math.min(8, Math.max(0.5, trimWeight / 10));
-                                break;
-                            case 'finishing':
-                                // ~30 min to 2 hours per batch
-                                stageHours = Math.min(2, 0.5);
-                                break;
-                            case 'packaging':
-                                // ~5 min per 10 units, max 4 hours
-                                stageHours = Math.min(4, Math.max(0.25, unitsPackaged / 120));
-                                break;
-                            case 'labeling':
-                                // ~3 min per 10 units, max 4 hours
-                                stageHours = Math.min(4, Math.max(0.15, unitsPackaged / 200));
-                                break;
-                            default:
-                                stageHours = 0.25;
-                        }
+                    // For packaging/labeling, can also use units × avg grams per unit
+                    let stageCost = stageGrams * costPerGram;
+
+                    // If no grams, estimate from units (avg ~1g per 1g jar)
+                    if (stageCost === 0 && units > 0 && (name === 'packaging' || name === 'labeling')) {
+                        stageCost = units * costPerGram;
                     }
-
-                    // Get employee's hourly rate
-                    const hourlyRate = employeeRates[stageUser] || 18;
-                    const stageCost = stageHours * hourlyRate;
 
                     laborCost += stageCost;
-                    laborBreakdown[stage] = {
-                        user: stageUser,
-                        hours: parseFloat(stageHours.toFixed(2)),
-                        rate: hourlyRate,
-                        cost: parseFloat(stageCost.toFixed(2))
+                    laborBreakdown[name] = {
+                        user,
+                        grams: stageGrams,
+                        costPerGram: costPerGram.toFixed(4),
+                        cost: parseFloat(stageCost.toFixed(2)),
+                        source: laborRates[user] ? 'timeclock' : 'default'
                     };
-                });
-            } else {
-                // Method 2: Estimate from stage completion fields
-                const stages = [
-                    { name: 'extraction', userField: 'extraction_user', weight: 1.0 },
-                    { name: 'finishing', userField: 'finishing_user', weight: 0.5 },
-                    { name: 'packaging', userField: 'packaging_user', weight: 0.5 },
-                    { name: 'labeling', userField: 'labeling_user', weight: 0.25 }
-                ];
+                }
+            });
 
-                stages.forEach(({ name, userField, weight }) => {
-                    const user = batch[userField];
-                    if (user) {
-                        const rate = employeeRates[user] || 18;
-                        const hours = weight;
-                        const stageCost = hours * rate;
-                        laborCost += stageCost;
-                        laborBreakdown[name] = { user, hours, rate, cost: stageCost };
-                    }
-                });
+            // Fallback: if no labor calculated but we have grams, use default rate
+            if (laborCost === 0 && grams > 0) {
+                const defaultCostPerGram = laborRates._default?.costPerGram || 0.10;
+                laborCost = grams * defaultCostPerGram;
+                laborBreakdown.estimated = {
+                    grams: grams,
+                    costPerGram: defaultCostPerGram,
+                    cost: laborCost,
+                    source: 'fallback'
+                };
             }
 
             // ============================================
