@@ -6181,7 +6181,11 @@
             console.log('First 5 packaged batches:');
             periodBatches.slice(0, 5).forEach(b => {
                 const pt = b.packaged_product_type || b.product_made || 'NO TYPE';
-                console.log(`  ${b.id}: ${pt} - ${b.units_packaged} units @ $${b.wholesale_price || priceMap[pt] || 'no price'}`);
+                const units1g = b.units_1g_labeled || b.units_1g || 0;
+                const units4g = b.units_4g_labeled || b.units_4g || 0;
+                const actualUnits = b.labels_applied_quantity || b.units_packaged || 0;
+                const breakdown = (units1g || units4g) ? `(${units1g}x1g + ${units4g}x4g)` : '';
+                console.log(`  ${b.id}: ${pt} - ${actualUnits} units ${breakdown}`);
             });
 
             // Get business ID for price mappings
@@ -6233,16 +6237,30 @@
                     cogs = calculateBatchCOGS(b);
                 }
 
-                const units = b.units_packaged || 0;
-                // Use packaged_product_type, fallback to product_made
+                // Use actual labeled quantity if available, otherwise packaged
+                const actualUnits = b.labels_applied_quantity || b.units_packaged || 0;
+
+                // Get product type
                 const pt = b.packaged_product_type || b.product_made || 'Other';
 
-                // Use batch wholesale_price if set, otherwise use LeafLink mapping
-                let price = parseFloat(b.wholesale_price) || 0;
-                if (price === 0 && priceMap[pt]) {
-                    price = priceMap[pt];
+                // Calculate revenue based on 1g/4g breakdown if available
+                let revenue = 0;
+                const units1g = b.units_1g_labeled || b.units_1g || 0;
+                const units4g = b.units_4g_labeled || b.units_4g || 0;
+
+                if (units1g > 0 || units4g > 0) {
+                    // Has size breakdown - calculate revenue by size
+                    const price1g = priceMap[pt] || priceMap[pt + ' 1g'] || 60;
+                    const price4g = priceMap[pt + ' 4g'] || priceMap[pt + ' 4G'] || 220;
+                    revenue = (units1g * price1g) + (units4g * price4g);
+                } else {
+                    // No breakdown - use wholesale_price or mapping
+                    let price = parseFloat(b.wholesale_price) || 0;
+                    if (price === 0 && priceMap[pt]) {
+                        price = priceMap[pt];
+                    }
+                    revenue = actualUnits * price;
                 }
-                const revenue = units * price;
 
                 totalRevenue += revenue;
                 totalCOGS += cogs.calculated_cogs;
@@ -6251,8 +6269,10 @@
                 totalLabor += cogs.labor_cost;
                 totalOverhead += cogs.overhead_allocated;
 
-                if (!byProduct[pt]) byProduct[pt] = { units: 0, revenue: 0, cogs: 0 };
-                byProduct[pt].units += units;
+                if (!byProduct[pt]) byProduct[pt] = { units: 0, revenue: 0, cogs: 0, units1g: 0, units4g: 0 };
+                byProduct[pt].units += actualUnits;
+                byProduct[pt].units1g += units1g;
+                byProduct[pt].units4g += units4g;
                 byProduct[pt].revenue += revenue;
                 byProduct[pt].cogs += cogs.calculated_cogs;
             });
@@ -6281,10 +6301,15 @@
                     const profit = data.revenue - data.cogs;
                     const margin = data.revenue > 0 ? (profit / data.revenue * 100) : 0;
                     const marginColor = margin >= 40 ? 'var(--accent-green)' : margin >= 20 ? 'var(--accent-orange)' : 'var(--accent-red)';
+                    // Show unit breakdown if available
+                    let unitsDisplay = data.units.toLocaleString();
+                    if (data.units1g > 0 || data.units4g > 0) {
+                        unitsDisplay = `${data.units1g.toLocaleString()} (1g) + ${data.units4g.toLocaleString()} (4g)`;
+                    }
                     return `
                         <tr style="border-bottom: 1px solid var(--border-color);">
                             <td style="padding: 12px; color: var(--text-primary);">${pt}</td>
-                            <td style="padding: 12px; text-align: right; color: var(--text-secondary);">${data.units.toLocaleString()}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-secondary);">${unitsDisplay}</td>
                             <td style="padding: 12px; text-align: right; color: var(--accent-blue);">$${data.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                             <td style="padding: 12px; text-align: right; color: var(--accent-orange);">$${data.cogs.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                             <td style="padding: 12px; text-align: right; color: var(--accent-green);">$${profit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
