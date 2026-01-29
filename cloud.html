@@ -6286,25 +6286,30 @@
                         }
                     });
 
-                    // If no time calculated, estimate based on stage type
+                    // If no time calculated, estimate based on stage type (with reasonable caps)
                     if (stageHours === 0) {
                         const trimWeight = parseFloat(batch.trim_weight) || 0;
+                        const unitsPackaged = batch.units_packaged || 0;
                         switch (stage) {
+                            case 'intake':
+                                // Intake is quick - 15-30 min
+                                stageHours = 0.25;
+                                break;
                             case 'extraction':
-                                // ~1 hour per 10 lbs of trim
-                                stageHours = Math.max(0.5, trimWeight / 10);
+                                // ~1 hour per 10 lbs of trim, max 8 hours (one shift)
+                                stageHours = Math.min(8, Math.max(0.5, trimWeight / 10));
                                 break;
                             case 'finishing':
-                                // ~30 min per batch
-                                stageHours = 0.5;
+                                // ~30 min to 2 hours per batch
+                                stageHours = Math.min(2, 0.5);
                                 break;
                             case 'packaging':
-                                // ~5 min per 10 units
-                                stageHours = Math.max(0.25, (batch.units_packaged || 0) / 120);
+                                // ~5 min per 10 units, max 4 hours
+                                stageHours = Math.min(4, Math.max(0.25, unitsPackaged / 120));
                                 break;
                             case 'labeling':
-                                // ~3 min per 10 units
-                                stageHours = Math.max(0.15, (batch.units_packaged || 0) / 200);
+                                // ~3 min per 10 units, max 4 hours
+                                stageHours = Math.min(4, Math.max(0.15, unitsPackaged / 200));
                                 break;
                             default:
                                 stageHours = 0.25;
