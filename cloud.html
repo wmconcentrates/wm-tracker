@@ -3895,11 +3895,14 @@
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                                 <span style="color: var(--text-secondary);">Avg Batches/Month:</span>
-                                <input type="number" id="avgBatchesPerMonth" value="30" min="1" style="width: 80px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px 10px; border-radius: 4px; text-align: right;" onchange="updateOverheadPerBatch()">
+                                <span id="avgBatchesPerMonthDisplay" style="color: var(--text-primary); font-weight: 600;">--</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                                 <span style="color: var(--text-secondary);">Avg Grams/Month:</span>
-                                <input type="number" id="avgMonthlyGrams" value="15000" min="1" style="width: 80px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px 10px; border-radius: 4px; text-align: right;" onchange="updateOverheadPerBatch()">
+                                <span id="avgMonthlyGramsDisplay" style="color: var(--text-primary); font-weight: 600;">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.8rem; opacity: 0.7;">
+                                <span>📊 Auto-calculated from last 3 months</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                                 <span style="color: var(--text-secondary);">Overhead Per Batch:</span>
@@ -5588,6 +5591,9 @@
                 await loadBatches();
             }
 
+            // Calculate production averages from last 3 months
+            calculateProductionAverages();
+
             // Get business ID (use first business if 'all' selected)
             let bizId = currentBusinessId;
             if (bizId === 'all' && businessesList.length > 0) {
@@ -6009,6 +6015,41 @@
         // Cache for employee rates (loaded once)
         let employeeRatesCache = {};
 
+        // Calculate production averages from batch data
+        function calculateProductionAverages() {
+            if (!batches || batches.length === 0) return;
+
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+            const recentBatches = batches.filter(b => {
+                if (b.is_sub_batch) return false;
+                const batchDate = new Date(b.packaging_date || b.labeling_date || b.completed_at || b.created_at);
+                return batchDate >= threeMonthsAgo;
+            });
+
+            // Sum grams produced in last 3 months
+            let totalGramsLast3Months = 0;
+            recentBatches.forEach(b => {
+                const grams = parseFloat(b.total_grams_packaged) ||
+                             parseFloat(b.final_weight) ||
+                             parseFloat(b.crude_weight) || 0;
+                totalGramsLast3Months += grams;
+            });
+
+            // Calculate monthly averages
+            window.calculatedAvgMonthlyGrams = totalGramsLast3Months / 3 || 15000;
+            window.calculatedAvgBatchesPerMonth = recentBatches.length / 3 || 30;
+
+            // Update display elements if they exist
+            const batchesDisplay = document.getElementById('avgBatchesPerMonthDisplay');
+            const gramsDisplay = document.getElementById('avgMonthlyGramsDisplay');
+            if (batchesDisplay) batchesDisplay.textContent = window.calculatedAvgBatchesPerMonth.toFixed(1);
+            if (gramsDisplay) gramsDisplay.textContent = window.calculatedAvgMonthlyGrams.toLocaleString(undefined, { maximumFractionDigits: 0 }) + 'g';
+
+            console.log(`Production averages: ${window.calculatedAvgBatchesPerMonth.toFixed(1)} batches/mo, ${window.calculatedAvgMonthlyGrams.toFixed(0)}g/mo (from ${recentBatches.length} batches)`);
+        }
+
         async function loadEmployeeRates() {
             if (Object.keys(employeeRatesCache).length > 0) return employeeRatesCache;
 
@@ -6222,12 +6263,13 @@
                                    (costConfig.insurance_monthly || 0);
 
             // Allocate overhead by grams produced (fairer than per-batch)
-            // Estimate: avg 500g output per batch, 30 batches/month = 15,000g/month
             const batchGrams = parseFloat(batch.total_grams_packaged) ||
                               parseFloat(batch.final_weight) ||
                               parseFloat(batch.crude_weight) || 0;
-            const avgMonthlyGrams = parseFloat(document.getElementById('avgMonthlyGrams')?.value) || 15000;
-            const overheadAllocated = batchGrams > 0
+
+            // Use cached monthly grams (calculated in recalculateAllBatchCOGS)
+            const avgMonthlyGrams = window.calculatedAvgMonthlyGrams || 15000;
+            const overheadAllocated = batchGrams > 0 && avgMonthlyGrams > 0
                 ? monthlyOverhead * (batchGrams / avgMonthlyGrams)
                 : monthlyOverhead / 30; // Fallback to per-batch
 
@@ -6277,6 +6319,9 @@
             // Load employee rates first
             const employeeRates = await loadEmployeeRates();
             console.log('Loaded employee rates:', employeeRates);
+
+            // Calculate production averages for overhead allocation
+            calculateProductionAverages();
 
             let updated = 0;
             let skipped = 0;
