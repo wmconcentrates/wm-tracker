@@ -5867,30 +5867,40 @@
                     });
                 }
 
-                // Load current prices from LeafLink mappings
+                // Load current prices from LeafLink mappings (these are CASE prices, 10 units/case)
                 const { data: mappings } = await supabaseClient
                     .from('leaflink_product_mappings')
                     .select('app_product_type, price_per_unit')
                     .eq('business_id', bizId);
 
-                const priceMap = {};
+                const UNITS_PER_CASE = 10;
+                const casePriceMap = {};
                 if (mappings) {
                     mappings.forEach(m => {
-                        priceMap[m.app_product_type] = m.price_per_unit;
+                        casePriceMap[m.app_product_type] = m.price_per_unit;
                     });
                 }
 
                 // Calculate avg COGS per product type from batches
                 const avgCOGS = await calculateAvgCOGSByProductType();
+                console.log('Avg COGS by product type:', avgCOGS);
 
                 // Render table
                 tbody.innerHTML = productTypes.map(pt => {
                     const margin = targetMargins[pt] !== undefined ? targetMargins[pt] : 40;
-                    const avgCost = avgCOGS[pt] || 0;
-                    const suggestedPrice = avgCost > 0 ? avgCost / (1 - margin / 100) : 0;
-                    const currentPrice = priceMap[pt] || 0;
-                    const actualMargin = currentPrice > 0 && avgCost > 0 ? ((currentPrice - avgCost) / currentPrice * 100) : 0;
-                    const marginColor = actualMargin >= margin ? 'var(--accent-green)' : 'var(--accent-orange)';
+                    const avgCost = avgCOGS[pt] || 0; // Cost per unit
+
+                    // Suggested price per unit to achieve target margin
+                    const suggestedUnitPrice = avgCost > 0 ? avgCost / (1 - margin / 100) : 0;
+
+                    // Current prices (LeafLink is per case, convert to per unit)
+                    const casePrice = casePriceMap[pt] || 0;
+                    const unitPrice = casePrice / UNITS_PER_CASE;
+
+                    // Calculate actual margin: (revenue - cost) / revenue
+                    const actualMargin = unitPrice > 0 && avgCost > 0 ? ((unitPrice - avgCost) / unitPrice * 100) : 0;
+                    const isProfit = actualMargin > 0;
+                    const marginColor = actualMargin >= margin ? 'var(--accent-green)' : isProfit ? 'var(--accent-orange)' : 'var(--accent-red)';
 
                     return `
                         <tr style="border-bottom: 1px solid var(--border-color);">
@@ -5899,9 +5909,9 @@
                                 <input type="number" step="1" value="${margin}" min="0" max="100" data-product-type="${pt}" class="target-margin-input" style="width: 60px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px; border-radius: 4px; text-align: center;" onchange="updateMarginRow(this)">%
                             </td>
                             <td style="padding: 12px; text-align: right; color: var(--text-secondary);">${avgCost > 0 ? '$' + avgCost.toFixed(2) : 'N/A'}</td>
-                            <td style="padding: 12px; text-align: right; color: var(--accent-blue); font-weight: 600;">${suggestedPrice > 0 ? '$' + suggestedPrice.toFixed(2) : 'N/A'}</td>
-                            <td style="padding: 12px; text-align: right; color: var(--text-primary);">${currentPrice > 0 ? '$' + currentPrice.toFixed(2) : 'Not set'}</td>
-                            <td style="padding: 12px; text-align: center; color: ${marginColor}; font-weight: 600;">${actualMargin > 0 ? actualMargin.toFixed(1) + '%' : 'N/A'}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-blue); font-weight: 600;">${suggestedUnitPrice > 0 ? '$' + suggestedUnitPrice.toFixed(2) : 'N/A'}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-primary);">${unitPrice > 0 ? '$' + unitPrice.toFixed(2) + ' <span style="font-size:0.75rem;opacity:0.6">($' + casePrice + '/case)</span>' : 'Not set'}</td>
+                            <td style="padding: 12px; text-align: center; color: ${marginColor}; font-weight: 600;">${avgCost > 0 && unitPrice > 0 ? actualMargin.toFixed(1) + '%' : 'N/A'}</td>
                         </tr>
                     `;
                 }).join('');
