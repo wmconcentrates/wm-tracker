@@ -1677,6 +1677,9 @@
                         <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
                             <input type="checkbox" class="station-checkbox" value="sales" style="width: 16px; height: 16px;"> Sales
                         </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
+                            <input type="checkbox" class="station-checkbox" value="costing" style="width: 16px; height: 16px;"> Costing
+                        </label>
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px; justify-content: space-between;">
@@ -1802,6 +1805,11 @@
                 <div class="icon">💰</div>
                 <h3>Sales</h3>
                 <p>Orders & Commission</p>
+            </div>
+            <div class="station-tab" data-station="costing">
+                <div class="icon">📊</div>
+                <h3>Costing</h3>
+                <p>COGS & Margins</p>
             </div>
         </div>
 
@@ -3831,6 +3839,211 @@
         </div>
     </div>
 
+    <!-- Costing Station -->
+    <div class="station-content" id="costing">
+        <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
+        <div class="form-section">
+            <!-- Costing Dashboard Header -->
+            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); border: 2px solid #10B981; border-radius: 16px; padding: 25px; margin-bottom: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; color: #10B981;">
+                            <span>📊</span> Costing & Profitability
+                        </h3>
+                        <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 0.9rem;">Configure costs, labor rates, and target margins</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="recalculateAllBatchCOGS()" class="btn" style="background: var(--accent-blue); padding: 10px 20px;">Recalculate All COGS</button>
+                        <button onclick="loadCostingData()" class="btn" style="background: #10B981; padding: 10px 20px;">Refresh</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Costing Sub-tabs -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <button onclick="showCostingSection('config')" id="costingTabConfig" class="costing-subtab active" style="background: #10B981; border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cost Configuration</button>
+                <button onclick="showCostingSection('labor')" id="costingTabLabor" class="costing-subtab" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; cursor: pointer;">Labor Rates</button>
+                <button onclick="showCostingSection('margins')" id="costingTabMargins" class="costing-subtab" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; cursor: pointer;">Target Margins</button>
+                <button onclick="showCostingSection('analysis')" id="costingTabAnalysis" class="costing-subtab" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; cursor: pointer;">Profitability Analysis</button>
+            </div>
+
+            <!-- Cost Configuration Section -->
+            <div id="costingConfigSection" class="costing-section">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <!-- Consumables -->
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                        <h4 style="color: var(--accent-blue); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🧪</span> Consumable Costs
+                        </h4>
+                        <div id="consumablesCostGrid" style="display: grid; gap: 12px;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Overhead -->
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                        <h4 style="color: var(--accent-orange); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🏢</span> Monthly Overhead
+                        </h4>
+                        <div id="overheadCostGrid" style="display: grid; gap: 12px;">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--text-secondary);">Total Monthly Overhead:</span>
+                                <span id="totalMonthlyOverhead" style="font-size: 1.2rem; font-weight: 700; color: var(--accent-orange);">$0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                <span style="color: var(--text-secondary);">Avg Batches/Month:</span>
+                                <input type="number" id="avgBatchesPerMonth" value="30" min="1" style="width: 80px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px 10px; border-radius: 4px; text-align: right;" onchange="updateOverheadPerBatch()">
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                <span style="color: var(--text-secondary);">Overhead Per Batch:</span>
+                                <span id="overheadPerBatch" style="font-size: 1.1rem; font-weight: 600; color: var(--accent-green);">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="saveCostConfig()" class="btn" style="background: var(--accent-green); margin-top: 20px; padding: 12px 30px;">Save Cost Configuration</button>
+            </div>
+
+            <!-- Labor Rates Section -->
+            <div id="costingLaborSection" class="costing-section" style="display: none;">
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                    <h4 style="color: var(--accent-purple); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>👥</span> Employee Hourly Rates
+                    </h4>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">Set hourly rates for each employee. These are used to calculate labor costs on batches.</p>
+                    <div id="laborRatesGrid" style="display: grid; gap: 10px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                <button onclick="saveLaborRates()" class="btn" style="background: var(--accent-green); margin-top: 20px; padding: 12px 30px;">Save Labor Rates</button>
+            </div>
+
+            <!-- Target Margins Section -->
+            <div id="costingMarginsSection" class="costing-section" style="display: none;">
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                    <h4 style="color: #FFD700; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>🎯</span> Target Margins by Product Type
+                    </h4>
+                    <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">Set your target profit margin for each product type. The system will calculate suggested pricing.</p>
+                    <div style="overflow-x: auto;">
+                        <table id="targetMarginsTable" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--bg-tertiary);">
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Product Type</th>
+                                    <th style="padding: 12px; text-align: center; color: var(--text-secondary);">Target Margin %</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Avg COGS/Unit</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Suggested Price</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Current Price</th>
+                                    <th style="padding: 12px; text-align: center; color: var(--text-secondary);">Actual Margin</th>
+                                </tr>
+                            </thead>
+                            <tbody id="targetMarginsBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="saveTargetMargins()" class="btn" style="background: var(--accent-green); padding: 12px 30px;">Save Target Margins</button>
+                    <button onclick="pushPricesToLeafLink()" class="btn" style="background: var(--accent-blue); padding: 12px 30px;">Push Prices to LeafLink</button>
+                </div>
+            </div>
+
+            <!-- Profitability Analysis Section -->
+            <div id="costingAnalysisSection" class="costing-section" style="display: none;">
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+                    <span style="color: var(--text-secondary);">Analysis Period:</span>
+                    <select id="analysisperiod" onchange="updateProfitabilityAnalysis()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px;">
+                        <option value="week">This Week</option>
+                        <option value="month" selected>This Month</option>
+                        <option value="quarter">This Quarter</option>
+                        <option value="year">This Year</option>
+                    </select>
+                </div>
+
+                <!-- Summary Cards -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-blue);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Total Revenue</div>
+                        <div id="analysisRevenue" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">$0.00</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-orange);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Total COGS</div>
+                        <div id="analysisCOGS" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-orange);">$0.00</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-green);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Gross Profit</div>
+                        <div id="analysisProfit" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">$0.00</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-purple);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Gross Margin</div>
+                        <div id="analysisMargin" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">0%</div>
+                    </div>
+                </div>
+
+                <!-- By Product Breakdown -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0;">Profitability by Product Type</h4>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--bg-tertiary);">
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Product Type</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Units Sold</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Revenue</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">COGS</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Profit</th>
+                                    <th style="padding: 12px; text-align: center; color: var(--text-secondary);">Margin</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productProfitabilityBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Cost Breakdown -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0;">Cost Category Breakdown</h4>
+                    <div id="costBreakdownChart" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                        <div style="text-align: center;">
+                            <div style="height: 100px; background: linear-gradient(to top, var(--accent-blue) 0%, transparent 100%); border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
+                                <span id="costBreakdownMaterial" style="color: white; font-weight: 700;">$0</span>
+                            </div>
+                            <div style="color: var(--text-secondary); margin-top: 8px; font-size: 0.85rem;">Materials</div>
+                            <div id="costBreakdownMaterialPct" style="color: var(--accent-blue); font-weight: 600;">0%</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="height: 100px; background: linear-gradient(to top, var(--accent-orange) 0%, transparent 100%); border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
+                                <span id="costBreakdownConsumables" style="color: white; font-weight: 700;">$0</span>
+                            </div>
+                            <div style="color: var(--text-secondary); margin-top: 8px; font-size: 0.85rem;">Consumables</div>
+                            <div id="costBreakdownConsumablesPct" style="color: var(--accent-orange); font-weight: 600;">0%</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="height: 100px; background: linear-gradient(to top, var(--accent-purple) 0%, transparent 100%); border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
+                                <span id="costBreakdownLabor" style="color: white; font-weight: 700;">$0</span>
+                            </div>
+                            <div style="color: var(--text-secondary); margin-top: 8px; font-size: 0.85rem;">Labor</div>
+                            <div id="costBreakdownLaborPct" style="color: var(--accent-purple); font-weight: 600;">0%</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="height: 100px; background: linear-gradient(to top, var(--accent-green) 0%, transparent 100%); border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
+                                <span id="costBreakdownOverhead" style="color: white; font-weight: 700;">$0</span>
+                            </div>
+                            <div style="color: var(--text-secondary); margin-top: 8px; font-size: 0.85rem;">Overhead</div>
+                            <div id="costBreakdownOverheadPct" style="color: var(--accent-green); font-weight: 600;">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Royalty Details Modal -->
     <div id="royaltyDetailsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10002; overflow-y: auto;">
         <div style="max-width: 1100px; margin: 30px auto; background: var(--bg-secondary); border-radius: 20px; padding: 0; box-shadow: 0 20px 60px rgba(245, 158, 11, 0.4);">
@@ -5314,6 +5527,594 @@
             }
         }
 
+        // ==================== COSTING FUNCTIONS ====================
+        let costConfig = {};
+        let targetMargins = {};
+
+        // Default cost configuration
+        const defaultCostConfig = {
+            // Consumables
+            butane_per_lb: { value: 3.50, unit: 'lb', label: 'Butane (per lb)' },
+            nitrogen_per_tank: { value: 45.00, unit: 'tank', label: 'Nitrogen (per tank)' },
+            silica_per_gram: { value: 0.05, unit: 'gram', label: 'Silica (per gram)' },
+            clay_per_gram: { value: 0.03, unit: 'gram', label: 'Clay (per gram)' },
+            jar_1g: { value: 0.25, unit: 'each', label: '1g Jar' },
+            jar_4g: { value: 0.40, unit: 'each', label: '4g Jar' },
+            lid: { value: 0.10, unit: 'each', label: 'Lid' },
+            label: { value: 0.05, unit: 'each', label: 'Label' },
+            cart_hardware: { value: 2.50, unit: 'each', label: 'Cart Hardware' },
+            aio_hardware: { value: 5.00, unit: 'each', label: 'AIO Hardware' },
+            // Overhead
+            rent_monthly: { value: 0, unit: 'month', label: 'Rent' },
+            utilities_monthly: { value: 0, unit: 'month', label: 'Utilities' },
+            equipment_monthly: { value: 0, unit: 'month', label: 'Equipment/Depreciation' },
+            insurance_monthly: { value: 0, unit: 'month', label: 'Insurance' }
+        };
+
+        function showCostingSection(section) {
+            // Update subtab buttons
+            document.querySelectorAll('.costing-subtab').forEach(btn => {
+                btn.style.background = 'var(--bg-tertiary)';
+                btn.style.border = '1px solid var(--border-color)';
+                btn.style.color = 'var(--text-primary)';
+            });
+            const activeBtn = document.getElementById('costingTab' + section.charAt(0).toUpperCase() + section.slice(1));
+            if (activeBtn) {
+                activeBtn.style.background = '#10B981';
+                activeBtn.style.border = 'none';
+                activeBtn.style.color = 'white';
+            }
+
+            // Show/hide sections
+            document.querySelectorAll('.costing-section').forEach(s => s.style.display = 'none');
+            const sectionEl = document.getElementById('costing' + section.charAt(0).toUpperCase() + section.slice(1) + 'Section');
+            if (sectionEl) sectionEl.style.display = 'block';
+
+            // Load section-specific data
+            if (section === 'labor') loadLaborRates();
+            if (section === 'margins') loadTargetMargins();
+            if (section === 'analysis') updateProfitabilityAnalysis();
+        }
+
+        async function loadCostingData() {
+            if (!supabaseClient || !currentBusiness) return;
+
+            try {
+                // Load cost config
+                const { data: configData, error: configError } = await supabaseClient
+                    .from('wm_cost_config')
+                    .select('*')
+                    .eq('business_id', currentBusiness.id);
+
+                if (!configError && configData) {
+                    configData.forEach(c => {
+                        costConfig[c.config_key] = c.config_value;
+                    });
+                }
+
+                // Merge with defaults
+                Object.keys(defaultCostConfig).forEach(key => {
+                    if (costConfig[key] === undefined) {
+                        costConfig[key] = defaultCostConfig[key].value;
+                    }
+                });
+
+                renderCostConfigForm();
+                updateOverheadPerBatch();
+
+            } catch (err) {
+                console.error('Error loading cost config:', err);
+            }
+        }
+
+        function renderCostConfigForm() {
+            const consumablesGrid = document.getElementById('consumablesCostGrid');
+            const overheadGrid = document.getElementById('overheadCostGrid');
+            if (!consumablesGrid || !overheadGrid) return;
+
+            // Consumables
+            const consumableKeys = ['butane_per_lb', 'nitrogen_per_tank', 'silica_per_gram', 'clay_per_gram', 'jar_1g', 'jar_4g', 'lid', 'label', 'cart_hardware', 'aio_hardware'];
+            consumablesGrid.innerHTML = consumableKeys.map(key => {
+                const def = defaultCostConfig[key];
+                const val = costConfig[key] !== undefined ? costConfig[key] : def.value;
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="color: var(--text-primary);">${def.label}</label>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <span style="color: var(--text-secondary);">$</span>
+                            <input type="number" step="0.01" value="${val}" data-cost-key="${key}" class="cost-config-input" style="width: 80px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px 10px; border-radius: 4px; text-align: right;">
+                            <span style="color: var(--text-secondary); font-size: 0.8rem;">/${def.unit}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Overhead
+            const overheadKeys = ['rent_monthly', 'utilities_monthly', 'equipment_monthly', 'insurance_monthly'];
+            overheadGrid.innerHTML = overheadKeys.map(key => {
+                const def = defaultCostConfig[key];
+                const val = costConfig[key] !== undefined ? costConfig[key] : def.value;
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="color: var(--text-primary);">${def.label}</label>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <span style="color: var(--text-secondary);">$</span>
+                            <input type="number" step="0.01" value="${val}" data-cost-key="${key}" class="cost-config-input overhead-input" style="width: 100px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px 10px; border-radius: 4px; text-align: right;" onchange="updateOverheadPerBatch()">
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateOverheadPerBatch() {
+            const overheadInputs = document.querySelectorAll('.overhead-input');
+            let totalOverhead = 0;
+            overheadInputs.forEach(input => {
+                totalOverhead += parseFloat(input.value) || 0;
+            });
+
+            const avgBatches = parseFloat(document.getElementById('avgBatchesPerMonth')?.value) || 30;
+            const perBatch = totalOverhead / avgBatches;
+
+            const totalEl = document.getElementById('totalMonthlyOverhead');
+            const perBatchEl = document.getElementById('overheadPerBatch');
+            if (totalEl) totalEl.textContent = '$' + totalOverhead.toFixed(2);
+            if (perBatchEl) perBatchEl.textContent = '$' + perBatch.toFixed(2);
+        }
+
+        async function saveCostConfig() {
+            if (!supabaseClient || !currentBusiness) {
+                alert('Database not connected');
+                return;
+            }
+
+            try {
+                const inputs = document.querySelectorAll('.cost-config-input');
+                const updates = [];
+
+                inputs.forEach(input => {
+                    const key = input.dataset.costKey;
+                    const value = parseFloat(input.value) || 0;
+                    costConfig[key] = value;
+
+                    updates.push({
+                        business_id: currentBusiness.id,
+                        config_type: key.includes('monthly') ? 'overhead' : 'consumable',
+                        config_key: key,
+                        config_value: value,
+                        unit: defaultCostConfig[key]?.unit || 'each'
+                    });
+                });
+
+                // Upsert all config values
+                const { error } = await supabaseClient
+                    .from('wm_cost_config')
+                    .upsert(updates, { onConflict: 'business_id,config_type,config_key' });
+
+                if (error) throw error;
+
+                alert('Cost configuration saved!');
+            } catch (err) {
+                console.error('Error saving cost config:', err);
+                alert('Error saving: ' + err.message);
+            }
+        }
+
+        async function loadLaborRates() {
+            if (!supabaseClient || !currentBusiness) return;
+
+            const grid = document.getElementById('laborRatesGrid');
+            if (!grid) return;
+
+            try {
+                // Load employees
+                const { data: employees, error } = await supabaseClient
+                    .from('wm_employees')
+                    .select('id, name, hourly_rate, is_active')
+                    .eq('business_id', currentBusiness.id)
+                    .eq('is_active', true)
+                    .order('name');
+
+                if (error) throw error;
+
+                if (!employees || employees.length === 0) {
+                    grid.innerHTML = '<p style="color: var(--text-secondary);">No employees found. Add employees in the login screen.</p>';
+                    return;
+                }
+
+                grid.innerHTML = employees.map(emp => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-tertiary); border-radius: 8px;">
+                        <span style="color: var(--text-primary); font-weight: 500;">${emp.name}</span>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <span style="color: var(--text-secondary);">$</span>
+                            <input type="number" step="0.01" value="${emp.hourly_rate || 0}" data-employee-id="${emp.id}" class="labor-rate-input" style="width: 80px; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; border-radius: 4px; text-align: right;">
+                            <span style="color: var(--text-secondary);">/hr</span>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error('Error loading labor rates:', err);
+                grid.innerHTML = '<p style="color: var(--accent-red);">Error loading employees</p>';
+            }
+        }
+
+        async function saveLaborRates() {
+            if (!supabaseClient) {
+                alert('Database not connected');
+                return;
+            }
+
+            try {
+                const inputs = document.querySelectorAll('.labor-rate-input');
+                let savedCount = 0;
+
+                for (const input of inputs) {
+                    const employeeId = input.dataset.employeeId;
+                    const hourlyRate = parseFloat(input.value) || 0;
+
+                    const { error } = await supabaseClient
+                        .from('wm_employees')
+                        .update({ hourly_rate: hourlyRate })
+                        .eq('id', employeeId);
+
+                    if (!error) savedCount++;
+                }
+
+                alert(`Saved labor rates for ${savedCount} employees!`);
+            } catch (err) {
+                console.error('Error saving labor rates:', err);
+                alert('Error saving: ' + err.message);
+            }
+        }
+
+        async function loadTargetMargins() {
+            if (!supabaseClient || !currentBusiness) return;
+
+            const tbody = document.getElementById('targetMarginsBody');
+            if (!tbody) return;
+
+            try {
+                // Get product types
+                const productTypes = ['Wax', 'Sugar Wax', 'Shatter', 'Live Resin Carts', 'Live Resin AIOs', 'Brick Hash', 'Hash Hits', 'RSO Syringes'];
+
+                // Load saved margins
+                const { data: margins, error: marginsError } = await supabaseClient
+                    .from('wm_target_margins')
+                    .select('*')
+                    .eq('business_id', currentBusiness.id);
+
+                if (!marginsError && margins) {
+                    margins.forEach(m => {
+                        targetMargins[m.product_type] = m.target_margin_pct;
+                    });
+                }
+
+                // Load current prices from LeafLink mappings
+                const { data: mappings } = await supabaseClient
+                    .from('leaflink_product_mappings')
+                    .select('app_product_type, price_per_unit')
+                    .eq('business_id', currentBusiness.id);
+
+                const priceMap = {};
+                if (mappings) {
+                    mappings.forEach(m => {
+                        priceMap[m.app_product_type] = m.price_per_unit;
+                    });
+                }
+
+                // Calculate avg COGS per product type from batches
+                const avgCOGS = await calculateAvgCOGSByProductType();
+
+                // Render table
+                tbody.innerHTML = productTypes.map(pt => {
+                    const margin = targetMargins[pt] !== undefined ? targetMargins[pt] : 40;
+                    const avgCost = avgCOGS[pt] || 0;
+                    const suggestedPrice = avgCost > 0 ? avgCost / (1 - margin / 100) : 0;
+                    const currentPrice = priceMap[pt] || 0;
+                    const actualMargin = currentPrice > 0 && avgCost > 0 ? ((currentPrice - avgCost) / currentPrice * 100) : 0;
+                    const marginColor = actualMargin >= margin ? 'var(--accent-green)' : 'var(--accent-orange)';
+
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px; color: var(--text-primary);">${pt}</td>
+                            <td style="padding: 12px; text-align: center;">
+                                <input type="number" step="1" value="${margin}" min="0" max="100" data-product-type="${pt}" class="target-margin-input" style="width: 60px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 5px; border-radius: 4px; text-align: center;" onchange="updateMarginRow(this)">%
+                            </td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-secondary);">${avgCost > 0 ? '$' + avgCost.toFixed(2) : 'N/A'}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-blue); font-weight: 600;">${suggestedPrice > 0 ? '$' + suggestedPrice.toFixed(2) : 'N/A'}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-primary);">${currentPrice > 0 ? '$' + currentPrice.toFixed(2) : 'Not set'}</td>
+                            <td style="padding: 12px; text-align: center; color: ${marginColor}; font-weight: 600;">${actualMargin > 0 ? actualMargin.toFixed(1) + '%' : 'N/A'}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Error loading target margins:', err);
+            }
+        }
+
+        function updateMarginRow(input) {
+            // Recalculate suggested price when margin changes
+            loadTargetMargins();
+        }
+
+        async function calculateAvgCOGSByProductType() {
+            // Calculate average COGS per unit for each product type from completed batches
+            const avgCOGS = {};
+
+            if (!batches || batches.length === 0) return avgCOGS;
+
+            const completedBatches = batches.filter(b => b.status === 'completed' && b.units_packaged > 0);
+
+            const byType = {};
+            completedBatches.forEach(b => {
+                const pt = b.packaged_product_type || b.product_made;
+                if (!pt) return;
+
+                if (!byType[pt]) byType[pt] = { totalCost: 0, totalUnits: 0 };
+
+                const batchCOGS = calculateBatchCOGS(b);
+                byType[pt].totalCost += batchCOGS.calculated_cogs;
+                byType[pt].totalUnits += b.units_packaged;
+            });
+
+            Object.keys(byType).forEach(pt => {
+                if (byType[pt].totalUnits > 0) {
+                    avgCOGS[pt] = byType[pt].totalCost / byType[pt].totalUnits;
+                }
+            });
+
+            return avgCOGS;
+        }
+
+        async function saveTargetMargins() {
+            if (!supabaseClient || !currentBusiness) {
+                alert('Database not connected');
+                return;
+            }
+
+            try {
+                const inputs = document.querySelectorAll('.target-margin-input');
+                const updates = [];
+
+                inputs.forEach(input => {
+                    const productType = input.dataset.productType;
+                    const marginPct = parseFloat(input.value) || 40;
+                    targetMargins[productType] = marginPct;
+
+                    updates.push({
+                        business_id: currentBusiness.id,
+                        product_type: productType,
+                        target_margin_pct: marginPct
+                    });
+                });
+
+                const { error } = await supabaseClient
+                    .from('wm_target_margins')
+                    .upsert(updates, { onConflict: 'business_id,product_type' });
+
+                if (error) throw error;
+
+                alert('Target margins saved!');
+            } catch (err) {
+                console.error('Error saving margins:', err);
+                alert('Error saving: ' + err.message);
+            }
+        }
+
+        async function pushPricesToLeafLink() {
+            alert('This will update LeafLink product mappings with suggested prices. Feature coming soon!');
+        }
+
+        function calculateBatchCOGS(batch) {
+            // 1. Material Cost
+            const materialCost = parseFloat(batch.material_cost) || 0;
+
+            // 2. Consumables Cost
+            let consumablesCost = 0;
+
+            // Butane and Nitrogen
+            consumablesCost += (parseFloat(batch.butane_used) || 0) * (costConfig.butane_per_lb || 3.50);
+            consumablesCost += (parseFloat(batch.nitrogen_tanks_used) || 0) * (costConfig.nitrogen_per_tank || 45);
+
+            // Filter media
+            if (batch.filter_media_used) {
+                const fm = typeof batch.filter_media_used === 'string' ? JSON.parse(batch.filter_media_used) : batch.filter_media_used;
+                consumablesCost += (parseFloat(fm.silica_top) || 0) * (costConfig.silica_per_gram || 0.05);
+                consumablesCost += (parseFloat(fm.clay) || 0) * (costConfig.clay_per_gram || 0.03);
+                consumablesCost += (parseFloat(fm.silica_bottom) || 0) * (costConfig.silica_per_gram || 0.05);
+            }
+
+            // Packaging materials
+            if (batch.units_packaged) {
+                const productType = batch.packaged_product_type || '';
+                if (productType.includes('Cart')) {
+                    consumablesCost += batch.units_packaged * (costConfig.cart_hardware || 2.50);
+                } else if (productType.includes('AIO')) {
+                    consumablesCost += batch.units_packaged * (costConfig.aio_hardware || 5.00);
+                } else {
+                    // Jars + lids + labels
+                    const jars1g = parseInt(batch.units_1g) || 0;
+                    const jars4g = parseInt(batch.units_4g) || 0;
+                    consumablesCost += jars1g * (costConfig.jar_1g || 0.25);
+                    consumablesCost += jars4g * (costConfig.jar_4g || 0.40);
+                    consumablesCost += batch.units_packaged * ((costConfig.lid || 0.10) + (costConfig.label || 0.05));
+                }
+            }
+
+            // 3. Labor Cost (estimate based on timeline)
+            let laborCost = 0;
+            // Simple estimate: 1 hour per stage at avg rate
+            const avgRate = 18; // Default average hourly rate
+            const stages = ['extraction', 'finishing', 'packaging', 'labeling'];
+            stages.forEach(stage => {
+                if (batch[stage + '_user'] || batch[stage + '_date']) {
+                    laborCost += avgRate * 0.5; // 30 min per stage average
+                }
+            });
+
+            // 4. Overhead allocation
+            const avgBatches = parseFloat(document.getElementById('avgBatchesPerMonth')?.value) || 30;
+            const monthlyOverhead = (costConfig.rent_monthly || 0) + (costConfig.utilities_monthly || 0) +
+                                   (costConfig.equipment_monthly || 0) + (costConfig.insurance_monthly || 0);
+            const overheadAllocated = monthlyOverhead / avgBatches;
+
+            // Total COGS
+            const calculatedCOGS = materialCost + consumablesCost + laborCost + overheadAllocated;
+
+            // Cost per unit
+            const costPerUnit = batch.units_packaged > 0 ? calculatedCOGS / batch.units_packaged : 0;
+
+            return {
+                material_cost: materialCost,
+                consumables_cost: consumablesCost,
+                labor_cost: laborCost,
+                overhead_allocated: overheadAllocated,
+                calculated_cogs: calculatedCOGS,
+                cost_per_unit: costPerUnit
+            };
+        }
+
+        async function recalculateAllBatchCOGS() {
+            if (!supabaseClient || !batches) {
+                alert('No data available');
+                return;
+            }
+
+            const confirm = window.confirm('This will recalculate COGS for all batches. Continue?');
+            if (!confirm) return;
+
+            let updated = 0;
+            for (const batch of batches) {
+                if (batch.status === 'completed' && batch.units_packaged > 0) {
+                    const cogs = calculateBatchCOGS(batch);
+
+                    const { error } = await supabaseClient
+                        .from('wm_batches')
+                        .update({
+                            calculated_cogs: cogs.calculated_cogs,
+                            labor_cost: cogs.labor_cost,
+                            consumables_cost: cogs.consumables_cost,
+                            overhead_allocated: cogs.overhead_allocated,
+                            cost_per_unit: cogs.cost_per_unit
+                        })
+                        .eq('id', batch.id);
+
+                    if (!error) updated++;
+                }
+            }
+
+            alert(`Recalculated COGS for ${updated} batches!`);
+            loadBatches();
+        }
+
+        async function updateProfitabilityAnalysis() {
+            const period = document.getElementById('analysisperiod')?.value || 'month';
+
+            // Calculate date range
+            const now = new Date();
+            let startDate;
+            switch (period) {
+                case 'week':
+                    startDate = new Date(now);
+                    startDate.setDate(now.getDate() - 7);
+                    break;
+                case 'month':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    break;
+                case 'quarter':
+                    const quarter = Math.floor(now.getMonth() / 3);
+                    startDate = new Date(now.getFullYear(), quarter * 3, 1);
+                    break;
+                case 'year':
+                    startDate = new Date(now.getFullYear(), 0, 1);
+                    break;
+            }
+
+            // Filter batches by completion date
+            const periodBatches = batches.filter(b => {
+                if (b.status !== 'completed' || !b.completed_at) return false;
+                const completedDate = new Date(b.completed_at);
+                return completedDate >= startDate && completedDate <= now;
+            });
+
+            // Calculate totals
+            let totalRevenue = 0;
+            let totalCOGS = 0;
+            let totalMaterial = 0;
+            let totalConsumables = 0;
+            let totalLabor = 0;
+            let totalOverhead = 0;
+
+            const byProduct = {};
+
+            periodBatches.forEach(b => {
+                const cogs = calculateBatchCOGS(b);
+                const units = b.units_packaged || 0;
+                const price = parseFloat(b.wholesale_price) || 0;
+                const revenue = units * price;
+
+                totalRevenue += revenue;
+                totalCOGS += cogs.calculated_cogs;
+                totalMaterial += cogs.material_cost;
+                totalConsumables += cogs.consumables_cost;
+                totalLabor += cogs.labor_cost;
+                totalOverhead += cogs.overhead_allocated;
+
+                const pt = b.packaged_product_type || 'Other';
+                if (!byProduct[pt]) byProduct[pt] = { units: 0, revenue: 0, cogs: 0 };
+                byProduct[pt].units += units;
+                byProduct[pt].revenue += revenue;
+                byProduct[pt].cogs += cogs.calculated_cogs;
+            });
+
+            const grossProfit = totalRevenue - totalCOGS;
+            const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
+
+            // Update summary cards
+            document.getElementById('analysisRevenue').textContent = '$' + totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('analysisCOGS').textContent = '$' + totalCOGS.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('analysisProfit').textContent = '$' + grossProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('analysisMargin').textContent = grossMargin.toFixed(1) + '%';
+
+            // Update by-product table
+            const tbody = document.getElementById('productProfitabilityBody');
+            if (tbody) {
+                tbody.innerHTML = Object.entries(byProduct).map(([pt, data]) => {
+                    const profit = data.revenue - data.cogs;
+                    const margin = data.revenue > 0 ? (profit / data.revenue * 100) : 0;
+                    const marginColor = margin >= 40 ? 'var(--accent-green)' : margin >= 20 ? 'var(--accent-orange)' : 'var(--accent-red)';
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px; color: var(--text-primary);">${pt}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-secondary);">${data.units.toLocaleString()}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-blue);">$${data.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-orange);">$${data.cogs.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-green);">$${profit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            <td style="padding: 12px; text-align: center; color: ${marginColor}; font-weight: 600;">${margin.toFixed(1)}%</td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--text-secondary);">No completed batches in this period</td></tr>';
+            }
+
+            // Update cost breakdown
+            const costTotal = totalMaterial + totalConsumables + totalLabor + totalOverhead;
+            const materialPct = costTotal > 0 ? (totalMaterial / costTotal * 100) : 0;
+            const consumablesPct = costTotal > 0 ? (totalConsumables / costTotal * 100) : 0;
+            const laborPct = costTotal > 0 ? (totalLabor / costTotal * 100) : 0;
+            const overheadPct = costTotal > 0 ? (totalOverhead / costTotal * 100) : 0;
+
+            document.getElementById('costBreakdownMaterial').textContent = '$' + totalMaterial.toFixed(0);
+            document.getElementById('costBreakdownMaterialPct').textContent = materialPct.toFixed(0) + '%';
+            document.getElementById('costBreakdownConsumables').textContent = '$' + totalConsumables.toFixed(0);
+            document.getElementById('costBreakdownConsumablesPct').textContent = consumablesPct.toFixed(0) + '%';
+            document.getElementById('costBreakdownLabor').textContent = '$' + totalLabor.toFixed(0);
+            document.getElementById('costBreakdownLaborPct').textContent = laborPct.toFixed(0) + '%';
+            document.getElementById('costBreakdownOverhead').textContent = '$' + totalOverhead.toFixed(0);
+            document.getElementById('costBreakdownOverheadPct').textContent = overheadPct.toFixed(0) + '%';
+        }
+
         function generateDemoBatches() {
             const strains = ['GMO Cookies', 'Wedding Cake', 'Gelato', 'Blue Dream', 'OG Kush', 'Sour Diesel', 'Purple Punch', 'Zkittlez', 'Skywalker OG', 'Strawberry Cough'];
             const suppliers = ['Boulder Built Farms', 'Wonderland Cannabis', 'In The Flow Farms', 'Loud Seeds', 'Green Valley Farms'];
@@ -6106,12 +6907,54 @@ CREATE TABLE wm_batches (
     
     -- Labeling fields
     labeling_paused BOOLEAN DEFAULT FALSE,
-    
+
+    -- COGS fields (for costing tab)
+    calculated_cogs DECIMAL(10,2),
+    labor_cost DECIMAL(10,2),
+    consumables_cost DECIMAL(10,2),
+    overhead_allocated DECIMAL(10,2),
+    cost_per_unit DECIMAL(10,4),
+
     completed_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Enable realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
+
+-- =============================================
+-- COSTING TABLES (run these in Supabase SQL Editor)
+-- =============================================
+
+-- Cost configuration table
+CREATE TABLE IF NOT EXISTS wm_cost_config (
+    id SERIAL PRIMARY KEY,
+    business_id UUID REFERENCES wm_businesses(id),
+    config_type TEXT NOT NULL,
+    config_key TEXT NOT NULL,
+    config_value DECIMAL(10,2),
+    unit TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(business_id, config_type, config_key)
+);
+
+-- Target margins table
+CREATE TABLE IF NOT EXISTS wm_target_margins (
+    id SERIAL PRIMARY KEY,
+    business_id UUID REFERENCES wm_businesses(id),
+    product_type TEXT NOT NULL,
+    target_margin_pct DECIMAL(5,2) DEFAULT 40.00,
+    UNIQUE(business_id, product_type)
+);
+
+-- Add hourly_rate to employees
+ALTER TABLE wm_employees ADD COLUMN IF NOT EXISTS hourly_rate DECIMAL(10,2) DEFAULT 0;
+
+-- Add COGS columns to batches (if not already present)
+ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS calculated_cogs DECIMAL(10,2);
+ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS labor_cost DECIMAL(10,2);
+ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS consumables_cost DECIMAL(10,2);
+ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS overhead_allocated DECIMAL(10,2);
+ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS cost_per_unit DECIMAL(10,4);
                 `;
                 
                 alert(`Please run this SQL in your Supabase SQL Editor:\n\n${createTableSQL}\n\nThen refresh this page.`);
@@ -6855,6 +7698,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE wm_batches;
                     loadSalesDashboard(); // Still needed for Pipeline/Inventory/Needs data
                 } else if (station === 'sales') {
                     loadSalesDashboardSales();
+                } else if (station === 'costing') {
+                    loadCostingData();
                 }
             });
         });
