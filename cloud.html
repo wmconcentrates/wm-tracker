@@ -10183,6 +10183,19 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     strainTypeAlert.style.display = 'none';
                 }
                 
+                // Pre-populate product type from extraction (product_made)
+                const productTypeSelect = document.getElementById('packagedProductType');
+                if (batch.product_made) {
+                    // Try to find matching option
+                    const options = Array.from(productTypeSelect.options);
+                    const match = options.find(opt => opt.value === batch.product_made);
+                    if (match) {
+                        productTypeSelect.value = batch.product_made;
+                        // Trigger change event to show correct form sections
+                        productTypeSelect.dispatchEvent(new Event('change'));
+                    }
+                }
+
                 // Update pause button visibility
                 updatePauseButtons();
             }
