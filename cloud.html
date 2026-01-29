@@ -6244,22 +6244,28 @@
                 const pt = b.packaged_product_type || b.product_made || 'Other';
 
                 // Calculate revenue based on 1g/4g breakdown if available
+                // LeafLink prices are per CASE (10 units per case)
+                const UNITS_PER_CASE = 10;
                 let revenue = 0;
                 const units1g = b.units_1g_labeled || b.units_1g || 0;
                 const units4g = b.units_4g_labeled || b.units_4g || 0;
 
                 if (units1g > 0 || units4g > 0) {
                     // Has size breakdown - calculate revenue by size
-                    const price1g = priceMap[pt] || priceMap[pt + ' 1g'] || 60;
-                    const price4g = priceMap[pt + ' 4g'] || priceMap[pt + ' 4G'] || 220;
-                    revenue = (units1g * price1g) + (units4g * price4g);
+                    // Prices are per case, so divide units by 10 to get cases
+                    const casePrice1g = priceMap[pt] || priceMap[pt + ' 1g'] || 60;
+                    const casePrice4g = priceMap[pt + ' 4g'] || priceMap[pt + ' 4G'] || 220;
+                    const cases1g = units1g / UNITS_PER_CASE;
+                    const cases4g = units4g / UNITS_PER_CASE;
+                    revenue = (cases1g * casePrice1g) + (cases4g * casePrice4g);
                 } else {
-                    // No breakdown - use wholesale_price or mapping
-                    let price = parseFloat(b.wholesale_price) || 0;
-                    if (price === 0 && priceMap[pt]) {
-                        price = priceMap[pt];
+                    // No breakdown - use wholesale_price or mapping (assume case price)
+                    let casePrice = parseFloat(b.wholesale_price) || 0;
+                    if (casePrice === 0 && priceMap[pt]) {
+                        casePrice = priceMap[pt];
                     }
-                    revenue = actualUnits * price;
+                    const cases = actualUnits / UNITS_PER_CASE;
+                    revenue = cases * casePrice;
                 }
 
                 totalRevenue += revenue;
