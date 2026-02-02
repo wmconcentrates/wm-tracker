@@ -21949,10 +21949,8 @@ ${employeeReport || 'No activity recorded today'}
             content.innerHTML = '<div style="text-align: center; padding: 60px; color: var(--text-secondary);"><div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>Loading drop data from LeafLink...</div>';
 
             try {
-                // Calculate date 2 months ago
-                const twoMonthsAgo = new Date();
-                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
+                // Use fixed date filter - November 1st, 2025
+                const dateFilter = '2025-11-01';
 
                 // Fetch shipped and complete orders via proxy
                 let allOrders = [];
@@ -22480,9 +22478,8 @@ ${employeeReport || 'No activity recorded today'}
         // Fetch orders from a specific business
         async function fetchOrdersForBusiness(businessSlug) {
             try {
-                const twoMonthsAgo = new Date();
-                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
+                // Use fixed date filter - November 1st, 2025
+                const dateFilter = '2025-11-01';
 
                 console.log(`Fetching LeafLink orders for: ${businessSlug}`);
                 let orders = [];
@@ -22527,9 +22524,8 @@ ${employeeReport || 'No activity recorded today'}
 
             // Single business fetch
             try {
-                const twoMonthsAgo = new Date();
-                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
+                // Use fixed date filter - November 1st, 2025
+                const dateFilter = '2025-11-01';
 
                 const businessSlug = businessesList.find(b => b.id === currentBusinessId)?.slug || 'white-mousse';
                 console.log('Fetching LeafLink orders for:', businessSlug);
@@ -24003,9 +23999,8 @@ ${employeeReport || 'No activity recorded today'}
         // Fetch ALL orders (no status filter) for a specific business
         async function fetchAllOrdersForBusiness(businessSlug) {
             try {
-                const twoMonthsAgo = new Date();
-                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
+                // Use fixed date filter - November 1st, 2025
+                const dateFilter = '2025-11-01';
 
                 console.log(`Fetching ALL LeafLink orders for: ${businessSlug}`);
                 let orders = [];
@@ -25150,9 +25145,8 @@ ${employeeReport || 'No activity recorded today'}
             content.innerHTML = '<div style="text-align: center; padding: 60px; color: var(--text-secondary);"><div style="font-size: 2rem; margin-bottom: 10px;">...</div>Loading drop data from LeafLink...</div>';
 
             try {
-                const twoMonthsAgo = new Date();
-                twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-                const dateFilter = twoMonthsAgo.toISOString().split('T')[0];
+                // Use fixed date filter - November 1st, 2025
+                const dateFilter = '2025-11-01';
 
                 let allOrders = [];
                 const businessSlug = currentBusinessId === 'all' ? 'white-mousse' :
