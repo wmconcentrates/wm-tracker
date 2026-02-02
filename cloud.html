@@ -20415,42 +20415,27 @@ ${employeeReport || 'No activity recorded today'}
 
                 // Get last sync time to only fetch new files (unless full sync requested)
                 const lastSync = (!isShiftHeld && !forceFullSync) ? localStorage.getItem('coaLastSync') : null;
-                const sinceParam = lastSync ? `&since=${encodeURIComponent(lastSync)}` : '';
+                const sinceParam = lastSync ? `?since=${encodeURIComponent(lastSync)}` : '';
 
-                // Folders to scan for COA files
-                const foldersToScan = ['COAs', 'Summary Test Results'];
-                let allFiles = [];
+                // List COA files via our backend (only files modified since last sync)
+                const listResponse = await fetch(`/api/google-drive/list-coas/${businessSlug}${sinceParam}`);
+                const listData = await listResponse.json();
 
-                // Fetch files from each folder
-                for (const folderName of foldersToScan) {
-                    try {
-                        const listResponse = await fetch(`/api/google-drive/list-coas/${businessSlug}?folder=${encodeURIComponent(folderName)}${sinceParam}`);
-                        const listData = await listResponse.json();
-
-                        if (listResponse.ok && listData.files && listData.files.length > 0) {
-                            console.log(`[COA sync] Found ${listData.files.length} files in "${folderName}"`);
-                            // Add folder source to each file for tracking
-                            listData.files.forEach(f => f.sourceFolder = folderName);
-                            allFiles = allFiles.concat(listData.files);
-                        } else if (!listResponse.ok && listData.error && !listData.error.includes('not found')) {
-                            console.warn(`[COA sync] Error scanning "${folderName}":`, listData.error);
-                        }
-                    } catch (folderErr) {
-                        console.warn(`[COA sync] Could not scan folder "${folderName}":`, folderErr.message);
-                    }
+                if (!listResponse.ok) {
+                    throw new Error(listData.error || 'Failed to list COA files');
                 }
+
+                const allFiles = listData.files || [];
 
                 if (allFiles.length === 0) {
                     const msg = lastSync
                         ? `No new COA files since last sync (${new Date(lastSync).toLocaleString()}).\n\nHold SHIFT and click Sync to force a full rescan.`
-                        : 'No PDF files found in COAs or Summary Test Results folders.';
+                        : 'No PDF files found in COAs folder.';
                     alert(msg);
                     syncBtn.textContent = '🔄 Sync Now';
                     syncBtn.disabled = false;
                     return;
                 }
-
-                console.log(`[COA sync] Total files to process: ${allFiles.length}`);
 
                 // Process each new file
                 let importedCount = 0;
@@ -20540,7 +20525,7 @@ ${employeeReport || 'No activity recorded today'}
             syncBtn.disabled = false;
         }
 
-        // Parse AgriScience Labs COA PDF
+        // Parse AgriScience Labs COA PDF (handles both potency-only and full panel summary PDFs)
         async function parseCOAPdf(pdfData) {
             try {
                 // Set worker source for PDF.js
@@ -20549,11 +20534,28 @@ ${employeeReport || 'No activity recorded today'}
                 }
 
                 const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-                const page = await pdf.getPage(1);
-                const textContent = await page.getTextContent();
-                const text = textContent.items.map(item => item.str).join(' ');
+                const numPages = pdf.numPages;
 
-                console.log('COA Text:', text);
+                // For summary PDFs, we may need to scan multiple pages
+                // Page 1 has batch info, page 10 (or later) has detailed potency report
+                let allText = '';
+                const pagesToScan = Math.min(numPages, 12); // Scan up to 12 pages for summary PDFs
+
+                for (let i = 1; i <= pagesToScan; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    allText += ' ' + pageText;
+
+                    // For efficiency, stop early if we already have key data from potency report page
+                    if (pageText.includes('Potency Report') || pageText.includes('Total THC:')) {
+                        console.log(`[COA] Found potency data on page ${i}`);
+                        break;
+                    }
+                }
+
+                const text = allText;
+                console.log('COA Text (combined):', text.substring(0, 500) + '...');
 
                 // Extract data using patterns for AgriScience Labs format
                 const coaData = {
