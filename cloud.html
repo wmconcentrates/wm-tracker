@@ -6210,18 +6210,26 @@
 
             // Load price mappings
             try {
-                const { data: mappings } = await supabaseClient
-                    .from('leaflink_product_mappings')
-                    .select('product_type, price_per_unit')
-                    .eq('business_id', currentBusinessId === 'all' ? businessesList[0]?.id : currentBusinessId);
+                const bizId = currentBusinessId === 'all'
+                    ? (businessesList && businessesList.length > 0 ? businessesList[0].id : null)
+                    : currentBusinessId;
 
-                if (mappings) {
-                    window.analyticsData.priceMap = {};
-                    mappings.forEach(m => {
-                        if (m.product_type && m.price_per_unit) {
-                            window.analyticsData.priceMap[m.product_type] = parseFloat(m.price_per_unit);
-                        }
-                    });
+                if (bizId) {
+                    const { data: mappings } = await supabaseClient
+                        .from('leaflink_product_mappings')
+                        .select('app_product_type, price_per_unit')
+                        .eq('business_id', bizId);
+
+                    if (mappings) {
+                        window.analyticsData.priceMap = {};
+                        mappings.forEach(m => {
+                            if (m.app_product_type && m.price_per_unit) {
+                                window.analyticsData.priceMap[m.app_product_type] = parseFloat(m.price_per_unit);
+                            }
+                        });
+                    }
+                } else {
+                    console.log('No business_id available for price mappings');
                 }
             } catch (e) {
                 console.log('Could not load price mappings:', e);
@@ -6233,8 +6241,8 @@
                 const { data: timeclockData } = await supabaseClient
                     .from('timeclock')
                     .select('*')
-                    .gte('clock_in', dateRange.start.toISOString())
-                    .lte('clock_in', dateRange.end.toISOString());
+                    .gte('punch_time', dateRange.start.toISOString())
+                    .lte('punch_time', dateRange.end.toISOString());
 
                 window.analyticsData.timeclock = timeclockData || [];
             } catch (e) {
