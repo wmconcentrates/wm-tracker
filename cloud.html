@@ -4517,6 +4517,7 @@
                                     <th style="padding: 12px 10px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Batch</th>
                                     <th style="padding: 12px 10px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Strain</th>
                                     <th style="padding: 12px 10px; text-align: center; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Socks</th>
+                                    <th style="padding: 12px 10px; text-align: center; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Butane</th>
                                     <th style="padding: 12px 10px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Operator</th>
                                     <th style="padding: 12px 10px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border);">Filter State</th>
                                 </tr>
@@ -4537,6 +4538,11 @@
                     <div>
                         <span style="color: var(--text-secondary);">Total Socks: </span>
                         <strong id="machineLogTotalSocks" style="color: var(--accent-green);">0</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-secondary);">Total Butane: </span>
+                        <strong id="machineLogTotalButane" style="color: var(--accent-orange);">0</strong>
+                        <span style="color: var(--text-secondary);"> lbs</span>
                     </div>
                     <div>
                         <span style="color: var(--text-secondary);">Unique Strains: </span>
@@ -12182,6 +12188,10 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                             '<option value="2">2</option>' +
                         '</select>' +
                     '</div>' +
+                    '<div class="form-group">' +
+                        '<label>Butane (lbs)</label>' +
+                        '<input type="number" id="machineColumn' + col + 'Butane" step="0.1" min="0" placeholder="lbs used">' +
+                    '</div>' +
                 '</div>' +
                 '<div id="column' + col + 'SecondSock" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">' +
                     '<div class="form-grid">' +
@@ -12889,6 +12899,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             const batchEl = document.getElementById('machineColumn' + column + 'Batch');
             const socksEl = document.getElementById('machineColumn' + column + 'Socks');
             const secondBatchEl = document.getElementById('machineColumn' + column + 'SecondBatch');
+            const butaneEl = document.getElementById('machineColumn' + column + 'Butane');
 
             // If elements don't exist, can't proceed
             if (!batchEl || !socksEl) {
@@ -12899,6 +12910,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             const columnBatch = batchEl.value;
             const columnSocks = parseInt(socksEl.value) || 0;
             const columnSecondBatch = secondBatchEl ? secondBatchEl.value : '';
+            const columnButane = butaneEl ? parseFloat(butaneEl.value) || 0 : 0;
 
             // Build list of contributions for this column
             let contributions = [];
@@ -13017,6 +13029,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             if (batchEl) batchEl.value = '';
             if (socksEl) socksEl.value = '0';
             if (secondBatchEl) secondBatchEl.value = '';
+            if (butaneEl) butaneEl.value = '';
             const secondSockDiv = document.getElementById('column' + column + 'SecondSock');
             if (secondSockDiv) secondSockDiv.style.display = 'none';
 
@@ -13070,7 +13083,8 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 socks: contributions.reduce((sum, c) => sum + c.socks, 0),
                 batches: contributions.map(c => c.batchId),
                 strain: strainList,
-                filterState: currentFilterState
+                filterState: currentFilterState,
+                butaneLbs: columnButane
             };
 
             // Store in database for cross-contamination tracking
@@ -13086,7 +13100,8 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         socks: extractionRun.socks,
                         batches: extractionRun.batches,
                         strain: extractionRun.strain,
-                        filter_state: extractionRun.filterState
+                        filter_state: extractionRun.filterState,
+                        butane_lbs: extractionRun.butaneLbs
                     })
                     .then(({ error }) => {
                         if (error) console.error('Error logging machine run:', error);
@@ -23631,6 +23646,7 @@ ${employeeReport || 'No activity recorded today'}
             tbody.innerHTML = '';
 
             let totalSocks = 0;
+            let totalButane = 0;
             const uniqueStrains = new Set();
 
             runs.forEach(run => {
@@ -23643,11 +23659,12 @@ ${employeeReport || 'No activity recorded today'}
 
                 const batchDisplay = (run.batches || []).join(', ');
                 const strainDisplay = run.strain || 'Unknown';
+                const butaneDisplay = run.butane_lbs || run.butaneLbs ? `${run.butane_lbs || run.butaneLbs} lbs` : '-';
 
                 // Build filter state display
                 let filterDisplay = 'N/A';
-                if (run.filterState) {
-                    const fs = run.filterState;
+                if (run.filterState || run.filter_state) {
+                    const fs = run.filterState || run.filter_state;
                     filterDisplay = `${fs.filter_runs}r (${fs.silica_top}/${fs.clay}/${fs.silica_bottom})`;
                 }
 
@@ -23661,12 +23678,14 @@ ${employeeReport || 'No activity recorded today'}
                     <td style="padding: 10px; border-bottom: 1px solid var(--border); font-family: monospace; font-weight: 600;">${batchDisplay}</td>
                     <td style="padding: 10px; border-bottom: 1px solid var(--border);">${strainDisplay}</td>
                     <td style="padding: 10px; border-bottom: 1px solid var(--border); text-align: center; font-weight: 600;">${run.socks || 0}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid var(--border);">${run.user || 'Unknown'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid var(--border); text-align: center; color: var(--accent-orange);">${butaneDisplay}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid var(--border);">${run.user_name || run.user || 'Unknown'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-secondary);">${filterDisplay}</td>
                 `;
                 tbody.appendChild(tr);
 
                 totalSocks += run.socks || 0;
+                totalButane += parseFloat(run.butane_lbs || run.butaneLbs || 0);
                 if (run.strain) {
                     run.strain.split(', ').forEach(s => uniqueStrains.add(s.trim()));
                 }
@@ -23675,13 +23694,14 @@ ${employeeReport || 'No activity recorded today'}
             // Update summary
             document.getElementById('machineLogTotalRuns').textContent = runs.length;
             document.getElementById('machineLogTotalSocks').textContent = totalSocks;
+            document.getElementById('machineLogTotalButane').textContent = Math.round(totalButane * 10) / 10;
             document.getElementById('machineLogUniqueStrains').textContent = uniqueStrains.size;
 
             // Show empty state if no runs
             if (runs.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">
+                        <td colspan="8" style="padding: 40px; text-align: center; color: var(--text-secondary);">
                             No machine runs found matching the current filters.
                         </td>
                     </tr>
