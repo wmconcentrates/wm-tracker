@@ -8613,19 +8613,19 @@
 
                 console.log('Employee grams by stage:', employeeStageGrams);
 
-                // 5. Calculate cost per gram for each employee
+                // 5. Calculate AGGREGATE labor cost per gram
+                // Total labor cost = sum of all employee (hours × rate)
+                // Total grams = sum of actual batch output (not per-stage, which would double-count)
                 const laborCostPerGram = {};
                 let totalLaborCost = 0;
-                let totalGrams = 0;
 
                 Object.entries(employeeHours).forEach(([user, hours]) => {
                     const rate = rates[user] || 18;
                     const laborCost = hours * rate;
-                    const grams = employeeStageGrams[user]?.total || 0;
-
                     totalLaborCost += laborCost;
-                    totalGrams += grams;
 
+                    // Store individual employee stats for reference
+                    const grams = employeeStageGrams[user]?.total || 0;
                     if (grams > 0) {
                         laborCostPerGram[user] = {
                             hours: parseFloat(hours.toFixed(2)),
@@ -8634,18 +8634,24 @@
                             grams: grams,
                             costPerGram: parseFloat((laborCost / grams).toFixed(4))
                         };
-                        console.log(`${user}: $${laborCost.toFixed(2)} labor / ${grams}g = $${(laborCost / grams).toFixed(4)}/gram`);
                     }
                 });
 
-                // Calculate default cost per gram (total labor / total grams)
-                if (totalGrams > 0) {
+                // Calculate total grams from actual batch OUTPUT (not per-stage totals which double-count)
+                const totalOutputGrams = periodBatches.reduce((sum, b) => {
+                    return sum + (parseFloat(b.total_grams_packaged) || parseFloat(b.final_weight) || 0);
+                }, 0);
+
+                console.log(`Total labor cost: $${totalLaborCost.toFixed(2)}, Total output grams: ${totalOutputGrams}`);
+
+                // Calculate default cost per gram (total labor / total OUTPUT grams)
+                if (totalOutputGrams > 0) {
                     laborCostPerGram._default = {
                         totalLaborCost: parseFloat(totalLaborCost.toFixed(2)),
-                        totalGrams: totalGrams,
-                        costPerGram: parseFloat((totalLaborCost / totalGrams).toFixed(4))
+                        totalGrams: totalOutputGrams,
+                        costPerGram: parseFloat((totalLaborCost / totalOutputGrams).toFixed(4))
                     };
-                    console.log(`Default labor rate: $${totalLaborCost.toFixed(2)} / ${totalGrams}g = $${(totalLaborCost / totalGrams).toFixed(4)}/gram`);
+                    console.log(`Default labor rate: $${totalLaborCost.toFixed(2)} / ${totalOutputGrams}g = $${(totalLaborCost / totalOutputGrams).toFixed(4)}/gram`);
                 }
 
                 // Cache for use in calculateBatchCOGS
@@ -8860,49 +8866,26 @@
             const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
             const units = batch.units_packaged || 0;
 
-            // Apply labor cost based on who did each stage
-            const stages = [
-                { name: 'extraction', userField: 'extraction_user', gramsField: 'trim_weight' },
-                { name: 'finishing', userField: 'finishing_user', gramsField: 'crude_weight' },
-                { name: 'packaging', userField: 'packaging_user', gramsField: 'total_grams_packaged' },
-                { name: 'labeling', userField: 'labeling_user', gramsField: 'total_grams_packaged' }
-            ];
+            // Use the default (aggregate) labor cost per gram - this represents total labor / total grams
+            // across all employees and stages, giving us the true labor cost per gram of output
+            const defaultCostPerGram = laborRates._default?.costPerGram || 0.10;
 
-            stages.forEach(({ name, userField, gramsField }) => {
-                const user = batch[userField];
-                if (user) {
-                    // Get this employee's cost per gram (calculated from their actual timeclock hours / grams produced)
-                    const costPerGram = laborRates[user]?.costPerGram || laborRates._default?.costPerGram || 0.10;
-                    const stageGrams = parseFloat(batch[gramsField]) || grams || 0;
-
-                    // For packaging/labeling, can also use units × avg grams per unit
-                    let stageCost = stageGrams * costPerGram;
-
-                    // If no grams, estimate from units (avg ~1g per 1g jar)
-                    if (stageCost === 0 && units > 0 && (name === 'packaging' || name === 'labeling')) {
-                        stageCost = units * costPerGram;
-                    }
-
-                    laborCost += stageCost;
-                    laborBreakdown[name] = {
-                        user,
-                        grams: stageGrams,
-                        costPerGram: costPerGram.toFixed(4),
-                        cost: parseFloat(stageCost.toFixed(2)),
-                        source: laborRates[user] ? 'timeclock' : 'default'
-                    };
-                }
-            });
-
-            // Fallback: if no labor calculated but we have grams, use default rate
-            if (laborCost === 0 && grams > 0) {
-                const defaultCostPerGram = laborRates._default?.costPerGram || 0.10;
+            if (grams > 0) {
                 laborCost = grams * defaultCostPerGram;
-                laborBreakdown.estimated = {
+                laborBreakdown.total = {
                     grams: grams,
-                    costPerGram: defaultCostPerGram,
-                    cost: laborCost,
-                    source: 'fallback'
+                    costPerGram: defaultCostPerGram.toFixed(4),
+                    cost: parseFloat(laborCost.toFixed(2)),
+                    source: 'timeclock_aggregate'
+                };
+            } else if (units > 0) {
+                // Fallback: estimate ~1g per unit for 1g jars
+                laborCost = units * defaultCostPerGram;
+                laborBreakdown.estimated = {
+                    units: units,
+                    costPerGram: defaultCostPerGram.toFixed(4),
+                    cost: parseFloat(laborCost.toFixed(2)),
+                    source: 'units_estimate'
                 };
             }
 
