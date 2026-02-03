@@ -13293,6 +13293,11 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
         function saveMachineStatus() {
             if (!currentMachine) return;
 
+            // Capture machine name immediately (before any async operations)
+            const savedMachineName = currentMachine === 'left' ? 'Left Machine' :
+                                     currentMachine === 'right' ? 'Right Machine' :
+                                     (currentMachine || 'Machine');
+
             // Dynamically get column values for A-F
             const columnLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
             const columnData = {};
@@ -13362,16 +13367,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         return;
                     }
 
-                    // Get machine name using same logic as openMachineModal
-                    const machineConfig = CONFIG.machines.find(m => {
-                        const key = (m.position?.toLowerCase() || m.name.toLowerCase()).replace(/[^a-z0-9]/g, '');
-                        return key === currentMachine;
-                    });
-                    const machineName = machineConfig?.name || (currentMachine === 'left' ? 'Left Machine' : currentMachine === 'right' ? 'Right Machine' : currentMachine || 'Machine');
-
                     updateMachineDisplays();
                     closeMachineModal();
-                    alert(`✅ ${machineName} Status Saved!`);
+                    alert(`✅ ${savedMachineName} Status Saved!`);
                 });
         }
         
