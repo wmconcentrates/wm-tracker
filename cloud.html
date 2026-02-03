@@ -6265,9 +6265,43 @@
         // DASHBOARD SECTION
         // ========================================
 
+        // LeafLink prices are per CASE (10 units per case)
+        const UNITS_PER_CASE = 10;
+
+        function calculateBatchRevenue(batch, priceMap) {
+            // Get unit counts
+            const units1g = parseInt(batch.units_1g_labeled || batch.units_1g) || 0;
+            const units4g = parseInt(batch.units_4g_labeled || batch.units_4g) || 0;
+            const totalUnits = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+            const productType = batch.packaged_product_type || batch.product_made || '';
+
+            let revenue = 0;
+
+            if (units1g > 0 || units4g > 0) {
+                // Has size breakdown - calculate revenue by size
+                const casePrice1g = priceMap[productType] || priceMap[productType + ' 1g'] || 60;
+                const casePrice4g = priceMap[productType + ' 4g'] || priceMap[productType + ' 4G'] || 220;
+                const cases1g = units1g / UNITS_PER_CASE;
+                const cases4g = units4g / UNITS_PER_CASE;
+                revenue = (cases1g * casePrice1g) + (cases4g * casePrice4g);
+            } else if (totalUnits > 0) {
+                // No breakdown - use wholesale_price or mapping (assume case price)
+                let casePrice = parseFloat(batch.wholesale_price) || 0;
+                if (casePrice === 0 && priceMap[productType]) {
+                    casePrice = priceMap[productType];
+                }
+                if (casePrice === 0) casePrice = 60; // Default fallback
+                const cases = totalUnits / UNITS_PER_CASE;
+                revenue = cases * casePrice;
+            }
+
+            return revenue;
+        }
+
         function updateAnalyticsDashboard() {
             const dateRange = getAnalyticsDateRange();
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+            const priceMap = window.analyticsData.priceMap || {};
 
             // Calculate totals
             let totalRevenue = 0;
@@ -6279,12 +6313,9 @@
             let overheadCost = 0;
 
             filteredBatches.forEach(batch => {
-                const units = parseInt(batch.units_packaged) || 0;
-                const productType = batch.packaged_product_type || batch.product_made || '';
-                const price = window.analyticsData.priceMap[productType] || 15;
-
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 totalUnits += units;
-                totalRevenue += units * price;
+                totalRevenue += calculateBatchRevenue(batch, priceMap);
 
                 const cogs = parseFloat(batch.calculated_cogs) || 0;
                 totalCOGS += cogs;
@@ -6342,14 +6373,12 @@
             }
 
             // Calculate revenue/COGS per month
+            const priceMap = window.analyticsData.priceMap || {};
             batches.forEach(batch => {
                 const batchDate = new Date(batch.labeling_date || batch.packaging_date || batch.created_at);
                 const monthData = months.find(m => batchDate >= m.start && batchDate <= m.end);
                 if (monthData) {
-                    const units = parseInt(batch.units_packaged) || 0;
-                    const productType = batch.packaged_product_type || batch.product_made || '';
-                    const price = window.analyticsData.priceMap[productType] || 15;
-                    monthData.revenue += units * price;
+                    monthData.revenue += calculateBatchRevenue(batch, priceMap);
                     monthData.cogs += parseFloat(batch.calculated_cogs) || 0;
                 }
             });
@@ -6423,15 +6452,16 @@
             const el = document.getElementById('dashboardTopPerformers');
             if (!el) return;
 
+            const priceMap = window.analyticsData.priceMap || {};
+
             // Find most profitable product type
             const productStats = {};
             filteredBatches.forEach(batch => {
                 const type = batch.packaged_product_type || batch.product_made || 'Unknown';
                 if (!productStats[type]) productStats[type] = { revenue: 0, cogs: 0, units: 0 };
-                const units = parseInt(batch.units_packaged) || 0;
-                const price = window.analyticsData.priceMap[type] || 15;
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 productStats[type].units += units;
-                productStats[type].revenue += units * price;
+                productStats[type].revenue += calculateBatchRevenue(batch, priceMap);
                 productStats[type].cogs += parseFloat(batch.calculated_cogs) || 0;
             });
 
@@ -6776,14 +6806,12 @@
         function updateAnalyticsProfitability() {
             const dateRange = getAnalyticsDateRange();
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+            const priceMap = window.analyticsData.priceMap || {};
 
             let totalRevenue = 0, totalCOGS = 0;
 
             filteredBatches.forEach(batch => {
-                const units = parseInt(batch.units_packaged) || 0;
-                const productType = batch.packaged_product_type || batch.product_made || '';
-                const price = window.analyticsData.priceMap[productType] || 15;
-                totalRevenue += units * price;
+                totalRevenue += calculateBatchRevenue(batch, priceMap);
                 totalCOGS += parseFloat(batch.calculated_cogs) || 0;
             });
 
@@ -6809,14 +6837,14 @@
         }
 
         function renderProfitByProduct(filteredBatches) {
+            const priceMap = window.analyticsData.priceMap || {};
             const stats = {};
             filteredBatches.forEach(batch => {
                 const type = batch.packaged_product_type || batch.product_made || 'Unknown';
                 if (!stats[type]) stats[type] = { units: 0, revenue: 0, cogs: 0 };
-                const units = parseInt(batch.units_packaged) || 0;
-                const price = window.analyticsData.priceMap[type] || 15;
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[type].units += units;
-                stats[type].revenue += units * price;
+                stats[type].revenue += calculateBatchRevenue(batch, priceMap);
                 stats[type].cogs += parseFloat(batch.calculated_cogs) || 0;
             });
 
@@ -6843,16 +6871,15 @@
         }
 
         function renderProfitByStrain(filteredBatches) {
+            const priceMap = window.analyticsData.priceMap || {};
             const stats = {};
             filteredBatches.forEach(batch => {
                 const strain = batch.strain || 'Unknown';
                 if (!stats[strain]) stats[strain] = { batches: 0, units: 0, revenue: 0, cogs: 0 };
                 stats[strain].batches++;
-                const units = parseInt(batch.units_packaged) || 0;
-                const type = batch.packaged_product_type || batch.product_made || '';
-                const price = window.analyticsData.priceMap[type] || 15;
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[strain].units += units;
-                stats[strain].revenue += units * price;
+                stats[strain].revenue += calculateBatchRevenue(batch, priceMap);
                 stats[strain].cogs += parseFloat(batch.calculated_cogs) || 0;
             });
 
@@ -6881,16 +6908,15 @@
         }
 
         function renderProfitByGrower(filteredBatches) {
+            const priceMap = window.analyticsData.priceMap || {};
             const stats = {};
             filteredBatches.forEach(batch => {
                 const grower = batch.grower || batch.customer_name || 'Unknown';
                 if (!stats[grower]) stats[grower] = { batches: 0, units: 0, revenue: 0, cogs: 0 };
                 stats[grower].batches++;
-                const units = parseInt(batch.units_packaged) || 0;
-                const type = batch.packaged_product_type || batch.product_made || '';
-                const price = window.analyticsData.priceMap[type] || 15;
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[grower].units += units;
-                stats[grower].revenue += units * price;
+                stats[grower].revenue += calculateBatchRevenue(batch, priceMap);
                 stats[grower].cogs += parseFloat(batch.calculated_cogs) || 0;
             });
 
@@ -6921,25 +6947,29 @@
             const el = document.getElementById('breakEvenAnalysis');
             if (!el) return;
 
+            const priceMap = window.analyticsData.priceMap || {};
             const stats = {};
             filteredBatches.forEach(batch => {
                 const type = batch.packaged_product_type || batch.product_made || 'Unknown';
-                if (!stats[type]) stats[type] = { units: 0, cogs: 0 };
-                stats[type].units += parseInt(batch.units_packaged) || 0;
+                if (!stats[type]) stats[type] = { units: 0, cogs: 0, revenue: 0 };
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                stats[type].units += units;
                 stats[type].cogs += parseFloat(batch.calculated_cogs) || 0;
+                stats[type].revenue += calculateBatchRevenue(batch, priceMap);
             });
 
             const rows = Object.entries(stats).map(([type, data]) => {
                 const costPerUnit = data.units > 0 ? data.cogs / data.units : 0;
-                const price = window.analyticsData.priceMap[type] || 15;
-                const profitPerUnit = price - costPerUnit;
+                // Calculate effective unit price from actual revenue
+                const pricePerUnit = data.units > 0 ? data.revenue / data.units : 6;
+                const profitPerUnit = pricePerUnit - costPerUnit;
                 const breakEvenUnits = profitPerUnit > 0 ? Math.ceil(data.cogs / profitPerUnit) : 'N/A';
 
                 return `
                     <tr style="border-bottom: 1px solid var(--border-color);">
                         <td style="padding: 10px; color: var(--text-primary);">${type}</td>
                         <td style="padding: 10px; text-align: right;">$${costPerUnit.toFixed(2)}</td>
-                        <td style="padding: 10px; text-align: right;">$${price.toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right;">$${pricePerUnit.toFixed(2)}</td>
                         <td style="padding: 10px; text-align: right; color: ${profitPerUnit > 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">$${profitPerUnit.toFixed(2)}</td>
                         <td style="padding: 10px; text-align: right; font-weight: 600;">${typeof breakEvenUnits === 'number' ? breakEvenUnits.toLocaleString() : breakEvenUnits}</td>
                     </tr>
@@ -7483,14 +7513,19 @@
         // ========================================
 
         function updateForecasting() {
+            const priceMap = window.analyticsData.priceMap || {};
             // Pipeline batches (not yet completed)
             const pipelineBatches = batches.filter(b => b.intake_date && !b.labeling_date);
 
             let projectedRevenue = 0, projectedCOGS = 0;
             pipelineBatches.forEach(batch => {
+                // For pipeline batches, estimate revenue based on expected units
                 const estUnits = parseInt(batch.units_packaged) || Math.round((parseFloat(batch.trim_weight) || 0) * 0.1 * 0.8);
-                const price = window.analyticsData.priceMap[batch.packaged_product_type || batch.product_made] || 15;
-                projectedRevenue += estUnits * price;
+                const productType = batch.packaged_product_type || batch.product_made || '';
+                // Get case price and calculate revenue (divide units by 10 for cases)
+                const casePrice = priceMap[productType] || 60;
+                const estCases = estUnits / UNITS_PER_CASE;
+                projectedRevenue += estCases * casePrice;
                 projectedCOGS += parseFloat(batch.calculated_cogs) || parseFloat(batch.material_cost) || 0;
             });
 
@@ -7510,6 +7545,8 @@
             const summaryEl = document.getElementById('forecastSummary');
             if (!chartEl) return;
 
+            const priceMap = window.analyticsData.priceMap || {};
+
             // Calculate historical daily average from last 30 days
             const now = new Date();
             const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -7519,9 +7556,7 @@
                 const d = new Date(b.labeling_date);
                 return d >= thirtyDaysAgo && d <= now;
             }).forEach(batch => {
-                const units = parseInt(batch.units_packaged) || 0;
-                const price = window.analyticsData.priceMap[batch.packaged_product_type || batch.product_made] || 15;
-                historicalRevenue += units * price;
+                historicalRevenue += calculateBatchRevenue(batch, priceMap);
             });
 
             const dailyAvg = historicalRevenue / 30;
@@ -7567,6 +7602,8 @@
             document.getElementById('forecastCostValue').textContent = (costChange >= 0 ? '+' : '') + costChange + '%';
             document.getElementById('forecastVolumeValue').textContent = (volumeChange >= 0 ? '+' : '') + volumeChange + '%';
 
+            const priceMap = window.analyticsData.priceMap || {};
+
             // Calculate baseline from last 30 days
             const now = new Date();
             const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -7576,9 +7613,8 @@
                 const d = new Date(b.labeling_date);
                 return d >= thirtyDaysAgo && d <= now;
             }).forEach(batch => {
-                const units = parseInt(batch.units_packaged) || 0;
-                const price = window.analyticsData.priceMap[batch.packaged_product_type || batch.product_made] || 15;
-                baseRevenue += units * price;
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                baseRevenue += calculateBatchRevenue(batch, priceMap);
                 baseCOGS += parseFloat(batch.calculated_cogs) || 0;
                 baseUnits += units;
             });
