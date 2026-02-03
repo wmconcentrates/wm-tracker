@@ -12292,10 +12292,15 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                             const batchKey = col === 'A' ? 'column_batch' : `column_${colKey}_batch`;
                             const socksKey = `column_${colKey}_socks`;
                             const secondBatchKey = `column_${colKey}_second_batch`;
+                            const butaneKey = `column_${colKey}_butane`;
 
                             columnSelect.value = machineStatus[batchKey] || '';
                             if (socksSelect) socksSelect.value = machineStatus[socksKey] || 0;
                             if (secondBatchSelect) secondBatchSelect.value = machineStatus[secondBatchKey] || '';
+
+                            // Load saved butane value
+                            const butaneInput = document.getElementById('machineColumn' + col + 'Butane');
+                            if (butaneInput) butaneInput.value = machineStatus[butaneKey] || '';
                         }
                     });
 
@@ -13184,15 +13189,18 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 const batchEl = document.getElementById('machineColumn' + col + 'Batch');
                 const socksEl = document.getElementById('machineColumn' + col + 'Socks');
                 const secondEl = document.getElementById('machineColumn' + col + 'SecondBatch');
+                const butaneEl = document.getElementById('machineColumn' + col + 'Butane');
 
                 if (batchEl) {
                     const batchKey = col === 'A' ? 'column_batch' : `column_${colKey}_batch`;
                     const socksKey = `column_${colKey}_socks`;
                     const secondKey = `column_${colKey}_second_batch`;
+                    const butaneKey = `column_${colKey}_butane`;
 
                     columnData[batchKey] = batchEl.value || '';
                     columnData[socksKey] = socksEl ? (parseInt(socksEl.value) || 0) : 0;
                     columnData[secondKey] = secondEl ? secondEl.value : '';
+                    columnData[butaneKey] = butaneEl ? (parseFloat(butaneEl.value) || 0) : 0;
                 }
             });
 
@@ -13293,16 +13301,19 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 const batchEl = document.getElementById('machineColumn' + col + 'Batch');
                 const socksEl = document.getElementById('machineColumn' + col + 'Socks');
                 const secondEl = document.getElementById('machineColumn' + col + 'SecondBatch');
+                const butaneEl = document.getElementById('machineColumn' + col + 'Butane');
 
                 if (batchEl) {
                     // Use legacy key names for A (column_batch) to maintain backwards compatibility
                     const batchKey = col === 'A' ? 'column_batch' : `column_${colKey}_batch`;
                     const socksKey = `column_${colKey}_socks`;
                     const secondKey = `column_${colKey}_second_batch`;
+                    const butaneKey = `column_${colKey}_butane`;
 
                     columnData[batchKey] = batchEl.value || '';
                     columnData[socksKey] = socksEl ? (parseInt(socksEl.value) || 0) : 0;
                     columnData[secondKey] = secondEl ? secondEl.value : '';
+                    columnData[butaneKey] = butaneEl ? (parseFloat(butaneEl.value) || 0) : 0;
                 }
             });
 
