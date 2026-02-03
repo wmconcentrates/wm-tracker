@@ -6270,6 +6270,12 @@
             // Load cost config if not already loaded
             await loadCostingData();
 
+            // Calculate labor cost per gram from timeclock data
+            await calculateLaborCostPerGram();
+
+            // Calculate butane cost per gram from gas log
+            await calculateButaneCostPerGram();
+
             // Update current view
             updateAnalyticsDashboard();
         }
@@ -6316,7 +6322,7 @@
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
             const priceMap = window.analyticsData.priceMap || {};
 
-            // Calculate totals
+            // Calculate totals - use on-the-fly COGS calculation for accuracy
             let totalRevenue = 0;
             let totalCOGS = 0;
             let totalUnits = 0;
@@ -6330,13 +6336,14 @@
                 totalUnits += units;
                 totalRevenue += calculateBatchRevenue(batch, priceMap);
 
-                const cogs = parseFloat(batch.calculated_cogs) || 0;
-                totalCOGS += cogs;
+                // Calculate COGS on-the-fly for accurate values
+                const cogsCalc = calculateBatchCOGS(batch);
+                totalCOGS += cogsCalc.calculated_cogs || 0;
 
-                materialCost += parseFloat(batch.material_cost) || 0;
-                laborCost += parseFloat(batch.labor_cost) || 0;
-                consumablesCost += parseFloat(batch.consumables_cost) || 0;
-                overheadCost += parseFloat(batch.overhead_allocated) || 0;
+                materialCost += cogsCalc.material_cost || 0;
+                laborCost += cogsCalc.labor_cost || 0;
+                consumablesCost += cogsCalc.consumables_cost || 0;
+                overheadCost += cogsCalc.overhead_allocated || 0;
             });
 
             const grossProfit = totalRevenue - totalCOGS;
@@ -6372,17 +6379,21 @@
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
             const priceMap = window.analyticsData.priceMap || {};
 
-            // Build batch details
+            // Build batch details - calculate COGS on-the-fly for accurate values
             const batchDetails = filteredBatches.map(batch => {
                 const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 const units1g = parseInt(batch.units_1g_labeled || batch.units_1g) || 0;
                 const units4g = parseInt(batch.units_4g_labeled || batch.units_4g) || 0;
                 const revenue = calculateBatchRevenue(batch, priceMap);
-                const cogs = parseFloat(batch.calculated_cogs) || 0;
-                const material = parseFloat(batch.material_cost) || 0;
-                const labor = parseFloat(batch.labor_cost) || 0;
-                const consumables = parseFloat(batch.consumables_cost) || 0;
-                const overhead = parseFloat(batch.overhead_allocated) || 0;
+
+                // Calculate COGS on-the-fly instead of using stored values
+                const cogsCalc = calculateBatchCOGS(batch);
+                const cogs = cogsCalc.calculated_cogs || 0;
+                const material = cogsCalc.material_cost || 0;
+                const labor = cogsCalc.labor_cost || 0;
+                const consumables = cogsCalc.consumables_cost || 0;
+                const overhead = cogsCalc.overhead_allocated || 0;
+
                 const profit = revenue - cogs;
                 const margin = revenue > 0 ? (profit / revenue * 100) : 0;
 
