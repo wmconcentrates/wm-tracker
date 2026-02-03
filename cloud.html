@@ -1678,7 +1678,7 @@
                             <input type="checkbox" class="station-checkbox" value="sales" style="width: 16px; height: 16px;"> Sales
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer;">
-                            <input type="checkbox" class="station-checkbox" value="costing" style="width: 16px; height: 16px;"> Costing
+                            <input type="checkbox" class="station-checkbox" value="costing" style="width: 16px; height: 16px;"> Business Analytics
                         </label>
                     </div>
                 </div>
@@ -1808,8 +1808,8 @@
             </div>
             <div class="station-tab" data-station="costing">
                 <div class="icon">📊</div>
-                <h3>Costing</h3>
-                <p>COGS & Margins</p>
+                <h3>Business Analytics</h3>
+                <p>COGS, Profitability & Forecasting</p>
             </div>
         </div>
 
@@ -3838,212 +3838,712 @@
         </div>
     </div>
 
-    <!-- Costing Station -->
+    <!-- Business Analytics Station -->
     <div class="station-content" id="costing">
         <button class="mobile-back-btn" onclick="closeMobileStation()">← Back</button>
         <div class="form-section">
-            <!-- Costing Dashboard Header -->
-            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); border: 2px solid #10B981; border-radius: 16px; padding: 25px; margin-bottom: 30px;">
+            <!-- Business Analytics Header -->
+            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); border: 2px solid #10B981; border-radius: 16px; padding: 25px; margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                     <div>
                         <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; color: #10B981;">
-                            <span>📊</span> Costing & Profitability
+                            <span>📊</span> Business Analytics
                         </h3>
-                        <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 0.9rem;">Configure costs, labor rates, and target margins</p>
+                        <p style="color: var(--text-secondary); margin: 5px 0 0 0; font-size: 0.9rem;">COGS analysis, profitability, labor analytics, and forecasting</p>
                     </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button onclick="recalculateAllBatchCOGS()" class="btn" style="background: var(--accent-blue); padding: 10px 20px;">Recalculate All COGS</button>
-                        <button onclick="loadCostingData()" class="btn" style="background: #10B981; padding: 10px 20px;">Refresh</button>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <!-- Global Date Range Picker -->
+                        <select id="analyticsDateRange" onchange="updateAnalyticsDateRange()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px; font-size: 0.9rem;">
+                            <option value="last30">Last 30 Days</option>
+                            <option value="last90">Last 90 Days</option>
+                            <option value="thisMonth" selected>This Month</option>
+                            <option value="lastMonth">Last Month</option>
+                            <option value="thisQuarter">This Quarter</option>
+                            <option value="lastQuarter">Last Quarter</option>
+                            <option value="thisYear">This Year</option>
+                            <option value="all">All Time</option>
+                        </select>
+                        <button onclick="recalculateAllBatchCOGS()" class="btn" style="background: var(--accent-blue); padding: 10px 20px;">Recalculate COGS</button>
+                        <button onclick="loadBusinessAnalytics()" class="btn" style="background: #10B981; padding: 10px 20px;">Refresh</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Costing Sub-tabs -->
-            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                <button onclick="showCostingSection('config')" id="costingTabConfig" class="costing-subtab active" style="background: #10B981; border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cost Configuration</button>
-                <button onclick="showCostingSection('labor')" id="costingTabLabor" class="costing-subtab" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; cursor: pointer;">Labor Rates</button>
-                <button onclick="showCostingSection('margins')" id="costingTabMargins" class="costing-subtab" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; cursor: pointer;">Target Margins</button>
-                <button onclick="showCostingSection('analysis')" id="costingTabAnalysis" class="costing-subtab" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 20px; border-radius: 8px; cursor: pointer;">Profitability Analysis</button>
+            <!-- Business Analytics Sub-tabs -->
+            <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; background: var(--bg-tertiary); padding: 8px; border-radius: 12px;">
+                <button onclick="showAnalyticsSection('dashboard')" id="analyticsTabDashboard" class="analytics-subtab active" style="background: #10B981; border: none; color: white; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">Dashboard</button>
+                <button onclick="showAnalyticsSection('cogs')" id="analyticsTabCogs" class="analytics-subtab" style="background: transparent; border: none; color: var(--text-primary); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">COGS Analysis</button>
+                <button onclick="showAnalyticsSection('profitability')" id="analyticsTabProfitability" class="analytics-subtab" style="background: transparent; border: none; color: var(--text-primary); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">Profitability</button>
+                <button onclick="showAnalyticsSection('labor')" id="analyticsTabLabor" class="analytics-subtab" style="background: transparent; border: none; color: var(--text-primary); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">Labor Analytics</button>
+                <button onclick="showAnalyticsSection('yield')" id="analyticsTabYield" class="analytics-subtab" style="background: transparent; border: none; color: var(--text-primary); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">Yield Analytics</button>
+                <button onclick="showAnalyticsSection('production')" id="analyticsTabProduction" class="analytics-subtab" style="background: transparent; border: none; color: var(--text-primary); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">Production</button>
+                <button onclick="showAnalyticsSection('forecasting')" id="analyticsTabForecasting" class="analytics-subtab" style="background: transparent; border: none; color: var(--text-primary); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">Forecasting</button>
+                <button onclick="showAnalyticsSection('config')" id="analyticsTabConfig" class="analytics-subtab" style="background: transparent; border: none; color: var(--text-primary); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">Configuration</button>
             </div>
 
-            <!-- Cost Configuration Section -->
-            <div id="costingConfigSection" class="costing-section">
+            <!-- ==================== DASHBOARD SECTION ==================== -->
+            <div id="analyticsDashboardSection" class="analytics-section">
+                <!-- KPI Cards Row -->
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-blue);">
+                        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Total Revenue</div>
+                        <div id="dashboardRevenue" style="font-size: 1.6rem; font-weight: 700; color: var(--accent-blue);">$0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-orange);">
+                        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Total COGS</div>
+                        <div id="dashboardCOGS" style="font-size: 1.6rem; font-weight: 700; color: var(--accent-orange);">$0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-green);">
+                        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Gross Profit</div>
+                        <div id="dashboardProfit" style="font-size: 1.6rem; font-weight: 700; color: var(--accent-green);">$0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-purple);">
+                        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Gross Margin</div>
+                        <div id="dashboardMargin" style="font-size: 1.6rem; font-weight: 700; color: var(--accent-purple);">0%</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid #FFD700;">
+                        <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Units Produced</div>
+                        <div id="dashboardUnits" style="font-size: 1.6rem; font-weight: 700; color: #FFD700;">0</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 25px;">
+                    <!-- Revenue vs COGS Trend Chart -->
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                        <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                            <span>📈</span> Revenue vs COGS (6 Months)
+                        </h4>
+                        <div id="dashboardTrendChart" style="min-height: 200px;">
+                            <!-- CSS-based trend chart rendered by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Cost Category Breakdown -->
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                        <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🥧</span> Cost Breakdown
+                        </h4>
+                        <div id="dashboardCostBreakdown" style="display: flex; flex-direction: column; gap: 12px;">
+                            <!-- Cost bars rendered by JS -->
+                        </div>
+                    </div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <!-- Consumables -->
+                    <!-- Top Performers -->
                     <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
-                        <h4 style="color: var(--accent-blue); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
-                            <span>🧪</span> Consumable Costs
+                        <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🏆</span> Top Performers
                         </h4>
-                        <div id="consumablesCostGrid" style="display: grid; gap: 12px;">
+                        <div id="dashboardTopPerformers" style="display: flex; flex-direction: column; gap: 10px;">
                             <!-- Populated by JS -->
                         </div>
                     </div>
 
-                    <!-- Overhead -->
+                    <!-- Alerts & Insights -->
                     <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
-                        <h4 style="color: var(--accent-orange); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
-                            <span>🏢</span> Monthly Overhead
+                        <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🚨</span> Alerts & Insights
                         </h4>
-                        <div id="overheadCostGrid" style="display: grid; gap: 12px;">
+                        <div id="dashboardAlerts" style="display: flex; flex-direction: column; gap: 10px;">
                             <!-- Populated by JS -->
                         </div>
-                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="color: var(--text-secondary);">Total Monthly Overhead:</span>
-                                <span id="totalMonthlyOverhead" style="font-size: 1.2rem; font-weight: 700; color: var(--accent-orange);">$0.00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                                <span style="color: var(--text-secondary);">Avg Batches/Month:</span>
-                                <span id="avgBatchesPerMonthDisplay" style="color: var(--text-primary); font-weight: 600;">--</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                                <span style="color: var(--text-secondary);">Avg Grams/Month:</span>
-                                <span id="avgMonthlyGramsDisplay" style="color: var(--text-primary); font-weight: 600;">--</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.8rem; opacity: 0.7;">
-                                <span>📊 Auto-calculated from last 3 months</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                                <span style="color: var(--text-secondary);">Overhead Per Batch:</span>
-                                <span id="overheadPerBatch" style="font-size: 1.1rem; font-weight: 600; color: var(--accent-green);">$0.00</span>
-                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== COGS ANALYSIS SECTION ==================== -->
+            <div id="analyticsCogsSection" class="analytics-section" style="display: none;">
+                <!-- Cost Component Cards -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color);">
+                        <div style="color: var(--accent-blue); font-size: 0.85rem; margin-bottom: 5px;">Materials</div>
+                        <div id="cogsMaterial" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">$0</div>
+                        <div id="cogsMaterialPct" style="color: var(--text-secondary); font-size: 0.9rem;">0%</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color);">
+                        <div style="color: var(--accent-purple); font-size: 0.85rem; margin-bottom: 5px;">Labor</div>
+                        <div id="cogsLabor" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">$0</div>
+                        <div id="cogsLaborPct" style="color: var(--text-secondary); font-size: 0.9rem;">0%</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color);">
+                        <div style="color: var(--accent-orange); font-size: 0.85rem; margin-bottom: 5px;">Consumables</div>
+                        <div id="cogsConsumables" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-orange);">$0</div>
+                        <div id="cogsConsumablesPct" style="color: var(--text-secondary); font-size: 0.9rem;">0%</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color);">
+                        <div style="color: var(--accent-green); font-size: 0.85rem; margin-bottom: 5px;">Overhead</div>
+                        <div id="cogsOverhead" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">$0</div>
+                        <div id="cogsOverheadPct" style="color: var(--text-secondary); font-size: 0.9rem;">0%</div>
+                    </div>
+                </div>
+
+                <!-- Cost Trend Chart -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>📊</span> Cost Trend (Stacked by Category)
+                    </h4>
+                    <div id="cogsTrendChart" style="min-height: 200px;">
+                        <!-- CSS-based stacked chart rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Cost Per Gram Table -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>💰</span> Cost Per Gram by Product Type
+                        </h4>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="cogsGroupBy" onchange="updateCOGSTable()" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                                <option value="product_type">By Product Type</option>
+                                <option value="strain">By Strain</option>
+                                <option value="operator">By Operator</option>
+                                <option value="grower">By Grower</option>
+                            </select>
+                            <button onclick="exportCOGSAnalysis()" class="btn" style="background: var(--accent-blue); padding: 8px 15px; font-size: 0.85rem;">Export CSV</button>
                         </div>
                     </div>
-                </div>
-                <button onclick="saveCostConfig()" class="btn" style="background: var(--accent-green); margin-top: 20px; padding: 12px 30px;">Save Cost Configuration</button>
-            </div>
-
-            <!-- Labor Rates Section -->
-            <div id="costingLaborSection" class="costing-section" style="display: none;">
-                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
-                    <h4 style="color: var(--accent-purple); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
-                        <span>👥</span> Employee Hourly Rates
-                    </h4>
-                    <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">Set hourly rates for each employee. These are used to calculate labor costs on batches.</p>
-                    <div id="laborRatesGrid" style="display: grid; gap: 10px;">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-                <button onclick="saveLaborRates()" class="btn" style="background: var(--accent-green); margin-top: 20px; padding: 12px 30px;">Save Labor Rates</button>
-            </div>
-
-            <!-- Target Margins Section -->
-            <div id="costingMarginsSection" class="costing-section" style="display: none;">
-                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
-                    <h4 style="color: #FFD700; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
-                        <span>🎯</span> Target Margins by Product Type
-                    </h4>
-                    <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">Set your target profit margin for each product type. The system will calculate suggested pricing.</p>
                     <div style="overflow-x: auto;">
-                        <table id="targetMarginsTable" style="width: 100%; border-collapse: collapse;">
+                        <table style="width: 100%; border-collapse: collapse;">
                             <thead>
                                 <tr style="background: var(--bg-tertiary);">
-                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Product Type</th>
-                                    <th style="padding: 12px; text-align: center; color: var(--text-secondary);">Target Margin %</th>
-                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Avg COGS/Unit</th>
-                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Suggested Price</th>
-                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Current Price</th>
-                                    <th style="padding: 12px; text-align: center; color: var(--text-secondary);">Actual Margin</th>
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Group</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Batches</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Total Grams</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Material $/g</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Labor $/g</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Consumables $/g</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Overhead $/g</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Total $/g</th>
                                 </tr>
                             </thead>
-                            <tbody id="targetMarginsBody">
+                            <tbody id="cogsTableBody">
                                 <!-- Populated by JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button onclick="saveTargetMargins()" class="btn" style="background: var(--accent-green); padding: 12px 30px;">Save Target Margins</button>
+
+                <!-- Variance Analysis -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>⚠️</span> Variance Analysis (Actual vs Expected)
+                    </h4>
+                    <div id="cogsVarianceTable" style="overflow-x: auto;">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
             </div>
 
-            <!-- Profitability Analysis Section -->
-            <div id="costingAnalysisSection" class="costing-section" style="display: none;">
-                <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
-                    <span style="color: var(--text-secondary);">Analysis Period:</span>
-                    <select id="analysisperiod" onchange="updateProfitabilityAnalysis()" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px;">
-                        <option value="all" selected>All Time</option>
-                        <option value="week">This Week</option>
-                        <option value="month">This Month</option>
-                        <option value="quarter">This Quarter</option>
-                        <option value="year">This Year</option>
-                    </select>
-                </div>
-
+            <!-- ==================== PROFITABILITY SECTION ==================== -->
+            <div id="analyticsProfitabilitySection" class="analytics-section" style="display: none;">
                 <!-- Summary Cards -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
                     <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-blue);">
                         <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Total Revenue</div>
-                        <div id="analysisRevenue" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">$0.00</div>
+                        <div id="profitRevenue" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">$0</div>
                     </div>
                     <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-orange);">
                         <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Total COGS</div>
-                        <div id="analysisCOGS" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-orange);">$0.00</div>
+                        <div id="profitCOGS" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-orange);">$0</div>
                     </div>
                     <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-green);">
                         <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Gross Profit</div>
-                        <div id="analysisProfit" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">$0.00</div>
+                        <div id="profitGross" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">$0</div>
                     </div>
                     <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-purple);">
                         <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Gross Margin</div>
-                        <div id="analysisMargin" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">0%</div>
+                        <div id="profitMargin" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">0%</div>
                     </div>
                 </div>
 
-                <!-- By Product Breakdown -->
-                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0;">Profitability by Product Type</h4>
+                <!-- Profitability by Product Type -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text-primary); margin: 0;">Profitability by Product Type</h4>
+                        <button onclick="exportProfitability('product')" class="btn" style="background: var(--accent-blue); padding: 8px 15px; font-size: 0.85rem;">Export CSV</button>
+                    </div>
                     <div style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse;">
                             <thead>
                                 <tr style="background: var(--bg-tertiary);">
                                     <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Product Type</th>
-                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Units Sold</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Units</th>
                                     <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Revenue</th>
                                     <th style="padding: 12px; text-align: right; color: var(--text-secondary);">COGS</th>
                                     <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Profit</th>
                                     <th style="padding: 12px; text-align: center; color: var(--text-secondary);">Margin</th>
                                 </tr>
                             </thead>
-                            <tbody id="productProfitabilityBody">
+                            <tbody id="profitByProductBody">
                                 <!-- Populated by JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Cost Breakdown -->
+                <!-- Profitability by Strain -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text-primary); margin: 0;">Profitability by Strain</h4>
+                        <button onclick="exportProfitability('strain')" class="btn" style="background: var(--accent-blue); padding: 8px 15px; font-size: 0.85rem;">Export CSV</button>
+                    </div>
+                    <div style="overflow-x: auto; max-height: 400px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-tertiary);">
+                                <tr>
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Strain</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Batches</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Units</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Revenue</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">COGS</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Profit</th>
+                                    <th style="padding: 12px; text-align: center; color: var(--text-secondary);">Margin</th>
+                                </tr>
+                            </thead>
+                            <tbody id="profitByStrainBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Profitability by Grower -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text-primary); margin: 0;">Profitability by Grower/Partner</h4>
+                        <button onclick="exportProfitability('grower')" class="btn" style="background: var(--accent-blue); padding: 8px 15px; font-size: 0.85rem;">Export CSV</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--bg-tertiary);">
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Grower</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Batches</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Units</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Revenue</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">COGS</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Profit</th>
+                                    <th style="padding: 12px; text-align: center; color: var(--text-secondary);">Margin</th>
+                                </tr>
+                            </thead>
+                            <tbody id="profitByGrowerBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Break-Even Analysis -->
                 <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
-                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0;">Cost Category Breakdown</h4>
-                    <div id="costBreakdownChart" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
-                        <div style="text-align: center;">
-                            <div style="height: 100px; background: linear-gradient(to top, var(--accent-blue) 0%, transparent 100%); border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
-                                <span id="costBreakdownMaterial" style="color: white; font-weight: 700;">$0</span>
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>📊</span> Break-Even Analysis
+                    </h4>
+                    <div id="breakEvenAnalysis" style="overflow-x: auto;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== LABOR ANALYTICS SECTION ==================== -->
+            <div id="analyticsLaborSection" class="analytics-section" style="display: none;">
+                <!-- Labor Summary Cards -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-blue);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Total Hours</div>
+                        <div id="laborTotalHours" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-green);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Regular Hours</div>
+                        <div id="laborRegularHours" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-orange);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Overtime Hours</div>
+                        <div id="laborOvertimeHours" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-orange);">0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-purple);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Labor Cost/Gram</div>
+                        <div id="laborCostPerGram" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">$0</div>
+                    </div>
+                </div>
+
+                <!-- Employee Hours Table -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text-primary); margin: 0;">Employee Hours & Productivity</h4>
+                        <button onclick="exportLaborAnalytics()" class="btn" style="background: var(--accent-blue); padding: 8px 15px; font-size: 0.85rem;">Export CSV</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--bg-tertiary);">
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Employee</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Total Hours</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Regular</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">OT</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Rate</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Labor $</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Grams Produced</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">$/Gram</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Grams/Hour</th>
+                                </tr>
+                            </thead>
+                            <tbody id="laborEmployeeBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Station Breakdown -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0;">Hours by Station</h4>
+                    <div id="laborStationBreakdown" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Overtime Analysis -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>⏰</span> Overtime Analysis
+                    </h4>
+                    <div id="laborOvertimeAnalysis">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== YIELD ANALYTICS SECTION ==================== -->
+            <div id="analyticsYieldSection" class="analytics-section" style="display: none;">
+                <!-- Yield Summary Cards -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-blue);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Average Yield</div>
+                        <div id="yieldAverage" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">0%</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-green);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Best Yield</div>
+                        <div id="yieldBest" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">0%</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-red);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Worst Yield</div>
+                        <div id="yieldWorst" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-red);">0%</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-purple);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Std Deviation</div>
+                        <div id="yieldStdDev" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">0%</div>
+                    </div>
+                </div>
+
+                <!-- Yield by Strain -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text-primary); margin: 0;">Yield by Strain</h4>
+                        <button onclick="exportYieldAnalytics('strain')" class="btn" style="background: var(--accent-blue); padding: 8px 15px; font-size: 0.85rem;">Export CSV</button>
+                    </div>
+                    <div style="overflow-x: auto; max-height: 400px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead style="position: sticky; top: 0; background: var(--bg-tertiary);">
+                                <tr>
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Strain</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Batches</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Avg Yield</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Best</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Worst</th>
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody id="yieldByStrainBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Yield by Operator -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text-primary); margin: 0;">Yield by Operator</h4>
+                        <button onclick="exportYieldAnalytics('operator')" class="btn" style="background: var(--accent-blue); padding: 8px 15px; font-size: 0.85rem;">Export CSV</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--bg-tertiary);">
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Operator</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Batches</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Avg Yield</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Best</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Worst</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Consistency</th>
+                                </tr>
+                            </thead>
+                            <tbody id="yieldByOperatorBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Yield Factors Analysis -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>🔬</span> Yield Factor Analysis
+                    </h4>
+                    <div id="yieldFactorsAnalysis" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Yield Trend Chart -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0;">Monthly Average Yield Trend</h4>
+                    <div id="yieldTrendChart" style="min-height: 200px;">
+                        <!-- CSS-based chart rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== PRODUCTION EFFICIENCY SECTION ==================== -->
+            <div id="analyticsProductionSection" class="analytics-section" style="display: none;">
+                <!-- Throughput Cards -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-blue);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Batches/Week</div>
+                        <div id="prodBatchesPerWeek" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-green);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Trim/Week (lbs)</div>
+                        <div id="prodTrimPerWeek" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-orange);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Units/Week</div>
+                        <div id="prodUnitsPerWeek" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-orange);">0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-purple);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Grams Labeled/Week</div>
+                        <div id="prodGramsPerWeek" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">0</div>
+                    </div>
+                </div>
+
+                <!-- Stage Processing Times -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>⏱️</span> Average Stage Processing Times
+                    </h4>
+                    <div id="prodStageTimes" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Pipeline Status -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text-primary); margin: 0;">Current Pipeline Status</h4>
+                        <button onclick="exportPipelineStatus()" class="btn" style="background: var(--accent-blue); padding: 8px 15px; font-size: 0.85rem;">Export CSV</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--bg-tertiary);">
+                                    <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Stage</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Batches</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Total Grams</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Est. Value</th>
+                                    <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Avg Days in Stage</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prodPipelineBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Machine Utilization -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>⚗️</span> Machine Utilization
+                    </h4>
+                    <div id="prodMachineUtilization" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== FORECASTING SECTION ==================== -->
+            <div id="analyticsForecastingSection" class="analytics-section" style="display: none;">
+                <!-- Pipeline Value Cards -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-blue);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Pipeline Batches</div>
+                        <div id="forecastPipelineBatches" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-green);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Projected Revenue</div>
+                        <div id="forecastProjectedRevenue" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">$0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-orange);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Projected COGS</div>
+                        <div id="forecastProjectedCOGS" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-orange);">$0</div>
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-purple);">
+                        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Projected Profit</div>
+                        <div id="forecastProjectedProfit" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">$0</div>
+                    </div>
+                </div>
+
+                <!-- 30-Day Revenue Forecast -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 25px;">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>📈</span> 30-Day Revenue Forecast
+                    </h4>
+                    <div id="forecastRevenueChart" style="min-height: 200px;">
+                        <!-- CSS-based forecast chart rendered by JS -->
+                    </div>
+                    <div id="forecastSummary" style="margin-top: 20px; padding: 15px; background: var(--bg-tertiary); border-radius: 8px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- What-If Scenario Calculator -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                    <h4 style="color: var(--text-primary); margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                        <span>🎮</span> What-If Scenario Calculator
+                    </h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                        <div>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; color: var(--text-secondary); margin-bottom: 8px;">Yield Improvement (%)</label>
+                                <input type="range" id="forecastYieldChange" min="-10" max="20" value="0" oninput="updateWhatIfScenario()" style="width: 100%;">
+                                <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.8rem;">
+                                    <span>-10%</span>
+                                    <span id="forecastYieldValue" style="color: var(--accent-blue); font-weight: 600;">0%</span>
+                                    <span>+20%</span>
+                                </div>
                             </div>
-                            <div style="color: var(--text-secondary); margin-top: 8px; font-size: 0.85rem;">Materials</div>
-                            <div id="costBreakdownMaterialPct" style="color: var(--accent-blue); font-weight: 600;">0%</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="height: 100px; background: linear-gradient(to top, var(--accent-orange) 0%, transparent 100%); border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
-                                <span id="costBreakdownConsumables" style="color: white; font-weight: 700;">$0</span>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; color: var(--text-secondary); margin-bottom: 8px;">Material Cost Change (%)</label>
+                                <input type="range" id="forecastCostChange" min="-20" max="20" value="0" oninput="updateWhatIfScenario()" style="width: 100%;">
+                                <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.8rem;">
+                                    <span>-20%</span>
+                                    <span id="forecastCostValue" style="color: var(--accent-orange); font-weight: 600;">0%</span>
+                                    <span>+20%</span>
+                                </div>
                             </div>
-                            <div style="color: var(--text-secondary); margin-top: 8px; font-size: 0.85rem;">Consumables</div>
-                            <div id="costBreakdownConsumablesPct" style="color: var(--accent-orange); font-weight: 600;">0%</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="height: 100px; background: linear-gradient(to top, var(--accent-purple) 0%, transparent 100%); border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
-                                <span id="costBreakdownLabor" style="color: white; font-weight: 700;">$0</span>
+                            <div>
+                                <label style="display: block; color: var(--text-secondary); margin-bottom: 8px;">Volume Change (%)</label>
+                                <input type="range" id="forecastVolumeChange" min="-50" max="100" value="0" oninput="updateWhatIfScenario()" style="width: 100%;">
+                                <div style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.8rem;">
+                                    <span>-50%</span>
+                                    <span id="forecastVolumeValue" style="color: var(--accent-green); font-weight: 600;">0%</span>
+                                    <span>+100%</span>
+                                </div>
                             </div>
-                            <div style="color: var(--text-secondary); margin-top: 8px; font-size: 0.85rem;">Labor</div>
-                            <div id="costBreakdownLaborPct" style="color: var(--accent-purple); font-weight: 600;">0%</div>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="height: 100px; background: linear-gradient(to top, var(--accent-green) 0%, transparent 100%); border-radius: 8px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;">
-                                <span id="costBreakdownOverhead" style="color: white; font-weight: 700;">$0</span>
+                        <div id="forecastWhatIfResults" style="background: var(--bg-tertiary); border-radius: 12px; padding: 20px;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== CONFIGURATION SECTION ==================== -->
+            <div id="analyticsConfigSection" class="analytics-section" style="display: none;">
+                <!-- Cost Configuration -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                    <div onclick="toggleConfigSection('consumables')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                        <h4 style="color: var(--accent-blue); margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🧪</span> Consumable & Overhead Costs
+                        </h4>
+                        <span id="configConsumablesArrow" style="color: var(--text-secondary); font-size: 1.2rem;">▼</span>
+                    </div>
+                    <div id="configConsumablesContent" style="margin-top: 15px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <!-- Consumables -->
+                            <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 15px;">
+                                <h5 style="color: var(--text-primary); margin: 0 0 10px 0;">Consumable Costs</h5>
+                                <div id="consumablesCostGrid" style="display: grid; gap: 12px;">
+                                    <!-- Populated by JS -->
+                                </div>
                             </div>
-                            <div style="color: var(--text-secondary); margin-top: 8px; font-size: 0.85rem;">Overhead</div>
-                            <div id="costBreakdownOverheadPct" style="color: var(--accent-green); font-weight: 600;">0%</div>
+                            <!-- Overhead -->
+                            <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 15px;">
+                                <h5 style="color: var(--text-primary); margin: 0 0 10px 0;">Monthly Overhead</h5>
+                                <div id="overheadCostGrid" style="display: grid; gap: 12px;">
+                                    <!-- Populated by JS -->
+                                </div>
+                                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="color: var(--text-secondary);">Total Monthly Overhead:</span>
+                                        <span id="totalMonthlyOverhead" style="font-weight: 700; color: var(--accent-orange);">$0.00</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                        <span style="color: var(--text-secondary);">Avg Batches/Month:</span>
+                                        <span id="avgBatchesPerMonthDisplay" style="color: var(--text-primary); font-weight: 600;">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                        <span style="color: var(--text-secondary);">Avg Grams/Month:</span>
+                                        <span id="avgMonthlyGramsDisplay" style="color: var(--text-primary); font-weight: 600;">--</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                        <span style="color: var(--text-secondary);">Overhead Per Batch:</span>
+                                        <span id="overheadPerBatch" style="font-weight: 600; color: var(--accent-green);">$0.00</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                        <button onclick="saveCostConfig()" class="btn" style="background: var(--accent-green); margin-top: 15px; padding: 10px 25px;">Save Cost Configuration</button>
+                    </div>
+                </div>
+
+                <!-- Labor Rates -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                    <div onclick="toggleConfigSection('labor')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                        <h4 style="color: var(--accent-purple); margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>👥</span> Employee Labor Rates
+                        </h4>
+                        <span id="configLaborArrow" style="color: var(--text-secondary); font-size: 1.2rem;">▼</span>
+                    </div>
+                    <div id="configLaborContent" style="margin-top: 15px;">
+                        <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">Set hourly rates for each employee. These are used to calculate labor costs on batches.</p>
+                        <div id="laborRatesGrid" style="display: grid; gap: 10px;">
+                            <!-- Populated by JS -->
+                        </div>
+                        <button onclick="saveLaborRates()" class="btn" style="background: var(--accent-green); margin-top: 15px; padding: 10px 25px;">Save Labor Rates</button>
+                    </div>
+                </div>
+
+                <!-- Target Margins -->
+                <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color);">
+                    <div onclick="toggleConfigSection('margins')" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                        <h4 style="color: #FFD700; margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span>🎯</span> Target Margins by Product Type
+                        </h4>
+                        <span id="configMarginsArrow" style="color: var(--text-secondary); font-size: 1.2rem;">▼</span>
+                    </div>
+                    <div id="configMarginsContent" style="margin-top: 15px;">
+                        <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">Set your target profit margin for each product type. The system will calculate suggested pricing.</p>
+                        <div style="overflow-x: auto;">
+                            <table id="targetMarginsTable" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: var(--bg-tertiary);">
+                                        <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Product Type</th>
+                                        <th style="padding: 12px; text-align: center; color: var(--text-secondary);">Target Margin %</th>
+                                        <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Avg COGS/Unit</th>
+                                        <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Suggested Price</th>
+                                        <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Current Price</th>
+                                        <th style="padding: 12px; text-align: center; color: var(--text-secondary);">Actual Margin</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="targetMarginsBody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <button onclick="saveTargetMargins()" class="btn" style="background: var(--accent-green); margin-top: 15px; padding: 10px 25px;">Save Target Margins</button>
                     </div>
                 </div>
             </div>
@@ -5564,28 +6064,1655 @@
         };
 
         function showCostingSection(section) {
+            // Legacy function - redirect to new analytics system
+            showAnalyticsSection(section === 'analysis' ? 'profitability' : section);
+        }
+
+        // ========================================
+        // BUSINESS ANALYTICS SYSTEM
+        // ========================================
+
+        // Global analytics data state
+        window.analyticsData = {
+            batches: [],
+            salesData: [],
+            priceMap: {},
+            employees: [],
+            timeclock: [],
+            machineRuns: [],
+            dateRange: { start: null, end: null },
+            costBreakdown: { material: 0, labor: 0, consumables: 0, overhead: 0 }
+        };
+
+        function showAnalyticsSection(section) {
             // Update subtab buttons
-            document.querySelectorAll('.costing-subtab').forEach(btn => {
-                btn.style.background = 'var(--bg-tertiary)';
-                btn.style.border = '1px solid var(--border-color)';
+            document.querySelectorAll('.analytics-subtab').forEach(btn => {
+                btn.style.background = 'transparent';
+                btn.style.fontWeight = 'normal';
                 btn.style.color = 'var(--text-primary)';
             });
-            const activeBtn = document.getElementById('costingTab' + section.charAt(0).toUpperCase() + section.slice(1));
+
+            const sectionMap = {
+                'dashboard': 'Dashboard',
+                'cogs': 'Cogs',
+                'profitability': 'Profitability',
+                'labor': 'Labor',
+                'yield': 'Yield',
+                'production': 'Production',
+                'forecasting': 'Forecasting',
+                'config': 'Config'
+            };
+
+            const activeBtn = document.getElementById('analyticsTab' + sectionMap[section]);
             if (activeBtn) {
                 activeBtn.style.background = '#10B981';
-                activeBtn.style.border = 'none';
+                activeBtn.style.fontWeight = '600';
                 activeBtn.style.color = 'white';
             }
 
             // Show/hide sections
-            document.querySelectorAll('.costing-section').forEach(s => s.style.display = 'none');
-            const sectionEl = document.getElementById('costing' + section.charAt(0).toUpperCase() + section.slice(1) + 'Section');
+            document.querySelectorAll('.analytics-section').forEach(s => s.style.display = 'none');
+            const sectionEl = document.getElementById('analytics' + sectionMap[section] + 'Section');
             if (sectionEl) sectionEl.style.display = 'block';
 
             // Load section-specific data
-            if (section === 'labor') loadLaborRates();
-            if (section === 'margins') loadTargetMargins();
-            if (section === 'analysis') updateProfitabilityAnalysis();
+            switch(section) {
+                case 'dashboard': updateAnalyticsDashboard(); break;
+                case 'cogs': updateCOGSAnalysis(); break;
+                case 'profitability': updateAnalyticsProfitability(); break;
+                case 'labor': updateLaborAnalytics(); break;
+                case 'yield': updateYieldAnalytics(); break;
+                case 'production': updateProductionEfficiency(); break;
+                case 'forecasting': updateForecasting(); break;
+                case 'config':
+                    loadCostingData();
+                    loadLaborRates();
+                    loadTargetMargins();
+                    break;
+            }
+        }
+
+        function getAnalyticsDateRange() {
+            const selector = document.getElementById('analyticsDateRange');
+            const period = selector ? selector.value : 'thisMonth';
+            const now = new Date();
+            let start, end;
+
+            switch(period) {
+                case 'last30':
+                    end = new Date();
+                    start = new Date(now.setDate(now.getDate() - 30));
+                    break;
+                case 'last90':
+                    end = new Date();
+                    start = new Date(now.setDate(now.getDate() - 90));
+                    break;
+                case 'thisMonth':
+                    start = new Date(now.getFullYear(), now.getMonth(), 1);
+                    end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                    break;
+                case 'lastMonth':
+                    start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                    end = new Date(now.getFullYear(), now.getMonth(), 0);
+                    break;
+                case 'thisQuarter':
+                    const q = Math.floor(now.getMonth() / 3);
+                    start = new Date(now.getFullYear(), q * 3, 1);
+                    end = new Date(now.getFullYear(), (q + 1) * 3, 0);
+                    break;
+                case 'lastQuarter':
+                    const lq = Math.floor(now.getMonth() / 3) - 1;
+                    const lqYear = lq < 0 ? now.getFullYear() - 1 : now.getFullYear();
+                    const lqStart = lq < 0 ? 3 : lq;
+                    start = new Date(lqYear, lqStart * 3, 1);
+                    end = new Date(lqYear, (lqStart + 1) * 3, 0);
+                    break;
+                case 'thisYear':
+                    start = new Date(now.getFullYear(), 0, 1);
+                    end = new Date(now.getFullYear(), 11, 31);
+                    break;
+                case 'all':
+                default:
+                    start = new Date(2020, 0, 1);
+                    end = new Date();
+                    break;
+            }
+
+            return { start, end };
+        }
+
+        function filterBatchesByDateRange(batchList, dateRange) {
+            if (!batchList) return [];
+            return batchList.filter(b => {
+                const batchDate = new Date(b.labeling_date || b.packaging_date || b.extraction_date || b.intake_date || b.created_at);
+                return batchDate >= dateRange.start && batchDate <= dateRange.end;
+            });
+        }
+
+        function updateAnalyticsDateRange() {
+            // Refresh the current section
+            const activeTab = document.querySelector('.analytics-subtab[style*="background: rgb(16, 185, 129)"]');
+            if (activeTab) {
+                const section = activeTab.id.replace('analyticsTab', '').toLowerCase();
+                showAnalyticsSection(section);
+            } else {
+                updateAnalyticsDashboard();
+            }
+        }
+
+        async function loadBusinessAnalytics() {
+            if (!supabaseClient) return;
+
+            // Ensure core data is loaded
+            if (!batches || batches.length === 0) {
+                await loadBatches();
+            }
+
+            // Load price mappings
+            try {
+                const { data: mappings } = await supabaseClient
+                    .from('leaflink_product_mappings')
+                    .select('product_type, price_per_unit')
+                    .eq('business_id', currentBusinessId === 'all' ? businessesList[0]?.id : currentBusinessId);
+
+                if (mappings) {
+                    window.analyticsData.priceMap = {};
+                    mappings.forEach(m => {
+                        if (m.product_type && m.price_per_unit) {
+                            window.analyticsData.priceMap[m.product_type] = parseFloat(m.price_per_unit);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log('Could not load price mappings:', e);
+            }
+
+            // Load timeclock data for labor analytics
+            try {
+                const dateRange = getAnalyticsDateRange();
+                const { data: timeclockData } = await supabaseClient
+                    .from('timeclock')
+                    .select('*')
+                    .gte('clock_in', dateRange.start.toISOString())
+                    .lte('clock_in', dateRange.end.toISOString());
+
+                window.analyticsData.timeclock = timeclockData || [];
+            } catch (e) {
+                console.log('Could not load timeclock data:', e);
+            }
+
+            // Load machine runs
+            try {
+                const { data: machineRuns } = await supabaseClient
+                    .from('wm_machine_runs')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(500);
+
+                window.analyticsData.machineRuns = machineRuns || [];
+            } catch (e) {
+                console.log('Could not load machine runs:', e);
+            }
+
+            // Load cost config if not already loaded
+            await loadCostingData();
+
+            // Update current view
+            updateAnalyticsDashboard();
+        }
+
+        // ========================================
+        // DASHBOARD SECTION
+        // ========================================
+
+        function updateAnalyticsDashboard() {
+            const dateRange = getAnalyticsDateRange();
+            const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+
+            // Calculate totals
+            let totalRevenue = 0;
+            let totalCOGS = 0;
+            let totalUnits = 0;
+            let materialCost = 0;
+            let laborCost = 0;
+            let consumablesCost = 0;
+            let overheadCost = 0;
+
+            filteredBatches.forEach(batch => {
+                const units = parseInt(batch.units_packaged) || 0;
+                const productType = batch.packaged_product_type || batch.product_made || '';
+                const price = window.analyticsData.priceMap[productType] || 15;
+
+                totalUnits += units;
+                totalRevenue += units * price;
+
+                const cogs = parseFloat(batch.calculated_cogs) || 0;
+                totalCOGS += cogs;
+
+                materialCost += parseFloat(batch.material_cost) || 0;
+                laborCost += parseFloat(batch.labor_cost) || 0;
+                consumablesCost += parseFloat(batch.consumables_cost) || 0;
+                overheadCost += parseFloat(batch.overhead_allocated) || 0;
+            });
+
+            const grossProfit = totalRevenue - totalCOGS;
+            const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
+
+            // Update KPI cards
+            const setEl = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+
+            setEl('dashboardRevenue', '$' + totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
+            setEl('dashboardCOGS', '$' + totalCOGS.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
+            setEl('dashboardProfit', '$' + grossProfit.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}));
+            setEl('dashboardMargin', grossMargin.toFixed(1) + '%');
+            setEl('dashboardUnits', totalUnits.toLocaleString());
+
+            // Render trend chart (last 6 months)
+            renderDashboardTrendChart();
+
+            // Render cost breakdown
+            renderDashboardCostBreakdown(materialCost, laborCost, consumablesCost, overheadCost);
+
+            // Render top performers
+            renderDashboardTopPerformers(filteredBatches);
+
+            // Render alerts
+            renderDashboardAlerts(filteredBatches, grossMargin);
+        }
+
+        function renderDashboardTrendChart() {
+            const chartEl = document.getElementById('dashboardTrendChart');
+            if (!chartEl) return;
+
+            // Get last 6 months of data
+            const months = [];
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                months.push({
+                    label: d.toLocaleDateString('en-US', { month: 'short' }),
+                    start: new Date(d.getFullYear(), d.getMonth(), 1),
+                    end: new Date(d.getFullYear(), d.getMonth() + 1, 0),
+                    revenue: 0,
+                    cogs: 0
+                });
+            }
+
+            // Calculate revenue/COGS per month
+            batches.forEach(batch => {
+                const batchDate = new Date(batch.labeling_date || batch.packaging_date || batch.created_at);
+                const monthData = months.find(m => batchDate >= m.start && batchDate <= m.end);
+                if (monthData) {
+                    const units = parseInt(batch.units_packaged) || 0;
+                    const productType = batch.packaged_product_type || batch.product_made || '';
+                    const price = window.analyticsData.priceMap[productType] || 15;
+                    monthData.revenue += units * price;
+                    monthData.cogs += parseFloat(batch.calculated_cogs) || 0;
+                }
+            });
+
+            const maxVal = Math.max(...months.map(m => Math.max(m.revenue, m.cogs)), 1);
+
+            chartEl.innerHTML = `
+                <div style="display: flex; align-items: flex-end; gap: 15px; height: 180px; padding: 10px 0;">
+                    ${months.map(m => {
+                        const revHeight = (m.revenue / maxVal * 150);
+                        const cogsHeight = (m.cogs / maxVal * 150);
+                        return `
+                            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                                <div style="display: flex; gap: 4px; align-items: flex-end; height: 150px;">
+                                    <div style="width: 20px; height: ${revHeight}px; background: var(--accent-blue); border-radius: 4px 4px 0 0;" title="Revenue: $${m.revenue.toLocaleString()}"></div>
+                                    <div style="width: 20px; height: ${cogsHeight}px; background: var(--accent-orange); border-radius: 4px 4px 0 0;" title="COGS: $${m.cogs.toLocaleString()}"></div>
+                                </div>
+                                <div style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 8px;">${m.label}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div style="display: flex; justify-content: center; gap: 20px; margin-top: 10px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 12px; height: 12px; background: var(--accent-blue); border-radius: 2px;"></div>
+                        <span style="color: var(--text-secondary); font-size: 0.8rem;">Revenue</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 12px; height: 12px; background: var(--accent-orange); border-radius: 2px;"></div>
+                        <span style="color: var(--text-secondary); font-size: 0.8rem;">COGS</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDashboardCostBreakdown(material, labor, consumables, overhead) {
+            const el = document.getElementById('dashboardCostBreakdown');
+            if (!el) return;
+
+            const total = material + labor + consumables + overhead;
+            if (total === 0) {
+                el.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 20px;">No cost data for this period</div>';
+                return;
+            }
+
+            const items = [
+                { label: 'Materials', value: material, color: 'var(--accent-blue)' },
+                { label: 'Labor', value: labor, color: 'var(--accent-purple)' },
+                { label: 'Consumables', value: consumables, color: 'var(--accent-orange)' },
+                { label: 'Overhead', value: overhead, color: 'var(--accent-green)' }
+            ];
+
+            el.innerHTML = items.map(item => {
+                const pct = (item.value / total * 100);
+                return `
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="color: var(--text-secondary); font-size: 0.85rem;">${item.label}</span>
+                            <span style="color: var(--text-primary); font-weight: 600;">$${item.value.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                        </div>
+                        <div style="background: var(--bg-tertiary); height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="width: ${pct}%; height: 100%; background: ${item.color};"></div>
+                        </div>
+                        <div style="text-align: right; font-size: 0.75rem; color: ${item.color}; margin-top: 2px;">${pct.toFixed(1)}%</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderDashboardTopPerformers(filteredBatches) {
+            const el = document.getElementById('dashboardTopPerformers');
+            if (!el) return;
+
+            // Find most profitable product type
+            const productStats = {};
+            filteredBatches.forEach(batch => {
+                const type = batch.packaged_product_type || batch.product_made || 'Unknown';
+                if (!productStats[type]) productStats[type] = { revenue: 0, cogs: 0, units: 0 };
+                const units = parseInt(batch.units_packaged) || 0;
+                const price = window.analyticsData.priceMap[type] || 15;
+                productStats[type].units += units;
+                productStats[type].revenue += units * price;
+                productStats[type].cogs += parseFloat(batch.calculated_cogs) || 0;
+            });
+
+            const productArray = Object.entries(productStats).map(([name, stats]) => ({
+                name,
+                profit: stats.revenue - stats.cogs,
+                margin: stats.revenue > 0 ? ((stats.revenue - stats.cogs) / stats.revenue * 100) : 0
+            })).filter(p => p.profit > 0).sort((a, b) => b.profit - a.profit);
+
+            // Find highest yield strain
+            const strainYields = {};
+            filteredBatches.forEach(batch => {
+                const strain = batch.strain || 'Unknown';
+                const yieldVal = parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+                if (yieldVal > 0) {
+                    if (!strainYields[strain]) strainYields[strain] = [];
+                    strainYields[strain].push(yieldVal);
+                }
+            });
+
+            const strainArray = Object.entries(strainYields).map(([name, yields]) => ({
+                name,
+                avgYield: yields.reduce((a, b) => a + b, 0) / yields.length,
+                batches: yields.length
+            })).filter(s => s.batches >= 2).sort((a, b) => b.avgYield - a.avgYield);
+
+            el.innerHTML = `
+                <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 10px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">Most Profitable Product</div>
+                    <div style="font-weight: 600; color: var(--accent-green);">
+                        ${productArray[0]?.name || 'N/A'}
+                        ${productArray[0] ? `<span style="font-size: 0.85rem; color: var(--text-secondary);"> ($${productArray[0].profit.toLocaleString(undefined, {maximumFractionDigits: 0})} profit)</span>` : ''}
+                    </div>
+                </div>
+                <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 10px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">Highest Yield Strain</div>
+                    <div style="font-weight: 600; color: var(--accent-blue);">
+                        ${strainArray[0]?.name || 'N/A'}
+                        ${strainArray[0] ? `<span style="font-size: 0.85rem; color: var(--text-secondary);"> (${strainArray[0].avgYield.toFixed(1)}% avg)</span>` : ''}
+                    </div>
+                </div>
+                <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">Highest Margin Product</div>
+                    <div style="font-weight: 600; color: var(--accent-purple);">
+                        ${productArray.sort((a, b) => b.margin - a.margin)[0]?.name || 'N/A'}
+                        ${productArray[0] ? `<span style="font-size: 0.85rem; color: var(--text-secondary);"> (${productArray[0].margin.toFixed(1)}%)</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDashboardAlerts(filteredBatches, grossMargin) {
+            const el = document.getElementById('dashboardAlerts');
+            if (!el) return;
+
+            const alerts = [];
+
+            // Low margin alert
+            if (grossMargin < 30 && grossMargin > 0) {
+                alerts.push({
+                    type: 'warning',
+                    icon: '⚠️',
+                    text: `Gross margin is ${grossMargin.toFixed(1)}% - below 30% target`
+                });
+            }
+
+            // Check for yield drops
+            const recentYields = filteredBatches
+                .filter(b => b.yield_percentage || b.crude_yield)
+                .slice(-10)
+                .map(b => parseFloat(b.yield_percentage || b.crude_yield));
+
+            if (recentYields.length >= 5) {
+                const avgRecent = recentYields.slice(-5).reduce((a, b) => a + b, 0) / 5;
+                const avgPrior = recentYields.slice(0, 5).reduce((a, b) => a + b, 0) / Math.min(5, recentYields.slice(0, 5).length);
+                if (avgRecent < avgPrior * 0.9 && avgPrior > 0) {
+                    alerts.push({
+                        type: 'warning',
+                        icon: '📉',
+                        text: `Yield trending down: ${avgRecent.toFixed(1)}% vs ${avgPrior.toFixed(1)}% prior`
+                    });
+                }
+            }
+
+            // Pipeline alert
+            const inPipeline = batches.filter(b => !b.labeling_date && b.extraction_date).length;
+            if (inPipeline > 20) {
+                alerts.push({
+                    type: 'info',
+                    icon: '📦',
+                    text: `${inPipeline} batches in pipeline awaiting completion`
+                });
+            }
+
+            // Positive alerts
+            if (grossMargin >= 50) {
+                alerts.push({
+                    type: 'success',
+                    icon: '🎉',
+                    text: `Excellent gross margin: ${grossMargin.toFixed(1)}%`
+                });
+            }
+
+            if (alerts.length === 0) {
+                alerts.push({
+                    type: 'success',
+                    icon: '✅',
+                    text: 'All metrics within normal range'
+                });
+            }
+
+            el.innerHTML = alerts.map(alert => {
+                const bgColor = alert.type === 'warning' ? 'rgba(245, 158, 11, 0.1)' :
+                               alert.type === 'success' ? 'rgba(16, 185, 129, 0.1)' :
+                               'rgba(59, 130, 246, 0.1)';
+                const borderColor = alert.type === 'warning' ? 'var(--accent-orange)' :
+                                   alert.type === 'success' ? 'var(--accent-green)' :
+                                   'var(--accent-blue)';
+                return `
+                    <div style="padding: 10px 12px; background: ${bgColor}; border-left: 3px solid ${borderColor}; border-radius: 0 6px 6px 0;">
+                        <span style="margin-right: 8px;">${alert.icon}</span>
+                        <span style="color: var(--text-primary); font-size: 0.9rem;">${alert.text}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========================================
+        // COGS ANALYSIS SECTION
+        // ========================================
+
+        function updateCOGSAnalysis() {
+            const dateRange = getAnalyticsDateRange();
+            const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+
+            let material = 0, labor = 0, consumables = 0, overhead = 0;
+
+            filteredBatches.forEach(batch => {
+                material += parseFloat(batch.material_cost) || 0;
+                labor += parseFloat(batch.labor_cost) || 0;
+                consumables += parseFloat(batch.consumables_cost) || 0;
+                overhead += parseFloat(batch.overhead_allocated) || 0;
+            });
+
+            const total = material + labor + consumables + overhead;
+
+            // Update summary cards
+            const setEl = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+
+            setEl('cogsMaterial', '$' + material.toLocaleString(undefined, {maximumFractionDigits: 0}));
+            setEl('cogsMaterialPct', total > 0 ? (material / total * 100).toFixed(1) + '%' : '0%');
+            setEl('cogsLabor', '$' + labor.toLocaleString(undefined, {maximumFractionDigits: 0}));
+            setEl('cogsLaborPct', total > 0 ? (labor / total * 100).toFixed(1) + '%' : '0%');
+            setEl('cogsConsumables', '$' + consumables.toLocaleString(undefined, {maximumFractionDigits: 0}));
+            setEl('cogsConsumablesPct', total > 0 ? (consumables / total * 100).toFixed(1) + '%' : '0%');
+            setEl('cogsOverhead', '$' + overhead.toLocaleString(undefined, {maximumFractionDigits: 0}));
+            setEl('cogsOverheadPct', total > 0 ? (overhead / total * 100).toFixed(1) + '%' : '0%');
+
+            // Render trend chart
+            renderCOGSTrendChart();
+
+            // Update COGS table
+            updateCOGSTable();
+
+            // Render variance analysis
+            renderCOGSVarianceAnalysis(filteredBatches);
+        }
+
+        function renderCOGSTrendChart() {
+            const chartEl = document.getElementById('cogsTrendChart');
+            if (!chartEl) return;
+
+            const months = [];
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                months.push({
+                    label: d.toLocaleDateString('en-US', { month: 'short' }),
+                    start: new Date(d.getFullYear(), d.getMonth(), 1),
+                    end: new Date(d.getFullYear(), d.getMonth() + 1, 0),
+                    material: 0, labor: 0, consumables: 0, overhead: 0
+                });
+            }
+
+            batches.forEach(batch => {
+                const batchDate = new Date(batch.labeling_date || batch.packaging_date || batch.created_at);
+                const monthData = months.find(m => batchDate >= m.start && batchDate <= m.end);
+                if (monthData) {
+                    monthData.material += parseFloat(batch.material_cost) || 0;
+                    monthData.labor += parseFloat(batch.labor_cost) || 0;
+                    monthData.consumables += parseFloat(batch.consumables_cost) || 0;
+                    monthData.overhead += parseFloat(batch.overhead_allocated) || 0;
+                }
+            });
+
+            const maxVal = Math.max(...months.map(m => m.material + m.labor + m.consumables + m.overhead), 1);
+
+            chartEl.innerHTML = `
+                <div style="display: flex; align-items: flex-end; gap: 15px; height: 180px; padding: 10px 0;">
+                    ${months.map(m => {
+                        const total = m.material + m.labor + m.consumables + m.overhead;
+                        const totalHeight = (total / maxVal * 150);
+                        const matH = totalHeight > 0 ? (m.material / total * totalHeight) : 0;
+                        const labH = totalHeight > 0 ? (m.labor / total * totalHeight) : 0;
+                        const conH = totalHeight > 0 ? (m.consumables / total * totalHeight) : 0;
+                        const ovH = totalHeight > 0 ? (m.overhead / total * totalHeight) : 0;
+                        return `
+                            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                                <div style="display: flex; flex-direction: column-reverse; width: 40px; height: 150px;" title="Total: $${total.toLocaleString()}">
+                                    <div style="height: ${matH}px; background: var(--accent-blue);"></div>
+                                    <div style="height: ${labH}px; background: var(--accent-purple);"></div>
+                                    <div style="height: ${conH}px; background: var(--accent-orange);"></div>
+                                    <div style="height: ${ovH}px; background: var(--accent-green); border-radius: 4px 4px 0 0;"></div>
+                                </div>
+                                <div style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 8px;">${m.label}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div style="display: flex; justify-content: center; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: var(--accent-blue); border-radius: 2px;"></div><span style="color: var(--text-secondary); font-size: 0.75rem;">Material</span></div>
+                    <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: var(--accent-purple); border-radius: 2px;"></div><span style="color: var(--text-secondary); font-size: 0.75rem;">Labor</span></div>
+                    <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: var(--accent-orange); border-radius: 2px;"></div><span style="color: var(--text-secondary); font-size: 0.75rem;">Consumables</span></div>
+                    <div style="display: flex; align-items: center; gap: 4px;"><div style="width: 10px; height: 10px; background: var(--accent-green); border-radius: 2px;"></div><span style="color: var(--text-secondary); font-size: 0.75rem;">Overhead</span></div>
+                </div>
+            `;
+        }
+
+        function updateCOGSTable() {
+            const groupBy = document.getElementById('cogsGroupBy')?.value || 'product_type';
+            const dateRange = getAnalyticsDateRange();
+            const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+
+            const groups = {};
+            filteredBatches.forEach(batch => {
+                let key;
+                switch(groupBy) {
+                    case 'strain': key = batch.strain || 'Unknown'; break;
+                    case 'operator': key = batch.extraction_user || 'Unknown'; break;
+                    case 'grower': key = batch.grower || batch.customer_name || 'Unknown'; break;
+                    default: key = batch.packaged_product_type || batch.product_made || 'Unknown';
+                }
+
+                if (!groups[key]) groups[key] = { batches: 0, grams: 0, material: 0, labor: 0, consumables: 0, overhead: 0 };
+                groups[key].batches++;
+                groups[key].grams += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+                groups[key].material += parseFloat(batch.material_cost) || 0;
+                groups[key].labor += parseFloat(batch.labor_cost) || 0;
+                groups[key].consumables += parseFloat(batch.consumables_cost) || 0;
+                groups[key].overhead += parseFloat(batch.overhead_allocated) || 0;
+            });
+
+            const tbody = document.getElementById('cogsTableBody');
+            if (!tbody) return;
+
+            const rows = Object.entries(groups)
+                .sort((a, b) => (b[1].material + b[1].labor + b[1].consumables + b[1].overhead) - (a[1].material + a[1].labor + a[1].consumables + a[1].overhead))
+                .map(([name, data]) => {
+                    const total = data.material + data.labor + data.consumables + data.overhead;
+                    const g = data.grams || 1;
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px; color: var(--text-primary);">${name}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-secondary);">${data.batches}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-secondary);">${data.grams.toLocaleString(undefined, {maximumFractionDigits: 0})}g</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-blue);">$${(data.material / g).toFixed(2)}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-purple);">$${(data.labor / g).toFixed(2)}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-orange);">$${(data.consumables / g).toFixed(2)}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-green);">$${(data.overhead / g).toFixed(2)}</td>
+                            <td style="padding: 12px; text-align: right; font-weight: 600; color: var(--text-primary);">$${(total / g).toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            tbody.innerHTML = rows || '<tr><td colspan="8" style="padding: 20px; text-align: center; color: var(--text-secondary);">No data for selected period</td></tr>';
+        }
+
+        function renderCOGSVarianceAnalysis(filteredBatches) {
+            const el = document.getElementById('cogsVarianceTable');
+            if (!el) return;
+
+            // Calculate expected vs actual by product type
+            const productStats = {};
+            filteredBatches.forEach(batch => {
+                const type = batch.packaged_product_type || batch.product_made || 'Unknown';
+                if (!productStats[type]) productStats[type] = { batches: [], totalCOGS: 0, totalGrams: 0 };
+                productStats[type].batches.push(batch);
+                productStats[type].totalCOGS += parseFloat(batch.calculated_cogs) || 0;
+                productStats[type].totalGrams += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+            });
+
+            // Get historical averages for comparison
+            const allTimeStats = {};
+            batches.forEach(batch => {
+                const type = batch.packaged_product_type || batch.product_made || 'Unknown';
+                if (!allTimeStats[type]) allTimeStats[type] = { totalCOGS: 0, totalGrams: 0 };
+                allTimeStats[type].totalCOGS += parseFloat(batch.calculated_cogs) || 0;
+                allTimeStats[type].totalGrams += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+            });
+
+            const rows = Object.entries(productStats).map(([type, stats]) => {
+                const actualCPG = stats.totalGrams > 0 ? stats.totalCOGS / stats.totalGrams : 0;
+                const expectedCPG = allTimeStats[type]?.totalGrams > 0 ? allTimeStats[type].totalCOGS / allTimeStats[type].totalGrams : actualCPG;
+                const variance = actualCPG - expectedCPG;
+                const variancePct = expectedCPG > 0 ? (variance / expectedCPG * 100) : 0;
+                const isOverrun = variance > 0.05;
+
+                return `
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px; color: var(--text-primary);">${type}</td>
+                        <td style="padding: 10px; text-align: right; color: var(--text-secondary);">$${expectedCPG.toFixed(2)}/g</td>
+                        <td style="padding: 10px; text-align: right; color: var(--text-primary);">$${actualCPG.toFixed(2)}/g</td>
+                        <td style="padding: 10px; text-align: right; color: ${isOverrun ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight: 600;">
+                            ${variance >= 0 ? '+' : ''}$${variance.toFixed(2)} (${variancePct >= 0 ? '+' : ''}${variancePct.toFixed(1)}%)
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            el.innerHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--bg-tertiary);">
+                            <th style="padding: 10px; text-align: left; color: var(--text-secondary);">Product Type</th>
+                            <th style="padding: 10px; text-align: right; color: var(--text-secondary);">Expected $/g</th>
+                            <th style="padding: 10px; text-align: right; color: var(--text-secondary);">Actual $/g</th>
+                            <th style="padding: 10px; text-align: right; color: var(--text-secondary);">Variance</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows || '<tr><td colspan="4" style="padding: 20px; text-align: center; color: var(--text-secondary);">No data</td></tr>'}</tbody>
+                </table>
+            `;
+        }
+
+        // ========================================
+        // PROFITABILITY SECTION
+        // ========================================
+
+        function updateAnalyticsProfitability() {
+            const dateRange = getAnalyticsDateRange();
+            const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+
+            let totalRevenue = 0, totalCOGS = 0;
+
+            filteredBatches.forEach(batch => {
+                const units = parseInt(batch.units_packaged) || 0;
+                const productType = batch.packaged_product_type || batch.product_made || '';
+                const price = window.analyticsData.priceMap[productType] || 15;
+                totalRevenue += units * price;
+                totalCOGS += parseFloat(batch.calculated_cogs) || 0;
+            });
+
+            const grossProfit = totalRevenue - totalCOGS;
+            const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
+
+            // Update summary cards
+            const setEl = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+
+            setEl('profitRevenue', '$' + totalRevenue.toLocaleString(undefined, {maximumFractionDigits: 0}));
+            setEl('profitCOGS', '$' + totalCOGS.toLocaleString(undefined, {maximumFractionDigits: 0}));
+            setEl('profitGross', '$' + grossProfit.toLocaleString(undefined, {maximumFractionDigits: 0}));
+            setEl('profitMargin', grossMargin.toFixed(1) + '%');
+
+            // Update tables
+            renderProfitByProduct(filteredBatches);
+            renderProfitByStrain(filteredBatches);
+            renderProfitByGrower(filteredBatches);
+            renderBreakEvenAnalysis(filteredBatches);
+        }
+
+        function renderProfitByProduct(filteredBatches) {
+            const stats = {};
+            filteredBatches.forEach(batch => {
+                const type = batch.packaged_product_type || batch.product_made || 'Unknown';
+                if (!stats[type]) stats[type] = { units: 0, revenue: 0, cogs: 0 };
+                const units = parseInt(batch.units_packaged) || 0;
+                const price = window.analyticsData.priceMap[type] || 15;
+                stats[type].units += units;
+                stats[type].revenue += units * price;
+                stats[type].cogs += parseFloat(batch.calculated_cogs) || 0;
+            });
+
+            const tbody = document.getElementById('profitByProductBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = Object.entries(stats)
+                .sort((a, b) => (b[1].revenue - b[1].cogs) - (a[1].revenue - a[1].cogs))
+                .map(([type, data]) => {
+                    const profit = data.revenue - data.cogs;
+                    const margin = data.revenue > 0 ? (profit / data.revenue * 100) : 0;
+                    const marginColor = margin >= 50 ? 'var(--accent-green)' : margin >= 30 ? 'var(--accent-orange)' : 'var(--accent-red)';
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px; color: var(--text-primary);">${type}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-secondary);">${data.units.toLocaleString()}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-blue);">$${data.revenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-orange);">$${data.cogs.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-green);">$${profit.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 12px; text-align: center; color: ${marginColor}; font-weight: 600;">${margin.toFixed(1)}%</td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--text-secondary);">No data</td></tr>';
+        }
+
+        function renderProfitByStrain(filteredBatches) {
+            const stats = {};
+            filteredBatches.forEach(batch => {
+                const strain = batch.strain || 'Unknown';
+                if (!stats[strain]) stats[strain] = { batches: 0, units: 0, revenue: 0, cogs: 0 };
+                stats[strain].batches++;
+                const units = parseInt(batch.units_packaged) || 0;
+                const type = batch.packaged_product_type || batch.product_made || '';
+                const price = window.analyticsData.priceMap[type] || 15;
+                stats[strain].units += units;
+                stats[strain].revenue += units * price;
+                stats[strain].cogs += parseFloat(batch.calculated_cogs) || 0;
+            });
+
+            const tbody = document.getElementById('profitByStrainBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = Object.entries(stats)
+                .sort((a, b) => (b[1].revenue - b[1].cogs) - (a[1].revenue - a[1].cogs))
+                .slice(0, 20)
+                .map(([strain, data]) => {
+                    const profit = data.revenue - data.cogs;
+                    const margin = data.revenue > 0 ? (profit / data.revenue * 100) : 0;
+                    const marginColor = margin >= 50 ? 'var(--accent-green)' : margin >= 30 ? 'var(--accent-orange)' : 'var(--accent-red)';
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 10px; color: var(--text-primary);">${strain}</td>
+                            <td style="padding: 10px; text-align: right; color: var(--text-secondary);">${data.batches}</td>
+                            <td style="padding: 10px; text-align: right; color: var(--text-secondary);">${data.units.toLocaleString()}</td>
+                            <td style="padding: 10px; text-align: right; color: var(--accent-blue);">$${data.revenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 10px; text-align: right; color: var(--accent-orange);">$${data.cogs.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 10px; text-align: right; color: var(--accent-green);">$${profit.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 10px; text-align: center; color: ${marginColor}; font-weight: 600;">${margin.toFixed(1)}%</td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="7" style="padding: 20px; text-align: center; color: var(--text-secondary);">No data</td></tr>';
+        }
+
+        function renderProfitByGrower(filteredBatches) {
+            const stats = {};
+            filteredBatches.forEach(batch => {
+                const grower = batch.grower || batch.customer_name || 'Unknown';
+                if (!stats[grower]) stats[grower] = { batches: 0, units: 0, revenue: 0, cogs: 0 };
+                stats[grower].batches++;
+                const units = parseInt(batch.units_packaged) || 0;
+                const type = batch.packaged_product_type || batch.product_made || '';
+                const price = window.analyticsData.priceMap[type] || 15;
+                stats[grower].units += units;
+                stats[grower].revenue += units * price;
+                stats[grower].cogs += parseFloat(batch.calculated_cogs) || 0;
+            });
+
+            const tbody = document.getElementById('profitByGrowerBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = Object.entries(stats)
+                .sort((a, b) => (b[1].revenue - b[1].cogs) - (a[1].revenue - a[1].cogs))
+                .map(([grower, data]) => {
+                    const profit = data.revenue - data.cogs;
+                    const margin = data.revenue > 0 ? (profit / data.revenue * 100) : 0;
+                    const marginColor = margin >= 50 ? 'var(--accent-green)' : margin >= 30 ? 'var(--accent-orange)' : 'var(--accent-red)';
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px; color: var(--text-primary);">${grower}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-secondary);">${data.batches}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-secondary);">${data.units.toLocaleString()}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-blue);">$${data.revenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-orange);">$${data.cogs.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--accent-green);">$${profit.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                            <td style="padding: 12px; text-align: center; color: ${marginColor}; font-weight: 600;">${margin.toFixed(1)}%</td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="7" style="padding: 20px; text-align: center; color: var(--text-secondary);">No data</td></tr>';
+        }
+
+        function renderBreakEvenAnalysis(filteredBatches) {
+            const el = document.getElementById('breakEvenAnalysis');
+            if (!el) return;
+
+            const stats = {};
+            filteredBatches.forEach(batch => {
+                const type = batch.packaged_product_type || batch.product_made || 'Unknown';
+                if (!stats[type]) stats[type] = { units: 0, cogs: 0 };
+                stats[type].units += parseInt(batch.units_packaged) || 0;
+                stats[type].cogs += parseFloat(batch.calculated_cogs) || 0;
+            });
+
+            const rows = Object.entries(stats).map(([type, data]) => {
+                const costPerUnit = data.units > 0 ? data.cogs / data.units : 0;
+                const price = window.analyticsData.priceMap[type] || 15;
+                const profitPerUnit = price - costPerUnit;
+                const breakEvenUnits = profitPerUnit > 0 ? Math.ceil(data.cogs / profitPerUnit) : 'N/A';
+
+                return `
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px; color: var(--text-primary);">${type}</td>
+                        <td style="padding: 10px; text-align: right;">$${costPerUnit.toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right;">$${price.toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right; color: ${profitPerUnit > 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">$${profitPerUnit.toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right; font-weight: 600;">${typeof breakEvenUnits === 'number' ? breakEvenUnits.toLocaleString() : breakEvenUnits}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            el.innerHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--bg-tertiary);">
+                            <th style="padding: 10px; text-align: left; color: var(--text-secondary);">Product Type</th>
+                            <th style="padding: 10px; text-align: right; color: var(--text-secondary);">Cost/Unit</th>
+                            <th style="padding: 10px; text-align: right; color: var(--text-secondary);">Price/Unit</th>
+                            <th style="padding: 10px; text-align: right; color: var(--text-secondary);">Profit/Unit</th>
+                            <th style="padding: 10px; text-align: right; color: var(--text-secondary);">Break-Even Units</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows || '<tr><td colspan="5" style="padding: 20px; text-align: center;">No data</td></tr>'}</tbody>
+                </table>
+            `;
+        }
+
+        // ========================================
+        // LABOR ANALYTICS SECTION
+        // ========================================
+
+        function updateLaborAnalytics() {
+            const dateRange = getAnalyticsDateRange();
+            const timeclockData = window.analyticsData.timeclock || [];
+            const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+
+            // Calculate hours by employee
+            const employeeStats = {};
+            let totalHours = 0, regularHours = 0, overtimeHours = 0;
+
+            // Group timeclock by employee and week for OT calculation
+            const weeklyHours = {};
+
+            timeclockData.forEach(entry => {
+                const emp = entry.employee_name || entry.user_id || 'Unknown';
+                const clockIn = new Date(entry.clock_in);
+                const clockOut = entry.clock_out ? new Date(entry.clock_out) : null;
+
+                if (!clockOut) return;
+
+                const hours = (clockOut - clockIn) / (1000 * 60 * 60);
+                if (hours < 0 || hours > 24) return;
+
+                if (!employeeStats[emp]) {
+                    employeeStats[emp] = { totalHours: 0, regularHours: 0, overtimeHours: 0, rate: 20, grams: 0 };
+                }
+                employeeStats[emp].totalHours += hours;
+                totalHours += hours;
+
+                // Track weekly hours for OT calculation
+                const weekKey = emp + '_' + getWeekNumber(clockIn);
+                if (!weeklyHours[weekKey]) weeklyHours[weekKey] = 0;
+                weeklyHours[weekKey] += hours;
+            });
+
+            // Calculate OT (hours over 40 per week)
+            Object.entries(weeklyHours).forEach(([key, hours]) => {
+                const emp = key.split('_')[0];
+                if (employeeStats[emp]) {
+                    const ot = Math.max(0, hours - 40);
+                    employeeStats[emp].overtimeHours += ot;
+                    employeeStats[emp].regularHours += Math.min(hours, 40);
+                    overtimeHours += ot;
+                    regularHours += Math.min(hours, 40);
+                }
+            });
+
+            // Calculate grams by employee from batches
+            filteredBatches.forEach(batch => {
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+                ['extraction_user', 'finishing_user', 'packaging_user', 'labeling_user'].forEach(field => {
+                    const emp = batch[field];
+                    if (emp && employeeStats[emp]) {
+                        employeeStats[emp].grams += grams / 4; // Divide by 4 stages
+                    }
+                });
+            });
+
+            // Calculate total grams and labor cost per gram
+            let totalGrams = 0;
+            filteredBatches.forEach(b => {
+                totalGrams += parseFloat(b.total_grams_packaged) || parseFloat(b.final_weight) || 0;
+            });
+
+            const totalLaborCost = Object.values(employeeStats).reduce((sum, e) => {
+                return sum + (e.regularHours * e.rate) + (e.overtimeHours * e.rate * 1.5);
+            }, 0);
+            const laborCostPerGram = totalGrams > 0 ? totalLaborCost / totalGrams : 0;
+
+            // Update summary cards
+            document.getElementById('laborTotalHours').textContent = totalHours.toFixed(1);
+            document.getElementById('laborRegularHours').textContent = regularHours.toFixed(1);
+            document.getElementById('laborOvertimeHours').textContent = overtimeHours.toFixed(1);
+            document.getElementById('laborCostPerGram').textContent = '$' + laborCostPerGram.toFixed(2);
+
+            // Render employee table
+            renderLaborEmployeeTable(employeeStats);
+
+            // Render station breakdown
+            renderLaborStationBreakdown(filteredBatches);
+
+            // Render overtime analysis
+            renderOvertimeAnalysis(employeeStats);
+        }
+
+        function getWeekNumber(date) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+            const yearStart = new Date(d.getFullYear(), 0, 1);
+            return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+        }
+
+        function renderLaborEmployeeTable(employeeStats) {
+            const tbody = document.getElementById('laborEmployeeBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = Object.entries(employeeStats)
+                .sort((a, b) => b[1].totalHours - a[1].totalHours)
+                .map(([emp, data]) => {
+                    const laborCost = (data.regularHours * data.rate) + (data.overtimeHours * data.rate * 1.5);
+                    const costPerGram = data.grams > 0 ? laborCost / data.grams : 0;
+                    const gramsPerHour = data.totalHours > 0 ? data.grams / data.totalHours : 0;
+
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 10px; color: var(--text-primary);">${emp}</td>
+                            <td style="padding: 10px; text-align: right;">${data.totalHours.toFixed(1)}</td>
+                            <td style="padding: 10px; text-align: right; color: var(--accent-green);">${data.regularHours.toFixed(1)}</td>
+                            <td style="padding: 10px; text-align: right; color: ${data.overtimeHours > 0 ? 'var(--accent-orange)' : 'var(--text-secondary)'};">${data.overtimeHours.toFixed(1)}</td>
+                            <td style="padding: 10px; text-align: right;">$${data.rate.toFixed(0)}</td>
+                            <td style="padding: 10px; text-align: right; color: var(--accent-purple);">$${laborCost.toFixed(0)}</td>
+                            <td style="padding: 10px; text-align: right;">${data.grams.toLocaleString(undefined, {maximumFractionDigits: 0})}g</td>
+                            <td style="padding: 10px; text-align: right;">$${costPerGram.toFixed(2)}</td>
+                            <td style="padding: 10px; text-align: right;">${gramsPerHour.toFixed(1)}</td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="9" style="padding: 20px; text-align: center; color: var(--text-secondary);">No labor data for this period</td></tr>';
+        }
+
+        function renderLaborStationBreakdown(filteredBatches) {
+            const el = document.getElementById('laborStationBreakdown');
+            if (!el) return;
+
+            const stations = {
+                extraction: { grams: 0, batches: 0 },
+                finishing: { grams: 0, batches: 0 },
+                packaging: { grams: 0, batches: 0 },
+                labeling: { grams: 0, batches: 0 }
+            };
+
+            filteredBatches.forEach(batch => {
+                if (batch.extraction_date) { stations.extraction.batches++; stations.extraction.grams += parseFloat(batch.trim_weight) || 0; }
+                if (batch.finishing_date) { stations.finishing.batches++; stations.finishing.grams += parseFloat(batch.crude_weight) || 0; }
+                if (batch.packaging_date) { stations.packaging.batches++; stations.packaging.grams += parseFloat(batch.final_weight) || 0; }
+                if (batch.labeling_date) { stations.labeling.batches++; stations.labeling.grams += parseFloat(batch.total_grams_packaged) || 0; }
+            });
+
+            el.innerHTML = Object.entries(stations).map(([name, data]) => `
+                <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px;">${name.charAt(0).toUpperCase() + name.slice(1)}</div>
+                    <div style="font-size: 1.4rem; font-weight: 700; color: var(--text-primary);">${data.batches}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">batches</div>
+                    <div style="font-size: 0.9rem; color: var(--accent-blue); margin-top: 5px;">${data.grams.toLocaleString(undefined, {maximumFractionDigits: 0})}g</div>
+                </div>
+            `).join('');
+        }
+
+        function renderOvertimeAnalysis(employeeStats) {
+            const el = document.getElementById('laborOvertimeAnalysis');
+            if (!el) return;
+
+            const otEmployees = Object.entries(employeeStats)
+                .filter(([_, data]) => data.overtimeHours > 0)
+                .sort((a, b) => b[1].overtimeHours - a[1].overtimeHours);
+
+            if (otEmployees.length === 0) {
+                el.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No overtime recorded this period</div>';
+                return;
+            }
+
+            el.innerHTML = `
+                <div style="display: grid; gap: 10px;">
+                    ${otEmployees.map(([emp, data]) => {
+                        const otPct = data.totalHours > 0 ? (data.overtimeHours / data.totalHours * 100) : 0;
+                        return `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-tertiary); border-radius: 8px;">
+                                <span style="color: var(--text-primary);">${emp}</span>
+                                <div style="display: flex; gap: 20px; align-items: center;">
+                                    <span style="color: var(--accent-orange); font-weight: 600;">${data.overtimeHours.toFixed(1)} OT hrs</span>
+                                    <span style="color: var(--text-secondary); font-size: 0.85rem;">${otPct.toFixed(0)}% of total</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // ========================================
+        // YIELD ANALYTICS SECTION
+        // ========================================
+
+        function updateYieldAnalytics() {
+            const dateRange = getAnalyticsDateRange();
+            const filteredBatches = filterBatchesByDateRange(batches, dateRange)
+                .filter(b => (b.yield_percentage || b.crude_yield) && parseFloat(b.yield_percentage || b.crude_yield) > 0);
+
+            const yields = filteredBatches.map(b => parseFloat(b.yield_percentage || b.crude_yield));
+
+            if (yields.length === 0) {
+                document.getElementById('yieldAverage').textContent = 'N/A';
+                document.getElementById('yieldBest').textContent = 'N/A';
+                document.getElementById('yieldWorst').textContent = 'N/A';
+                document.getElementById('yieldStdDev').textContent = 'N/A';
+                return;
+            }
+
+            const avg = yields.reduce((a, b) => a + b, 0) / yields.length;
+            const best = Math.max(...yields);
+            const worst = Math.min(...yields);
+            const stdDev = Math.sqrt(yields.reduce((sum, y) => sum + Math.pow(y - avg, 2), 0) / yields.length);
+
+            document.getElementById('yieldAverage').textContent = avg.toFixed(1) + '%';
+            document.getElementById('yieldBest').textContent = best.toFixed(1) + '%';
+            document.getElementById('yieldWorst').textContent = worst.toFixed(1) + '%';
+            document.getElementById('yieldStdDev').textContent = stdDev.toFixed(2) + '%';
+
+            renderYieldByStrain(filteredBatches);
+            renderYieldByOperator(filteredBatches);
+            renderYieldFactorsAnalysis(filteredBatches);
+            renderYieldTrendChart();
+        }
+
+        function renderYieldByStrain(filteredBatches) {
+            const strainStats = {};
+            filteredBatches.forEach(batch => {
+                const strain = batch.strain || 'Unknown';
+                const y = parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+                if (!strainStats[strain]) strainStats[strain] = [];
+                if (y > 0) strainStats[strain].push(y);
+            });
+
+            const tbody = document.getElementById('yieldByStrainBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = Object.entries(strainStats)
+                .filter(([_, yields]) => yields.length > 0)
+                .map(([strain, yields]) => ({
+                    strain,
+                    batches: yields.length,
+                    avg: yields.reduce((a, b) => a + b, 0) / yields.length,
+                    best: Math.max(...yields),
+                    worst: Math.min(...yields)
+                }))
+                .sort((a, b) => b.avg - a.avg)
+                .slice(0, 20)
+                .map(data => {
+                    const trend = data.batches >= 3 ? (data.avg > 10 ? '↑' : data.avg < 8 ? '↓' : '→') : '-';
+                    const trendColor = trend === '↑' ? 'var(--accent-green)' : trend === '↓' ? 'var(--accent-red)' : 'var(--text-secondary)';
+                    return `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 10px; color: var(--text-primary);">${data.strain}</td>
+                            <td style="padding: 10px; text-align: right; color: var(--text-secondary);">${data.batches}</td>
+                            <td style="padding: 10px; text-align: right; font-weight: 600; color: var(--accent-blue);">${data.avg.toFixed(1)}%</td>
+                            <td style="padding: 10px; text-align: right; color: var(--accent-green);">${data.best.toFixed(1)}%</td>
+                            <td style="padding: 10px; text-align: right; color: var(--accent-red);">${data.worst.toFixed(1)}%</td>
+                            <td style="padding: 10px; color: ${trendColor}; font-size: 1.2rem;">${trend}</td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--text-secondary);">No yield data</td></tr>';
+        }
+
+        function renderYieldByOperator(filteredBatches) {
+            const operatorStats = {};
+            filteredBatches.forEach(batch => {
+                const op = batch.extraction_user || 'Unknown';
+                const y = parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+                if (!operatorStats[op]) operatorStats[op] = [];
+                if (y > 0) operatorStats[op].push(y);
+            });
+
+            const tbody = document.getElementById('yieldByOperatorBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = Object.entries(operatorStats)
+                .filter(([_, yields]) => yields.length > 0)
+                .map(([op, yields]) => {
+                    const avg = yields.reduce((a, b) => a + b, 0) / yields.length;
+                    const stdDev = Math.sqrt(yields.reduce((sum, y) => sum + Math.pow(y - avg, 2), 0) / yields.length);
+                    return {
+                        op,
+                        batches: yields.length,
+                        avg,
+                        best: Math.max(...yields),
+                        worst: Math.min(...yields),
+                        consistency: 100 - (stdDev / avg * 100)
+                    };
+                })
+                .sort((a, b) => b.avg - a.avg)
+                .map(data => `
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px; color: var(--text-primary);">${data.op}</td>
+                        <td style="padding: 10px; text-align: right; color: var(--text-secondary);">${data.batches}</td>
+                        <td style="padding: 10px; text-align: right; font-weight: 600; color: var(--accent-blue);">${data.avg.toFixed(1)}%</td>
+                        <td style="padding: 10px; text-align: right; color: var(--accent-green);">${data.best.toFixed(1)}%</td>
+                        <td style="padding: 10px; text-align: right; color: var(--accent-red);">${data.worst.toFixed(1)}%</td>
+                        <td style="padding: 10px; text-align: right; color: ${data.consistency > 90 ? 'var(--accent-green)' : 'var(--accent-orange)'};">${data.consistency.toFixed(0)}%</td>
+                    </tr>
+                `).join('') || '<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--text-secondary);">No yield data</td></tr>';
+        }
+
+        function renderYieldFactorsAnalysis(filteredBatches) {
+            const el = document.getElementById('yieldFactorsAnalysis');
+            if (!el) return;
+
+            // Analyze by material type
+            const typeYields = {};
+            filteredBatches.forEach(batch => {
+                const type = batch.material_type || 'Standard';
+                const y = parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+                if (!typeYields[type]) typeYields[type] = [];
+                if (y > 0) typeYields[type].push(y);
+            });
+
+            el.innerHTML = `
+                <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 15px;">
+                    <h5 style="color: var(--text-primary); margin: 0 0 10px 0;">By Material Type</h5>
+                    ${Object.entries(typeYields).map(([type, yields]) => {
+                        const avg = yields.length > 0 ? yields.reduce((a, b) => a + b, 0) / yields.length : 0;
+                        return `<div style="display: flex; justify-content: space-between; padding: 5px 0;"><span style="color: var(--text-secondary);">${type}</span><span style="color: var(--accent-blue); font-weight: 600;">${avg.toFixed(1)}%</span></div>`;
+                    }).join('')}
+                </div>
+                <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 15px;">
+                    <h5 style="color: var(--text-primary); margin: 0 0 10px 0;">Quick Stats</h5>
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span style="color: var(--text-secondary);">Total Batches</span><span style="color: var(--text-primary); font-weight: 600;">${filteredBatches.length}</span></div>
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span style="color: var(--text-secondary);">Above 10%</span><span style="color: var(--accent-green); font-weight: 600;">${filteredBatches.filter(b => parseFloat(b.yield_percentage || b.crude_yield) > 10).length}</span></div>
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span style="color: var(--text-secondary);">Below 8%</span><span style="color: var(--accent-red); font-weight: 600;">${filteredBatches.filter(b => parseFloat(b.yield_percentage || b.crude_yield) < 8).length}</span></div>
+                </div>
+                <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 15px;">
+                    <h5 style="color: var(--text-primary); margin: 0 0 10px 0;">Recommendations</h5>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                        ${filteredBatches.length > 10 ? 'Sufficient data for analysis' : 'Need more batches for reliable insights'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderYieldTrendChart() {
+            const chartEl = document.getElementById('yieldTrendChart');
+            if (!chartEl) return;
+
+            const months = [];
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                months.push({
+                    label: d.toLocaleDateString('en-US', { month: 'short' }),
+                    start: new Date(d.getFullYear(), d.getMonth(), 1),
+                    end: new Date(d.getFullYear(), d.getMonth() + 1, 0),
+                    yields: []
+                });
+            }
+
+            batches.forEach(batch => {
+                const batchDate = new Date(batch.extraction_date || batch.created_at);
+                const y = parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+                if (y > 0) {
+                    const monthData = months.find(m => batchDate >= m.start && batchDate <= m.end);
+                    if (monthData) monthData.yields.push(y);
+                }
+            });
+
+            const avgYields = months.map(m => m.yields.length > 0 ? m.yields.reduce((a, b) => a + b, 0) / m.yields.length : 0);
+            const maxYield = Math.max(...avgYields.filter(y => y > 0), 15);
+
+            chartEl.innerHTML = `
+                <div style="display: flex; align-items: flex-end; gap: 15px; height: 180px; padding: 10px 0;">
+                    ${months.map((m, i) => {
+                        const avg = avgYields[i];
+                        const height = avg > 0 ? (avg / maxYield * 150) : 0;
+                        return `
+                            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                                <div style="width: 40px; height: ${height}px; background: linear-gradient(to top, var(--accent-green), var(--accent-blue)); border-radius: 4px 4px 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 5px;" title="${avg.toFixed(1)}%">
+                                    ${height > 30 ? `<span style="color: white; font-size: 0.75rem; font-weight: 600;">${avg.toFixed(1)}%</span>` : ''}
+                                </div>
+                                <div style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 8px;">${m.label}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // ========================================
+        // PRODUCTION EFFICIENCY SECTION
+        // ========================================
+
+        function updateProductionEfficiency() {
+            const dateRange = getAnalyticsDateRange();
+            const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+
+            // Calculate weekly averages
+            const daysInRange = Math.max(1, (dateRange.end - dateRange.start) / (1000 * 60 * 60 * 24));
+            const weeks = daysInRange / 7;
+
+            let totalTrim = 0, totalUnits = 0, totalGrams = 0;
+            filteredBatches.forEach(batch => {
+                totalTrim += parseFloat(batch.trim_weight) || 0;
+                totalUnits += parseInt(batch.units_packaged) || 0;
+                totalGrams += parseFloat(batch.total_grams_packaged) || 0;
+            });
+
+            document.getElementById('prodBatchesPerWeek').textContent = (filteredBatches.length / weeks).toFixed(1);
+            document.getElementById('prodTrimPerWeek').textContent = (totalTrim / weeks).toFixed(0);
+            document.getElementById('prodUnitsPerWeek').textContent = Math.round(totalUnits / weeks).toLocaleString();
+            document.getElementById('prodGramsPerWeek').textContent = Math.round(totalGrams / weeks).toLocaleString();
+
+            renderStageTimes(filteredBatches);
+            renderPipelineStatus();
+            renderMachineUtilization();
+        }
+
+        function renderStageTimes(filteredBatches) {
+            const el = document.getElementById('prodStageTimes');
+            if (!el) return;
+
+            const stages = [
+                { name: 'Intake → Extract', from: 'intake_date', to: 'extraction_date' },
+                { name: 'Extract → Finish', from: 'extraction_date', to: 'finishing_date' },
+                { name: 'Finish → Package', from: 'finishing_date', to: 'packaging_date' },
+                { name: 'Package → Label', from: 'packaging_date', to: 'labeling_date' },
+                { name: 'Total Time', from: 'intake_date', to: 'labeling_date' }
+            ];
+
+            el.innerHTML = stages.map(stage => {
+                const times = filteredBatches
+                    .filter(b => b[stage.from] && b[stage.to])
+                    .map(b => (new Date(b[stage.to]) - new Date(b[stage.from])) / (1000 * 60 * 60 * 24));
+
+                const avg = times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0;
+
+                return `
+                    <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px;">${stage.name}</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-blue);">${avg.toFixed(1)}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-secondary);">days avg</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderPipelineStatus() {
+            const tbody = document.getElementById('prodPipelineBody');
+            if (!tbody) return;
+
+            const stages = {
+                'Awaiting Extraction': { filter: b => b.intake_date && !b.extraction_date, dateField: 'intake_date' },
+                'Awaiting Finishing': { filter: b => b.extraction_date && !b.finishing_date, dateField: 'extraction_date' },
+                'Awaiting Packaging': { filter: b => b.finishing_date && !b.packaging_date, dateField: 'finishing_date' },
+                'Awaiting Labeling': { filter: b => b.packaging_date && !b.labeling_date, dateField: 'packaging_date' },
+                'Completed': { filter: b => b.labeling_date, dateField: 'labeling_date' }
+            };
+
+            tbody.innerHTML = Object.entries(stages).map(([name, config]) => {
+                const stageBatches = batches.filter(config.filter);
+                const totalGrams = stageBatches.reduce((sum, b) => sum + (parseFloat(b.total_grams_packaged) || parseFloat(b.final_weight) || parseFloat(b.crude_weight) || 0), 0);
+                const estValue = stageBatches.reduce((sum, b) => {
+                    const units = parseInt(b.units_packaged) || Math.round(totalGrams / stageBatches.length);
+                    const price = window.analyticsData.priceMap[b.packaged_product_type] || 15;
+                    return sum + units * price;
+                }, 0);
+
+                const avgDays = stageBatches.length > 0 ? stageBatches.reduce((sum, b) => {
+                    const stageDate = new Date(b[config.dateField]);
+                    return sum + (new Date() - stageDate) / (1000 * 60 * 60 * 24);
+                }, 0) / stageBatches.length : 0;
+
+                return `
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px; color: var(--text-primary);">${name}</td>
+                        <td style="padding: 10px; text-align: right; font-weight: 600;">${stageBatches.length}</td>
+                        <td style="padding: 10px; text-align: right;">${totalGrams.toLocaleString(undefined, {maximumFractionDigits: 0})}g</td>
+                        <td style="padding: 10px; text-align: right; color: var(--accent-green);">$${estValue.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                        <td style="padding: 10px; text-align: right; color: ${avgDays > 7 ? 'var(--accent-orange)' : 'var(--text-secondary)'};">${avgDays.toFixed(1)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderMachineUtilization() {
+            const el = document.getElementById('prodMachineUtilization');
+            if (!el) return;
+
+            const machineRuns = window.analyticsData.machineRuns || [];
+            const dateRange = getAnalyticsDateRange();
+
+            const filteredRuns = machineRuns.filter(r => {
+                const runDate = new Date(r.created_at);
+                return runDate >= dateRange.start && runDate <= dateRange.end;
+            });
+
+            // Group by machine
+            const machineStats = {};
+            filteredRuns.forEach(run => {
+                const machine = run.machine_name || 'Unknown';
+                if (!machineStats[machine]) machineStats[machine] = { runs: 0, lbs: 0 };
+                machineStats[machine].runs++;
+                machineStats[machine].lbs += parseFloat(run.trim_weight) || 0;
+            });
+
+            if (Object.keys(machineStats).length === 0) {
+                el.innerHTML = '<div style="grid-column: span 2; padding: 20px; text-align: center; color: var(--text-secondary);">No machine run data available</div>';
+                return;
+            }
+
+            el.innerHTML = Object.entries(machineStats).map(([machine, data]) => `
+                <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 15px;">
+                    <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">${machine}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Runs</div>
+                            <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-blue);">${data.runs}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Lbs Processed</div>
+                            <div style="font-size: 1.3rem; font-weight: 700; color: var(--accent-green);">${data.lbs.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ========================================
+        // FORECASTING SECTION
+        // ========================================
+
+        function updateForecasting() {
+            // Pipeline batches (not yet completed)
+            const pipelineBatches = batches.filter(b => b.intake_date && !b.labeling_date);
+
+            let projectedRevenue = 0, projectedCOGS = 0;
+            pipelineBatches.forEach(batch => {
+                const estUnits = parseInt(batch.units_packaged) || Math.round((parseFloat(batch.trim_weight) || 0) * 0.1 * 0.8);
+                const price = window.analyticsData.priceMap[batch.packaged_product_type || batch.product_made] || 15;
+                projectedRevenue += estUnits * price;
+                projectedCOGS += parseFloat(batch.calculated_cogs) || parseFloat(batch.material_cost) || 0;
+            });
+
+            const projectedProfit = projectedRevenue - projectedCOGS;
+
+            document.getElementById('forecastPipelineBatches').textContent = pipelineBatches.length;
+            document.getElementById('forecastProjectedRevenue').textContent = '$' + projectedRevenue.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('forecastProjectedCOGS').textContent = '$' + projectedCOGS.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('forecastProjectedProfit').textContent = '$' + projectedProfit.toLocaleString(undefined, {maximumFractionDigits: 0});
+
+            renderForecastChart();
+            updateWhatIfScenario();
+        }
+
+        function renderForecastChart() {
+            const chartEl = document.getElementById('forecastRevenueChart');
+            const summaryEl = document.getElementById('forecastSummary');
+            if (!chartEl) return;
+
+            // Calculate historical daily average from last 30 days
+            const now = new Date();
+            const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+            let historicalRevenue = 0;
+            batches.filter(b => {
+                const d = new Date(b.labeling_date);
+                return d >= thirtyDaysAgo && d <= now;
+            }).forEach(batch => {
+                const units = parseInt(batch.units_packaged) || 0;
+                const price = window.analyticsData.priceMap[batch.packaged_product_type || batch.product_made] || 15;
+                historicalRevenue += units * price;
+            });
+
+            const dailyAvg = historicalRevenue / 30;
+            const projectedMonthly = dailyAvg * 30;
+
+            chartEl.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 150px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 10px;">Projected 30-Day Revenue (based on historical avg)</div>
+                        <div style="font-size: 3rem; font-weight: 700; color: var(--accent-green);">$${projectedMonthly.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">~$${dailyAvg.toLocaleString(undefined, {maximumFractionDigits: 0})}/day avg</div>
+                    </div>
+                </div>
+            `;
+
+            if (summaryEl) {
+                summaryEl.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Last 30 Days Actual</div>
+                            <div style="font-size: 1.2rem; font-weight: 600; color: var(--accent-blue);">$${historicalRevenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Pipeline Value</div>
+                            <div style="font-size: 1.2rem; font-weight: 600; color: var(--accent-orange);">${document.getElementById('forecastProjectedRevenue')?.textContent || '$0'}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Combined Projection</div>
+                            <div style="font-size: 1.2rem; font-weight: 600; color: var(--accent-green);">$${(projectedMonthly + parseFloat(document.getElementById('forecastProjectedRevenue')?.textContent?.replace(/[$,]/g, '') || 0)).toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function updateWhatIfScenario() {
+            const yieldChange = parseFloat(document.getElementById('forecastYieldChange')?.value) || 0;
+            const costChange = parseFloat(document.getElementById('forecastCostChange')?.value) || 0;
+            const volumeChange = parseFloat(document.getElementById('forecastVolumeChange')?.value) || 0;
+
+            // Update value displays
+            document.getElementById('forecastYieldValue').textContent = (yieldChange >= 0 ? '+' : '') + yieldChange + '%';
+            document.getElementById('forecastCostValue').textContent = (costChange >= 0 ? '+' : '') + costChange + '%';
+            document.getElementById('forecastVolumeValue').textContent = (volumeChange >= 0 ? '+' : '') + volumeChange + '%';
+
+            // Calculate baseline from last 30 days
+            const now = new Date();
+            const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+            let baseRevenue = 0, baseCOGS = 0, baseUnits = 0;
+            batches.filter(b => {
+                const d = new Date(b.labeling_date);
+                return d >= thirtyDaysAgo && d <= now;
+            }).forEach(batch => {
+                const units = parseInt(batch.units_packaged) || 0;
+                const price = window.analyticsData.priceMap[batch.packaged_product_type || batch.product_made] || 15;
+                baseRevenue += units * price;
+                baseCOGS += parseFloat(batch.calculated_cogs) || 0;
+                baseUnits += units;
+            });
+
+            // Apply scenarios
+            const volumeMultiplier = 1 + (volumeChange / 100);
+            const yieldMultiplier = 1 + (yieldChange / 100);
+            const costMultiplier = 1 + (costChange / 100);
+
+            const newUnits = baseUnits * volumeMultiplier * yieldMultiplier;
+            const newRevenue = baseRevenue * volumeMultiplier * yieldMultiplier;
+            const newCOGS = baseCOGS * volumeMultiplier * costMultiplier;
+            const newProfit = newRevenue - newCOGS;
+            const newMargin = newRevenue > 0 ? (newProfit / newRevenue * 100) : 0;
+
+            const baseProfit = baseRevenue - baseCOGS;
+            const profitChange = newProfit - baseProfit;
+
+            const resultsEl = document.getElementById('forecastWhatIfResults');
+            if (resultsEl) {
+                resultsEl.innerHTML = `
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px;">Projected Monthly Revenue</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-blue);">$${newRevenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px;">Projected COGS</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-orange);">$${newCOGS.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px;">Projected Profit</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green);">$${newProfit.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                    </div>
+                    <div style="padding-top: 15px; border-top: 1px solid var(--border-color);">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px;">vs. Baseline</div>
+                        <div style="font-size: 1.2rem; font-weight: 700; color: ${profitChange >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">
+                            ${profitChange >= 0 ? '+' : ''}$${profitChange.toLocaleString(undefined, {maximumFractionDigits: 0})}
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">Margin: ${newMargin.toFixed(1)}%</div>
+                    </div>
+                `;
+            }
+        }
+
+        // ========================================
+        // CONFIGURATION HELPERS
+        // ========================================
+
+        function toggleConfigSection(section) {
+            const content = document.getElementById('config' + section.charAt(0).toUpperCase() + section.slice(1) + 'Content');
+            const arrow = document.getElementById('config' + section.charAt(0).toUpperCase() + section.slice(1) + 'Arrow');
+
+            if (content && arrow) {
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    arrow.textContent = '▼';
+                } else {
+                    content.style.display = 'none';
+                    arrow.textContent = '▶';
+                }
+            }
+        }
+
+        // ========================================
+        // EXPORT FUNCTIONS
+        // ========================================
+
+        function exportCOGSAnalysis() {
+            exportAnalyticsToCSV('cogs');
+        }
+
+        function exportProfitability(type) {
+            exportAnalyticsToCSV('profitability_' + type);
+        }
+
+        function exportLaborAnalytics() {
+            exportAnalyticsToCSV('labor');
+        }
+
+        function exportYieldAnalytics(type) {
+            exportAnalyticsToCSV('yield_' + type);
+        }
+
+        function exportPipelineStatus() {
+            exportAnalyticsToCSV('pipeline');
+        }
+
+        function exportAnalyticsToCSV(type) {
+            const dateRange = getAnalyticsDateRange();
+            const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+
+            let headers = [];
+            let rows = [];
+
+            switch(type) {
+                case 'cogs':
+                    headers = ['Group', 'Batches', 'Total Grams', 'Material $/g', 'Labor $/g', 'Consumables $/g', 'Overhead $/g', 'Total $/g'];
+                    const cogsGroups = {};
+                    filteredBatches.forEach(batch => {
+                        const key = batch.packaged_product_type || 'Unknown';
+                        if (!cogsGroups[key]) cogsGroups[key] = { batches: 0, grams: 0, material: 0, labor: 0, consumables: 0, overhead: 0 };
+                        cogsGroups[key].batches++;
+                        cogsGroups[key].grams += parseFloat(batch.total_grams_packaged) || 0;
+                        cogsGroups[key].material += parseFloat(batch.material_cost) || 0;
+                        cogsGroups[key].labor += parseFloat(batch.labor_cost) || 0;
+                        cogsGroups[key].consumables += parseFloat(batch.consumables_cost) || 0;
+                        cogsGroups[key].overhead += parseFloat(batch.overhead_allocated) || 0;
+                    });
+                    rows = Object.entries(cogsGroups).map(([name, data]) => {
+                        const g = data.grams || 1;
+                        const total = data.material + data.labor + data.consumables + data.overhead;
+                        return [name, data.batches, data.grams.toFixed(0), (data.material/g).toFixed(2), (data.labor/g).toFixed(2), (data.consumables/g).toFixed(2), (data.overhead/g).toFixed(2), (total/g).toFixed(2)];
+                    });
+                    break;
+
+                case 'labor':
+                    headers = ['Employee', 'Total Hours', 'Regular', 'OT', 'Rate', 'Labor $', 'Grams', '$/Gram', 'Grams/Hour'];
+                    // Use timeclock data - simplified for export
+                    rows = [['Export labor data', 'See UI for full details']];
+                    break;
+
+                default:
+                    headers = ['Batch ID', 'Strain', 'Product Type', 'Units', 'COGS', 'Date'];
+                    rows = filteredBatches.map(b => [b.batch_id, b.strain || '', b.packaged_product_type || '', b.units_packaged || 0, b.calculated_cogs || 0, b.labeling_date || '']);
+            }
+
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analytics_${type}_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         async function loadCostingData() {
@@ -8509,7 +10636,7 @@ ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS cost_per_unit DECIMAL(10,4);
                 } else if (station === 'sales') {
                     loadSalesDashboardSales();
                 } else if (station === 'costing') {
-                    loadCostingData();
+                    loadBusinessAnalytics();
                 }
             });
         });
