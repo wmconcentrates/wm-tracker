@@ -8614,15 +8614,19 @@
                 console.log('Employee grams by stage:', employeeStageGrams);
 
                 // 5. Calculate AGGREGATE labor cost per gram
-                // Total labor cost = sum of all employee (hours × rate)
+                // Total labor cost = sum of all employee (hours × rate) + salary employees
                 // Total grams = sum of actual batch output (not per-stage, which would double-count)
                 const laborCostPerGram = {};
                 let totalLaborCost = 0;
+                let hourlyLaborCost = 0;
+                let salaryLaborCost = 0;
 
+                // Add hourly employees (from timeclock)
                 Object.entries(employeeHours).forEach(([user, hours]) => {
                     const rate = rates[user] || 18;
                     const laborCost = hours * rate;
                     totalLaborCost += laborCost;
+                    hourlyLaborCost += laborCost;
 
                     // Store individual employee stats for reference
                     const grams = employeeStageGrams[user]?.total || 0;
@@ -8632,10 +8636,40 @@
                             rate: rate,
                             laborCost: parseFloat(laborCost.toFixed(2)),
                             grams: grams,
-                            costPerGram: parseFloat((laborCost / grams).toFixed(4))
+                            costPerGram: parseFloat((laborCost / grams).toFixed(4)),
+                            type: 'hourly'
                         };
                     }
                 });
+
+                // Add salary employees (don't clock in, but their cost should be included)
+                // Get salary employees from wm_employees
+                const { data: salaryEmployees } = await supabaseClient
+                    .from('wm_employees')
+                    .select('name, annual_salary')
+                    .eq('is_active', true)
+                    .eq('is_salary', true);
+
+                if (salaryEmployees && salaryEmployees.length > 0) {
+                    // Calculate salary cost for the 3-month period
+                    salaryEmployees.forEach(emp => {
+                        if (emp.annual_salary) {
+                            const monthlySalary = parseFloat(emp.annual_salary) / 12;
+                            const periodCost = monthlySalary * 3; // 3 months
+                            salaryLaborCost += periodCost;
+                            totalLaborCost += periodCost;
+
+                            laborCostPerGram[emp.name] = {
+                                annualSalary: parseFloat(emp.annual_salary),
+                                periodCost: parseFloat(periodCost.toFixed(2)),
+                                type: 'salary'
+                            };
+                            console.log(`${emp.name} (salary): $${emp.annual_salary}/year = $${periodCost.toFixed(2)} for 3 months`);
+                        }
+                    });
+                }
+
+                console.log(`Hourly labor: $${hourlyLaborCost.toFixed(2)}, Salary labor: $${salaryLaborCost.toFixed(2)}`);
 
                 // Calculate total grams from actual batch OUTPUT (not per-stage totals which double-count)
                 const totalOutputGrams = periodBatches.reduce((sum, b) => {
