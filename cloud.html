@@ -3885,25 +3885,30 @@
             <div id="analyticsDashboardSection" class="analytics-section">
                 <!-- KPI Cards Row -->
                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 25px;">
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-blue);">
+                    <div onclick="showKPIDetail('revenue')" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-blue); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
                         <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Total Revenue</div>
                         <div id="dashboardRevenue" style="font-size: 1.6rem; font-weight: 700; color: var(--accent-blue);">$0</div>
+                        <div style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 5px;">Click for details</div>
                     </div>
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-orange);">
+                    <div onclick="showKPIDetail('cogs')" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-orange); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
                         <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Total COGS</div>
                         <div id="dashboardCOGS" style="font-size: 1.6rem; font-weight: 700; color: var(--accent-orange);">$0</div>
+                        <div style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 5px;">Click for details</div>
                     </div>
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-green);">
+                    <div onclick="showKPIDetail('profit')" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-green); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
                         <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Gross Profit</div>
                         <div id="dashboardProfit" style="font-size: 1.6rem; font-weight: 700; color: var(--accent-green);">$0</div>
+                        <div style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 5px;">Click for details</div>
                     </div>
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-purple);">
+                    <div onclick="showKPIDetail('margin')" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid var(--accent-purple); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
                         <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Gross Margin</div>
                         <div id="dashboardMargin" style="font-size: 1.6rem; font-weight: 700; color: var(--accent-purple);">0%</div>
+                        <div style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 5px;">Click for details</div>
                     </div>
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid #FFD700;">
+                    <div onclick="showKPIDetail('units')" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border-left: 4px solid #FFD700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
                         <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 5px;">Units Produced</div>
                         <div id="dashboardUnits" style="font-size: 1.6rem; font-weight: 700; color: #FFD700;">0</div>
+                        <div style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 5px;">Click for details</div>
                     </div>
                 </div>
 
@@ -6360,6 +6365,140 @@
 
             // Render alerts
             renderDashboardAlerts(filteredBatches, grossMargin);
+        }
+
+        function showKPIDetail(type) {
+            const dateRange = getAnalyticsDateRange();
+            const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+            const priceMap = window.analyticsData.priceMap || {};
+
+            // Build batch details
+            const batchDetails = filteredBatches.map(batch => {
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                const units1g = parseInt(batch.units_1g_labeled || batch.units_1g) || 0;
+                const units4g = parseInt(batch.units_4g_labeled || batch.units_4g) || 0;
+                const revenue = calculateBatchRevenue(batch, priceMap);
+                const cogs = parseFloat(batch.calculated_cogs) || 0;
+                const material = parseFloat(batch.material_cost) || 0;
+                const labor = parseFloat(batch.labor_cost) || 0;
+                const consumables = parseFloat(batch.consumables_cost) || 0;
+                const overhead = parseFloat(batch.overhead_allocated) || 0;
+                const profit = revenue - cogs;
+                const margin = revenue > 0 ? (profit / revenue * 100) : 0;
+
+                return {
+                    id: batch.batch_id || batch.id,
+                    strain: batch.strain || 'Unknown',
+                    product: batch.packaged_product_type || batch.product_made || '-',
+                    units,
+                    units1g,
+                    units4g,
+                    revenue,
+                    cogs,
+                    material,
+                    labor,
+                    consumables,
+                    overhead,
+                    profit,
+                    margin,
+                    date: batch.labeling_date || batch.packaging_date || batch.created_at
+                };
+            }).filter(b => b.units > 0 || b.cogs > 0).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Calculate totals
+            const totals = batchDetails.reduce((acc, b) => ({
+                units: acc.units + b.units,
+                revenue: acc.revenue + b.revenue,
+                cogs: acc.cogs + b.cogs,
+                material: acc.material + b.material,
+                labor: acc.labor + b.labor,
+                consumables: acc.consumables + b.consumables,
+                overhead: acc.overhead + b.overhead,
+                profit: acc.profit + b.profit
+            }), { units: 0, revenue: 0, cogs: 0, material: 0, labor: 0, consumables: 0, overhead: 0, profit: 0 });
+
+            // Determine columns based on type
+            let title, columns, rows;
+            const fmt = n => '$' + n.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            switch(type) {
+                case 'revenue':
+                    title = 'Revenue Breakdown by Batch';
+                    columns = ['Batch', 'Strain', 'Product', '1g Units', '4g Units', 'Total Units', 'Revenue'];
+                    rows = batchDetails.map(b => [
+                        b.id, b.strain, b.product, b.units1g || '-', b.units4g || '-', b.units, fmt(b.revenue)
+                    ]);
+                    rows.push(['', '', '<strong>TOTAL</strong>', '', '', `<strong>${totals.units}</strong>`, `<strong>${fmt(totals.revenue)}</strong>`]);
+                    break;
+                case 'cogs':
+                    title = 'COGS Breakdown by Batch';
+                    columns = ['Batch', 'Strain', 'Material', 'Labor', 'Consumables', 'Overhead', 'Total COGS'];
+                    rows = batchDetails.map(b => [
+                        b.id, b.strain, fmt(b.material), fmt(b.labor), fmt(b.consumables), fmt(b.overhead), fmt(b.cogs)
+                    ]);
+                    rows.push(['', '<strong>TOTAL</strong>', `<strong>${fmt(totals.material)}</strong>`, `<strong>${fmt(totals.labor)}</strong>`, `<strong>${fmt(totals.consumables)}</strong>`, `<strong>${fmt(totals.overhead)}</strong>`, `<strong>${fmt(totals.cogs)}</strong>`]);
+                    break;
+                case 'profit':
+                    title = 'Profit Breakdown by Batch';
+                    columns = ['Batch', 'Strain', 'Product', 'Revenue', 'COGS', 'Profit', 'Margin'];
+                    rows = batchDetails.map(b => [
+                        b.id, b.strain, b.product, fmt(b.revenue), fmt(b.cogs), fmt(b.profit), b.margin.toFixed(1) + '%'
+                    ]);
+                    const totalMargin = totals.revenue > 0 ? (totals.profit / totals.revenue * 100) : 0;
+                    rows.push(['', '', '<strong>TOTAL</strong>', `<strong>${fmt(totals.revenue)}</strong>`, `<strong>${fmt(totals.cogs)}</strong>`, `<strong>${fmt(totals.profit)}</strong>`, `<strong>${totalMargin.toFixed(1)}%</strong>`]);
+                    break;
+                case 'margin':
+                    title = 'Margin Breakdown by Batch';
+                    columns = ['Batch', 'Strain', 'Product', 'Revenue', 'COGS', 'Profit', 'Margin'];
+                    rows = batchDetails.map(b => [
+                        b.id, b.strain, b.product, fmt(b.revenue), fmt(b.cogs), fmt(b.profit), b.margin.toFixed(1) + '%'
+                    ]).sort((a, b) => parseFloat(b[6]) - parseFloat(a[6])); // Sort by margin
+                    const avgMargin = totals.revenue > 0 ? (totals.profit / totals.revenue * 100) : 0;
+                    rows.push(['', '', '<strong>TOTAL</strong>', `<strong>${fmt(totals.revenue)}</strong>`, `<strong>${fmt(totals.cogs)}</strong>`, `<strong>${fmt(totals.profit)}</strong>`, `<strong>${avgMargin.toFixed(1)}%</strong>`]);
+                    break;
+                case 'units':
+                    title = 'Units Produced by Batch';
+                    columns = ['Batch', 'Strain', 'Product', '1g Units', '4g Units', 'Total Units', 'Date'];
+                    rows = batchDetails.map(b => [
+                        b.id, b.strain, b.product, b.units1g || '-', b.units4g || '-', b.units,
+                        b.date ? new Date(b.date).toLocaleDateString() : '-'
+                    ]);
+                    rows.push(['', '', '<strong>TOTAL</strong>', '', '', `<strong>${totals.units}</strong>`, '']);
+                    break;
+            }
+
+            // Create modal
+            const modal = document.createElement('div');
+            modal.id = 'kpiDetailModal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+            modal.innerHTML = `
+                <div style="background: var(--bg-secondary); border-radius: 16px; max-width: 90vw; max-height: 85vh; overflow: hidden; border: 1px solid var(--border-color);">
+                    <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; color: var(--text-primary);">${title}</h3>
+                        <button onclick="document.getElementById('kpiDetailModal').remove()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.5rem;">&times;</button>
+                    </div>
+                    <div style="padding: 20px; overflow: auto; max-height: calc(85vh - 80px);">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <thead>
+                                <tr style="background: var(--bg-primary);">
+                                    ${columns.map(c => `<th style="padding: 10px; text-align: left; color: var(--text-secondary); border-bottom: 1px solid var(--border-color);">${c}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows.map((row, i) => `
+                                    <tr style="border-bottom: 1px solid var(--border-color); ${i === rows.length - 1 ? 'background: var(--bg-primary);' : ''}">
+                                        ${row.map(cell => `<td style="padding: 10px; color: var(--text-primary);">${cell}</td>`).join('')}
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
         }
 
         function renderDashboardTrendChart() {
