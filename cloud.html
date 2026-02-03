@@ -13362,12 +13362,12 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         return;
                     }
 
-                    // Find machine name from config for the alert (before closing modal clears currentMachine)
-                    const machineInfo = CONFIG.machines.find(m => {
+                    // Get machine name using same logic as openMachineModal
+                    const machineConfig = CONFIG.machines.find(m => {
                         const key = (m.position?.toLowerCase() || m.name.toLowerCase()).replace(/[^a-z0-9]/g, '');
                         return key === currentMachine;
                     });
-                    const machineName = machineInfo?.name || (currentMachine === 'left' ? 'Left' : currentMachine === 'right' ? 'Right' : currentMachine);
+                    const machineName = machineConfig?.name || (currentMachine === 'left' ? 'Left Machine' : currentMachine === 'right' ? 'Right Machine' : currentMachine || 'Machine');
 
                     updateMachineDisplays();
                     closeMachineModal();
