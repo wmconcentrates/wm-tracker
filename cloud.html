@@ -6328,10 +6328,18 @@
 
         function calculateBatchRevenue(batch, priceMap) {
             // Get unit counts
-            const units1g = parseInt(batch.units_1g_labeled || batch.units_1g) || 0;
-            const units4g = parseInt(batch.units_4g_labeled || batch.units_4g) || 0;
-            const totalUnits = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+            let units1g = parseInt(batch.units_1g_labeled || batch.units_1g) || 0;
+            let units4g = parseInt(batch.units_4g_labeled || batch.units_4g) || 0;
+            let totalUnits = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
             const productType = batch.packaged_product_type || batch.product_made || '';
+
+            // 50/50 Split: Only count revenue from YOUR half (customer gets other half)
+            const isSplit = batch.material_agreement === '50-50 Split' || batch.material_agreement === '50/50 Split';
+            if (isSplit) {
+                units1g = Math.floor(units1g * 0.5);
+                units4g = Math.floor(units4g * 0.5);
+                totalUnits = Math.floor(totalUnits * 0.5);
+            }
 
             let revenue = 0;
 
@@ -9241,43 +9249,40 @@
             }
 
             // ============================================
-            // 5. TOTAL COGS - Adjust for split agreements
+            // 5. TOTAL COGS
+            // ============================================
+            // For 50/50 splits: You bear FULL processing costs (you did all the work)
+            // Material is $0 (customer provides), but labor/consumables/overhead are 100% yours
+            const calculatedCOGS = materialCost + consumablesCost + laborCost + overheadAllocated;
+
+            // ============================================
+            // 6. COST PER UNIT - Adjust for split agreements
             // ============================================
             let unitsKept = batch.labels_applied_quantity || batch.units_packaged || 0;
-            let splitMultiplier = 1.0;
-
-            // 50/50 Split: Customer provides material, you process it, each keep half
-            // Your COGS = only YOUR share (50%) of processing costs
-            // Rationale: Keeping your half is your "payment" for processing the customer's half
             const isSplit = batch.material_agreement === '50-50 Split' || batch.material_agreement === '50/50 Split';
+
+            // 50/50 Split: You keep half the units, customer gets other half
             if (isSplit) {
                 unitsKept = unitsKept * 0.5;
-                splitMultiplier = 0.5; // Only count 50% of costs as YOUR COGS
             }
 
-            // Apply split multiplier to variable costs (material is already $0 for splits)
-            const adjustedConsumables = consumablesCost * splitMultiplier;
-            const adjustedLabor = laborCost * splitMultiplier;
-            const adjustedOverhead = overheadAllocated * splitMultiplier;
-
-            const calculatedCOGS = materialCost + adjustedConsumables + adjustedLabor + adjustedOverhead;
             const costPerUnit = unitsKept > 0 ? calculatedCOGS / unitsKept : 0;
 
             return {
                 material_cost: materialCost,
-                consumables_cost: adjustedConsumables,
-                labor_cost: adjustedLabor,
-                overhead_allocated: adjustedOverhead,
+                consumables_cost: consumablesCost,
+                labor_cost: laborCost,
+                overhead_allocated: overheadAllocated,
                 calculated_cogs: calculatedCOGS,
                 cost_per_unit: costPerUnit,
                 is_split: isSplit,
+                units_kept: unitsKept,
                 breakdown: {
                     consumables: consumablesBreakdown,
                     labor: laborBreakdown,
                     units_produced: batch.units_packaged || 0,
                     units_kept: unitsKept,
-                    grams_produced: batchGrams,
-                    split_multiplier: splitMultiplier
+                    grams_produced: batchGrams
                 }
             };
         }
