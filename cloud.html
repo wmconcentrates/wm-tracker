@@ -6340,6 +6340,10 @@
 
             filteredBatches.forEach(batch => {
                 const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+                // Skip batches with no output (consistent with detail modal)
+                if (units <= 0 && grams <= 0) return;
+
                 totalUnits += units;
                 totalRevenue += calculateBatchRevenue(batch, priceMap);
 
@@ -6763,9 +6767,15 @@
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
 
             // Use calculated COGS for consistency with detail modals
+            // Filter to only include batches with output (same filter as showCOGSDetail)
             let material = 0, labor = 0, consumables = 0, overhead = 0;
 
             filteredBatches.forEach(batch => {
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                // Skip batches with no output (consistent with detail modal)
+                if (grams <= 0 && units <= 0) return;
+
                 const cogsCalc = calculateBatchCOGS(batch);
                 material += cogsCalc.material_cost || 0;
                 labor += cogsCalc.labor_cost || 0;
@@ -7150,6 +7160,11 @@
             let totalRevenue = 0, totalCOGS = 0;
 
             filteredBatches.forEach(batch => {
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+                // Skip batches with no output (consistent with detail modals)
+                if (units <= 0 && grams <= 0) return;
+
                 totalRevenue += calculateBatchRevenue(batch, priceMap);
                 const cogsCalc = calculateBatchCOGS(batch);
                 totalCOGS += cogsCalc.calculated_cogs || 0;
@@ -7180,9 +7195,13 @@
             const priceMap = window.analyticsData.priceMap || {};
             const stats = {};
             filteredBatches.forEach(batch => {
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+                // Skip batches with no output
+                if (units <= 0 && grams <= 0) return;
+
                 const type = batch.packaged_product_type || batch.product_made || 'Unknown';
                 if (!stats[type]) stats[type] = { units: 0, revenue: 0, cogs: 0 };
-                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[type].units += units;
                 stats[type].revenue += calculateBatchRevenue(batch, priceMap);
                 const cogsCalc = calculateBatchCOGS(batch);
@@ -7215,10 +7234,14 @@
             const priceMap = window.analyticsData.priceMap || {};
             const stats = {};
             filteredBatches.forEach(batch => {
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+                // Skip batches with no output
+                if (units <= 0 && grams <= 0) return;
+
                 const strain = batch.strain || 'Unknown';
                 if (!stats[strain]) stats[strain] = { batches: 0, units: 0, revenue: 0, cogs: 0 };
                 stats[strain].batches++;
-                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[strain].units += units;
                 stats[strain].revenue += calculateBatchRevenue(batch, priceMap);
                 const cogsCalc = calculateBatchCOGS(batch);
@@ -7253,10 +7276,14 @@
             const priceMap = window.analyticsData.priceMap || {};
             const stats = {};
             filteredBatches.forEach(batch => {
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+                // Skip batches with no output
+                if (units <= 0 && grams <= 0) return;
+
                 const grower = batch.grower || batch.customer_name || 'Unknown';
                 if (!stats[grower]) stats[grower] = { batches: 0, units: 0, revenue: 0, cogs: 0 };
                 stats[grower].batches++;
-                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[grower].units += units;
                 stats[grower].revenue += calculateBatchRevenue(batch, priceMap);
                 const cogsCalc = calculateBatchCOGS(batch);
@@ -7293,9 +7320,13 @@
             const priceMap = window.analyticsData.priceMap || {};
             const stats = {};
             filteredBatches.forEach(batch => {
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+                // Skip batches with no output
+                if (units <= 0 && grams <= 0) return;
+
                 const type = batch.packaged_product_type || batch.product_made || 'Unknown';
                 if (!stats[type]) stats[type] = { units: 0, cogs: 0, revenue: 0 };
-                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[type].units += units;
                 const cogsCalc = calculateBatchCOGS(batch);
                 stats[type].cogs += cogsCalc.calculated_cogs || 0;
