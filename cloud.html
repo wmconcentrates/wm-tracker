@@ -6892,16 +6892,21 @@
                     const totalMonthly = facilitiesMonthly + salaryMonthly;
                     const avgGrams = window.calculatedAvgMonthlyGrams || 15000;
 
-                    columns = ['Batch', 'Strain', 'Grams', '% of Monthly', 'Overhead Allocated'];
+                    // Calculate total grams in filtered period for accurate percentages
+                    const totalGramsOH = batchDetails.reduce((sum, b) => sum + b.grams, 0);
+                    const monthsInPeriod = avgGrams > 0 ? (totalGramsOH / avgGrams) : 1;
+                    const periodOverhead = totalMonthly * monthsInPeriod;
+
+                    columns = ['Batch', 'Strain', 'Grams', '% of Period', 'Overhead Allocated'];
                     rows = batchDetails.map(b => {
-                        const pct = avgGrams > 0 ? (b.grams / avgGrams * 100) : 0;
+                        // Show percentage of period total (will add up to 100%)
+                        const pct = totalGramsOH > 0 ? (b.grams / totalGramsOH * 100) : 0;
                         return [
                             b.id, b.strain, b.grams.toFixed(0) + 'g', pct.toFixed(2) + '%', fmt(b.overhead)
                         ];
                     });
                     const totalOverhead = batchDetails.reduce((sum, b) => sum + b.overhead, 0);
-                    const totalGramsOH = batchDetails.reduce((sum, b) => sum + b.grams, 0);
-                    rows.push(['', '<strong>TOTAL</strong>', `<strong>${totalGramsOH.toFixed(0)}g</strong>`, '', `<strong>${fmt(totalOverhead)}</strong>`]);
+                    rows.push(['', '<strong>TOTAL</strong>', `<strong>${totalGramsOH.toFixed(0)}g</strong>`, '<strong>100%</strong>', `<strong>${fmt(totalOverhead)}</strong>`]);
                     // Add overhead explanation
                     rows.push(['', '', '', '', '']);
                     rows.push(['<em>Monthly overhead:</em>', '', '', '', '']);
@@ -6911,7 +6916,12 @@
                     rows.push(['Insurance:', '', '', '', fmt(costConfig.insurance_monthly || 0)]);
                     rows.push(['Salaries (mgmt/sales/admin):', '', '', '', fmt(salaryMonthly)]);
                     rows.push(['<strong>Total Monthly:</strong>', '', '', '', `<strong>${fmt(totalMonthly)}</strong>`]);
+                    rows.push(['', '', '', '', '']);
+                    rows.push(['<em>Period calculation:</em>', '', '', '', '']);
+                    rows.push(['Period grams:', '', '', '', totalGramsOH.toLocaleString() + 'g']);
                     rows.push(['Avg monthly grams:', '', '', '', avgGrams.toLocaleString() + 'g']);
+                    rows.push(['Months in period:', '', '', '', monthsInPeriod.toFixed(2)]);
+                    rows.push(['<strong>Period overhead:</strong>', '', '', '', `<strong>${fmt(periodOverhead)}</strong>`]);
                     break;
             }
 
