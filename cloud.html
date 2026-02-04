@@ -6198,6 +6198,38 @@
             });
         }
 
+        // Calculate period overhead info for accurate overhead allocation
+        function calculatePeriodOverheadInfo(filteredBatches, dateRange) {
+            // Calculate total grams in the period (only batches with output)
+            let totalPeriodGrams = 0;
+            filteredBatches.forEach(batch => {
+                const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
+                if (units > 0 || grams > 0) {
+                    totalPeriodGrams += grams;
+                }
+            });
+
+            // Calculate number of months in the period
+            const msPerMonth = 30.44 * 24 * 60 * 60 * 1000; // Average month in ms
+            const periodMs = dateRange.end - dateRange.start;
+            const periodMonths = Math.max(periodMs / msPerMonth, 0.1); // Minimum 0.1 months
+
+            // Store globally so calculateBatchCOGS can use it
+            window.currentPeriodOverheadInfo = {
+                totalPeriodGrams,
+                periodMonths,
+                dateRange
+            };
+
+            return window.currentPeriodOverheadInfo;
+        }
+
+        // Clear period info when not in analytics context
+        function clearPeriodOverheadInfo() {
+            window.currentPeriodOverheadInfo = null;
+        }
+
         function updateAnalyticsDateRange() {
             // Refresh the current section
             const activeTab = document.querySelector('.analytics-subtab[style*="background: rgb(16, 185, 129)"]');
@@ -6329,6 +6361,9 @@
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
             const priceMap = window.analyticsData.priceMap || {};
 
+            // Calculate period info for accurate overhead allocation
+            calculatePeriodOverheadInfo(filteredBatches, dateRange);
+
             // Calculate totals - use on-the-fly COGS calculation for accuracy
             let totalRevenue = 0;
             let totalCOGS = 0;
@@ -6389,6 +6424,9 @@
             const dateRange = getAnalyticsDateRange();
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
             const priceMap = window.analyticsData.priceMap || {};
+
+            // Calculate period info for accurate overhead allocation
+            calculatePeriodOverheadInfo(filteredBatches, dateRange);
 
             // Build batch details - calculate COGS on-the-fly for accurate values
             const batchDetails = filteredBatches.map(batch => {
@@ -6766,6 +6804,9 @@
             const dateRange = getAnalyticsDateRange();
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
 
+            // Calculate period info for accurate overhead allocation
+            calculatePeriodOverheadInfo(filteredBatches, dateRange);
+
             // Use calculated COGS for consistency with detail modals
             // Filter to only include batches with output (same filter as showCOGSDetail)
             let material = 0, labor = 0, consumables = 0, overhead = 0;
@@ -6813,6 +6854,9 @@
         function showCOGSDetail(type) {
             const dateRange = getAnalyticsDateRange();
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+
+            // Calculate period info for accurate overhead allocation
+            calculatePeriodOverheadInfo(filteredBatches, dateRange);
 
             // Build batch details with calculated COGS
             const batchDetails = filteredBatches.map(batch => {
@@ -6890,11 +6934,11 @@
                     const facilitiesMonthly = (costConfig.rent_monthly || 0) + (costConfig.utilities_monthly || 0) + (costConfig.equipment_monthly || 0) + (costConfig.insurance_monthly || 0);
                     const salaryMonthly = window.monthlySalaryOverhead || 0;
                     const totalMonthly = facilitiesMonthly + salaryMonthly;
-                    const avgGrams = window.calculatedAvgMonthlyGrams || 15000;
 
-                    // Calculate total grams in filtered period for accurate percentages
-                    const totalGramsOH = batchDetails.reduce((sum, b) => sum + b.grams, 0);
-                    const monthsInPeriod = avgGrams > 0 ? (totalGramsOH / avgGrams) : 1;
+                    // Use period info calculated by calculatePeriodOverheadInfo
+                    const periodInfo = window.currentPeriodOverheadInfo || {};
+                    const totalGramsOH = periodInfo.totalPeriodGrams || batchDetails.reduce((sum, b) => sum + b.grams, 0);
+                    const monthsInPeriod = periodInfo.periodMonths || 1;
                     const periodOverhead = totalMonthly * monthsInPeriod;
 
                     columns = ['Batch', 'Strain', 'Grams', '% of Period', 'Overhead Allocated'];
@@ -6919,8 +6963,7 @@
                     rows.push(['', '', '', '', '']);
                     rows.push(['<em>Period calculation:</em>', '', '', '', '']);
                     rows.push(['Period grams:', '', '', '', totalGramsOH.toLocaleString() + 'g']);
-                    rows.push(['Avg monthly grams:', '', '', '', avgGrams.toLocaleString() + 'g']);
-                    rows.push(['Months in period:', '', '', '', monthsInPeriod.toFixed(2)]);
+                    rows.push(['Months in period (from date range):', '', '', '', monthsInPeriod.toFixed(2)]);
                     rows.push(['<strong>Period overhead:</strong>', '', '', '', `<strong>${fmt(periodOverhead)}</strong>`]);
                     break;
             }
@@ -7166,6 +7209,9 @@
             const dateRange = getAnalyticsDateRange();
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
             const priceMap = window.analyticsData.priceMap || {};
+
+            // Calculate period info for accurate overhead allocation
+            calculatePeriodOverheadInfo(filteredBatches, dateRange);
 
             let totalRevenue = 0, totalCOGS = 0;
 
@@ -9177,11 +9223,22 @@
                               parseFloat(batch.final_weight) ||
                               parseFloat(batch.crude_weight) || 0;
 
-            // Use cached monthly grams (calculated in recalculateAllBatchCOGS)
-            const avgMonthlyGrams = window.calculatedAvgMonthlyGrams || 15000;
-            const overheadAllocated = batchGrams > 0 && avgMonthlyGrams > 0
-                ? monthlyOverhead * (batchGrams / avgMonthlyGrams)
-                : monthlyOverhead / 30; // Fallback to per-batch
+            // If period info is provided (from analytics), use actual period data
+            // Otherwise fall back to average monthly grams
+            let overheadAllocated = 0;
+            if (window.currentPeriodOverheadInfo && window.currentPeriodOverheadInfo.totalPeriodGrams > 0) {
+                // Allocate this batch's share of the period's total overhead
+                const periodOverhead = monthlyOverhead * window.currentPeriodOverheadInfo.periodMonths;
+                overheadAllocated = batchGrams > 0
+                    ? periodOverhead * (batchGrams / window.currentPeriodOverheadInfo.totalPeriodGrams)
+                    : 0;
+            } else {
+                // Fallback for individual batch calculations (not in analytics context)
+                const avgMonthlyGrams = window.calculatedAvgMonthlyGrams || 15000;
+                overheadAllocated = batchGrams > 0 && avgMonthlyGrams > 0
+                    ? monthlyOverhead * (batchGrams / avgMonthlyGrams)
+                    : monthlyOverhead / 30;
+            }
 
             // ============================================
             // 5. TOTAL COGS
