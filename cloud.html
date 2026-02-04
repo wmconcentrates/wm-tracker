@@ -3961,25 +3961,29 @@
             <div id="analyticsCogsSection" class="analytics-section" style="display: none;">
                 <!-- Cost Component Cards -->
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color);">
+                    <div onclick="showCOGSDetail('material')" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
                         <div style="color: var(--accent-blue); font-size: 0.85rem; margin-bottom: 5px;">Materials</div>
                         <div id="cogsMaterial" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-blue);">$0</div>
                         <div id="cogsMaterialPct" style="color: var(--text-secondary); font-size: 0.9rem;">0%</div>
+                        <div style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 5px;">Click for details</div>
                     </div>
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color);">
+                    <div onclick="showCOGSDetail('labor')" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
                         <div style="color: var(--accent-purple); font-size: 0.85rem; margin-bottom: 5px;">Labor</div>
                         <div id="cogsLabor" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-purple);">$0</div>
                         <div id="cogsLaborPct" style="color: var(--text-secondary); font-size: 0.9rem;">0%</div>
+                        <div style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 5px;">Click for details</div>
                     </div>
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color);">
+                    <div onclick="showCOGSDetail('consumables')" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
                         <div style="color: var(--accent-orange); font-size: 0.85rem; margin-bottom: 5px;">Consumables</div>
                         <div id="cogsConsumables" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-orange);">$0</div>
                         <div id="cogsConsumablesPct" style="color: var(--text-secondary); font-size: 0.9rem;">0%</div>
+                        <div style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 5px;">Click for details</div>
                     </div>
-                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color);">
+                    <div onclick="showCOGSDetail('overhead')" style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
                         <div style="color: var(--accent-green); font-size: 0.85rem; margin-bottom: 5px;">Overhead</div>
                         <div id="cogsOverhead" style="font-size: 1.8rem; font-weight: 700; color: var(--accent-green);">$0</div>
                         <div id="cogsOverheadPct" style="color: var(--text-secondary); font-size: 0.9rem;">0%</div>
+                        <div style="color: var(--text-secondary); font-size: 0.65rem; margin-top: 5px;">Click for details</div>
                     </div>
                 </div>
 
@@ -6792,6 +6796,145 @@
 
             // Render variance analysis
             renderCOGSVarianceAnalysis(filteredBatches);
+        }
+
+        function showCOGSDetail(type) {
+            const dateRange = getAnalyticsDateRange();
+            const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+
+            // Build batch details with calculated COGS
+            const batchDetails = filteredBatches.map(batch => {
+                const cogsCalc = calculateBatchCOGS(batch);
+                return {
+                    id: batch.batch_id || batch.id,
+                    strain: batch.strain || 'Unknown',
+                    product: batch.packaged_product_type || batch.product_made || '-',
+                    grams: parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0,
+                    units: parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0,
+                    material: cogsCalc.material_cost || 0,
+                    labor: cogsCalc.labor_cost || 0,
+                    consumables: cogsCalc.consumables_cost || 0,
+                    overhead: cogsCalc.overhead_allocated || 0,
+                    breakdown: cogsCalc.breakdown || {},
+                    date: batch.labeling_date || batch.packaging_date || batch.created_at
+                };
+            }).filter(b => b.grams > 0 || b.units > 0).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const fmt = n => '$' + n.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            let title, columns, rows;
+
+            switch(type) {
+                case 'material':
+                    title = 'Material Cost Breakdown';
+                    columns = ['Batch', 'Strain', 'Product', 'Grams', 'Material Cost', '$/gram'];
+                    rows = batchDetails.map(b => [
+                        b.id, b.strain, b.product, b.grams.toFixed(0) + 'g', fmt(b.material),
+                        b.grams > 0 ? '$' + (b.material / b.grams).toFixed(2) : '-'
+                    ]);
+                    const totalMaterial = batchDetails.reduce((sum, b) => sum + b.material, 0);
+                    const totalGramsMat = batchDetails.reduce((sum, b) => sum + b.grams, 0);
+                    rows.push(['', '', '<strong>TOTAL</strong>', `<strong>${totalGramsMat.toFixed(0)}g</strong>`, `<strong>${fmt(totalMaterial)}</strong>`, `<strong>$${(totalMaterial / totalGramsMat).toFixed(2)}</strong>`]);
+                    break;
+
+                case 'labor':
+                    title = 'Labor Cost Breakdown';
+                    const laborRate = window.laborCostPerGram?._default?.costPerGram || 0;
+                    columns = ['Batch', 'Strain', 'Grams', 'Rate ($/g)', 'Labor Cost'];
+                    rows = batchDetails.map(b => [
+                        b.id, b.strain, b.grams.toFixed(0) + 'g', '$' + laborRate.toFixed(4), fmt(b.labor)
+                    ]);
+                    const totalLabor = batchDetails.reduce((sum, b) => sum + b.labor, 0);
+                    const totalGramsLab = batchDetails.reduce((sum, b) => sum + b.grams, 0);
+                    rows.push(['', '<strong>TOTAL</strong>', `<strong>${totalGramsLab.toFixed(0)}g</strong>`, '', `<strong>${fmt(totalLabor)}</strong>`]);
+                    // Add labor rate explanation
+                    rows.push(['', '', '', '', '']);
+                    rows.push(['<em>Rate calculation:</em>', '', '', '', '']);
+                    rows.push(['Hourly labor (3 months):', '', '', '', fmt(window.laborCostPerGram?._default?.totalLaborCost || 0)]);
+                    rows.push(['Total output grams:', '', '', '', (window.laborCostPerGram?._default?.totalGrams || 0).toLocaleString() + 'g']);
+                    break;
+
+                case 'consumables':
+                    title = 'Consumables Cost Breakdown';
+                    columns = ['Batch', 'Strain', 'Product', 'Butane', 'Packaging', 'Other', 'Total'];
+                    rows = batchDetails.map(b => {
+                        const butane = b.breakdown?.consumables?.butane?.cost || 0;
+                        const packaging = b.breakdown?.consumables?.packaging?.total_cost || b.breakdown?.consumables?.packaging?.cost || 0;
+                        const other = b.consumables - butane - packaging;
+                        return [
+                            b.id, b.strain, b.product, fmt(butane), fmt(packaging), fmt(other > 0 ? other : 0), fmt(b.consumables)
+                        ];
+                    });
+                    const totalCons = batchDetails.reduce((sum, b) => sum + b.consumables, 0);
+                    const totalButane = batchDetails.reduce((sum, b) => sum + (b.breakdown?.consumables?.butane?.cost || 0), 0);
+                    const totalPkg = batchDetails.reduce((sum, b) => sum + (b.breakdown?.consumables?.packaging?.total_cost || b.breakdown?.consumables?.packaging?.cost || 0), 0);
+                    rows.push(['', '', '<strong>TOTAL</strong>', `<strong>${fmt(totalButane)}</strong>`, `<strong>${fmt(totalPkg)}</strong>`, '', `<strong>${fmt(totalCons)}</strong>`]);
+                    // Add consumables rate explanation
+                    rows.push(['', '', '', '', '', '', '']);
+                    rows.push(['<em>Butane rate:</em>', '', '', `$${(window.butaneCostPerGram || 0).toFixed(4)}/gram`, '', '', '']);
+                    break;
+
+                case 'overhead':
+                    title = 'Overhead Allocation Breakdown';
+                    const facilitiesMonthly = (costConfig.rent_monthly || 0) + (costConfig.utilities_monthly || 0) + (costConfig.equipment_monthly || 0) + (costConfig.insurance_monthly || 0);
+                    const salaryMonthly = window.monthlySalaryOverhead || 0;
+                    const totalMonthly = facilitiesMonthly + salaryMonthly;
+                    const avgGrams = window.calculatedAvgMonthlyGrams || 15000;
+
+                    columns = ['Batch', 'Strain', 'Grams', '% of Monthly', 'Overhead Allocated'];
+                    rows = batchDetails.map(b => {
+                        const pct = avgGrams > 0 ? (b.grams / avgGrams * 100) : 0;
+                        return [
+                            b.id, b.strain, b.grams.toFixed(0) + 'g', pct.toFixed(2) + '%', fmt(b.overhead)
+                        ];
+                    });
+                    const totalOverhead = batchDetails.reduce((sum, b) => sum + b.overhead, 0);
+                    const totalGramsOH = batchDetails.reduce((sum, b) => sum + b.grams, 0);
+                    rows.push(['', '<strong>TOTAL</strong>', `<strong>${totalGramsOH.toFixed(0)}g</strong>`, '', `<strong>${fmt(totalOverhead)}</strong>`]);
+                    // Add overhead explanation
+                    rows.push(['', '', '', '', '']);
+                    rows.push(['<em>Monthly overhead:</em>', '', '', '', '']);
+                    rows.push(['Rent:', '', '', '', fmt(costConfig.rent_monthly || 0)]);
+                    rows.push(['Utilities:', '', '', '', fmt(costConfig.utilities_monthly || 0)]);
+                    rows.push(['Equipment:', '', '', '', fmt(costConfig.equipment_monthly || 0)]);
+                    rows.push(['Insurance:', '', '', '', fmt(costConfig.insurance_monthly || 0)]);
+                    rows.push(['Salaries (mgmt/sales/admin):', '', '', '', fmt(salaryMonthly)]);
+                    rows.push(['<strong>Total Monthly:</strong>', '', '', '', `<strong>${fmt(totalMonthly)}</strong>`]);
+                    rows.push(['Avg monthly grams:', '', '', '', avgGrams.toLocaleString() + 'g']);
+                    break;
+            }
+
+            // Create modal
+            const modal = document.createElement('div');
+            modal.id = 'cogsDetailModal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+            modal.innerHTML = `
+                <div style="background: var(--bg-secondary); border-radius: 16px; max-width: 90vw; max-height: 85vh; overflow: hidden; border: 1px solid var(--border-color);">
+                    <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; color: var(--text-primary);">${title}</h3>
+                        <button onclick="document.getElementById('cogsDetailModal').remove()" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.5rem;">&times;</button>
+                    </div>
+                    <div style="padding: 20px; overflow: auto; max-height: calc(85vh - 80px);">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                            <thead>
+                                <tr style="background: var(--bg-primary);">
+                                    ${columns.map(c => `<th style="padding: 10px; text-align: left; color: var(--text-secondary); border-bottom: 1px solid var(--border-color);">${c}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows.map((row, i) => `
+                                    <tr style="border-bottom: 1px solid var(--border-color); ${row[0].includes('TOTAL') || row[0].includes('<strong>') ? 'background: var(--bg-primary);' : ''}">
+                                        ${row.map(cell => `<td style="padding: 10px; color: var(--text-primary);">${cell}</td>`).join('')}
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
         }
 
         function renderCOGSTrendChart() {
