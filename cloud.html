@@ -6276,6 +6276,9 @@
             // Calculate butane cost per gram from gas log
             await calculateButaneCostPerGram();
 
+            // Calculate salary overhead (management, sales, admin)
+            await calculateMonthlySalaryOverhead();
+
             // Update current view
             updateAnalyticsDashboard();
         }
@@ -8642,34 +8645,10 @@
                     }
                 });
 
-                // Add salary employees (don't clock in, but their cost should be included)
-                // Get salary employees from wm_employees
-                const { data: salaryEmployees } = await supabaseClient
-                    .from('wm_employees')
-                    .select('name, annual_salary')
-                    .eq('is_active', true)
-                    .eq('is_salary', true);
+                // Note: Salary employees (management, sales, admin) are NOT included in direct labor
+                // They are added to overhead instead, allocated per gram like rent/utilities
 
-                if (salaryEmployees && salaryEmployees.length > 0) {
-                    // Calculate salary cost for the 3-month period
-                    salaryEmployees.forEach(emp => {
-                        if (emp.annual_salary) {
-                            const monthlySalary = parseFloat(emp.annual_salary) / 12;
-                            const periodCost = monthlySalary * 3; // 3 months
-                            salaryLaborCost += periodCost;
-                            totalLaborCost += periodCost;
-
-                            laborCostPerGram[emp.name] = {
-                                annualSalary: parseFloat(emp.annual_salary),
-                                periodCost: parseFloat(periodCost.toFixed(2)),
-                                type: 'salary'
-                            };
-                            console.log(`${emp.name} (salary): $${emp.annual_salary}/year = $${periodCost.toFixed(2)} for 3 months`);
-                        }
-                    });
-                }
-
-                console.log(`Hourly labor: $${hourlyLaborCost.toFixed(2)}, Salary labor: $${salaryLaborCost.toFixed(2)}`);
+                console.log(`Hourly labor (production): $${hourlyLaborCost.toFixed(2)}`);
 
                 // Calculate total grams from actual batch OUTPUT (not per-stage totals which double-count)
                 const totalOutputGrams = periodBatches.reduce((sum, b) => {
@@ -8695,6 +8674,41 @@
             } catch (e) {
                 console.error('Error calculating labor cost per gram:', e);
                 return {};
+            }
+        }
+
+        // Calculate monthly salary overhead (management, sales, admin - not production)
+        async function calculateMonthlySalaryOverhead() {
+            if (!supabaseClient) return 0;
+
+            try {
+                const { data: salaryEmployees } = await supabaseClient
+                    .from('wm_employees')
+                    .select('name, annual_salary')
+                    .eq('is_active', true)
+                    .eq('is_salary', true);
+
+                if (!salaryEmployees || salaryEmployees.length === 0) {
+                    window.monthlySalaryOverhead = 0;
+                    return 0;
+                }
+
+                let totalMonthlySalary = 0;
+                salaryEmployees.forEach(emp => {
+                    if (emp.annual_salary) {
+                        const monthly = parseFloat(emp.annual_salary) / 12;
+                        totalMonthlySalary += monthly;
+                        console.log(`${emp.name} (overhead): $${emp.annual_salary}/year = $${monthly.toFixed(2)}/month`);
+                    }
+                });
+
+                console.log(`Total monthly salary overhead: $${totalMonthlySalary.toFixed(2)}`);
+                window.monthlySalaryOverhead = totalMonthlySalary;
+                return totalMonthlySalary;
+
+            } catch (e) {
+                console.error('Error calculating salary overhead:', e);
+                return 0;
             }
         }
 
@@ -8926,10 +8940,13 @@
             // ============================================
             // 4. OVERHEAD ALLOCATION - By production weight
             // ============================================
-            const monthlyOverhead = (costConfig.rent_monthly || 0) +
-                                   (costConfig.utilities_monthly || 0) +
-                                   (costConfig.equipment_monthly || 0) +
-                                   (costConfig.insurance_monthly || 0);
+            // Includes: rent, utilities, equipment, insurance + salary employees (mgmt/sales/admin)
+            const facilitiesOverhead = (costConfig.rent_monthly || 0) +
+                                       (costConfig.utilities_monthly || 0) +
+                                       (costConfig.equipment_monthly || 0) +
+                                       (costConfig.insurance_monthly || 0);
+            const salaryOverhead = window.monthlySalaryOverhead || 0;
+            const monthlyOverhead = facilitiesOverhead + salaryOverhead;
 
             // Allocate overhead by grams produced (fairer than per-batch)
             const batchGrams = parseFloat(batch.total_grams_packaged) ||
