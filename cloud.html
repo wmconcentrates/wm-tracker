@@ -6762,13 +6762,15 @@
             const dateRange = getAnalyticsDateRange();
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
 
+            // Use calculated COGS for consistency with detail modals
             let material = 0, labor = 0, consumables = 0, overhead = 0;
 
             filteredBatches.forEach(batch => {
-                material += parseFloat(batch.material_cost) || 0;
-                labor += parseFloat(batch.labor_cost) || 0;
-                consumables += parseFloat(batch.consumables_cost) || 0;
-                overhead += parseFloat(batch.overhead_allocated) || 0;
+                const cogsCalc = calculateBatchCOGS(batch);
+                material += cogsCalc.material_cost || 0;
+                labor += cogsCalc.labor_cost || 0;
+                consumables += cogsCalc.consumables_cost || 0;
+                overhead += cogsCalc.overhead_allocated || 0;
             });
 
             const total = material + labor + consumables + overhead;
@@ -7149,7 +7151,8 @@
 
             filteredBatches.forEach(batch => {
                 totalRevenue += calculateBatchRevenue(batch, priceMap);
-                totalCOGS += parseFloat(batch.calculated_cogs) || 0;
+                const cogsCalc = calculateBatchCOGS(batch);
+                totalCOGS += cogsCalc.calculated_cogs || 0;
             });
 
             const grossProfit = totalRevenue - totalCOGS;
@@ -7182,7 +7185,8 @@
                 const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[type].units += units;
                 stats[type].revenue += calculateBatchRevenue(batch, priceMap);
-                stats[type].cogs += parseFloat(batch.calculated_cogs) || 0;
+                const cogsCalc = calculateBatchCOGS(batch);
+                stats[type].cogs += cogsCalc.calculated_cogs || 0;
             });
 
             const tbody = document.getElementById('profitByProductBody');
@@ -7217,7 +7221,8 @@
                 const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[strain].units += units;
                 stats[strain].revenue += calculateBatchRevenue(batch, priceMap);
-                stats[strain].cogs += parseFloat(batch.calculated_cogs) || 0;
+                const cogsCalc = calculateBatchCOGS(batch);
+                stats[strain].cogs += cogsCalc.calculated_cogs || 0;
             });
 
             const tbody = document.getElementById('profitByStrainBody');
@@ -7254,7 +7259,8 @@
                 const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[grower].units += units;
                 stats[grower].revenue += calculateBatchRevenue(batch, priceMap);
-                stats[grower].cogs += parseFloat(batch.calculated_cogs) || 0;
+                const cogsCalc = calculateBatchCOGS(batch);
+                stats[grower].cogs += cogsCalc.calculated_cogs || 0;
             });
 
             const tbody = document.getElementById('profitByGrowerBody');
@@ -7291,7 +7297,8 @@
                 if (!stats[type]) stats[type] = { units: 0, cogs: 0, revenue: 0 };
                 const units = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
                 stats[type].units += units;
-                stats[type].cogs += parseFloat(batch.calculated_cogs) || 0;
+                const cogsCalc = calculateBatchCOGS(batch);
+                stats[type].cogs += cogsCalc.calculated_cogs || 0;
                 stats[type].revenue += calculateBatchRevenue(batch, priceMap);
             });
 
