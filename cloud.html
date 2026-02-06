@@ -7587,8 +7587,8 @@
             filteredBatches.forEach(batch => {
                 if (batch.extraction_date) { stations.extraction.batches++; stations.extraction.grams += parseFloat(batch.trim_weight) || 0; }
                 if (batch.finishing_date) { stations.finishing.batches++; stations.finishing.grams += parseFloat(batch.crude_weight) || 0; }
-                if (batch.packaging_date) { stations.packaging.batches++; stations.packaging.grams += parseFloat(batch.final_weight) || 0; }
-                if (batch.labeling_date) { stations.labeling.batches++; stations.labeling.grams += parseFloat(batch.total_grams_packaged) || 0; }
+                if (batch.packaging_date) { stations.packaging.batches++; stations.packaging.grams += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0; }
+                if (batch.labeling_date) { stations.labeling.batches++; stations.labeling.grams += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0; }
             });
 
             el.innerHTML = Object.entries(stations).map(([name, data]) => `
@@ -16855,20 +16855,20 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 if (batch.finishing_date) {
                     const finishingDate = new Date(batch.finishing_date);
                     if (finishingDate >= rangeStart && finishingDate <= now) {
-                        finishedWeight += parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
+                        finishedWeight += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
                         finishedBatches++;
                     }
                 }
-                
+
                 // Check packaging done in range
                 if (batch.packaging_date) {
                     const packagingDate = new Date(batch.packaging_date);
                     if (packagingDate >= rangeStart && packagingDate <= now && batch.units_packaged) {
                         packaged += parseInt(batch.units_packaged) || 0;
-                        packagedWeight += parseFloat(batch.net_weight) || 0;
+                        packagedWeight += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
                     }
                 }
-                
+
                 // Check labeling done in range (from timeline)
                 if (batch.timeline && batch.timeline.length > 0) {
                     const labelingEvent = batch.timeline.find(event => {
@@ -16881,10 +16881,10 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         }
                         return false;
                     });
-                    
+
                     if (labelingEvent && batch.units_packaged) {
                         labeled += parseInt(batch.units_packaged) || 0;
-                        labeledWeight += parseFloat(batch.grams_labeled) || 0;
+                        labeledWeight += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
                     }
                 }
             });
@@ -16954,11 +16954,11 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     const localFinishDate = new Date(finishTime.getTime() - (finishTime.getTimezoneOffset() * 60000));
                     const finishingDate = localFinishDate.toISOString().split('T')[0];
                     if (finishingDate === today) {
-                        finishedWeight += parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
+                        finishedWeight += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
                         finishedBatches++;
                     }
                 }
-                
+
                 // Check packaging done today
                 if (batch.packaging_date) {
                     const packTime = new Date(batch.packaging_date);
@@ -16966,10 +16966,10 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     const packagingDate = localPackDate.toISOString().split('T')[0];
                     if (packagingDate === today && batch.units_packaged) {
                         packaged += parseInt(batch.units_packaged) || 0;
-                        packagedWeight += parseFloat(batch.net_weight) || 0;
+                        packagedWeight += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
                     }
                 }
-                
+
                 // Check labeling done today (from timeline)
                 if (batch.timeline && batch.timeline.length > 0) {
                     const labelingEvent = batch.timeline.find(event => {
@@ -16984,10 +16984,10 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         }
                         return false;
                     });
-                    
+
                     if (labelingEvent && batch.units_packaged) {
                         labeled += parseInt(batch.units_packaged) || 0;
-                        labeledWeight += parseFloat(batch.grams_labeled) || 0;
+                        labeledWeight += parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0;
                     }
                 }
             });
