@@ -17917,7 +17917,7 @@ ${employeeReport || 'No activity recorded today'}
                         <div class="batch-status status-${batch.status}" style="font-size: 0.7rem; padding: 2px 8px;">${batch.status.toUpperCase()}</div>
                         <div style="font-size: 1.2rem; font-weight: 700;">${batch.strain}</div>
                         <span style="color: var(--text-secondary); font-size: 0.85rem;">(${batch.strain_type})</span>
-                        ${batch.final_weight ? `<div><strong>${batch.net_weight || batch.final_weight}g</strong></div>` : ''}
+                        ${(batch.total_grams_packaged || batch.final_weight) ? `<div><strong>${batch.total_grams_packaged || batch.net_weight || batch.final_weight}g</strong></div>` : ''}
                         ${(batch.total_grams_packaged || batch.final_weight) && batch.trim_weight ? `<div style="font-weight: 700; color: ${((parseFloat(batch.total_grams_packaged || batch.final_weight) / parseFloat(batch.trim_weight)) * 100) < 15 ? '#f44336' : (((parseFloat(batch.total_grams_packaged || batch.final_weight) / parseFloat(batch.trim_weight)) * 100) > 21 ? 'var(--accent-green)' : 'var(--accent-blue)')};">${((parseFloat(batch.total_grams_packaged || batch.final_weight) / parseFloat(batch.trim_weight)) * 100).toFixed(1)}%</div>` : ''}
                         <div style="color: var(--text-secondary);">Trim: ${batch.trim_weight}g</div>
                         ${batch.grams_labeled ? `<div style="color: var(--text-secondary);">Lab: ${batch.grams_labeled}g</div>` : ''}
