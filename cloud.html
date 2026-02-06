@@ -30654,7 +30654,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         const html = pendingBatches.map(batch => {
             const productType = batch.packaged_product_type || batch.product_made || 'Unknown';
-            const quantity = batch.total_grams_packaged || batch.final_weight || 0;
+            const rawWeight = batch.total_grams_packaged || batch.final_weight || 0;
+            const multiplier = batch.material_agreement === '50-50 Split' ? 0.5 : 1.0;
+            const quantity = Math.floor(rawWeight * multiplier);
             return `
             <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -30695,7 +30697,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         const productType = batch.packaged_product_type || batch.product_made || 'Unknown';
-        const quantity = batch.total_grams_packaged || batch.final_weight || 0;
+        const rawWeight = batch.total_grams_packaged || batch.final_weight || 0;
+        const multiplier = batch.material_agreement === '50-50 Split' ? 0.5 : 1.0;
+        const quantity = Math.floor(rawWeight * multiplier);
 
         if (!confirm(`Push ${batch.strain} (${productType}) to LeafLink?\n\nQuantity: ${quantity}g\nTHC: ${batch.test_thc_percent}%`)) {
             return;
