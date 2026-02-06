@@ -2337,6 +2337,34 @@
                             </div>
                         </div>
 
+                        <div class="form-grid" style="margin-bottom: 15px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Strain Type</label>
+                                <select id="testingStrainType" onchange="saveTestingDefaults()">
+                                    <option value="Indica">Indica (Blue Lid)</option>
+                                    <option value="Sativa">Sativa (Red Lid)</option>
+                                    <option value="Hybrid">Hybrid (Green Lid)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Product Type</label>
+                                <select id="testingProductType" onchange="saveTestingDefaults()">
+                                    <option value="Wax">Wax</option>
+                                    <option value="Sugar Wax">Sugar Wax</option>
+                                    <option value="Shatter">Shatter</option>
+                                    <option value="Badder">Badder</option>
+                                    <option value="Crumble">Crumble</option>
+                                    <option value="Diamonds">Diamonds</option>
+                                    <option value="Sauce">Sauce</option>
+                                    <option value="Live Resin">Live Resin</option>
+                                    <option value="Live Rosin">Live Rosin</option>
+                                    <option value="Bubble Hash">Bubble Hash</option>
+                                    <option value="Brick Hash">Brick Hash</option>
+                                    <option value="RSO">RSO</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="form-group" style="margin-bottom: 15px;">
                             <label>RTA Full Panel?</label>
                             <select id="isRTA" required onchange="updateTestResultVisibility()">
@@ -18149,6 +18177,32 @@ ${employeeReport || 'No activity recorded today'}
         }
 
         // Testing functions
+        // Save testing form defaults to localStorage
+        function saveTestingDefaults() {
+            const strainType = document.getElementById('testingStrainType')?.value;
+            const productType = document.getElementById('testingProductType')?.value;
+            if (strainType) localStorage.setItem('testingStrainType', strainType);
+            if (productType) localStorage.setItem('testingProductType', productType);
+        }
+
+        // Load testing form defaults from localStorage or batch data
+        function loadTestingDefaults(batch) {
+            const strainTypeEl = document.getElementById('testingStrainType');
+            const productTypeEl = document.getElementById('testingProductType');
+
+            if (strainTypeEl) {
+                // Use batch value if exists, otherwise localStorage default
+                const value = batch?.strain_type || localStorage.getItem('testingStrainType') || 'Hybrid';
+                strainTypeEl.value = value;
+            }
+
+            if (productTypeEl) {
+                // Use batch value if exists, otherwise localStorage default
+                const value = batch?.packaged_product_type || batch?.product_made || localStorage.getItem('testingProductType') || 'Wax';
+                productTypeEl.value = value;
+            }
+        }
+
         function populateTestingSelect() {
             const select = document.getElementById('testingBatchSelect');
             // Show batches that are finishing or complete, but NOT yet labeled
@@ -18180,7 +18234,10 @@ ${employeeReport || 'No activity recorded today'}
             
             if (this.value) {
                 const batch = batches.find(b => b.id === this.value);
-                
+
+                // Load strain type and product type defaults
+                loadTestingDefaults(batch);
+
                 // Display current batch ID
                 document.getElementById('currentBatchIdDisplay').textContent = batch.id;
                 
@@ -18702,6 +18759,8 @@ ${employeeReport || 'No activity recorded today'}
             const finalProductName = document.getElementById('finalProductName').value.trim();
             const newBatchId = document.getElementById('newBatchId').value.trim();
             const isRTA = document.getElementById('isRTA').value;
+            const strainType = document.getElementById('testingStrainType').value;
+            const productType = document.getElementById('testingProductType').value;
             const submittedDate = new Date().toISOString().split('T')[0]; // Auto-set to today
 
             // Validate
@@ -18734,6 +18793,7 @@ ${employeeReport || 'No activity recorded today'}
             let confirmMsg = `Submit batch to testing?\n\n`;
             confirmMsg += `Product: ${finalProductName}\n`;
             confirmMsg += `Batch ID: ${newBatchId}\n`;
+            confirmMsg += `Type: ${strainType} | ${productType}\n`;
             confirmMsg += `Expiration: ${parsed.expirationDate}\n`;
             confirmMsg += `METRC (last 4): ${parsed.metrcLast4}\n`;
             confirmMsg += `RTA Full Panel: ${isRTA === 'yes' ? 'Yes' : 'No'}`;
@@ -18753,6 +18813,8 @@ ${employeeReport || 'No activity recorded today'}
             // Build update object
             const updates = {
                 strain: finalProductName,
+                strain_type: strainType,
+                packaged_product_type: productType,
                 test_submitted_date: submittedDate,
                 test_expiration_date: parsed.expirationDate,
                 is_rta: isRTA,
