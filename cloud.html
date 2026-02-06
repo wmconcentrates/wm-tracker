@@ -20970,19 +20970,19 @@ ${employeeReport || 'No activity recorded today'}
         
         function filterAnalytics(filter) {
             currentAnalyticsFilter = filter;
-            
+
             // Update active button
             document.querySelectorAll('[data-filter-analytics]').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.filterAnalytics === filter);
             });
-            
+
             let filteredBatches = batches.filter(b => b.status === 'complete');
-            
+
             const now = new Date();
             const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
             const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
             const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-            
+
             if (filter === 'thisMonth') {
                 filteredBatches = filteredBatches.filter(b => new Date(b.finishing_date) >= thisMonthStart);
             } else if (filter === 'lastMonth') {
@@ -20991,7 +20991,44 @@ ${employeeReport || 'No activity recorded today'}
                     return finishDate >= lastMonthStart && finishDate <= lastMonthEnd;
                 });
             }
-            
+
+            // Recalculate summary stats for filtered batches
+            let totalYield = 0, yieldCount = 0;
+            let totalThc = 0, thcCount = 0;
+            let totalProcessingDays = 0, timeCount = 0;
+            let totalCostPerGram = 0, costCount = 0;
+
+            filteredBatches.forEach(b => {
+                // Yield - use total_grams_packaged (from 1g/4g counts) or fall back to final_weight
+                const outputWeight = b.total_grams_packaged || b.final_weight;
+                if (b.trim_weight && outputWeight) {
+                    totalYield += (parseFloat(outputWeight) / parseFloat(b.trim_weight)) * 100;
+                    yieldCount++;
+                }
+                // THC
+                if (b.test_thc_percent) {
+                    totalThc += parseFloat(b.test_thc_percent);
+                    thcCount++;
+                }
+                // Processing time
+                if (b.intake_date && b.finishing_date) {
+                    const days = (new Date(b.finishing_date) - new Date(b.intake_date)) / (1000 * 60 * 60 * 24);
+                    totalProcessingDays += days;
+                    timeCount++;
+                }
+                // Cost per gram - use total_grams_packaged (from 1g/4g counts) or fall back to final_weight
+                const costWeight = b.total_grams_packaged || b.final_weight;
+                if (b.material_cost && costWeight) {
+                    totalCostPerGram += parseFloat(b.material_cost) / parseFloat(costWeight);
+                    costCount++;
+                }
+            });
+
+            document.getElementById('avgYield').textContent = yieldCount > 0 ? (totalYield / yieldCount).toFixed(2) + '%' : '0%';
+            document.getElementById('avgThc').textContent = thcCount > 0 ? (totalThc / thcCount).toFixed(2) + '%' : '0%';
+            document.getElementById('avgProcessingTime').textContent = timeCount > 0 ? (totalProcessingDays / timeCount).toFixed(1) + 'd' : '0d';
+            document.getElementById('avgCostPerGram').textContent = costCount > 0 ? '$' + (totalCostPerGram / costCount).toFixed(2) : '$0';
+
             renderBatchCards(filteredBatches);
         }
         
