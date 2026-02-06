@@ -21309,23 +21309,22 @@ ${employeeReport || 'No activity recorded today'}
             `;
             document.getElementById('modalTimeline').innerHTML = timeline;
             
-            // Economics
+            // Economics - prioritize total_grams_packaged (from 1g/4g counts)
             const trimWeight = parseFloat(batch.trim_weight || 0);
-            const netWeight = parseFloat(batch.net_weight || 0);
-            const gramsLabeled = parseFloat(batch.grams_labeled || 0);
-            
-            // Use grams_labeled for yield if available, otherwise fall back to net_weight
-            const finalWeight = gramsLabeled > 0 ? gramsLabeled : netWeight;
+            const totalGramsPackaged = parseFloat(batch.total_grams_packaged || 0);
+            const finalWeightFallback = parseFloat(batch.final_weight || 0);
+
+            // Use total_grams_packaged (calculated from 1g/4g counts) as primary source
+            const finalWeight = totalGramsPackaged > 0 ? totalGramsPackaged : finalWeightFallback;
             const yield_percent = trimWeight > 0 ? ((finalWeight / trimWeight) * 100).toFixed(2) : 0;
-            
+
             const materialCost = parseFloat(batch.material_cost || 0);
             const costPerGram = finalWeight > 0 ? (materialCost / finalWeight).toFixed(2) : 0;
             const costPerUnit = batch.units_packaged > 0 ? (materialCost / batch.units_packaged).toFixed(2) : 0;
-            
+
             const economics = `
                 <p><strong>Trim Used:</strong> ${trimWeight}g</p>
-                <p><strong>Final Net Weight:</strong> ${netWeight}g</p>
-                ${gramsLabeled > 0 ? `<p><strong>Labeled Weight:</strong> ${gramsLabeled}g</p>` : ''}
+                <p><strong>Final Net Weight:</strong> ${finalWeight}g</p>
                 <p style="color: var(--accent-green); font-size: 1.2rem; font-weight: 700; margin: 10px 0;"><strong>Yield:</strong> ${yield_percent}%</p>
                 <p><strong>Material Cost:</strong> $${materialCost.toFixed(2)}</p>
                 <p><strong>Cost Per Gram:</strong> $${costPerGram}</p>
