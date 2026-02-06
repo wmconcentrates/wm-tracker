@@ -6709,7 +6709,7 @@
             const strainYields = {};
             filteredBatches.forEach(batch => {
                 const strain = batch.strain || 'Unknown';
-                const yieldVal = parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+                const yieldVal = getBatchYieldPercent(batch);
                 if (yieldVal > 0) {
                     if (!strainYields[strain]) strainYields[strain] = [];
                     strainYields[strain].push(yieldVal);
@@ -6764,9 +6764,9 @@
 
             // Check for yield drops
             const recentYields = filteredBatches
-                .filter(b => b.yield_percentage || b.crude_yield)
+                .filter(b => getBatchYieldPercent(b) > 0)
                 .slice(-10)
-                .map(b => parseFloat(b.yield_percentage || b.crude_yield));
+                .map(b => getBatchYieldPercent(b));
 
             if (recentYields.length >= 5) {
                 const avgRecent = recentYields.slice(-5).reduce((a, b) => a + b, 0) / 5;
@@ -7639,9 +7639,9 @@
         function updateYieldAnalytics() {
             const dateRange = getAnalyticsDateRange();
             const filteredBatches = filterBatchesByDateRange(batches, dateRange)
-                .filter(b => (b.yield_percentage || b.crude_yield) && parseFloat(b.yield_percentage || b.crude_yield) > 0);
+                .filter(b => getBatchYieldPercent(b) > 0);
 
-            const yields = filteredBatches.map(b => parseFloat(b.yield_percentage || b.crude_yield));
+            const yields = filteredBatches.map(b => getBatchYieldPercent(b));
 
             if (yields.length === 0) {
                 document.getElementById('yieldAverage').textContent = 'N/A';
@@ -7671,7 +7671,7 @@
             const strainStats = {};
             filteredBatches.forEach(batch => {
                 const strain = batch.strain || 'Unknown';
-                const y = parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+                const y = getBatchYieldPercent(batch);
                 if (!strainStats[strain]) strainStats[strain] = [];
                 if (y > 0) strainStats[strain].push(y);
             });
@@ -7710,7 +7710,7 @@
             const operatorStats = {};
             filteredBatches.forEach(batch => {
                 const op = batch.extraction_user || 'Unknown';
-                const y = parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+                const y = getBatchYieldPercent(batch);
                 if (!operatorStats[op]) operatorStats[op] = [];
                 if (y > 0) operatorStats[op].push(y);
             });
@@ -7753,7 +7753,7 @@
             const typeYields = {};
             filteredBatches.forEach(batch => {
                 const type = batch.material_type || 'Standard';
-                const y = parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+                const y = getBatchYieldPercent(batch);
                 if (!typeYields[type]) typeYields[type] = [];
                 if (y > 0) typeYields[type].push(y);
             });
@@ -7769,8 +7769,8 @@
                 <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 15px;">
                     <h5 style="color: var(--text-primary); margin: 0 0 10px 0;">Quick Stats</h5>
                     <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span style="color: var(--text-secondary);">Total Batches</span><span style="color: var(--text-primary); font-weight: 600;">${filteredBatches.length}</span></div>
-                    <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span style="color: var(--text-secondary);">Above 10%</span><span style="color: var(--accent-green); font-weight: 600;">${filteredBatches.filter(b => parseFloat(b.yield_percentage || b.crude_yield) > 10).length}</span></div>
-                    <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span style="color: var(--text-secondary);">Below 8%</span><span style="color: var(--accent-red); font-weight: 600;">${filteredBatches.filter(b => parseFloat(b.yield_percentage || b.crude_yield) < 8).length}</span></div>
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span style="color: var(--text-secondary);">Above 10%</span><span style="color: var(--accent-green); font-weight: 600;">${filteredBatches.filter(b => getBatchYieldPercent(b) > 10).length}</span></div>
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0;"><span style="color: var(--text-secondary);">Below 8%</span><span style="color: var(--accent-red); font-weight: 600;">${filteredBatches.filter(b => getBatchYieldPercent(b) < 8).length}</span></div>
                 </div>
                 <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 15px;">
                     <h5 style="color: var(--text-primary); margin: 0 0 10px 0;">Recommendations</h5>
@@ -7799,7 +7799,7 @@
 
             batches.forEach(batch => {
                 const batchDate = new Date(batch.extraction_date || batch.created_at);
-                const y = parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+                const y = getBatchYieldPercent(batch);
                 if (y > 0) {
                     const monthData = months.find(m => batchDate >= m.start && batchDate <= m.end);
                     if (monthData) monthData.yields.push(y);
@@ -17616,23 +17616,41 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
         }
 
         // Feature #4: Auto-Calculate Yield Percentage with Alerts
+        // Helper: Get yield percentage from batch (calculated from weights)
+        function getBatchYieldPercent(batch) {
+            if (!batch.trim_weight) return 0;
+            const trimWeight = parseFloat(batch.trim_weight);
+            if (trimWeight === 0) return 0;
+
+            // Priority: total_grams_packaged (from 1g/4g packaging) > final_weight > stored yield fields
+            const outputWeight = batch.total_grams_packaged ? parseFloat(batch.total_grams_packaged) :
+                                 batch.final_weight ? parseFloat(batch.final_weight) : null;
+
+            if (outputWeight) {
+                return (outputWeight / trimWeight) * 100;
+            }
+
+            // Fallback to stored yield values if available
+            return parseFloat(batch.yield_percentage || batch.crude_yield) || 0;
+        }
+
         function calculateYield(batch) {
             if (!batch.trim_weight) return null;
-            
-            // Prioritize grams_labeled (actual sellable weight after labeling) over final_weight (post-extraction)
-            const finalWeight = batch.grams_labeled ? parseFloat(batch.grams_labeled) : 
+
+            // Prioritize total_grams_packaged (calculated from 1g/4g counts) over final_weight (post-extraction)
+            const finalWeight = batch.total_grams_packaged ? parseFloat(batch.total_grams_packaged) :
                                 batch.final_weight ? parseFloat(batch.final_weight) : null;
-            
+
             if (!finalWeight) return null;
-            
+
             const trimWeight = parseFloat(batch.trim_weight);
-            
+
             if (trimWeight === 0) return null;
-            
+
             const yieldPercent = (finalWeight / trimWeight) * 100;
             const expectedYield = batch.expected_yield || getExpectedYield(batch.material_type) || 13;
             const variance = yieldPercent - expectedYield;
-            
+
             return {
                 actual: yieldPercent,
                 expected: expectedYield,
@@ -17900,7 +17918,7 @@ ${employeeReport || 'No activity recorded today'}
                         <div style="font-size: 1.2rem; font-weight: 700;">${batch.strain}</div>
                         <span style="color: var(--text-secondary); font-size: 0.85rem;">(${batch.strain_type})</span>
                         ${batch.final_weight ? `<div><strong>${batch.net_weight || batch.final_weight}g</strong></div>` : ''}
-                        ${batch.final_weight && batch.trim_weight ? `<div style="font-weight: 700; color: ${((parseFloat(batch.final_weight) / parseFloat(batch.trim_weight)) * 100) < 15 ? '#f44336' : (((parseFloat(batch.final_weight) / parseFloat(batch.trim_weight)) * 100) > 21 ? 'var(--accent-green)' : 'var(--accent-blue)')};">${((parseFloat(batch.final_weight) / parseFloat(batch.trim_weight)) * 100).toFixed(1)}%</div>` : ''}
+                        ${(batch.total_grams_packaged || batch.final_weight) && batch.trim_weight ? `<div style="font-weight: 700; color: ${((parseFloat(batch.total_grams_packaged || batch.final_weight) / parseFloat(batch.trim_weight)) * 100) < 15 ? '#f44336' : (((parseFloat(batch.total_grams_packaged || batch.final_weight) / parseFloat(batch.trim_weight)) * 100) > 21 ? 'var(--accent-green)' : 'var(--accent-blue)')};">${((parseFloat(batch.total_grams_packaged || batch.final_weight) / parseFloat(batch.trim_weight)) * 100).toFixed(1)}%</div>` : ''}
                         <div style="color: var(--text-secondary);">Trim: ${batch.trim_weight}g</div>
                         ${batch.grams_labeled ? `<div style="color: var(--text-secondary);">Lab: ${batch.grams_labeled}g</div>` : ''}
                         ${batch.is_sub_batch ? `<div style="color: var(--accent-purple); font-size: 0.8rem;">🔗${batch.parent_batch_id}</div>` : ''}
@@ -17933,11 +17951,11 @@ ${employeeReport || 'No activity recorded today'}
                         ${batch.final_weight ? `
                             <div class="batch-detail">
                                 <div class="batch-detail-label">Net Wt</div>
-                                <div class="batch-detail-value" style="font-weight: 600;">${batch.net_weight || batch.final_weight}g</div>
+                                <div class="batch-detail-value" style="font-weight: 600;">${batch.total_grams_packaged || batch.net_weight || batch.final_weight}g</div>
                             </div>
                             <div class="batch-detail">
                                 <div class="batch-detail-label">Yield</div>
-                                <div class="batch-detail-value" style="font-weight: 700; font-size: 1.1rem; color: ${((parseFloat(batch.final_weight) / parseFloat(batch.trim_weight)) * 100) < 15 ? '#f44336' : (((parseFloat(batch.final_weight) / parseFloat(batch.trim_weight)) * 100) > 21 ? 'var(--accent-green)' : 'var(--accent-blue)')};">${((parseFloat(batch.final_weight) / parseFloat(batch.trim_weight)) * 100).toFixed(1)}%</div>
+                                <div class="batch-detail-value" style="font-weight: 700; font-size: 1.1rem; color: ${((parseFloat(batch.total_grams_packaged || batch.final_weight) / parseFloat(batch.trim_weight)) * 100) < 15 ? '#f44336' : (((parseFloat(batch.total_grams_packaged || batch.final_weight) / parseFloat(batch.trim_weight)) * 100) > 21 ? 'var(--accent-green)' : 'var(--accent-blue)')};">${((parseFloat(batch.total_grams_packaged || batch.final_weight) / parseFloat(batch.trim_weight)) * 100).toFixed(1)}%</div>
                             </div>
                         ` : ''}
                         <div class="batch-detail">
@@ -20917,9 +20935,10 @@ ${employeeReport || 'No activity recorded today'}
             let totalCostPerGram = 0, costCount = 0;
             
             completedBatches.forEach(b => {
-                // Yield - use grams_labeled (actual sellable weight) instead of net_weight
-                if (b.trim_weight && b.grams_labeled) {
-                    totalYield += (parseFloat(b.grams_labeled) / parseFloat(b.trim_weight)) * 100;
+                // Yield - use total_grams_packaged (from 1g/4g counts) or fall back to final_weight
+                const outputWeight = b.total_grams_packaged || b.final_weight;
+                if (b.trim_weight && outputWeight) {
+                    totalYield += (parseFloat(outputWeight) / parseFloat(b.trim_weight)) * 100;
                     yieldCount++;
                 }
                 // THC
@@ -20933,9 +20952,10 @@ ${employeeReport || 'No activity recorded today'}
                     totalProcessingDays += days;
                     timeCount++;
                 }
-                // Cost per gram - use grams_labeled (actual sellable weight) instead of net_weight
-                if (b.material_cost && b.grams_labeled) {
-                    totalCostPerGram += parseFloat(b.material_cost) / parseFloat(b.grams_labeled);
+                // Cost per gram - use total_grams_packaged (from 1g/4g counts) or fall back to final_weight
+                const costWeight = b.total_grams_packaged || b.final_weight;
+                if (b.material_cost && costWeight) {
+                    totalCostPerGram += parseFloat(b.material_cost) / parseFloat(costWeight);
                     costCount++;
                 }
             });
