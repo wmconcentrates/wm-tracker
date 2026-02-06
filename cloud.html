@@ -30654,7 +30654,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         const html = pendingBatches.map(batch => {
             const productType = batch.packaged_product_type || batch.product_made || 'Unknown';
-            const quantity = batch.leaflink_quantity || batch.grams_labeled || 0;
+            const quantity = batch.total_grams_packaged || batch.leaflink_quantity || batch.grams_labeled || 0;
             return `
             <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -30695,7 +30695,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         const productType = batch.packaged_product_type || batch.product_made || 'Unknown';
-        const quantity = batch.leaflink_quantity || batch.grams_labeled || 0;
+        const quantity = batch.total_grams_packaged || batch.leaflink_quantity || batch.grams_labeled || 0;
 
         if (!confirm(`Push ${batch.strain} (${productType}) to LeafLink?\n\nQuantity: ${quantity}g\nTHC: ${batch.test_thc_percent}%`)) {
             return;
@@ -31028,8 +31028,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Calculate quantity based on material agreement
         // Wholesale = 100%, 50-50 Split = 50%
+        // Use total_grams_packaged (labeled weight) first, then fallbacks
         const multiplier = batch.material_agreement === '50-50 Split' ? 0.5 : 1.0;
-        const quantity = Math.floor((batch.grams_labeled || batch.final_weight || 0) * multiplier);
+        const quantity = Math.floor((batch.total_grams_packaged || batch.grams_labeled || batch.final_weight || 0) * multiplier);
 
         if (quantity <= 0) {
             console.error('No sellable quantity for batch:', batch.id);
