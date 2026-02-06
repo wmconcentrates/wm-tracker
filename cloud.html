@@ -14369,14 +14369,18 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
             // CHECK: Create a NEW sub-batch if:
             // 1. Multiple source batches in pot, OR
-            // 2. Single source but batch already pulled from another pot (status is already 'extraction')
-            const needsSubBatch = potLedger.length > 1 || batch.status === 'extraction';
+            // 2. Single source but batch already pulled from another pot (status is already 'extraction'), OR
+            // 3. Batch still has socks remaining after this load (partial extraction - more pulls to come), OR
+            // 4. Batch already has sub-batches (to maintain consistency)
+            const socksStillRemaining = (batch.socks_remaining ?? 0) > 0;
+            const hasExistingSubBatches = batches.some(b => b.parent_batch_id === batch.id);
+            const needsSubBatch = potLedger.length > 1 || batch.status === 'extraction' || socksStillRemaining || hasExistingSubBatches;
             if (needsSubBatch) {
                 // Determine sub-batch ID:
-                // - Split extraction (single source, already extracted): use parent-A, parent-B, etc.
+                // - Split extraction (single source): use parent-A, parent-B, etc.
                 // - Combined batch (multiple sources): use WM-{counter}
                 let newBatchId;
-                if (potLedger.length === 1 && batch.status === 'extraction') {
+                if (potLedger.length === 1) {
                     // Split extraction - find next available letter suffix
                     const parentId = batch.id;
                     const existingSuffixes = batches
