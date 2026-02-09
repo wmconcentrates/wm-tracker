@@ -30842,17 +30842,39 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
     }
 
     async function rejectLeafLinkPush(batchId) {
-        if (!confirm('Remove this batch from the LeafLink queue?\n\nThis will NOT delete the batch, just remove it from the approval queue.')) {
+        if (!confirm('Remove this batch from the LeafLink queue?\n\nThis will remove it from the queue AND the pipeline.')) {
             return;
         }
 
-        // Clear pending flag
+        // Get batch for timeline update
+        const batch = batches.find(b => b.id === batchId);
+        const timeline = batch?.timeline || [];
+        timeline.push({
+            timestamp: new Date().toISOString(),
+            stage: 'pipeline',
+            user: currentRole ? currentRole.name : 'Unknown',
+            action: 'Rejected from LeafLink queue - removed from pipeline'
+        });
+
+        // Clear pending flag and remove from pipeline
         await supabaseClient
             .from('wm_batches')
-            .update({ leaflink_pending: false })
+            .update({
+                leaflink_pending: false,
+                skip_leaflink: true,
+                timeline: timeline
+            })
             .eq('id', batchId);
 
+        // Update local data
+        if (batch) {
+            batch.leaflink_pending = false;
+            batch.skip_leaflink = true;
+            batch.timeline = timeline;
+        }
+
         renderLeafLinkApprovalQueue();
+        loadSalesDashboard(); // Refresh pipeline
     }
 
     // Load LeafLink product mappings from database for a business
