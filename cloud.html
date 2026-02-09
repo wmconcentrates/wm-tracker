@@ -7471,10 +7471,13 @@
         // LABOR ANALYTICS SECTION
         // ========================================
 
-        function updateLaborAnalytics() {
+        async function updateLaborAnalytics() {
             const dateRange = getAnalyticsDateRange();
             const timeclockData = window.analyticsData.timeclock || [];
             const filteredBatches = filterBatchesByDateRange(batches, dateRange);
+
+            // Load employee rates from config
+            const employeeRates = await loadEmployeeRates();
 
             // Calculate hours by employee
             const employeeStats = {};
@@ -7508,7 +7511,9 @@
                         // Cap at 16 hours per shift (reasonable max)
                         if (hours > 0 && hours <= 16) {
                             if (!employeeStats[emp]) {
-                                employeeStats[emp] = { totalHours: 0, regularHours: 0, overtimeHours: 0, rate: 20, grams: 0 };
+                                // Use rate from config, default to $18 if not found
+                                const rate = employeeRates[emp] || 18;
+                                employeeStats[emp] = { totalHours: 0, regularHours: 0, overtimeHours: 0, rate: rate, grams: 0 };
                             }
                             employeeStats[emp].totalHours += hours;
                             totalHours += hours;
