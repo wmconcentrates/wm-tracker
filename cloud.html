@@ -6317,7 +6317,9 @@
                     .from('timeclock')
                     .select('*')
                     .gte('punch_time', dateRange.start.toISOString())
-                    .lte('punch_time', dateRange.end.toISOString());
+                    .lte('punch_time', dateRange.end.toISOString())
+                    .order('user_name')
+                    .order('punch_time');
 
                 window.analyticsData.timeclock = timeclockData || [];
             } catch (e) {
@@ -7481,26 +7483,44 @@
             // Group timeclock by employee and week for OT calculation
             const weeklyHours = {};
 
+            // Group punches by employee first
+            const punchesByEmployee = {};
             timeclockData.forEach(entry => {
-                const emp = entry.employee_name || entry.user_id || 'Unknown';
-                const clockIn = new Date(entry.clock_in);
-                const clockOut = entry.clock_out ? new Date(entry.clock_out) : null;
+                const emp = entry.user_name || entry.employee_name || 'Unknown';
+                if (!punchesByEmployee[emp]) punchesByEmployee[emp] = [];
+                punchesByEmployee[emp].push(entry);
+            });
 
-                if (!clockOut) return;
+            // Pair in/out punches for each employee
+            Object.entries(punchesByEmployee).forEach(([emp, punches]) => {
+                // Sort by punch time
+                punches.sort((a, b) => new Date(a.punch_time) - new Date(b.punch_time));
 
-                const hours = (clockOut - clockIn) / (1000 * 60 * 60);
-                if (hours < 0 || hours > 24) return;
+                let lastIn = null;
 
-                if (!employeeStats[emp]) {
-                    employeeStats[emp] = { totalHours: 0, regularHours: 0, overtimeHours: 0, rate: 20, grams: 0 };
-                }
-                employeeStats[emp].totalHours += hours;
-                totalHours += hours;
+                punches.forEach(punch => {
+                    if (punch.punch_type === 'in') {
+                        lastIn = new Date(punch.punch_time);
+                    } else if (punch.punch_type === 'out' && lastIn) {
+                        const clockOut = new Date(punch.punch_time);
+                        const hours = (clockOut - lastIn) / (1000 * 60 * 60);
 
-                // Track weekly hours for OT calculation
-                const weekKey = emp + '_' + getWeekNumber(clockIn);
-                if (!weeklyHours[weekKey]) weeklyHours[weekKey] = 0;
-                weeklyHours[weekKey] += hours;
+                        // Cap at 16 hours per shift (reasonable max)
+                        if (hours > 0 && hours <= 16) {
+                            if (!employeeStats[emp]) {
+                                employeeStats[emp] = { totalHours: 0, regularHours: 0, overtimeHours: 0, rate: 20, grams: 0 };
+                            }
+                            employeeStats[emp].totalHours += hours;
+                            totalHours += hours;
+
+                            // Track weekly hours for OT calculation
+                            const weekKey = emp + '_' + getWeekNumber(lastIn);
+                            if (!weeklyHours[weekKey]) weeklyHours[weekKey] = 0;
+                            weeklyHours[weekKey] += hours;
+                        }
+                        lastIn = null;
+                    }
+                });
             });
 
             // Calculate OT (hours over 40 per week)
