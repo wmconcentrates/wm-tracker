@@ -30160,7 +30160,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
                     // Determine pipeline stage for display
                     let pipelineStage = batch.status;
-                    if (batch.labels_applied && !batch.leaflink_product_id) {
+                    if (batch.labels_applied && !batch.leaflink_product_id && !batch.skip_leaflink) {
                         pipelineStage = 'awaiting_leaflink';
                     } else if (batch.status === 'complete' && batch.test_thc_percent && !batch.labels_applied) {
                         pipelineStage = 'labeling';
@@ -30316,6 +30316,7 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 const batchDetails = info.batches.map(batch => {
                     const stageInfo = getPipelineStageInfo(batch.pipelineStage);
                     let waitingWarning = '';
+                    let removeBtn = '';
 
                     // Check if awaiting LeafLink for more than 24 hours
                     if (batch.pipelineStage === 'awaiting_leaflink' && batch.labelingDate) {
@@ -30324,9 +30325,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                         if (hoursWaiting > 24) {
                             waitingWarning = `<span style="color: #ff6b00; font-size: 0.75rem; margin-left: 5px;">⚠️ ${Math.floor(hoursWaiting)}h</span>`;
                         }
+                        // Add remove button for awaiting_leaflink batches
+                        removeBtn = `<button onclick="event.stopPropagation(); removeFromPipeline('${batch.id}')" style="background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 5px; cursor: pointer;" title="Remove from pipeline">✕</button>`;
                     }
 
-                    return `<span style="display: inline-flex; align-items: center; background: ${stageInfo.color}22; color: ${stageInfo.color}; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; margin-right: 5px; margin-top: 5px;">${stageInfo.icon} ${batch.id} (${batch.grams}g)${waitingWarning}</span>`;
+                    return `<span style="display: inline-flex; align-items: center; background: ${stageInfo.color}22; color: ${stageInfo.color}; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; margin-right: 5px; margin-top: 5px;">${stageInfo.icon} ${batch.id} (${batch.grams}g)${waitingWarning}${removeBtn}</span>`;
                 }).join('');
 
                 return `
@@ -30341,6 +30344,51 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }).join('');
 
             document.getElementById('pipelineStrainsPopup').style.display = 'block';
+        }
+
+        async function removeFromPipeline(batchId) {
+            if (!confirm(`Remove ${batchId} from the LeafLink pipeline?\n\nThis batch will no longer show as "Ready to List" but will remain in inventory.`)) {
+                return;
+            }
+
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) {
+                alert('Batch not found');
+                return;
+            }
+
+            // Add timeline entry
+            const timeline = batch.timeline || [];
+            timeline.push({
+                timestamp: new Date().toISOString(),
+                stage: 'pipeline',
+                user: currentRole ? currentRole.name : 'Unknown',
+                action: 'Removed from LeafLink pipeline'
+            });
+
+            const { error } = await supabaseClient
+                .from('wm_batches')
+                .update({
+                    skip_leaflink: true,
+                    timeline: timeline
+                })
+                .eq('id', batchId);
+
+            if (error) {
+                console.error('Error removing from pipeline:', error);
+                alert('Error removing from pipeline: ' + error.message);
+                return;
+            }
+
+            // Update local data
+            batch.skip_leaflink = true;
+            batch.timeline = timeline;
+
+            // Refresh the pipeline display
+            closePipelineStrainsPopup();
+            loadSalesDashboard();
+
+            alert(`✅ ${batchId} removed from pipeline`);
         }
 
     </script>
