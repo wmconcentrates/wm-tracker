@@ -30318,15 +30318,18 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                     let waitingWarning = '';
                     let removeBtn = '';
 
-                    // Check if awaiting LeafLink for more than 24 hours
-                    if (batch.pipelineStage === 'awaiting_leaflink' && batch.labelingDate) {
-                        const labeledDate = new Date(batch.labelingDate);
-                        const hoursWaiting = (Date.now() - labeledDate.getTime()) / (1000 * 60 * 60);
-                        if (hoursWaiting > 24) {
-                            waitingWarning = `<span style="color: #ff6b00; font-size: 0.75rem; margin-left: 5px;">⚠️ ${Math.floor(hoursWaiting)}h</span>`;
-                        }
-                        // Add remove button for awaiting_leaflink batches
+                    // Add remove button for awaiting_leaflink batches
+                    if (batch.pipelineStage === 'awaiting_leaflink') {
                         removeBtn = `<button onclick="event.stopPropagation(); removeFromPipeline('${batch.id}')" style="background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 5px; cursor: pointer;" title="Remove from pipeline">✕</button>`;
+
+                        // Check if awaiting LeafLink for more than 24 hours
+                        if (batch.labelingDate) {
+                            const labeledDate = new Date(batch.labelingDate);
+                            const hoursWaiting = (Date.now() - labeledDate.getTime()) / (1000 * 60 * 60);
+                            if (hoursWaiting > 24) {
+                                waitingWarning = `<span style="color: #ff6b00; font-size: 0.75rem; margin-left: 5px;">⚠️ ${Math.floor(hoursWaiting)}h</span>`;
+                            }
+                        }
                     }
 
                     return `<span style="display: inline-flex; align-items: center; background: ${stageInfo.color}22; color: ${stageInfo.color}; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; margin-right: 5px; margin-top: 5px;">${stageInfo.icon} ${batch.id} (${batch.grams}g)${waitingWarning}${removeBtn}</span>`;
