@@ -30128,6 +30128,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
                 // Exclude legacy 4g sub-batches (IDs ending in -4g)
                 if (batch.id && batch.id.endsWith('-4g')) return false;
 
+                // Exclude batches manually removed from pipeline
+                if (batch.skip_leaflink) return false;
+
                 const hasWeight = batch.final_weight || batch.net_weight || batch.grams_labeled;
                 if (!hasWeight) return false;
                 const salesPercent = getSalesPercentage(batch.material_agreement);
