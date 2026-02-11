@@ -5392,6 +5392,9 @@
                     <button onclick="openAddSickDayModal()" style="padding: 12px 24px; background: transparent; border: 2px solid var(--accent-orange); border-radius: 8px; color: var(--accent-orange); font-weight: 600; cursor: pointer; box-shadow: 0 0 15px rgba(255, 107, 0, 0.4), 0 0 30px rgba(255, 107, 0, 0.2);">
                         🤒 Add Sick Day
                     </button>
+                    <button onclick="openAddShiftModal()" style="padding: 12px 24px; background: transparent; border: 2px solid var(--accent-purple); border-radius: 8px; color: var(--accent-purple); font-weight: 600; cursor: pointer; box-shadow: 0 0 15px rgba(147, 51, 234, 0.4), 0 0 30px rgba(147, 51, 234, 0.2);">
+                        ➕ Add Shift
+                    </button>
                 </div>
 
                 <!-- Pay Period Info -->
@@ -5615,6 +5618,40 @@
             <div style="display: flex; gap: 10px;">
                 <button onclick="saveSickDay()" style="flex: 1; padding: 15px; background: var(--accent-blue); border: none; border-radius: 10px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">💾 Add Sick Day</button>
                 <button onclick="closeAddSickDayModal()" style="flex: 1; padding: 15px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 1rem; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Shift Modal -->
+    <div id="addShiftModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10006; overflow-y: auto;">
+        <div style="max-width: 500px; margin: 50px auto; background: var(--bg-secondary); border-radius: 15px; padding: 25px; border: 2px solid var(--accent-purple);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--accent-purple); margin: 0;">➕ Add Shift</h2>
+                <button onclick="closeAddShiftModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">Add a shift for an employee who forgot to clock in/out.</p>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Employee</label>
+                <select id="addShiftEmployee" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                </select>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: var(--accent-green); font-size: 0.9rem; font-weight: 600;">Clock In</label>
+                    <input type="datetime-local" id="addShiftInTime" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--accent-green); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: var(--accent-orange); font-size: 0.9rem; font-weight: 600;">Clock Out</label>
+                    <input type="datetime-local" id="addShiftOutTime" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--accent-orange); border-radius: 8px; color: var(--text-primary); font-size: 1rem;">
+                </div>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">Reason <span style="color: var(--accent-red);">*</span></label>
+                <textarea id="addShiftReason" rows="2" placeholder="e.g., Forgot to clock in, worked from home" style="width: 100%; padding: 12px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 1rem; resize: vertical;"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveAddedShift()" style="flex: 1; padding: 15px; background: var(--accent-purple); border: none; border-radius: 10px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">💾 Add Shift</button>
+                <button onclick="closeAddShiftModal()" style="flex: 1; padding: 15px; background: var(--bg-tertiary); border: 2px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 1rem; cursor: pointer;">Cancel</button>
             </div>
         </div>
     </div>
@@ -29356,6 +29393,109 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             alert('✅ Sick day added for ' + employeeName + '!\n\nDate: ' + new Date(dateStr).toLocaleDateString() + '\nHours: ' + hours);
             closeAddSickDayModal();
+
+            // Refresh timecard if viewing
+            const selectedEmployee = document.getElementById('timecardEmployeeSelect').value;
+            if (selectedEmployee) { loadEmployeeTimecard(selectedEmployee); }
+        }
+
+        // Add Shift functions (for employees who forgot to clock in)
+        function openAddShiftModal() {
+            // Populate employee dropdown
+            const select = document.getElementById('addShiftEmployee');
+            select.innerHTML = '';
+
+            // Get employees from ROLES
+            const employees = Object.entries(ROLES)
+                .filter(([key, role]) => role.name && key !== 'admin')
+                .map(([key, role]) => role.name)
+                .sort();
+
+            employees.forEach(emp => {
+                select.innerHTML += `<option value="${emp}">${emp}</option>`;
+            });
+
+            // Pre-select the currently viewed employee if any
+            const currentEmployee = document.getElementById('timecardEmployeeSelect').value;
+            if (currentEmployee) {
+                select.value = currentEmployee;
+            }
+
+            // Set default times to today 8am - 4pm
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            document.getElementById('addShiftInTime').value = dateStr + 'T08:00';
+            document.getElementById('addShiftOutTime').value = dateStr + 'T16:00';
+            document.getElementById('addShiftReason').value = '';
+
+            document.getElementById('addShiftModal').style.display = 'block';
+        }
+
+        function closeAddShiftModal() {
+            document.getElementById('addShiftModal').style.display = 'none';
+        }
+
+        async function saveAddedShift() {
+            const employeeName = document.getElementById('addShiftEmployee').value;
+            const clockInTimeStr = document.getElementById('addShiftInTime').value;
+            const clockOutTimeStr = document.getElementById('addShiftOutTime').value;
+            const reason = document.getElementById('addShiftReason').value.trim();
+
+            if (!employeeName) { alert('Please select an employee'); return; }
+            if (!clockInTimeStr) { alert('Please enter a clock in time'); return; }
+            if (!clockOutTimeStr) { alert('Please enter a clock out time'); return; }
+            if (!reason) { alert('Please provide a reason for adding this shift'); return; }
+
+            const clockInTime = new Date(clockInTimeStr);
+            const clockOutTime = new Date(clockOutTimeStr);
+
+            if (clockOutTime <= clockInTime) {
+                alert('Clock out time must be after clock in time');
+                return;
+            }
+
+            const hours = (clockOutTime - clockInTime) / (1000 * 60 * 60);
+            if (hours > 16) {
+                if (!confirm(`This shift is ${hours.toFixed(1)} hours. Are you sure this is correct?`)) {
+                    return;
+                }
+            }
+
+            // Find the role to get user_role
+            const roleEntry = Object.entries(ROLES).find(([key, role]) => role.name === employeeName);
+            const userRole = roleEntry ? roleEntry[0] : 'unknown';
+
+            const adjustedBy = currentRole ? currentRole.name : 'Admin';
+            const noteText = `Added by ${adjustedBy}: ${reason}`;
+
+            // Insert clock in punch
+            const { error: inError } = await supabaseClient
+                .from('timeclock')
+                .insert([{
+                    user_name: employeeName,
+                    user_role: userRole,
+                    punch_type: 'in',
+                    punch_time: clockInTime.toISOString(),
+                    ip_address: noteText
+                }]);
+
+            if (inError) { alert('Error adding clock in: ' + inError.message); return; }
+
+            // Insert clock out punch
+            const { error: outError } = await supabaseClient
+                .from('timeclock')
+                .insert([{
+                    user_name: employeeName,
+                    user_role: userRole,
+                    punch_type: 'out',
+                    punch_time: clockOutTime.toISOString(),
+                    ip_address: noteText
+                }]);
+
+            if (outError) { alert('Error adding clock out: ' + outError.message); return; }
+
+            alert(`✅ Shift added for ${employeeName}!\n\nDate: ${clockInTime.toLocaleDateString()}\nIn: ${clockInTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\nOut: ${clockOutTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\nHours: ${hours.toFixed(2)}`);
+            closeAddShiftModal();
 
             // Refresh timecard if viewing
             const selectedEmployee = document.getElementById('timecardEmployeeSelect').value;
