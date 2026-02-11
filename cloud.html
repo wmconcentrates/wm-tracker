@@ -11395,7 +11395,6 @@ ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS cost_per_unit DECIMAL(10,4);
                 return { success: true, method: 'direct' };
             } catch (error) {
                 console.error('Print failed:', error.message);
-                alert(`❌ Print failed!\n\nCould not connect to printer at ${DIRECT_PRINTER_IP}.\n\nMake sure the printer is on and connected to the network.\n\nError: ${error.message}`);
                 return { success: false, method: 'error', error: error.message };
             }
         }
