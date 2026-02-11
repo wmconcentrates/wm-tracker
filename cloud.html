@@ -19898,7 +19898,7 @@ ${employeeReport || 'No activity recorded today'}
                 localStorage.setItem('printServerURL', printServerURL);
                 alert('Print server settings saved!\n\nMake sure the print server is running on that computer.');
             } else {
-                localStorage.setItem('printServerURL', 'http://localhost:3000/print');
+                localStorage.setItem('printServerURL', 'http://localhost:3001/api/print');
                 alert('Using default localhost print server.');
             }
         }
@@ -20444,50 +20444,15 @@ ${employeeReport || 'No activity recorded today'}
             const totalLabels = quantity * labelsPerUnit;
 
             const zpl = generateZPL(batch);
-            
-            // Generate ZPL with multiple copies
-            let fullZPL = '';
-            for (let i = 0; i < totalLabels; i++) {
-                fullZPL += zpl + '\n';
-            }
-            
-            // Try print server first (works from mobile!)
-            const printServerURL = localStorage.getItem('printServerURL') || 'http://localhost:3000/print';
 
-            try {
-                const response = await fetch(printServerURL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zpl: fullZPL })
-                });
+            // Use ^PQ command to print multiple copies efficiently
+            const zplWithQty = zpl.replace('^XZ', `^PQ${totalLabels}^XZ`);
 
-                if (response.ok) {
-                    alert(`✓ Sent ${totalLabels} labels to printer!`);
-                    return;
-                }
-            } catch (error) {
-                // Print server not available, try Browser Print
-            }
+            // Use consistent print function (tries USB, network server, then direct IP)
+            const result = await sendZPLToPrinter(zplWithQty, `labels-${batch.id}.zpl`);
 
-            // Fallback to Browser Print
-            if (window.BrowserPrint) {
-                try {
-                    const printer = await window.BrowserPrint.getDefaultDevice('printer');
-
-                    printer.send(fullZPL, undefined, (error) => {
-                        if (error) {
-                            console.error('Print error:', error);
-                            alert('Print failed. Use "Download ZPL" button instead.');
-                        } else {
-                            alert(`✓ Sent ${totalLabels} labels to printer!`);
-                        }
-                    });
-                } catch (error) {
-                    console.error('Browser Print error:', error);
-                    alert('Printing not available.\n\nOptions:\n1. Start print server (see setup docs)\n2. Use "Download ZPL" button');
-                }
-            } else {
-                alert('Print server not running and Browser Print not installed.\n\nUse "Download ZPL" button to print manually.');
+            if (result.success) {
+                alert(`✅ Sent ${totalLabels} labels to printer!`);
             }
         }
 
