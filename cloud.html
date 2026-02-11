@@ -11380,66 +11380,22 @@ ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS cost_per_unit DECIMAL(10,4);
             printIntakeLabelDirectly(testBatch);
         }
 
-        // Check if direct IP printing is available (only works on HTTP or localhost)
-        function canDirectPrint() {
-            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const isHTTP = window.location.protocol === 'http:';
-            return isLocalhost || isHTTP;
-        }
-
-        // Local print server URLs
-        const LOCAL_USB_PRINT = 'http://localhost:3001/api/print-usb';
-        const LOCAL_PRINT_SERVER = 'http://localhost:3001/api/print';
-        const REMOTE_PRINT_SERVER = 'http://10.1.10.160:3001/api/print';
+        // Direct IP printer address
         const DIRECT_PRINTER_IP = '10.1.10.95';
 
-        // Send ZPL to printer - tries USB first, then network, then direct IP
+        // Send ZPL to printer via direct IP
         async function sendZPLToPrinter(zpl, filename) {
-            // Try USB print first (for locally connected Zebra)
-            try {
-                const usbResponse = await fetch(LOCAL_USB_PRINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zpl })
-                });
-
-                if (usbResponse.ok) {
-                    const result = await usbResponse.json();
-                    console.log('[print] Sent via USB:', result.printer);
-                    return { success: true, method: 'usb' };
-                }
-            } catch (error) {
-                console.log('[print] USB print not available, trying network...');
-            }
-
-            // Try local print server (works from HTTPS cloud)
-            try {
-                const response = await fetch(LOCAL_PRINT_SERVER, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zpl })
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('[print] Sent via local server:', result.printer);
-                    return { success: true, method: 'proxy' };
-                }
-            } catch (error) {
-                console.log('[print] Local server not available, trying direct...');
-            }
-
-            // Fall back to direct IP printing (only works on HTTP/localhost)
             try {
                 await fetch(`http://${DIRECT_PRINTER_IP}:9100`, {
                     method: 'POST',
                     mode: 'no-cors',
                     body: zpl
                 });
+                console.log('[print] Sent to printer via direct IP:', DIRECT_PRINTER_IP);
                 return { success: true, method: 'direct' };
             } catch (error) {
                 console.error('Print failed:', error.message);
-                alert(`❌ Print failed!\n\nCould not connect to printer.\n\nMake sure:\n1. Local server is running: node server.js\n2. Zebra printer is connected via USB\n3. Printer name matches in server.js (ZEBRA_USB_PRINTER)\n\nError: ${error.message}`);
+                alert(`❌ Print failed!\n\nCould not connect to printer at ${DIRECT_PRINTER_IP}.\n\nMake sure the printer is on and connected to the network.\n\nError: ${error.message}`);
                 return { success: false, method: 'error', error: error.message };
             }
         }
