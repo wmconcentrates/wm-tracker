@@ -28422,6 +28422,54 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return totalHours;
         }
 
+        // Calculate shift hours including short breaks (< 2 hours) for overtime threshold
+        // This counts time from first clock-in to last clock-out/now, minus breaks over 2 hours
+        function calculateShiftHours(punches) {
+            if (!punches || punches.length === 0) return 0;
+
+            let shiftHours = 0;
+            let shiftStart = null;
+
+            for (let i = 0; i < punches.length; i++) {
+                const punch = punches[i];
+
+                if (punch.punch_type === 'in') {
+                    if (!shiftStart) {
+                        // First clock-in of the shift
+                        shiftStart = new Date(punch.punch_time);
+                    }
+                    // Check if there was a break before this clock-in
+                    if (i > 0 && punches[i - 1].punch_type === 'out') {
+                        const breakStart = new Date(punches[i - 1].punch_time);
+                        const breakEnd = new Date(punch.punch_time);
+                        const breakHours = (breakEnd - breakStart) / (1000 * 60 * 60);
+
+                        // If break was 2+ hours, end previous shift and start new one
+                        if (breakHours >= 2) {
+                            shiftHours += calculateHours(shiftStart, breakStart);
+                            shiftStart = breakEnd;
+                        }
+                        // If break < 2 hours, continue the same shift (break counts towards overtime)
+                    }
+                } else if (punch.punch_type === 'out' && shiftStart) {
+                    // Check if this is the last punch or if next punch is > 2 hours away
+                    const nextPunch = punches[i + 1];
+                    if (!nextPunch) {
+                        // Last punch - end shift here
+                        shiftHours += calculateHours(shiftStart, punch.punch_time);
+                        shiftStart = null;
+                    }
+                }
+            }
+
+            // If still clocked in, calculate to now
+            if (shiftStart) {
+                shiftHours += calculateHours(shiftStart, new Date());
+            }
+
+            return shiftHours;
+        }
+
         // Calculate weekly hours for overtime checking
         async function getWeeklyHours(userName) {
             if (!supabaseClient) return 0;
@@ -28762,13 +28810,14 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (!currentRole) return;
 
             const todayPunches = await getTodayPunches(currentRole.name);
-            const todayHours = calculateTotalHours(todayPunches);
+            // Use shift hours (includes breaks < 2 hours) for 12-hour overtime check
+            const shiftHours = calculateShiftHours(todayPunches);
             const weeklyHours = await getWeeklyHours(currentRole.name);
 
             let alertMessage = null;
 
-            if (todayHours > 8) {
-                alertMessage = 'Daily overtime alert!\n\nYou have worked ' + todayHours.toFixed(2) + ' hours today (over 8 hours).';
+            if (shiftHours > 12) {
+                alertMessage = 'Daily overtime alert!\n\nYour shift has reached ' + shiftHours.toFixed(2) + ' hours (over 12 hours).';
             }
 
             if (weeklyHours > 40) {
