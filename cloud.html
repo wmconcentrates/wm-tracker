@@ -1843,8 +1843,9 @@
                             <div class="help-text" id="socksHelp">How many socks is this trim packed into?</div>
                         </div>
                         <div class="form-group">
-                            <label>Cost of Material ($)</label>
-                            <input type="number" id="materialCost" step="0.01" required>
+                            <label>Cost per Pound ($)</label>
+                            <input type="number" id="costPerPound" step="0.01" required>
+                            <div id="calculatedCostDisplay" class="help-text" style="color: var(--accent-green); font-weight: 600;"></div>
                         </div>
                         <div class="form-group">
                             <label>Material Agreement Type</label>
@@ -10510,6 +10511,7 @@ ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS labor_cost DECIMAL(10,2);
 ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS consumables_cost DECIMAL(10,2);
 ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS overhead_allocated DECIMAL(10,2);
 ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS cost_per_unit DECIMAL(10,4);
+ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS cost_per_pound DECIMAL(10,2);
                 `;
                 
                 alert(`Please run this SQL in your Supabase SQL Editor:\n\n${createTableSQL}\n\nThen refresh this page.`);
@@ -11259,6 +11261,23 @@ ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS cost_per_unit DECIMAL(10,4);
             });
         });
 
+        // Real-time cost calculator for intake form
+        function updateCalculatedCost() {
+            const costPerPound = parseFloat(document.getElementById('costPerPound').value) || 0;
+            const trimWeight = parseFloat(document.getElementById('trimWeight').value) || 0;
+            const displayEl = document.getElementById('calculatedCostDisplay');
+
+            if (costPerPound > 0 && trimWeight > 0) {
+                const totalCost = (trimWeight / 453) * costPerPound;
+                displayEl.textContent = `Total Material Cost: $${totalCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            } else {
+                displayEl.textContent = '';
+            }
+        }
+
+        document.getElementById('costPerPound').addEventListener('input', updateCalculatedCost);
+        document.getElementById('trimWeight').addEventListener('input', updateCalculatedCost);
+
         // Intake form submission
         document.getElementById('intakeForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -11310,6 +11329,10 @@ ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS cost_per_unit DECIMAL(10,4);
             const productSuffix = products.length > 0 ? ' ' + products.join('/') : '';
             const fullStrainName = baseStrainName + productSuffix;
 
+            // Calculate material cost from cost per pound
+            const costPerPound = parseFloat(document.getElementById('costPerPound').value);
+            const materialCost = parseFloat(((trimWeight / 453) * costPerPound).toFixed(2));
+
             const batch = {
                 id: `WM-${batchCounter}`,
                 strain: fullStrainName,
@@ -11320,7 +11343,8 @@ ALTER TABLE wm_batches ADD COLUMN IF NOT EXISTS cost_per_unit DECIMAL(10,4);
                 socks_total: socksTotal,
                 socks_remaining: socksTotal,
                 trim_per_sock: trimPerSock,
-                material_cost: parseFloat(document.getElementById('materialCost').value),
+                cost_per_pound: costPerPound,
+                material_cost: materialCost,
                 material_agreement: document.getElementById('materialAgreement').value,
                 pre_sift: document.getElementById('preSift').value,
                 cultivation_license: document.getElementById('cultivationLicense').value,
