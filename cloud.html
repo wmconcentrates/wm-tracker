@@ -29230,79 +29230,77 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
             tbody.innerHTML = html;
 
-            // Colorado overtime: over 12 hrs/shift AND over 40 hrs/week
+            // Colorado overtime: over 12 hrs/shift OR over 40 hrs/week
+            // An hour is OT if EITHER condition is true
 
-            // Step 1: Identify continuous shifts (combine work periods with < 2hr breaks)
+            // Step 1: Build continuous shifts with week info
             const continuousShifts = [];
             let currentContinuousShift = null;
 
-            shifts.forEach((shift, index) => {
+            const getWeekKey = (date) => {
+                const dateObj = new Date(date);
+                const daysFromSaturday = (dateObj.getDay() + 1) % 7;
+                const saturday = new Date(dateObj);
+                saturday.setDate(dateObj.getDate() - daysFromSaturday);
+                return saturday.toISOString().split('T')[0];
+            };
+
+            shifts.forEach((shift) => {
                 if (!currentContinuousShift) {
-                    // Start new continuous shift
                     currentContinuousShift = {
                         startTime: new Date(shift.inTime),
                         endTime: shift.outTime ? new Date(shift.outTime) : new Date(),
-                        workedHours: shift.hours
+                        workedHours: shift.hours,
+                        weekKey: getWeekKey(shift.inTime)
                     };
                 } else {
-                    // Check gap from previous shift end to this shift start
                     const gapHours = (new Date(shift.inTime) - currentContinuousShift.endTime) / (1000 * 60 * 60);
 
                     if (gapHours < 2) {
-                        // Continue the same shift (break under 2 hours)
                         currentContinuousShift.endTime = shift.outTime ? new Date(shift.outTime) : new Date();
                         currentContinuousShift.workedHours += shift.hours;
                     } else {
-                        // Break >= 2 hours, save current and start new
                         continuousShifts.push(currentContinuousShift);
                         currentContinuousShift = {
                             startTime: new Date(shift.inTime),
                             endTime: shift.outTime ? new Date(shift.outTime) : new Date(),
-                            workedHours: shift.hours
+                            workedHours: shift.hours,
+                            weekKey: getWeekKey(shift.inTime)
                         };
                     }
                 }
             });
-            // Don't forget the last shift
             if (currentContinuousShift) {
                 continuousShifts.push(currentContinuousShift);
             }
 
-            // Step 2: Calculate daily OT (shifts over 12 hours)
-            let dailyOvertimeHours = 0;
+            // Step 2: Calculate OT - an hour is OT if shift > 12 hrs OR week cumulative > 40 hrs
+            let regularHours = 0;
+            let overtimeHours = 0;
+            const weeklyCumulative = {};
+
             continuousShifts.forEach(cs => {
                 const shiftDuration = (cs.endTime - cs.startTime) / (1000 * 60 * 60);
-                if (shiftDuration > 12) {
-                    dailyOvertimeHours += shiftDuration - 12;
-                }
+                const weekKey = cs.weekKey;
+
+                if (!weeklyCumulative[weekKey]) weeklyCumulative[weekKey] = 0;
+                const weekStartHours = weeklyCumulative[weekKey];
+
+                // For this shift, calculate regular vs OT
+                // Regular hours: first 12 hrs of shift AND first 40 hrs of week
+                // OT hours: after 12 hrs in shift OR after 40 hrs in week
+
+                const hoursUntilWeeklyOT = Math.max(0, 40 - weekStartHours);
+                const hoursUntilDailyOT = 12;
+
+                // Hours that are regular (under both thresholds)
+                const regularInShift = Math.min(cs.workedHours, hoursUntilDailyOT, hoursUntilWeeklyOT);
+                const otInShift = cs.workedHours - regularInShift;
+
+                regularHours += regularInShift;
+                overtimeHours += otInShift;
+                weeklyCumulative[weekKey] += cs.workedHours;
             });
-
-            // Step 3: Calculate weekly hours for weekly OT
-            const hoursByWeek = {};
-            sortedDates.forEach(date => {
-                const dateObj = new Date(date);
-                const dayOfWeek = dateObj.getDay();
-                const daysFromSaturday = (dayOfWeek + 1) % 7;
-                const saturday = new Date(dateObj);
-                saturday.setDate(dateObj.getDate() - daysFromSaturday);
-                const weekKey = saturday.toISOString().split('T')[0];
-
-                const dayShifts = shiftsByDate[date];
-                const dayHours = dayShifts.reduce((sum, shift) => sum + shift.hours, 0);
-
-                if (!hoursByWeek[weekKey]) hoursByWeek[weekKey] = 0;
-                hoursByWeek[weekKey] += dayHours;
-            });
-
-            // Step 4: Calculate weekly OT (over 40 hrs/week)
-            let weeklyOvertimeHours = 0;
-            Object.values(hoursByWeek).forEach(weekHours => {
-                weeklyOvertimeHours += Math.max(0, weekHours - 40);
-            });
-
-            // Total overtime is the greater of daily or weekly (don't double count)
-            let overtimeHours = Math.max(dailyOvertimeHours, weeklyOvertimeHours);
-            let regularHours = totalHours - overtimeHours;
 
             document.getElementById('summaryRegularHours').textContent = regularHours.toFixed(2);
             document.getElementById('summaryOvertimeHours').textContent = overtimeHours.toFixed(2);
