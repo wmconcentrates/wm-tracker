@@ -28378,6 +28378,51 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             }
         }
 
+        // Get all punches for the current continuous shift (may span multiple days)
+        // A shift ends when there's a break of 2+ hours
+        async function getCurrentShiftPunches(userName) {
+            if (!supabaseClient) return [];
+
+            // Look back up to 3 days to find shift start
+            const lookbackDate = new Date();
+            lookbackDate.setDate(lookbackDate.getDate() - 3);
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('timeclock')
+                    .select('*')
+                    .eq('user_name', userName)
+                    .gte('punch_time', lookbackDate.toISOString())
+                    .order('punch_time', { ascending: true });
+
+                if (error) throw error;
+                if (!data || data.length === 0) return [];
+
+                // Find where the current shift started by looking for gaps >= 2 hours
+                let shiftStartIndex = 0;
+                for (let i = data.length - 1; i > 0; i--) {
+                    const currentPunch = data[i];
+                    const prevPunch = data[i - 1];
+
+                    // If current is clock-in and previous is clock-out, check the gap
+                    if (currentPunch.punch_type === 'in' && prevPunch.punch_type === 'out') {
+                        const gapHours = (new Date(currentPunch.punch_time) - new Date(prevPunch.punch_time)) / (1000 * 60 * 60);
+                        if (gapHours >= 2) {
+                            // Found a break >= 2 hours, shift starts at current punch
+                            shiftStartIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                // Return punches from shift start to end
+                return data.slice(shiftStartIndex);
+            } catch (error) {
+                console.error('Error getting current shift punches:', error);
+                return [];
+            }
+        }
+
         // Get pay period punches for a user
         async function getPayPeriodPunches(userName, periodType = 'current') {
             if (!supabaseClient) return [];
@@ -28809,9 +28854,10 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         async function checkOvertime() {
             if (!currentRole) return;
 
-            const todayPunches = await getTodayPunches(currentRole.name);
+            // Get all punches for current shift (may span multiple days)
+            const shiftPunches = await getCurrentShiftPunches(currentRole.name);
             // Use shift hours (includes breaks < 2 hours) for 12-hour overtime check
-            const shiftHours = calculateShiftHours(todayPunches);
+            const shiftHours = calculateShiftHours(shiftPunches);
             const weeklyHours = await getWeeklyHours(currentRole.name);
 
             let alertMessage = null;
