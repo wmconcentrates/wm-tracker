@@ -32383,21 +32383,26 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             const data = needsData[key] || { label: key, needs: [] };
             if (!data) return '';
 
-            // Get needs by strain type
+            // Get needs by strain type and calculate total weight
             const needsByStrain = { Sativa: 0, Hybrid: 0, Indica: 0 };
+            let totalWeight = 0;
             (data.needs || []).forEach(need => {
                 needsByStrain[need.strainType] = need.varietiesNeeded;
+                totalWeight += (parseFloat(need.pipelineQty) || 0) + (parseFloat(need.inventoryQty) || 0);
             });
 
             const totalNeeded = needsByStrain.Sativa + needsByStrain.Hybrid + needsByStrain.Indica;
             const isOk = totalNeeded === 0;
             // Color based on urgency: green=stocked, yellow=1-2 needed, red=3+ needed
             const glowColor = isOk ? '#10B981' : (totalNeeded <= 2 ? '#F59E0B' : '#EF4444');
+            // Format weight display
+            const weightDisplay = totalWeight >= 1000 ? `${(totalWeight / 1000).toFixed(1)}kg` : `${Math.round(totalWeight)}g`;
             return `
                 <button onclick="showNeedsItems('${key}')" class="foh-btn">
                     <div class="foh-btn-name">${data.label}</div>
                     <div class="foh-btn-num foh-needs-num" style="text-shadow: 0 0 8px ${glowColor}, 0 0 15px ${glowColor}, 0 0 25px ${glowColor}, 0 0 40px ${glowColor};">${isOk ? '✓' : totalNeeded}</div>
                     <div class="foh-btn-sub">${isOk ? 'Stocked' : 'varieties needed'}</div>
+                    <div class="foh-btn-weight" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">${weightDisplay} total</div>
                 </button>
             `;
         }).join('');
