@@ -9316,7 +9316,9 @@
             }
 
             // Packaging materials (based on actual units packaged)
-            if (batch.units_packaged) {
+            // Skip packaging costs for bulk sales - no jars, lids, or labels
+            const isBulkSale = batch.is_bulk_sale || batch.packaged_product_type === 'Bulk Sale';
+            if (batch.units_packaged && !isBulkSale) {
                 const productType = batch.packaged_product_type || '';
                 let packagingCost = 0;
 
@@ -9349,6 +9351,9 @@
                     };
                 }
                 consumablesCost += packagingCost;
+            } else if (isBulkSale) {
+                // Bulk sale - no packaging costs
+                consumablesBreakdown.packaging = { type: 'bulk_sale', qty: 0, cost: 0, note: 'No packaging for bulk sale' };
             }
 
             // ============================================
@@ -13660,15 +13665,27 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                         packaging_breakdown: `${units1g}x 1g, ${units4g}x 4g`
                     };
                 }
+            } else if (packagedProductType === 'Bulk Sale') {
+                // Bulk sale - use batch net_weight as the total grams
+                unitsPackaged = parseInt(document.getElementById('unitsPackaged').value) || 1;
+                totalGrams = parseFloat(batch.net_weight) || parseFloat(batch.final_weight) || 0;
+
+                packagingDetails = {
+                    units_1g: null,
+                    units_4g: null,
+                    total_grams: totalGrams,
+                    packaging_breakdown: `Bulk: ${totalGrams}g`,
+                    is_bulk_sale: true
+                };
             } else {
-                // Single size packaging
+                // Single size packaging (Shatter, RSO, etc.)
                 unitsPackaged = parseInt(document.getElementById('unitsPackaged').value);
-                
+
                 if (!unitsPackaged || unitsPackaged === 0) {
                     alert('Please enter units packaged');
                     return;
                 }
-                
+
                 packagingDetails = {
                     units_1g: null,
                     units_4g: null,
@@ -13676,9 +13693,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     packaging_breakdown: null
                 };
             }
-            
+
             const timeline = batch.timeline || [];
-            
+
             // Check if this is a bulk sale
             const isBulkSale = packagedProductType === 'Bulk Sale';
             
@@ -13694,7 +13711,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     stage: 'packaging',
                     user: currentRole ? currentRole.name : "Unknown",
                     date: new Date().toISOString(),
-                    action: `Bulk sale - ${unitsPackaged} unit(s) - Proceeding to testing`
+                    action: `Bulk sale - ${totalGrams}g (${unitsPackaged} unit(s)) - Proceeding to testing`
                 });
             } else {
                 timeline.push({
@@ -13726,6 +13743,10 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             // If bulk sale, go to packaging status (testing queue) but will skip labeling after testing
             if (isBulkSale) {
                 updateData.status = 'packaging'; // Goes to testing queue
+                updateData.is_bulk_sale = true;
+                updateData.bulk_sale_weight = totalGrams;
+                // Set grams_labeled to bulk weight for analytics (no actual labeling occurs)
+                updateData.grams_labeled = totalGrams;
                 // Note: labels_applied will be set to true after testing is complete
             } else {
                 // Normal packaging - goes to "complete" status waiting for labeling
