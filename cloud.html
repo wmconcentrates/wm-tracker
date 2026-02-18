@@ -2010,10 +2010,11 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Split this batch into multiple products?</label>
-                        <select id="splitBatch" required>
-                            <option value="no">No - Single product batch</option>
-                            <option value="yes">Yes - Split into sub-batches</option>
+                        <label>What would you like to do with this batch?</label>
+                        <select id="batchAction" required>
+                            <option value="single">Process as single batch</option>
+                            <option value="split">Split into multiple sub-batches</option>
+                            <option value="combine">Combine with another batch</option>
                         </select>
                     </div>
 
@@ -2127,8 +2128,76 @@
 
                         <button type="button" class="btn" style="background: var(--accent-blue); margin-right: 10px;" onclick="addSplitProduct()">+ Add Another Product</button>
                         <button type="button" class="btn" onclick="submitSplitBatch()">Create Sub-Batches</button>
-                        
+
                         <div id="splitValidation" style="margin-top: 15px; padding: 15px; border-radius: 10px;"></div>
+                    </div>
+
+                    <!-- Combine Batches Section -->
+                    <div id="combineFinishing" style="display: none;">
+                        <h3 style="color: var(--accent-cyan); margin: 20px 0 15px 0; font-size: 1.2rem;">🔗 Combine Batches</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 20px;">Combine multiple extraction batches into one. System will create a new combined batch and mark sources as consumed.</p>
+
+                        <!-- Combine Ledger Display -->
+                        <div id="combineLedgerDisplay" style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                            <h4 style="color: var(--accent-cyan); margin-bottom: 10px;">Batches to Combine</h4>
+                            <div id="combineLedgerContent">
+                                <p style="color: var(--text-muted);">No batches selected yet.</p>
+                            </div>
+                        </div>
+
+                        <!-- Add More Batches -->
+                        <div class="form-group">
+                            <label>Add Another Batch to Combine</label>
+                            <select id="combineAddBatchSelect">
+                                <option value="">Select a compatible batch...</option>
+                            </select>
+                            <button type="button" class="btn" style="background: var(--accent-cyan); margin-top: 10px;" onclick="addBatchToCombine()">+ Add to Combine</button>
+                        </div>
+
+                        <!-- Combine Validation / Warnings -->
+                        <div id="combineValidation" style="margin: 15px 0; padding: 15px; border-radius: 10px; display: none;"></div>
+
+                        <!-- Combined Batch Details -->
+                        <div id="combinedBatchDetails" style="display: none; background: var(--bg-secondary); padding: 20px; border-radius: 10px; margin-top: 20px; border: 2px solid var(--accent-cyan);">
+                            <h4 style="color: var(--accent-cyan); margin-bottom: 15px;">Combined Batch Details</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Final Product Type</label>
+                                    <select id="combineProductType" required>
+                                        <option value="Wax">Wax</option>
+                                        <option value="Sugar Wax">Sugar Wax</option>
+                                        <option value="Shatter">Shatter</option>
+                                        <option value="Live Resin Carts">Live Resin Carts</option>
+                                        <option value="Live Resin AIOs">Live Resin AIOs</option>
+                                        <option value="Brick Hash">Brick Hash</option>
+                                    </select>
+                                    <div class="help-text">Set the final product type after combining</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Final Bulk Weight (grams)</label>
+                                    <input type="number" id="combineWeight" step="0.1" required>
+                                    <div class="help-text" id="combineWeightHint">Estimated: 0g - enter actual weighed amount</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Sample Weight Pulled (grams)</label>
+                                    <input type="number" id="combineSampleWeight" step="0.1" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Output Container Count</label>
+                                    <input type="number" id="combineContainerCount" min="1" value="1">
+                                    <div class="help-text">Number of bowls/slabs after combining</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Finishing Date</label>
+                                    <input type="date" id="combineFinishingDate">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Notes</label>
+                                <textarea id="combineNotes" placeholder="Why are these batches being combined? Any observations..."></textarea>
+                            </div>
+                            <button type="button" class="btn" style="background: var(--accent-cyan);" onclick="submitCombineBatches()">Create Combined Batch</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -9910,6 +9979,7 @@
         let currentPullMachine = null; // 'left' or 'right' for pull batch modal
         let batchCounter = 1000;
         let realtimeChannel = null;
+        let combineLedger = []; // For combining batches in post-extraction
 
         // Multi-tenant business support
         let businessesList = [];
@@ -12413,9 +12483,16 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             const form = document.getElementById('finishingForm');
             form.style.display = this.value ? 'block' : 'none';
 
+            // Reset batchAction and sections when batch changes
+            document.getElementById('batchAction').value = 'single';
+            document.getElementById('singleFinishing').style.display = 'block';
+            document.getElementById('splitFinishing').style.display = 'none';
+            document.getElementById('combineFinishing').style.display = 'none';
+            combineLedger = [];
+
             // Check if Live Resin batch to show split section
             checkShowSplitSection(this.value);
-            
+
             if (this.value) {
                 const batch = batches.find(b => b.id === this.value);
                 document.getElementById('finishingDate').value = new Date().toISOString().split('T')[0];
@@ -12496,24 +12573,30 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             }
         });
 
-        document.getElementById('splitBatch').addEventListener('change', function() {
+        document.getElementById('batchAction').addEventListener('change', function() {
             const singleSection = document.getElementById('singleFinishing');
             const splitSection = document.getElementById('splitFinishing');
-            
-            if (this.value === 'yes') {
-                singleSection.style.display = 'none';
-                splitSection.style.display = 'block';
-                // Make single fields not required
-                document.getElementById('finalWeight').required = false;
-                document.getElementById('sampleWeight').required = false;
-                
-                // Update split weight listeners
-                updateSplitValidation();
-            } else {
+            const combineSection = document.getElementById('combineFinishing');
+
+            // Hide all sections first
+            singleSection.style.display = 'none';
+            splitSection.style.display = 'none';
+            combineSection.style.display = 'none';
+
+            // Make single fields not required by default
+            document.getElementById('finalWeight').required = false;
+            document.getElementById('sampleWeight').required = false;
+
+            if (this.value === 'single') {
                 singleSection.style.display = 'block';
-                splitSection.style.display = 'none';
                 document.getElementById('finalWeight').required = true;
                 document.getElementById('sampleWeight').required = true;
+            } else if (this.value === 'split') {
+                splitSection.style.display = 'block';
+                updateSplitValidation();
+            } else if (this.value === 'combine') {
+                combineSection.style.display = 'block';
+                initializeCombineLedger();
             }
         });
 
@@ -12724,10 +12807,383 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
             document.getElementById('finishingForm').style.display = 'none';
             document.getElementById('finishingBatchSelect').value = '';
-            
+
             await loadBatches();
             populateFinishingSelect();
         }
+
+        // =============================================
+        // COMBINE BATCHES FUNCTIONS
+        // =============================================
+
+        function initializeCombineLedger() {
+            const batchId = document.getElementById('finishingBatchSelect').value;
+            const batch = batches.find(b => b.id === batchId);
+
+            if (!batch) {
+                combineLedger = [];
+                updateCombineLedgerDisplay();
+                return;
+            }
+
+            // Initialize ledger with the selected batch as primary
+            combineLedger = [{
+                batch_id: batch.id,
+                strain: batch.strain,
+                product_made: batch.product_made,
+                weight: parseFloat(batch.final_weight) || parseFloat(batch.trim_weight) * 0.13 || 0,
+                extraction_bowls: batch.extraction_bowls || 0,
+                extraction_slabs: batch.extraction_slabs || 0,
+                is_primary: true
+            }];
+
+            document.getElementById('combineFinishingDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('combineWeight').value = '';
+            document.getElementById('combineSampleWeight').value = '0';
+            // Set default product type from primary batch
+            const productSelect = document.getElementById('combineProductType');
+            if (productSelect) {
+                productSelect.value = batch.product_made || 'Wax';
+            }
+            updateCombineLedgerDisplay();
+            populateCombineAddBatchSelect();
+        }
+
+        function populateCombineAddBatchSelect() {
+            const select = document.getElementById('combineAddBatchSelect');
+            const primaryBatch = combineLedger.find(b => b.is_primary);
+
+            if (!primaryBatch) {
+                select.innerHTML = '<option value="">Select primary batch first...</option>';
+                return;
+            }
+
+            // Find compatible batches: extraction status, not already in ledger (allow different product types)
+            const compatibleBatches = batches.filter(b => {
+                if (b.status !== 'extraction') return false;
+                if (combineLedger.some(l => l.batch_id === b.id)) return false;
+                return true;
+            });
+
+            select.innerHTML = '<option value="">Select a batch to add...</option>';
+            compatibleBatches.forEach(batch => {
+                const estWeight = parseFloat(batch.final_weight) || parseFloat(batch.trim_weight) * 0.13 || 0;
+                const strainMatch = batch.strain === primaryBatch.strain ? '✓' : '⚠';
+                const productMatch = batch.product_made === primaryBatch.product_made ? '' : ' ⚡';
+                select.innerHTML += `<option value="${batch.id}">${strainMatch}${productMatch} ${batch.id} - ${batch.strain} (~${estWeight.toFixed(0)}g) - ${batch.product_made}</option>`;
+            });
+        }
+
+        function addBatchToCombine() {
+            const select = document.getElementById('combineAddBatchSelect');
+            const batchId = select.value;
+
+            if (!batchId) {
+                alert('Please select a batch to add');
+                return;
+            }
+
+            const batch = batches.find(b => b.id === batchId);
+            if (!batch) return;
+
+            combineLedger.push({
+                batch_id: batch.id,
+                strain: batch.strain,
+                product_made: batch.product_made,
+                weight: parseFloat(batch.final_weight) || parseFloat(batch.trim_weight) * 0.13 || 0,
+                extraction_bowls: batch.extraction_bowls || 0,
+                extraction_slabs: batch.extraction_slabs || 0,
+                is_primary: false
+            });
+
+            updateCombineLedgerDisplay();
+            populateCombineAddBatchSelect();
+            updateCombineValidation();
+        }
+
+        function removeCombineBatch(index) {
+            if (combineLedger[index]?.is_primary) {
+                alert('Cannot remove the primary batch. Change the selected batch in the dropdown above to change the primary.');
+                return;
+            }
+            combineLedger.splice(index, 1);
+            updateCombineLedgerDisplay();
+            populateCombineAddBatchSelect();
+            updateCombineValidation();
+        }
+
+        function updateCombineLedgerDisplay() {
+            const content = document.getElementById('combineLedgerContent');
+            const detailsSection = document.getElementById('combinedBatchDetails');
+
+            if (combineLedger.length === 0) {
+                content.innerHTML = '<p style="color: var(--text-muted);">No batches selected yet.</p>';
+                detailsSection.style.display = 'none';
+                return;
+            }
+
+            const totalWeight = combineLedger.reduce((sum, b) => sum + b.weight, 0);
+            const totalBowls = combineLedger.reduce((sum, b) => sum + (b.extraction_bowls || 0), 0);
+            const totalSlabs = combineLedger.reduce((sum, b) => sum + (b.extraction_slabs || 0), 0);
+
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<thead><tr style="border-bottom: 2px solid var(--accent-cyan);">';
+            html += '<th style="text-align: left; padding: 8px;">Batch</th>';
+            html += '<th style="text-align: left; padding: 8px;">Strain</th>';
+            html += '<th style="text-align: left; padding: 8px;">Type</th>';
+            html += '<th style="text-align: right; padding: 8px;">Est. Weight</th>';
+            html += '<th style="text-align: center; padding: 8px;">Action</th>';
+            html += '</tr></thead><tbody>';
+
+            combineLedger.forEach((entry, index) => {
+                const isPrimary = entry.is_primary ? ' <span style="color: var(--accent-green);">(Primary)</span>' : '';
+                html += `<tr style="border-bottom: 1px solid var(--bg-tertiary);">`;
+                html += `<td style="padding: 8px;">${entry.batch_id}${isPrimary}</td>`;
+                html += `<td style="padding: 8px;">${entry.strain}</td>`;
+                html += `<td style="padding: 8px; font-size: 0.9em;">${entry.product_made}</td>`;
+                html += `<td style="padding: 8px; text-align: right;">${entry.weight.toFixed(1)}g</td>`;
+                html += `<td style="padding: 8px; text-align: center;">`;
+                if (!entry.is_primary) {
+                    html += `<button type="button" onclick="removeCombineBatch(${index})" style="background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">✕</button>`;
+                } else {
+                    html += '<span style="color: var(--text-muted);">-</span>';
+                }
+                html += `</td></tr>`;
+            });
+
+            html += '</tbody><tfoot>';
+            html += `<tr style="border-top: 2px solid var(--accent-cyan); font-weight: 700;">`;
+            html += `<td colspan="3" style="padding: 8px;">Total (${combineLedger.length} batches)</td>`;
+            html += `<td style="padding: 8px; text-align: right; color: var(--accent-green);">${totalWeight.toFixed(1)}g</td>`;
+            html += `<td></td></tr>`;
+            html += '</tfoot></table>';
+
+            content.innerHTML = html;
+
+            // Update combined weight hint and show details section if 2+ batches
+            document.getElementById('combineWeightHint').textContent = `Estimated: ${totalWeight.toFixed(1)}g - enter actual weighed amount`;
+            document.getElementById('combineWeight').placeholder = totalWeight.toFixed(1);
+            document.getElementById('combineContainerCount').value = Math.max(totalBowls, totalSlabs, 1);
+            detailsSection.style.display = combineLedger.length >= 2 ? 'block' : 'none';
+        }
+
+        function updateCombineValidation() {
+            const validationDiv = document.getElementById('combineValidation');
+
+            if (combineLedger.length < 2) {
+                validationDiv.style.display = 'none';
+                return;
+            }
+
+            // Check for strain and product type mismatches
+            const strains = [...new Set(combineLedger.map(b => b.strain))];
+            const productTypes = [...new Set(combineLedger.map(b => b.product_made))];
+            const hasStrainMismatch = strains.length > 1;
+            const hasProductMismatch = productTypes.length > 1;
+
+            validationDiv.style.display = 'block';
+
+            if (hasStrainMismatch || hasProductMismatch) {
+                validationDiv.style.background = 'rgba(245, 158, 11, 0.2)';
+                validationDiv.style.border = '2px solid var(--accent-orange)';
+                let warnings = [];
+                if (hasStrainMismatch) {
+                    warnings.push(`<span>⚠ Different strains: ${strains.join(', ')}</span>`);
+                }
+                if (hasProductMismatch) {
+                    warnings.push(`<span>⚡ Different product types: ${productTypes.join(', ')}</span>`);
+                }
+                validationDiv.innerHTML = `
+                    <strong style="color: var(--accent-orange);">Combining Mixed Batches</strong><br>
+                    ${warnings.join('<br>')}<br>
+                    <span style="color: var(--text-muted); font-size: 0.9em;">Select the final product type above before submitting.</span>
+                `;
+            } else {
+                validationDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+                validationDiv.style.border = '2px solid var(--accent-green)';
+                validationDiv.innerHTML = `
+                    <strong style="color: var(--accent-green);">✓ Ready to Combine</strong><br>
+                    <span style="color: var(--text-secondary);">${combineLedger.length} batches of ${strains[0]} ${productTypes[0]}</span>
+                `;
+            }
+        }
+
+        async function submitCombineBatches() {
+            if (blockDemoWrite('Combining batches')) return;
+
+            if (!currentRole) {
+                alert('Please select a user first!');
+                return;
+            }
+
+            if (combineLedger.length < 2) {
+                alert('You need at least 2 batches to combine');
+                return;
+            }
+
+            const combinedWeight = parseFloat(document.getElementById('combineWeight').value);
+            if (!combinedWeight || combinedWeight <= 0) {
+                alert('Please enter the final bulk weight');
+                return;
+            }
+            const sampleWeight = parseFloat(document.getElementById('combineSampleWeight').value) || 0;
+            const containerCount = parseInt(document.getElementById('combineContainerCount').value) || 1;
+            const finishingDate = document.getElementById('combineFinishingDate').value;
+            const notes = document.getElementById('combineNotes').value;
+
+            const primaryBatch = batches.find(b => b.id === combineLedger[0].batch_id);
+            if (!primaryBatch) {
+                alert('Primary batch not found');
+                return;
+            }
+
+            // Generate new batch ID
+            const newBatchId = `WM-${batchCounter}`;
+            batchCounter++;
+
+            // Build source contributions array (following pot pull pattern)
+            const sourceContributions = combineLedger.map(entry => ({
+                batch_id: entry.batch_id,
+                strain: entry.strain,
+                weight: entry.weight,
+                product_made: entry.product_made,
+                bowls: entry.extraction_bowls || 0,
+                slabs: entry.extraction_slabs || 0
+            }));
+
+            // Get selected product type
+            const productMade = document.getElementById('combineProductType').value;
+            const isBulk = productMade === 'Wax' || productMade === 'Sugar Wax';
+            const isShatter = productMade === 'Shatter';
+
+            // Combine strains for display
+            const uniqueStrains = [...new Set(combineLedger.map(b => b.strain))];
+            const combinedStrain = uniqueStrains.length === 1 ? uniqueStrains[0] : uniqueStrains.join(' / ');
+
+            // Calculate combined trim weight and material cost from source batches
+            let combinedTrimWeight = 0;
+            let combinedMaterialCost = 0;
+            combineLedger.forEach(entry => {
+                const sourceBatch = batches.find(b => b.id === entry.batch_id);
+                if (sourceBatch) {
+                    combinedTrimWeight += parseFloat(sourceBatch.trim_weight) || 0;
+                    combinedMaterialCost += parseFloat(sourceBatch.material_cost) || 0;
+                }
+            });
+
+            // Create new combined batch
+            const newBatch = {
+                id: newBatchId,
+                strain: combinedStrain,
+                strain_type: primaryBatch.strain_type,
+                product_made: productMade,
+                product_type: primaryBatch.product_type,
+                material_agreement: primaryBatch.material_agreement || 'Combined',
+                cultivation_license: primaryBatch.cultivation_license || 'N/A',
+                pre_sift: primaryBatch.pre_sift || 'no',
+                planned_products: [productMade],
+                intake_date: primaryBatch.intake_date || new Date().toISOString().split('T')[0],
+                intake_user: primaryBatch.intake_user || 'Unknown',
+                status: 'finishing',
+                trim_weight: combinedTrimWeight,
+                material_cost: combinedMaterialCost,
+                final_weight: combinedWeight,
+                sample_weight: sampleWeight,
+                net_weight: combinedWeight - sampleWeight,
+                finishing_date: finishingDate,
+                finishing_user: currentRole ? currentRole.name : 'Unknown',
+                finishing_notes: notes,
+                source_contributions: sourceContributions,
+                parent_batch_id: combineLedger[0].batch_id,
+                is_sub_batch: true,
+                extraction_bowls: isBulk ? containerCount : null,
+                extraction_slabs: isShatter ? containerCount : null,
+                business_id: primaryBatch.business_id,
+                labels_applied: false,
+                timeline: [
+                    {
+                        timestamp: new Date().toISOString(),
+                        stage: 'created',
+                        user: currentRole ? currentRole.name : 'Unknown',
+                        action: `Combined batch created from ${combineLedger.length} sources: ${combineLedger.map(b => b.batch_id).join(', ')}`
+                    },
+                    {
+                        timestamp: new Date().toISOString(),
+                        stage: 'finishing',
+                        user: currentRole ? currentRole.name : 'Unknown',
+                        action: `Post-extraction combine - ${combinedWeight}g total, ${sampleWeight}g sample pulled, ${containerCount} ${isBulk ? 'bowl' : 'slab'}(s)`
+                    }
+                ],
+                created_at: new Date().toISOString()
+            };
+
+            // Insert new combined batch
+            const { error: insertError } = await supabaseClient
+                .from('wm_batches')
+                .insert([newBatch]);
+
+            if (insertError) {
+                console.error('Error creating combined batch:', insertError);
+                alert(`Error creating combined batch: ${insertError.message}`);
+                return;
+            }
+
+            // Update all source batches to consumed status
+            const updatePromises = combineLedger.map(entry => {
+                const sourceBatch = batches.find(b => b.id === entry.batch_id);
+                if (!sourceBatch) return Promise.resolve();
+
+                const timeline = sourceBatch.timeline || [];
+                timeline.push({
+                    timestamp: new Date().toISOString(),
+                    stage: 'consumed',
+                    user: currentRole ? currentRole.name : 'Unknown',
+                    action: `All material contributed to combined batch ${newBatchId} (${entry.weight.toFixed(1)}g)`
+                });
+
+                return supabaseClient
+                    .from('wm_batches')
+                    .update({
+                        status: 'consumed',
+                        consumed_by: newBatchId,
+                        timeline: timeline
+                    })
+                    .eq('id', entry.batch_id);
+            });
+
+            await Promise.all(updatePromises);
+
+            // Calculate yield
+            const yieldPercent = combinedTrimWeight > 0 ? ((combinedWeight / combinedTrimWeight) * 100).toFixed(1) : 0;
+
+            // Show celebration
+            showCelebration({
+                emoji: '🔗',
+                title: 'Batches Combined!',
+                message: `Created ${newBatchId} from ${combineLedger.length} batches`,
+                stats: [
+                    { value: `${combinedWeight.toFixed(0)}g`, label: 'Combined Weight' },
+                    { value: `${yieldPercent}%`, label: 'Yield' },
+                    { value: containerCount, label: isBulk ? 'Bowls' : 'Slabs' }
+                ]
+            });
+
+            // Reset form
+            combineLedger = [];
+            document.getElementById('finishingForm').style.display = 'none';
+            document.getElementById('finishingBatchSelect').value = '';
+            document.getElementById('batchAction').value = 'single';
+            document.getElementById('singleFinishing').style.display = 'block';
+            document.getElementById('combineFinishing').style.display = 'none';
+            document.getElementById('combineNotes').value = '';
+
+            await loadBatches();
+            populateFinishingSelect();
+        }
+
+        // =============================================
+        // END COMBINE BATCHES FUNCTIONS
+        // =============================================
 
         async function submitFinishing() {
             if (blockDemoWrite('Finishing batches')) return;
@@ -14476,7 +14932,10 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     strain_type: batch.strain_type,
                     grower_name: potLedger.length > 1 ? 'Combined Sources' : batch.grower_name,
                     cultivation_license: potLedger.length > 1
-                        ? potLedger.map(p => p.metrc_tag || p.batch_id).join(', ')
+                        ? [...new Set(potLedger.map(p => {
+                            const sourceBatch = batches.find(b => b.id === p.batch_id);
+                            return sourceBatch?.cultivation_license || '';
+                        }).filter(l => l))].join(', ') || batch.cultivation_license
                         : batch.cultivation_license,
                     metrc_tags: potLedger.length > 1
                         ? potLedger.map(p => p.metrc_tag).filter(t => t).join(', ')
