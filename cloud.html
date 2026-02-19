@@ -7087,7 +7087,7 @@
                     // Add labor rate explanation
                     rows.push(['', '', '', '', '']);
                     rows.push(['<em>Rate calculation:</em>', '', '', '', '']);
-                    rows.push(['Hourly labor (3 months):', '', '', '', fmt(window.laborCostPerGram?._default?.totalLaborCost || 0)]);
+                    rows.push(['Hourly labor (60 days):', '', '', '', fmt(window.laborCostPerGram?._default?.totalLaborCost || 0)]);
                     rows.push(['Total output grams:', '', '', '', (window.laborCostPerGram?._default?.totalGrams || 0).toLocaleString() + 'g']);
                     break;
 
@@ -8396,7 +8396,7 @@
                 await loadBatches();
             }
 
-            // Calculate production averages from last 3 months
+            // Calculate production averages from last 60 days
             calculateProductionAverages();
 
             // Get business ID (use first business if 'all' selected)
@@ -8942,18 +8942,18 @@
                 return batchDate >= sixtyDaysAgo;
             });
 
-            // Sum grams produced in last 3 months
-            let totalGramsLast3Months = 0;
+            // Sum grams produced in last 60 days
+            let totalGramsLast60Days = 0;
             recentBatches.forEach(b => {
                 const grams = parseFloat(b.total_grams_packaged) ||
                              parseFloat(b.final_weight) ||
                              parseFloat(b.crude_weight) || 0;
-                totalGramsLast3Months += grams;
+                totalGramsLast60Days += grams;
             });
 
-            // Calculate monthly averages
-            window.calculatedAvgMonthlyGrams = totalGramsLast3Months / 3 || 15000;
-            window.calculatedAvgBatchesPerMonth = recentBatches.length / 3 || 30;
+            // Calculate monthly averages (60 days = 2 months)
+            window.calculatedAvgMonthlyGrams = totalGramsLast60Days / 2 || 15000;
+            window.calculatedAvgBatchesPerMonth = recentBatches.length / 2 || 30;
 
             // Update display elements if they exist
             const batchesDisplay = document.getElementById('avgBatchesPerMonthDisplay');
@@ -9218,7 +9218,7 @@
                     }
                 });
 
-                console.log(`Total butane added (last 3 months): ${totalButaneLbs} lbs`);
+                console.log(`Total butane added (last 60 days): ${totalButaneLbs} lbs`);
 
                 // 2. Get total grams produced by butane extraction in the period
                 // These are batches that use butane (not solventless)
@@ -9241,7 +9241,7 @@
                     totalGrams += parseFloat(b.total_grams_packaged) || parseFloat(b.final_weight) || parseFloat(b.crude_weight) || 0;
                 });
 
-                console.log(`Total grams produced by butane extraction (last 3 months): ${totalGrams}g`);
+                console.log(`Total grams produced by butane extraction (last 60 days): ${totalGrams}g`);
 
                 // 3. Calculate butane cost per gram
                 const butanePricePerLb = costConfig.butane_per_lb || 3.50;
