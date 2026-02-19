@@ -6201,7 +6201,6 @@
         }
 
         // ==================== COSTING FUNCTIONS ====================
-        let costConfig = {};
         let targetMargins = {};
 
         // Default cost configuration
@@ -6215,14 +6214,19 @@
             jar_4g: { value: 0.40, unit: 'each', label: '4g Jar' },
             lid: { value: 0.10, unit: 'each', label: 'Lid' },
             label: { value: 0.05, unit: 'each', label: 'Label' },
-            cart_hardware: { value: 2.50, unit: 'each', label: 'Cart Hardware' },
-            aio_hardware: { value: 5.00, unit: 'each', label: 'AIO Hardware' },
+            cart_hardware: { value: 1.00, unit: 'each', label: 'Cart Hardware' },
+            aio_hardware: { value: 2.80, unit: 'each', label: 'AIO Hardware' },
             // Overhead
             rent_monthly: { value: 0, unit: 'month', label: 'Rent' },
             utilities_monthly: { value: 0, unit: 'month', label: 'Utilities' },
             equipment_monthly: { value: 0, unit: 'month', label: 'Equipment/Depreciation' },
             insurance_monthly: { value: 0, unit: 'month', label: 'Insurance' }
         };
+
+        // Initialize costConfig with defaults immediately (will be overwritten by DB values when loaded)
+        let costConfig = Object.fromEntries(
+            Object.entries(defaultCostConfig).map(([key, val]) => [key, val.value])
+        );
 
         function showCostingSection(section) {
             // Legacy function - redirect to new analytics system
@@ -6621,10 +6625,12 @@
                 const profit = revenue - cogs;
                 const margin = revenue > 0 ? (profit / revenue * 100) : 0;
 
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 return {
                     id: batch.batch_id || batch.id,
                     strain: batch.strain || 'Unknown',
                     product: batch.packaged_product_type || batch.product_made || '-',
+                    grams,
                     units,
                     units1g,
                     units4g,
@@ -6642,6 +6648,7 @@
 
             // Calculate totals
             const totals = batchDetails.reduce((acc, b) => ({
+                grams: acc.grams + b.grams,
                 units: acc.units + b.units,
                 revenue: acc.revenue + b.revenue,
                 cogs: acc.cogs + b.cogs,
@@ -6650,7 +6657,7 @@
                 consumables: acc.consumables + b.consumables,
                 overhead: acc.overhead + b.overhead,
                 profit: acc.profit + b.profit
-            }), { units: 0, revenue: 0, cogs: 0, material: 0, labor: 0, consumables: 0, overhead: 0, profit: 0 });
+            }), { grams: 0, units: 0, revenue: 0, cogs: 0, material: 0, labor: 0, consumables: 0, overhead: 0, profit: 0 });
 
             // Determine columns based on type
             let title, columns, rows;
@@ -6667,11 +6674,11 @@
                     break;
                 case 'cogs':
                     title = 'COGS Breakdown by Batch';
-                    columns = ['Batch', 'Strain', 'Material', 'Labor', 'Consumables', 'Overhead', 'Total COGS'];
+                    columns = ['Batch', 'Strain', 'Grams', 'Material', 'Labor', 'Consumables', 'Overhead', 'Total COGS'];
                     rows = batchDetails.map(b => [
-                        b.id, b.strain, fmt(b.material), fmt(b.labor), fmt(b.consumables), fmt(b.overhead), fmt(b.cogs)
+                        b.id, b.strain, b.grams.toFixed(0) + 'g', fmt(b.material), fmt(b.labor), fmt(b.consumables), fmt(b.overhead), fmt(b.cogs)
                     ]);
-                    rows.push(['', '<strong>TOTAL</strong>', `<strong>${fmt(totals.material)}</strong>`, `<strong>${fmt(totals.labor)}</strong>`, `<strong>${fmt(totals.consumables)}</strong>`, `<strong>${fmt(totals.overhead)}</strong>`, `<strong>${fmt(totals.cogs)}</strong>`]);
+                    rows.push(['', '<strong>TOTAL</strong>', `<strong>${totals.grams.toFixed(0)}g</strong>`, `<strong>${fmt(totals.material)}</strong>`, `<strong>${fmt(totals.labor)}</strong>`, `<strong>${fmt(totals.consumables)}</strong>`, `<strong>${fmt(totals.overhead)}</strong>`, `<strong>${fmt(totals.cogs)}</strong>`]);
                     break;
                 case 'profit':
                     title = 'Profit Breakdown by Batch';
@@ -9345,13 +9352,17 @@
                 let packagingCost = 0;
 
                 if (productType.includes('Cart')) {
-                    // Cartridges
-                    packagingCost = batch.units_packaged * (costConfig.cart_hardware || 2.50);
-                    consumablesBreakdown.packaging = { type: 'carts', qty: batch.units_packaged, cost: packagingCost };
+                    // Cartridges: hardware + labels
+                    const hardwareCost = batch.units_packaged * (costConfig.cart_hardware || 1.00);
+                    const labelCost = batch.units_packaged * (costConfig.label || 0.05);
+                    packagingCost = hardwareCost + labelCost;
+                    consumablesBreakdown.packaging = { type: 'carts', qty: batch.units_packaged, hardware: hardwareCost, labels: labelCost, cost: packagingCost };
                 } else if (productType.includes('AIO')) {
-                    // All-in-ones
-                    packagingCost = batch.units_packaged * (costConfig.aio_hardware || 5.00);
-                    consumablesBreakdown.packaging = { type: 'aio', qty: batch.units_packaged, cost: packagingCost };
+                    // All-in-ones: hardware + labels
+                    const hardwareCost = batch.units_packaged * (costConfig.aio_hardware || 2.80);
+                    const labelCost = batch.units_packaged * (costConfig.label || 0.05);
+                    packagingCost = hardwareCost + labelCost;
+                    consumablesBreakdown.packaging = { type: 'aio', qty: batch.units_packaged, hardware: hardwareCost, labels: labelCost, cost: packagingCost };
                 } else {
                     // Jars (1g and 4g) + lids + labels
                     const jars1g = parseInt(batch.units_1g) || 0;
