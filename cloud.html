@@ -9353,22 +9353,18 @@
                 let packagingCost = 0;
 
                 if (productType.includes('Cart')) {
-                    // Cartridges: hardware + labels (1g products: grams = units)
-                    const gramsPackaged = Math.round(parseFloat(batch.total_grams_packaged) || parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0);
-                    const unitCount = gramsPackaged || parseInt(batch.units_packaged) || 0;
+                    // Cartridges: hardware + labels - use units_packaged (actual units made)
+                    const unitCount = parseInt(batch.units_packaged) || 0;
                     const hardwareCost = unitCount * (costConfig.cart_hardware || 1.00);
                     const labelCost = unitCount * (costConfig.label || 0.05);
                     packagingCost = hardwareCost + labelCost;
-                    console.log('CART DEBUG:', batch.id, { total_grams_packaged: batch.total_grams_packaged, grams_labeled: batch.grams_labeled, final_weight: batch.final_weight, net_weight: batch.net_weight, units_packaged: batch.units_packaged, gramsPackaged, unitCount, cart_hardware: costConfig.cart_hardware, packagingCost });
                     consumablesBreakdown.packaging = { type: 'carts', qty: unitCount, hardware: hardwareCost, labels: labelCost, cost: packagingCost };
                 } else if (productType.includes('AIO')) {
-                    // All-in-ones: hardware + labels (1g products: grams = units)
-                    const gramsPackaged = Math.round(parseFloat(batch.total_grams_packaged) || parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0);
-                    const unitCount = gramsPackaged || parseInt(batch.units_packaged) || 0;
+                    // All-in-ones: hardware + labels - use units_packaged (actual units made)
+                    const unitCount = parseInt(batch.units_packaged) || 0;
                     const hardwareCost = unitCount * (costConfig.aio_hardware || 2.80);
                     const labelCost = unitCount * (costConfig.label || 0.05);
                     packagingCost = hardwareCost + labelCost;
-                    console.log('AIO DEBUG:', batch.id, { total_grams_packaged: batch.total_grams_packaged, grams_labeled: batch.grams_labeled, final_weight: batch.final_weight, net_weight: batch.net_weight, units_packaged: batch.units_packaged, gramsPackaged, unitCount, aio_hardware: costConfig.aio_hardware, packagingCost });
                     consumablesBreakdown.packaging = { type: 'aio', qty: unitCount, hardware: hardwareCost, labels: labelCost, cost: packagingCost };
                 } else {
                     // Jars (1g and 4g) + lids + labels
