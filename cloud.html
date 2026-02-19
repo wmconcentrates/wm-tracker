@@ -8933,13 +8933,13 @@
         function calculateProductionAverages() {
             if (!batches || batches.length === 0) return;
 
-            const threeMonthsAgo = new Date();
-            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            const sixtyDaysAgo = new Date();
+            sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
             const recentBatches = batches.filter(b => {
                 if (b.is_sub_batch) return false;
                 const batchDate = new Date(b.packaging_date || b.labeling_date || b.completed_at || b.created_at);
-                return batchDate >= threeMonthsAgo;
+                return batchDate >= sixtyDaysAgo;
             });
 
             // Sum grams produced in last 3 months
@@ -8994,16 +8994,16 @@
         async function calculateLaborCostPerGram() {
             if (!supabaseClient) return {};
 
-            // Use last 3 months of data for accuracy
-            const threeMonthsAgo = new Date();
-            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            // Use last 60 days of data for accuracy
+            const sixtyDaysAgo = new Date();
+            sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
             try {
                 // 1. Get timeclock entries for the period
                 const { data: clockEntries } = await supabaseClient
                     .from('timeclock')
                     .select('user_name, punch_type, punch_time')
-                    .gte('punch_time', threeMonthsAgo.toISOString())
+                    .gte('punch_time', sixtyDaysAgo.toISOString())
                     .order('user_name')
                     .order('punch_time');
 
@@ -9051,7 +9051,7 @@
                 const periodBatches = batches.filter(b => {
                     if (b.is_sub_batch) return false;
                     const batchDate = new Date(b.packaging_date || b.labeling_date || b.created_at);
-                    return batchDate >= threeMonthsAgo;
+                    return batchDate >= sixtyDaysAgo;
                 });
 
                 periodBatches.forEach(b => {
@@ -9194,8 +9194,8 @@
         async function calculateButaneCostPerGram() {
             if (!supabaseClient) return 0;
 
-            const threeMonthsAgo = new Date();
-            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            const sixtyDaysAgo = new Date();
+            sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
             try {
                 // 1. Get butane transactions (adds) for the period
@@ -9203,7 +9203,7 @@
                     .from('wm_inventory_transactions')
                     .select('amount, transaction_type, timestamp')
                     .eq('supply_type', 'butane')
-                    .gte('timestamp', threeMonthsAgo.toISOString());
+                    .gte('timestamp', sixtyDaysAgo.toISOString());
 
                 if (!gasTransactions || gasTransactions.length === 0) {
                     console.log('No butane transaction data found');
@@ -9226,7 +9226,7 @@
                 const periodBatches = batches.filter(b => {
                     if (b.is_sub_batch) return false;
                     const batchDate = new Date(b.packaging_date || b.extraction_date || b.created_at);
-                    if (batchDate < threeMonthsAgo) return false;
+                    if (batchDate < sixtyDaysAgo) return false;
 
                     // Check if it's a butane product (not solventless/hash)
                     const productType = b.packaged_product_type || b.product_made || '';
