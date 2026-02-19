@@ -9348,6 +9348,10 @@
             // Skip packaging costs for bulk sales - no jars, lids, or labels
             const isBulkSale = batch.is_bulk_sale || batch.packaged_product_type === 'Bulk Sale';
             const hasBeenPackaged = batch.packaging_date && (batch.units_packaged || batch.total_grams_packaged);
+            const pt = batch.packaged_product_type || '';
+            if ((pt.includes('Cart') || pt.includes('AIO')) && !hasBeenPackaged) {
+                console.log('SKIPPED PACKAGING:', batch.id, { packaging_date: batch.packaging_date, units_packaged: batch.units_packaged, total_grams_packaged: batch.total_grams_packaged, hasBeenPackaged });
+            }
             if (hasBeenPackaged && !isBulkSale) {
                 const productType = batch.packaged_product_type || '';
                 let packagingCost = 0;
@@ -9358,6 +9362,7 @@
                     const hardwareCost = unitCount * (costConfig.cart_hardware || 1.00);
                     const labelCost = unitCount * (costConfig.label || 0.05);
                     packagingCost = hardwareCost + labelCost;
+                    console.log('CART CONSUMABLES:', batch.id, { units_packaged: batch.units_packaged, unitCount, cart_hardware: costConfig.cart_hardware, packagingCost });
                     consumablesBreakdown.packaging = { type: 'carts', qty: unitCount, hardware: hardwareCost, labels: labelCost, cost: packagingCost };
                 } else if (productType.includes('AIO')) {
                     // All-in-ones: hardware + labels - use units_packaged (actual units made)
@@ -9365,6 +9370,7 @@
                     const hardwareCost = unitCount * (costConfig.aio_hardware || 2.80);
                     const labelCost = unitCount * (costConfig.label || 0.05);
                     packagingCost = hardwareCost + labelCost;
+                    console.log('AIO CONSUMABLES:', batch.id, { units_packaged: batch.units_packaged, unitCount, aio_hardware: costConfig.aio_hardware, packagingCost });
                     consumablesBreakdown.packaging = { type: 'aio', qty: unitCount, hardware: hardwareCost, labels: labelCost, cost: packagingCost };
                 } else {
                     // Jars (1g and 4g) + lids + labels
