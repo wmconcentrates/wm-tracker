@@ -2042,6 +2042,7 @@
                                     <option value="Live Resin Carts">Live Resin Carts</option>
                                     <option value="Live Resin AIOs">Live Resin AIOs</option>
                                     <option value="Brick Hash">Brick Hash</option>
+                                    <option value="RSO Syringe">RSO Syringe</option>
                                 </select>
                                 <div class="help-text">Change if product type changed during post-extraction</div>
                             </div>
@@ -2090,9 +2091,10 @@
                                             <option value="Sugar Wax">Sugar Wax</option>
                                             <option value="Shatter">Shatter</option>
                                             <option value="Live Resin Carts">Live Resin Carts</option>
-                                    <option value="Live Resin AIOs">Live Resin AIOs</option>
+                                            <option value="Live Resin AIOs">Live Resin AIOs</option>
                                             <option value="Brick Hash">Brick Hash</option>
                                             <option value="Hash Hits">Hash Hits</option>
+                                            <option value="RSO Syringe">RSO Syringe</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -2116,6 +2118,7 @@
                                             <option value="Live Resin AIOs">Live Resin AIOs</option>
                                             <option value="Brick Hash">Brick Hash</option>
                                             <option value="Hash Hits">Hash Hits</option>
+                                            <option value="RSO Syringe">RSO Syringe</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -2170,6 +2173,7 @@
                                         <option value="Live Resin Carts">Live Resin Carts</option>
                                         <option value="Live Resin AIOs">Live Resin AIOs</option>
                                         <option value="Brick Hash">Brick Hash</option>
+                                        <option value="RSO Syringe">RSO Syringe</option>
                                     </select>
                                     <div class="help-text">Set the final product type after combining</div>
                                 </div>
@@ -2427,6 +2431,7 @@
                                     <option value="Live Resin Carts">Live Resin Carts</option>
                                     <option value="Live Resin AIOs">Live Resin AIOs</option>
                                     <option value="Brick Hash">Brick Hash</option>
+                                    <option value="RSO Syringe">RSO Syringe</option>
                                 </select>
                             </div>
                         </div>
@@ -3409,6 +3414,7 @@
                             <option value="Bubble Hash">Bubble Hash</option>
                             <option value="Hash Hits">Hash Hits</option>
                             <option value="Rosin">Rosin</option>
+                            <option value="RSO Syringe">RSO Syringe</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -3519,7 +3525,7 @@
                             <option value="Live Resin AIOs">Live Resin AIOs</option>
                             <option value="Brick Hash">Brick Hash</option>
                             <option value="Hash Hits">Hash Hits</option>
-                            <option value="RSO">RSO</option>
+                            <option value="RSO Syringe">RSO Syringe</option>
                         </select>
                         <div class="help-text">What product was this portion made into?</div>
                     </div>
@@ -12640,6 +12646,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                             <option value="Live Resin AIOs">Live Resin AIOs</option>
                             <option value="Brick Hash">Brick Hash</option>
                             <option value="Hash Hits">Hash Hits</option>
+                            <option value="RSO Syringe">RSO Syringe</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -31341,11 +31348,10 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (name.includes('sativa') || name.includes('(sativa)')) strainType = 'Sativa';
             else if (name.includes('indica') || name.includes('(indica)')) strainType = 'Indica';
 
-            // Skip non-concentrate products
+            // Skip non-concentrate products (but keep RSO)
             if (matchText.includes('syrup') || matchText.includes('jousse') ||
-                matchText.includes('rso') || matchText.includes('battery') ||
-                matchText.includes('510 thread')) {
-                return; // Skip syrups, RSO, batteries
+                matchText.includes('battery') || matchText.includes('510 thread')) {
+                return; // Skip syrups, batteries
             }
 
             // Map to categories using dynamic matching
@@ -32258,8 +32264,8 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             if (product.listing_state === 'Archived') return;
             if (qty <= 0) return;
 
-            // Skip non-concentrates
-            if (matchText.includes('syrup') || matchText.includes('jousse') || matchText.includes('rso') || matchText.includes('battery')) return;
+            // Skip non-concentrates (but keep RSO)
+            if (matchText.includes('syrup') || matchText.includes('jousse') || matchText.includes('battery')) return;
 
             // Determine category using dynamic matching
             let category = getProductCategoryDynamic(matchText, dynamicCategories);
