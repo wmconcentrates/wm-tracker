@@ -8937,18 +8937,22 @@
             sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
             const recentBatches = batches.filter(b => {
-                if (b.is_sub_batch) return false;
                 const batchDate = new Date(b.packaging_date || b.labeling_date || b.completed_at || b.created_at);
                 return batchDate >= sixtyDaysAgo;
             });
 
             // Sum grams produced in last 60 days
+            // Only count total_grams_packaged to avoid double-counting parent + sub-batches
             let totalGramsLast60Days = 0;
             recentBatches.forEach(b => {
-                const grams = parseFloat(b.total_grams_packaged) ||
-                             parseFloat(b.final_weight) ||
-                             parseFloat(b.crude_weight) || 0;
-                totalGramsLast60Days += grams;
+                // If batch has total_grams_packaged, use it (this is actual output)
+                // Skip batches that were split (their sub-batches have the packaged grams)
+                if (b.total_grams_packaged) {
+                    totalGramsLast60Days += parseFloat(b.total_grams_packaged);
+                } else if (!b.is_sub_batch && !b.sub_batches?.length) {
+                    // Unsplit parent batch without packaged grams - use final_weight
+                    totalGramsLast60Days += parseFloat(b.final_weight) || parseFloat(b.crude_weight) || 0;
+                }
             });
 
             // Calculate monthly averages (60 days = 2 months)
@@ -9047,9 +9051,9 @@
                 const rates = await loadEmployeeRates();
 
                 // 4. Calculate total grams each employee worked on from batches
+                // Include sub-batches since that's where packaged grams are tracked
                 const employeeGrams = {};
                 const periodBatches = batches.filter(b => {
-                    if (b.is_sub_batch) return false;
                     const batchDate = new Date(b.packaging_date || b.labeling_date || b.created_at);
                     return batchDate >= sixtyDaysAgo;
                 });
@@ -9128,9 +9132,17 @@
 
                 console.log(`Hourly labor (production): $${hourlyLaborCost.toFixed(2)}`);
 
-                // Calculate total grams from actual batch OUTPUT (not per-stage totals which double-count)
+                // Calculate total grams from actual batch OUTPUT (avoid double-counting parent + sub-batches)
                 const totalOutputGrams = periodBatches.reduce((sum, b) => {
-                    return sum + (parseFloat(b.total_grams_packaged) || parseFloat(b.final_weight) || 0);
+                    // If batch has total_grams_packaged, use it
+                    if (b.total_grams_packaged) {
+                        return sum + parseFloat(b.total_grams_packaged);
+                    }
+                    // For unsplit batches without packaged grams, use final_weight
+                    if (!b.is_sub_batch && !b.sub_batches?.length) {
+                        return sum + (parseFloat(b.final_weight) || 0);
+                    }
+                    return sum;
                 }, 0);
 
                 console.log(`Total labor cost: $${totalLaborCost.toFixed(2)}, Total output grams: ${totalOutputGrams}`);
