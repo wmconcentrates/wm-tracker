@@ -6625,7 +6625,7 @@
                 const profit = revenue - cogs;
                 const margin = revenue > 0 ? (profit / revenue * 100) : 0;
 
-                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
+                const grams = parseFloat(batch.total_grams_packaged) || parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0;
                 return {
                     id: batch.batch_id || batch.id,
                     strain: batch.strain || 'Unknown',
@@ -9354,7 +9354,7 @@
 
                 if (productType.includes('Cart')) {
                     // Cartridges: hardware + labels (1g products: grams = units)
-                    const gramsPackaged = Math.round(parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0);
+                    const gramsPackaged = Math.round(parseFloat(batch.total_grams_packaged) || parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0);
                     const unitCount = gramsPackaged || parseInt(batch.units_packaged) || 0;
                     const hardwareCost = unitCount * (costConfig.cart_hardware || 1.00);
                     const labelCost = unitCount * (costConfig.label || 0.05);
@@ -9362,7 +9362,7 @@
                     consumablesBreakdown.packaging = { type: 'carts', qty: unitCount, hardware: hardwareCost, labels: labelCost, cost: packagingCost };
                 } else if (productType.includes('AIO')) {
                     // All-in-ones: hardware + labels (1g products: grams = units)
-                    const gramsPackaged = Math.round(parseFloat(batch.total_grams_packaged) || parseFloat(batch.final_weight) || 0);
+                    const gramsPackaged = Math.round(parseFloat(batch.total_grams_packaged) || parseFloat(batch.grams_labeled) || parseFloat(batch.final_weight) || parseFloat(batch.net_weight) || 0);
                     const unitCount = gramsPackaged || parseInt(batch.units_packaged) || 0;
                     const hardwareCost = unitCount * (costConfig.aio_hardware || 2.80);
                     const labelCost = unitCount * (costConfig.label || 0.05);
