@@ -6491,7 +6491,15 @@
 
             let revenue = 0;
 
-            if (units1g > 0 || units4g > 0) {
+            // Bulk Sale: Calculate by weight × price per gram
+            const isBulkSale = batch.is_bulk_sale || batch.packaged_product_type === 'Bulk Sale';
+            if (isBulkSale) {
+                const bulkWeight = parseFloat(batch.bulk_sale_weight) || parseFloat(batch.grams_labeled) || parseFloat(batch.net_weight) || 0;
+                const bulkPricePerGram = priceMap['Bulk Sale'] || priceMap['bulk'] || 3.50; // Default $3.50/g for bulk
+                // Apply 50/50 split if applicable
+                const weightToCount = isSplit ? bulkWeight * 0.5 : bulkWeight;
+                revenue = weightToCount * bulkPricePerGram;
+            } else if (units1g > 0 || units4g > 0) {
                 // Has size breakdown - calculate revenue by size
                 const casePrice1g = priceMap[productType] || priceMap[productType + ' 1g'] || 60;
                 const casePrice4g = priceMap[productType + ' 4g'] || priceMap[productType + ' 4G'] || 220;
@@ -9658,7 +9666,13 @@
                 const units1g = b.units_1g_labeled || b.units_1g || 0;
                 const units4g = b.units_4g_labeled || b.units_4g || 0;
 
-                if (units1g > 0 || units4g > 0) {
+                // Bulk Sale: Calculate by weight × price per gram
+                const isBulkSale = b.is_bulk_sale || b.packaged_product_type === 'Bulk Sale';
+                if (isBulkSale) {
+                    const bulkWeight = parseFloat(b.bulk_sale_weight) || parseFloat(b.grams_labeled) || parseFloat(b.net_weight) || 0;
+                    const bulkPricePerGram = priceMap['Bulk Sale'] || priceMap['bulk'] || 3.50; // Default $3.50/g for bulk
+                    revenue = bulkWeight * bulkPricePerGram;
+                } else if (units1g > 0 || units4g > 0) {
                     // Has size breakdown - calculate revenue by size
                     // Prices are per case, so divide units by 10 to get cases
                     const casePrice1g = priceMap[pt] || priceMap[pt + ' 1g'] || 60;
