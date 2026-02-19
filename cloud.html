@@ -6507,7 +6507,9 @@
                 revenue = weightToCount * bulkPricePerGram;
             } else if (units1g > 0 || units4g > 0) {
                 // Has size breakdown - calculate revenue by size
-                const casePrice1g = priceMap[productType] || priceMap[productType + ' 1g'] || 60;
+                // Default case prices: Carts $150, AIOs $220, RSO $80, others $60
+                const defaultPrice = productType.includes('Cart') ? 150 : (productType.includes('AIO') ? 220 : (productType.includes('RSO') ? 80 : 60));
+                const casePrice1g = priceMap[productType] || priceMap[productType + ' 1g'] || defaultPrice;
                 const casePrice4g = priceMap[productType + ' 4g'] || priceMap[productType + ' 4G'] || 220;
                 const cases1g = units1g / UNITS_PER_CASE;
                 const cases4g = units4g / UNITS_PER_CASE;
@@ -6518,7 +6520,10 @@
                 if (casePrice === 0 && priceMap[productType]) {
                     casePrice = priceMap[productType];
                 }
-                if (casePrice === 0) casePrice = 60; // Default fallback
+                // Default case prices: Carts $150, AIOs $220, RSO $80, others $60
+                if (casePrice === 0) {
+                    casePrice = productType.includes('Cart') ? 150 : (productType.includes('AIO') ? 220 : (productType.includes('RSO') ? 80 : 60));
+                }
                 const cases = totalUnits / UNITS_PER_CASE;
                 revenue = cases * casePrice;
             }
@@ -8146,8 +8151,9 @@
                 // For pipeline batches, estimate revenue based on expected units
                 const estUnits = parseInt(batch.units_packaged) || Math.round((parseFloat(batch.trim_weight) || 0) * 0.1 * 0.8);
                 const productType = batch.packaged_product_type || batch.product_made || '';
-                // Get case price and calculate revenue (divide units by 10 for cases)
-                const casePrice = priceMap[productType] || 60;
+                // Default case prices: Carts $150, AIOs $220, RSO $80, others $60
+                const defaultPrice = productType.includes('Cart') ? 150 : (productType.includes('AIO') ? 220 : (productType.includes('RSO') ? 80 : 60));
+                const casePrice = priceMap[productType] || defaultPrice;
                 const estCases = estUnits / UNITS_PER_CASE;
                 projectedRevenue += estCases * casePrice;
                 projectedCOGS += parseFloat(batch.calculated_cogs) || parseFloat(batch.material_cost) || 0;
@@ -8704,7 +8710,9 @@
                     const suggestedUnitPrice = avgCost > 0 ? avgCost / (1 - margin / 100) : 0;
 
                     // Current prices (LeafLink is per case, convert to per unit)
-                    const casePrice = casePriceMap[pt] || 0;
+                    // Default case prices: Carts $150, AIOs $220, RSO $80, others $60
+                    const defaultCasePrice = pt.includes('Cart') ? 150 : (pt.includes('AIO') ? 220 : (pt.includes('RSO') ? 80 : 60));
+                    const casePrice = casePriceMap[pt] || defaultCasePrice;
                     const unitPrice = casePrice / UNITS_PER_CASE;
 
                     // Calculate actual margin: (revenue - cost) / revenue
@@ -9680,8 +9688,9 @@
                     revenue = bulkWeight * bulkPricePerGram;
                 } else if (units1g > 0 || units4g > 0) {
                     // Has size breakdown - calculate revenue by size
-                    // Prices are per case, so divide units by 10 to get cases
-                    const casePrice1g = priceMap[pt] || priceMap[pt + ' 1g'] || 60;
+                    // Default case prices: Carts $150, AIOs $220, RSO $80, others $60
+                    const defaultPrice = pt.includes('Cart') ? 150 : (pt.includes('AIO') ? 220 : (pt.includes('RSO') ? 80 : 60));
+                    const casePrice1g = priceMap[pt] || priceMap[pt + ' 1g'] || defaultPrice;
                     const casePrice4g = priceMap[pt + ' 4g'] || priceMap[pt + ' 4G'] || 220;
                     const cases1g = units1g / UNITS_PER_CASE;
                     const cases4g = units4g / UNITS_PER_CASE;
@@ -9691,6 +9700,10 @@
                     let casePrice = parseFloat(b.wholesale_price) || 0;
                     if (casePrice === 0 && priceMap[pt]) {
                         casePrice = priceMap[pt];
+                    }
+                    // Default case prices: Carts $150, AIOs $220, RSO $80, others $60
+                    if (casePrice === 0) {
+                        casePrice = pt.includes('Cart') ? 150 : (pt.includes('AIO') ? 220 : (pt.includes('RSO') ? 80 : 60));
                     }
                     const cases = actualUnits / UNITS_PER_CASE;
                     revenue = cases * casePrice;
