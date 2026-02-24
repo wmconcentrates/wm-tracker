@@ -32062,11 +32062,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         const strainType = (batch.strain_type || 'Hybrid').charAt(0).toUpperCase() + (batch.strain_type || 'Hybrid').slice(1).toLowerCase();
 
         // Build payload using database mapping values
-        const sizeLabel = is4gBucket ? '4g' : '1g';
+        // Only add -4g suffix for buckets, keep 1g SKU unchanged to preserve existing mappings
         const payload = {
-            sku: `${batch.id}-${sizeLabel}`, // Use batch ID + size as SKU (e.g., "9.23.5447-1g")
-            name: `${strainName} (${strainType}) ${sizeLabel}`,
-            description: `${strainName} (${strainType}) - ${productType} ${sizeLabel}`,
+            sku: is4gBucket ? `${batch.id}-4g` : batch.id,
+            name: is4gBucket ? `${strainName} (${strainType}) 4g` : `${strainName} (${strainType})`,
+            description: is4gBucket ? `${strainName} (${strainType}) - ${productType} 4g` : `${strainName} (${strainType}) - ${productType}`,
             // Use values from database mapping
             seller: mapping.leaflink_seller_id,
             brand: mapping.leaflink_brand_id,
