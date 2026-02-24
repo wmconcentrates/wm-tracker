@@ -31619,11 +31619,23 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         }
 
         const productType = batch.packaged_product_type || batch.product_made || 'Unknown';
-        const rawWeight = batch.total_grams_packaged || batch.final_weight || 0;
+        const units1g = parseInt(batch.units_1g_labeled) || 0;
+        const units4g = parseInt(batch.units_4g_labeled) || 0;
         const multiplier = batch.material_agreement === '50-50 Split' ? 0.5 : 1.0;
-        const quantity = Math.floor(rawWeight * multiplier);
 
-        if (!confirm(`Push ${batch.strain} (${productType}) to LeafLink?\n\nQuantity: ${quantity}g\nTHC: ${batch.test_thc_percent}%`)) {
+        // Build quantity description
+        let quantityDesc = '';
+        if (units4g > 0) {
+            const parts = [];
+            if (units1g > 0) parts.push(`${Math.floor(units1g * multiplier)}x 1g`);
+            parts.push(`${Math.floor(units4g * multiplier)}x 4g`);
+            quantityDesc = parts.join(' + ') + ' (separate products)';
+        } else {
+            const rawWeight = batch.total_grams_packaged || batch.final_weight || 0;
+            quantityDesc = `${Math.floor(rawWeight * multiplier)}g`;
+        }
+
+        if (!confirm(`Push ${batch.strain} (${productType}) to LeafLink?\n\nQuantity: ${quantityDesc}\nTHC: ${batch.test_thc_percent}%`)) {
             return;
         }
 
@@ -31924,6 +31936,45 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return { success: false, error: 'Buyback - not pushed to LeafLink' };
         }
 
+        // Check if batch has both 1g and 4g units
+        const units1g = parseInt(batch.units_1g_labeled) || 0;
+        const units4g = parseInt(batch.units_4g_labeled) || 0;
+        const has4gUnits = units4g > 0;
+
+        // If batch has 4g units, push both 1g and 4g separately
+        if (has4gUnits) {
+            const results = { singles: null, buckets: null };
+
+            // Push 1g singles if any
+            if (units1g > 0) {
+                results.singles = await pushSingleProductToLeafLink(batch, units1g, false);
+            }
+
+            // Push 4g buckets
+            results.buckets = await pushSingleProductToLeafLink(batch, units4g, true);
+
+            // Return combined result
+            const successes = [];
+            const errors = [];
+            if (results.singles?.success) successes.push(`1g: ${results.singles.product_id}`);
+            if (results.singles && !results.singles.success) errors.push(`1g: ${results.singles.error}`);
+            if (results.buckets?.success) successes.push(`4g: ${results.buckets.product_id}`);
+            if (results.buckets && !results.buckets.success) errors.push(`4g: ${results.buckets.error}`);
+
+            if (successes.length > 0) {
+                return { success: true, product_id: successes.join(', '), data: results };
+            } else {
+                return { success: false, error: errors.join('; '), details: results };
+            }
+        }
+
+        // Single product push (no 4g units) - use units_1g_labeled if available
+        const quantity = units1g > 0 ? units1g : null;
+        return await pushSingleProductToLeafLink(batch, quantity, false);
+    }
+
+    // Helper function to push a single product to LeafLink
+    async function pushSingleProductToLeafLink(batch, overrideQuantity, is4gBucket) {
         // Get product type - normalize compound types
         let productType = batch.packaged_product_type || batch.product_made || '';
 
@@ -31940,6 +31991,9 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             console.log(`Normalizing product type: ${productType} -> ${productTypeNormalization[productType]}`);
             productType = productTypeNormalization[productType];
         }
+
+        // For 4g buckets, use the 4g product type mapping
+        const mappingProductType = is4gBucket ? `${productType} 4g` : productType;
 
         // Determine which business to use for this push
         // Special rule: Brick Hash always goes to Bubblman
@@ -31967,21 +32021,29 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
 
         // Load mappings for this business from database
         await loadLeafLinkMappings(targetBusinessId);
-        const mapping = getLeafLinkMapping(targetBusinessId, productType);
+        const mapping = getLeafLinkMapping(targetBusinessId, mappingProductType);
 
         if (!mapping) {
-            console.error('No LeafLink mapping found for:', productType, 'in business:', targetBusinessSlug);
-            return { success: false, error: `No LeafLink mapping configured for ${productType}. Configure in Admin > LeafLink.` };
+            console.error('No LeafLink mapping found for:', mappingProductType, 'in business:', targetBusinessSlug);
+            return { success: false, error: `No LeafLink mapping configured for ${mappingProductType}. Configure in Admin > LeafLink.` };
         }
 
         // Calculate quantity based on material agreement
         // Wholesale = 100%, 50-50 Split = 50%
-        // Use total_grams_packaged (labeled weight), fallback to final_weight for older batches
         const multiplier = batch.material_agreement === '50-50 Split' ? 0.5 : 1.0;
-        const quantity = Math.floor((batch.total_grams_packaged || batch.final_weight || 0) * multiplier);
+
+        // Use override quantity if provided, otherwise use total_grams_packaged
+        // For 4g buckets, quantity is number of units (not grams)
+        // For 1g singles, quantity is in grams (same as units)
+        let quantity;
+        if (overrideQuantity !== null) {
+            quantity = Math.floor(overrideQuantity * multiplier);
+        } else {
+            quantity = Math.floor((batch.total_grams_packaged || batch.final_weight || 0) * multiplier);
+        }
 
         if (quantity <= 0) {
-            console.error('No sellable quantity for batch:', batch.id);
+            console.error('No sellable quantity for batch:', batch.id, is4gBucket ? '(4g)' : '(1g)');
             return { success: false, error: 'No sellable quantity' };
         }
 
@@ -32000,10 +32062,11 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         const strainType = (batch.strain_type || 'Hybrid').charAt(0).toUpperCase() + (batch.strain_type || 'Hybrid').slice(1).toLowerCase();
 
         // Build payload using database mapping values
+        const sizeLabel = is4gBucket ? '4g' : '1g';
         const payload = {
-            sku: batch.id, // Use batch ID as SKU (e.g., "9.23.5447")
-            name: `${strainName} (${strainType})`,
-            description: `${strainName} (${strainType}) - ${productType}`,
+            sku: `${batch.id}-${sizeLabel}`, // Use batch ID + size as SKU (e.g., "9.23.5447-1g")
+            name: `${strainName} (${strainType}) ${sizeLabel}`,
+            description: `${strainName} (${strainType}) - ${productType} ${sizeLabel}`,
             // Use values from database mapping
             seller: mapping.leaflink_seller_id,
             brand: mapping.leaflink_brand_id,
