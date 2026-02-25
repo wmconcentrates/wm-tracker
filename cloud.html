@@ -16091,6 +16091,17 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
                     // Refresh the extraction queue to show new sub-batches
                     populateExtractionQueue();
+
+                    // Refresh the resinator batch dropdown to remove completed batch
+                    const resinatorBatchSelect = document.getElementById('resinatorBatch');
+                    if (resinatorBatchSelect) {
+                        resinatorBatchSelect.innerHTML = '<option value="">Select Batch...</option>';
+                        batches.forEach(b => {
+                            if (b.status === 'intake' && b.pre_sift === 'yes' && (b.trim_weight || 0) > 0) {
+                                resinatorBatchSelect.innerHTML += `<option value="${b.id}">${b.id} - ${b.strain} (${b.trim_weight || 0}g)</option>`;
+                            }
+                        });
+                    }
                 });
             });
         }
