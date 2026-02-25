@@ -15989,7 +15989,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     id: `${batchId}-A-Sift`,
                     strain: batch?.strain || 'Unknown',
                     strain_type: batch?.strain_type || 'Hybrid',
-                    partner: batch?.partner || 'Unknown',
+                    partner: batch?.partner || '',
                     business_id: batch?.business_id,
                     status: 'extraction',
                     material_type: 'Dry Sift',
@@ -16002,6 +16002,10 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     sift_grade: 'A',
                     metrc_tags: batch?.metrc_tags || batch?.metrc_source_tag || '',
                     pre_sift: 'no',
+                    material_cost: 0,
+                    material_agreement: batch?.material_agreement || 'Wholesale',
+                    intake_date: new Date().toISOString().split('T')[0],
+                    planned_products: [],
                     created_at: now,
                     notes: `A-grade sift from ${batchRuns.length} barrel run(s)`
                 };
@@ -16014,7 +16018,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     id: `${batchId}-B-Sift`,
                     strain: batch?.strain || 'Unknown',
                     strain_type: batch?.strain_type || 'Hybrid',
-                    partner: batch?.partner || 'Unknown',
+                    partner: batch?.partner || '',
                     business_id: batch?.business_id,
                     status: 'extraction',
                     material_type: 'Dry Sift',
@@ -16027,6 +16031,10 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     sift_grade: 'B',
                     metrc_tags: batch?.metrc_tags || batch?.metrc_source_tag || '',
                     pre_sift: 'no',
+                    material_cost: 0,
+                    material_agreement: batch?.material_agreement || 'Wholesale',
+                    intake_date: new Date().toISOString().split('T')[0],
+                    planned_products: [],
                     created_at: now,
                     notes: `B-grade sift from ${batchRuns.length} barrel run(s)`
                 };
@@ -16050,11 +16058,30 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 }
             };
 
-            createSubBatches().then(({ error }) => {
+            createSubBatches().then(async ({ error }) => {
                 if (error) {
                     console.error('Error creating sub-batches:', error);
                     alert('Warning: Sub-batches could not be saved to database. Check console for details.');
                 }
+
+                // Add timeline entry to parent batch
+                const siftSummary = subBatchesCreated.map(sb => `${sb.sift_grade}-Sift: ${sb.sift_weight.toFixed(1)}g`).join(', ');
+                const timelineEntry = {
+                    stage: 'resinator',
+                    timestamp: new Date().toISOString(),
+                    user: currentRole ? currentRole.name : 'Unknown',
+                    action: `Resinator sift complete - ${siftSummary} (${batchRuns.length} barrel runs)`
+                };
+
+                const parentTimeline = batch?.timeline || [];
+                parentTimeline.push(timelineEntry);
+
+                if (!DEMO_MODE) {
+                    await supabaseClient.from('wm_batches')
+                        .update({ timeline: parentTimeline })
+                        .eq('id', batchId);
+                }
+                if (batch) batch.timeline = parentTimeline;
 
                 // Clear session data but keep ledger history for records
                 window.currentMachineStatus = window.currentMachineStatus || {};
