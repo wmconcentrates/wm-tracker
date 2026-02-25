@@ -12505,9 +12505,9 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
         // Finishing functions
         function populateFinishingSelect() {
             const select = document.getElementById('finishingBatchSelect');
-            // Include both regular batches AND sub-batches that are at extraction status
+            // Include batches at extraction status AND sift_complete (dry sift ready for hash)
             // (Sub-batches can be retroactively created and need post-processing)
-            const extractionBatches = batches.filter(b => b.status === 'extraction');
+            const extractionBatches = batches.filter(b => b.status === 'extraction' || b.status === 'sift_complete');
 
             select.innerHTML = '<option value="">Select a batch...</option>';
             extractionBatches.forEach(batch => {
