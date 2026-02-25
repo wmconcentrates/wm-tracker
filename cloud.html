@@ -16049,6 +16049,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
 
             // Save sub-batches
             const createSubBatches = async () => {
+                console.log('Creating sub-batches v2:', JSON.stringify(subBatchesCreated, null, 2));
                 if (DEMO_MODE) {
                     // Add to local batches array for demo mode
                     subBatchesCreated.forEach(sb => batches.push(sb));
