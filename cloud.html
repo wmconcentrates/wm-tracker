@@ -12512,10 +12512,14 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
             select.innerHTML = '<option value="">Select a batch...</option>';
             extractionBatches.forEach(batch => {
                 let label;
-                
+
                 if (batch.is_sub_batch) {
-                    const estYield = ((parseFloat(batch.trim_weight) || 0) * 0.13).toFixed(0);
-                    label = `${batch.id} - ${batch.strain} (~${estYield}g yield) - ${batch.product_made} (SUB-BATCH)`;
+                    // For sift batches, show sift_weight directly; for extraction sub-batches, estimate yield from trim
+                    const isSift = batch.material_type === 'Dry Sift' || batch.sift_weight > 0;
+                    const weight = isSift ? (parseFloat(batch.sift_weight) || 0) : ((parseFloat(batch.trim_weight) || 0) * 0.13);
+                    const weightLabel = isSift ? `${weight.toFixed(1)}g sift` : `~${weight.toFixed(0)}g yield`;
+                    const productLabel = batch.product_made || batch.material_type || 'Sub-batch';
+                    label = `${batch.id} - ${batch.strain} (${weightLabel}) - ${productLabel} (SUB-BATCH)`;
                 } else {
                     // Build label with jar/slab counts from pull batch
                     let counts = [];
