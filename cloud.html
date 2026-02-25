@@ -16097,7 +16097,7 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                     alert('Warning: Sub-batches could not be saved to database. Check console for details.');
                 }
 
-                // Add timeline entry to parent batch
+                // Add timeline entry to parent batch and mark sift complete
                 const siftSummary = subBatchesCreated.map(sb => `${sb.sift_grade}-Sift: ${sb.sift_weight.toFixed(1)}g`).join(', ');
                 const timelineEntry = {
                     stage: 'resinator',
@@ -16109,12 +16109,26 @@ ${growerName ? `^FO580,360^FD${growerName.substring(0, 18)}^FS` : ''}
                 const parentTimeline = batch?.timeline || [];
                 parentTimeline.push(timelineEntry);
 
+                // Calculate remaining trim after sift
+                const totalSiftOutput = totalFirstSift + totalSecondSift;
+                const remainingTrim = Math.max(0, (batch?.trim_weight || 0) - totalProcessed);
+
                 if (!DEMO_MODE) {
                     await supabaseClient.from('wm_batches')
-                        .update({ timeline: parentTimeline })
+                        .update({
+                            timeline: parentTimeline,
+                            pre_sift: 'no',
+                            sift_weight: totalSiftOutput,
+                            trim_weight: remainingTrim
+                        })
                         .eq('id', batchId);
                 }
-                if (batch) batch.timeline = parentTimeline;
+                if (batch) {
+                    batch.timeline = parentTimeline;
+                    batch.pre_sift = 'no';
+                    batch.sift_weight = totalSiftOutput;
+                    batch.trim_weight = remainingTrim;
+                }
 
                 // Clear session data but keep ledger history for records
                 window.currentMachineStatus = window.currentMachineStatus || {};
