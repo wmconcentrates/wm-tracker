@@ -32052,9 +32052,19 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
             return { success: false, error: 'Buyback - not pushed to LeafLink' };
         }
 
-        // Check if batch has both 1g and 4g units
-        const units1g = parseInt(batch.units_1g_labeled) || 0;
-        const units4g = parseInt(batch.units_4g_labeled) || 0;
+        // Check if batch is carts or AIOs - use labels_applied_quantity for unit count
+        const productType = batch.packaged_product_type || batch.product_made || '';
+        const isCartOrAIO = productType.includes('Cart') || productType.includes('AIO');
+
+        // For carts/AIOs, use labels_applied_quantity; for others, use units_1g_labeled/units_4g_labeled
+        let units1g, units4g;
+        if (isCartOrAIO) {
+            units1g = parseInt(batch.labels_applied_quantity || batch.units_packaged) || 0;
+            units4g = 0; // Carts/AIOs don't have 4g variants
+        } else {
+            units1g = parseInt(batch.units_1g_labeled) || 0;
+            units4g = parseInt(batch.units_4g_labeled) || 0;
+        }
         const has4gUnits = units4g > 0;
 
         // If batch has 4g units, push both 1g and 4g separately
