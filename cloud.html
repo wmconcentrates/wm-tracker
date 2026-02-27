@@ -32252,32 +32252,80 @@ CREATE INDEX idx_timeclock_date ON timeclock(punch_time);
         console.log('Pushing batch to LeafLink:', batch.id, 'to business:', targetBusinessSlug, payload);
 
         try {
-            // Use the target business slug determined earlier (handles Brick Hash → Bubblman rule)
-            const response = await fetch(`${window.location.origin}/api/leaflink?slug=${targetBusinessSlug}&endpoint=products`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            // First, search for existing product by SKU or name pattern
+            const searchName = is4gBucket ? `${strainName}` : strainName;
+            const searchSuffix = is4gBucket ? '4' : ''; // Look for '4' in name for 4g products
+            let existingProductId = null;
 
-            const result = await response.json();
+            // Fetch current inventory to find existing product
+            const existingProducts = await fetchInventoryForBusiness(targetBusinessSlug);
+            if (existingProducts && existingProducts.length > 0) {
+                // For 4g buckets, find product with matching strain and '4 gram' or '4g' in name
+                // For 1g, find product with matching strain but without '4 gram' or '4g'
+                const matchingProduct = existingProducts.find(p => {
+                    const pName = (p.name || '').toLowerCase();
+                    const searchStrainLower = searchName.toLowerCase();
+                    const hasStrain = pName.includes(searchStrainLower);
+                    const is4gProduct = pName.includes('4 gram') || pName.includes('4g') || pName.includes('bucket');
 
-            if (!response.ok) {
-                console.error('LeafLink API error:', result);
-                return { success: false, error: result.detail || 'API error', details: result };
+                    if (is4gBucket) {
+                        return hasStrain && is4gProduct;
+                    } else {
+                        return hasStrain && !is4gProduct;
+                    }
+                });
+
+                if (matchingProduct) {
+                    existingProductId = matchingProduct.id;
+                    console.log(`Found existing ${is4gBucket ? '4g' : '1g'} product:`, existingProductId, matchingProduct.name);
+                }
             }
 
-            console.log('LeafLink product created:', result.id);
+            let response, result;
+
+            if (existingProductId) {
+                // Update existing product inventory
+                console.log('Updating existing product:', existingProductId);
+                response = await fetch(`${window.location.origin}/api/leaflink?slug=${targetBusinessSlug}&endpoint=products/${existingProductId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quantity: payload.quantity })
+                });
+                result = await response.json();
+
+                if (!response.ok) {
+                    console.error('LeafLink API error updating product:', result);
+                    return { success: false, error: result.detail || 'API error', details: result };
+                }
+                console.log('LeafLink product inventory updated:', existingProductId);
+            } else {
+                // Create new product
+                response = await fetch(`${window.location.origin}/api/leaflink?slug=${targetBusinessSlug}&endpoint=products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                result = await response.json();
+
+                if (!response.ok) {
+                    console.error('LeafLink API error:', result);
+                    return { success: false, error: result.detail || 'API error', details: result };
+                }
+                console.log('LeafLink product created:', result.id);
+            }
+
+            const productId = existingProductId || result.id;
 
             // Store LeafLink product ID on batch
             try {
                 await supabaseClient.from('wm_batches')
-                    .update({ leaflink_product_id: result.id })
+                    .update({ leaflink_product_id: productId })
                     .eq('id', batch.id);
             } catch (dbError) {
                 console.error('Error saving LeafLink ID to batch:', dbError);
             }
 
-            return { success: true, product_id: result.id, data: result };
+            return { success: true, product_id: productId, data: result };
         } catch (error) {
             console.error('Error pushing to LeafLink:', error);
             return { success: false, error: error.message };
