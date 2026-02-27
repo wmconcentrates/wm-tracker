@@ -26539,7 +26539,11 @@ ${employeeReport || 'No activity recorded today'}
 
         // Show commission details modal
         function showCommissionDetails(period) {
-            const rawFilter = document.getElementById('salesRepFilter')?.value || 'all';
+            // Check both Sales tab and FOH tab dropdowns for the selected sales rep
+            const rawFilterSales = document.getElementById('salesRepFilterSales')?.value || 'all';
+            const rawFilterFOH = document.getElementById('salesRepFilter')?.value || 'all';
+            const rawFilter = rawFilterSales !== 'all' ? rawFilterSales : rawFilterFOH;
+
             let salesRepFilter = rawFilter;
             if (rawFilter !== 'all') {
                 try {
