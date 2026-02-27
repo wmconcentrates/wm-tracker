@@ -27838,8 +27838,13 @@ ${employeeReport || 'No activity recorded today'}
                 try { salesRepFilter = JSON.parse(rawFilter); } catch (e) {}
             }
 
+            console.log('showInvoiceList - filterType:', filterType, 'salesRepFilter:', salesRepFilter);
+            console.log('Total orders before filter:', allLeafLinkOrders.length, allOrdersIncludingPending.length);
+
             let shippedOrders = filterOrdersBySalesRep(allLeafLinkOrders, salesRepFilter);
             let allOrders = filterOrdersBySalesRep(allOrdersIncludingPending, salesRepFilter);
+
+            console.log('Orders after sales rep filter:', shippedOrders.length, allOrders.length);
 
             const now = new Date();
 
